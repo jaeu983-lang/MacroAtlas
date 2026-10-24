@@ -1,0 +1,59 @@
+# Agent Operating Rules
+
+## Project plan precedence
+- Read `PROJECT_PLAN.md`, the matching iteration in `docs/IMPLEMENTATION_PLAN.md`, and relevant institution/scenario documentation before new implementation work.
+- Treat `PROJECT_PLAN.md` as the product scope and acceptance standard; apply stricter security and data-integrity guidance where different.
+- Implement exactly one numbered High iteration per task. Never advance past a failed gate.
+- Distinguish official-docs research, fixture tests, and live API/ingestion evidence.
+- Record unresolved design decisions in `docs/DECISION_LOG.md`.
+
+## Mission
+Build a reliable international-finance data discovery and ingestion platform for public statistical sources.
+
+## Before every task
+1. Read `GUIDELINES.md` and this file.
+2. Inspect repository status and relevant tests before changing files.
+3. Identify the smallest useful change and state assumptions.
+4. Never claim that an API endpoint, metadata field, or test result was verified unless it actually was.
+
+## Architecture boundaries
+- `discovery/` discovers datasets, series, dataflows, metadata, and source documentation.
+- `metadata/` normalizes metadata while preserving the original source representation.
+- `mapping/` links source concepts to common concepts and records confidence/reasons.
+- `connectors/` contains source-specific API adapters.
+- `ingestion/` downloads observations and validates them.
+- `analysis/` uses stored data; it must not silently change source observations.
+- Keep discovery and ingestion independently testable.
+- Prefer adding a source adapter over adding source-specific conditionals throughout the core.
+
+## Data integrity
+- Preserve source agency, dataset/series identifiers, retrieval timestamp, source URL, units, frequency, dimensions, and revision/vintage information when available.
+- Do not treat missing values as zero.
+- Do not infer equivalence from matching labels alone.
+- Do not overwrite raw responses silently.
+- Respect API terms, rate limits, attribution, and licensing.
+
+## Automation and safety
+- Work only within the repository workspace.
+- Do not disable sandboxing or bypass approval controls.
+- Do not access unrelated folders, browser profiles, credentials, or personal files.
+- Never print secrets or place API keys in source files, tests, prompts, or logs.
+- Do not make destructive changes, deploy, publish, or merge to the main branch.
+- Do not run network-dependent actions unless network access has been explicitly configured and the task requires it.
+- Keep automatic changes on a separate Git branch. Human review is required before merging.
+
+## Testing
+- Add or update tests for every behavior change.
+- Run the full local test suite when practical.
+- If a test cannot run, state exactly why; do not mark it as passed.
+- Do not weaken or delete tests merely to make a run pass.
+- Use deterministic tests and mocked HTTP responses by default.
+
+## Completion report
+Summarize:
+1. Files changed
+2. Reason for each material change
+3. Tests run and exact outcomes
+4. Known limitations
+5. Security/data-integrity implications
+6. Whether a human decision is needed
