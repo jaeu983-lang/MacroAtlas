@@ -247,7 +247,7 @@
 
 - **D-052 / IMPLEMENTED, 사람 검토 대기:** Gate A를 기존의 제한된 World Bank USA GDP file 경로에 연결했다. live 보고서에서 HTTP 200, raw 724 bytes, 원본·manifest 해시 일치, SQLite 검증 상태 `passed`와 관측치 3개, feedback 및 이벤트 이력을 확인했다. 보고서의 `live_path_passed=true`와 pytest 433개/Ruff 통과를 기준으로 Gate A를 통과 처리한다.
 - 검증 보고서는 단위·주기를 알 수 없다고 남겼고 경제적 이상치, revision history, cross-source equivalence는 검사하지 않았다. 데이터셋별 이용·재배포 조건도 전면 승인되지 않았다. 다른 기관/지표 지원이나 자동 탐색을 의미하지 않는다.
-- 근거: `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`, `docs/ITERATION_04_REPORT.md`, `tests/test_gate_a.py`. 현재 저장소는 첫 기준 커밋 전이며 파일이 untracked다. 프로젝트 전체 Git 체크포인트는 사람이 포함 범위와 민감하지 않은 로컬 산출물을 확인한 뒤 수행한다. 이번 문서 정리에서는 커밋하지 않는다.
+- 근거: `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`, `docs/ITERATION_04_REPORT.md`, `tests/test_gate_a.py`. 초기 프로젝트 체크포인트는 root commit `2c4e11f`(70개 파일)로 기록했다. `.gitignore`가 SQLite DB, raw 자료, 생성된 live JSON을 제외한다. Product Owner 검토 후 병합한다.
 
 - **ID/일시:**
 - **문제/선택지:**
