@@ -249,6 +249,15 @@
 - 검증 보고서는 단위·주기를 알 수 없다고 남겼고 경제적 이상치, revision history, cross-source equivalence는 검사하지 않았다. 데이터셋별 이용·재배포 조건도 전면 승인되지 않았다. 다른 기관/지표 지원이나 자동 탐색을 의미하지 않는다.
 - 근거: `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`, `docs/ITERATION_04_REPORT.md`, `tests/test_gate_a.py`. 초기 프로젝트 체크포인트는 root commit `2c4e11f`(70개 파일)로 기록했다. `.gitignore`가 SQLite DB, raw 자료, 생성된 live JSON을 제외한다. Product Owner 검토 후 병합한다.
 
+## 05회차 기관·사이트 탐색 (2026-10-25)
+
+- **D-053 / IMPLEMENTED:** 후보의 공식 도메인은 기존 기관 카탈로그의 문서 근거로 입력받고, 허용된 HTTPS URL의 hostname이 해당 도메인과 일치하거나 DNS label 경계가 있는 하위 도메인일 때만 공식 링크 후보로 기록한다. HTTP, 사용자정보, 비표준 포트와 query가 있는 URL은 저장 대상에서 제외한다. 충돌하는 전략 분류는 official_other로 낮춰 근거별 분류를 보존한다. 이 정책은 live 소유권/DNS/TLS 검증이 아니며 profile의 site_live_tested와 links_live_tested는 false로 둔다.
+- **D-054 / IMPLEMENTED:** HTML navigation 및 XML sitemap을 독립 strategy로 구현하고 입력 문서의 fixture/official_docs evidence, 참조 URL, retrieval 시각, 전략 ID를 보존한다. 외부 링크는 raw URL 없이 hostname과 출처를 기록한다. 기관 프로필은 SQLite의 별도 append-only 테이블과 UPDATE/DELETE 방지 trigger에 저장하고 기존 user_version=2를 바꾸지 않는다. HTML/XML 원문은 보관하지 않는다.
+- **검증:** BIS HTML 및 Treasury TIC XML의 합성 fixture, 외부 링크/도메인 경계/분류 충돌, 문서 크기·XML DTD 차단, 프로필 재열기·중복 저장·append-only 저장을 테스트했다. 전체 pytest 445개와 Ruff가 통과했다. 실제 기관 사이트 요청이나 저장소 DB 변경은 없었다.
+- **후속 범위:** 이용 가이드의 수집·재사용은 06회차, 메타데이터 해석은 07회차, 후보 검색과 수집 연결/Gate B는 08회차에서 각각 별도 지시와 검토 후 진행한다.
+
+### 새 결정 기록 템플릿
+
 - **ID/일시:**
 - **문제/선택지:**
 - **채택안 및 근거:**

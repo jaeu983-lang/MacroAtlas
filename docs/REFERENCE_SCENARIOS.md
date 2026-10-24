@@ -113,3 +113,11 @@ run_date: null
 - 저장 보고서 `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`의 `live_path_passed=true`를 확인했다. pytest 433개 및 Ruff도 통과했다.
 - H의 OECD 비교, 다국가 탐색, 정의 비교와 자동 후보 선택은 여전히 NOT_RUN이다. 경제적 이상치, revision history, cross-source equivalence도 확인하지 않았다.
 - Gate A 상세와 한계는 `docs/ITERATION_04_REPORT.md` 참조.
+
+## 05회차 fixture 탐색 근거 (2026-10-25)
+
+- HTML navigation 전략은 BIS 후보의 통계 포털·SDMX 문서 링크 fixture와 도메인 경계, 서드파티 링크 제외를 통과했다.
+- XML sitemap 전략은 Treasury TIC 후보의 공식 호스트 페이지와 외부 호스트 분리 fixture를 통과했다.
+- 두 실행은 합성 fixture만 사용했다. 실제 BIS/Treasury 페이지 방문, sitemap 존재 확인, 링크 응답·리다이렉트 검증은 하지 않았다.
+- 시나리오 B와 C 전체 상태는 NOT_RUN으로 유지한다. 이번 검증은 해당 시나리오의 완료나 Gate B 통과가 아니다.
+- 상세 구현·테스트 결과: docs/ITERATION_05_REPORT.md.

@@ -95,3 +95,12 @@ known_issues: []
 - 전체 433개 pytest와 Ruff가 통과했다. 이 테스트는 결정적 로컬 검증이며 Gate A fixture가 실제 HTTP를 사용하지 않는다.
 - Gate A는 World Bank의 이 고정 경로에 한정한다. 기관대장의 다른 프로필은 이전 조사 상태를 유지한다. 단위/주기는 미상으로 남았고, 데이터셋별 이용 조건·재배포 가능성은 별도 확인 대상이다.
 - 상세 기록: `docs/ITERATION_04_REPORT.md`.
+
+## 05회차 fixture 기반 기관·사이트 탐색 — 2026-10-25
+
+- 기존 문서 조사에서 기록한 INT-02의 data.bis.org / stats.bis.org 및 US-03의 home.treasury.gov를 입력 후보 도메인으로 사용했다. 이 회차에서 기관대장의 도메인 근거, endpoint_live_tested 또는 ingestion_tested 상태를 새로 검증하거나 변경하지 않았다.
+- BIS HTML 메뉴 fixture에서 통계 포털과 SDMX 문서 링크를 분류했고, Treasury TIC XML sitemap fixture에서 공식 호스트 URL을 추출했다. 두 fixture 본문은 합성 데이터이며 실제 사이트에서 가져오지 않았다.
+- 생성 프로필의 verified_at은 기존 공식 문서 확인일을 가리킨다. discovery_run_at과 fixture 근거는 별도 필드로 남고, site_live_tested=false / links_live_tested=false다.
+- 외부 호스트는 공식 링크로 승격하지 않는다. 외부 URL 경로와 query는 저장하지 않고 호스트, 출처 문서, 탐색 전략만 external_candidate 근거로 기록한다.
+- 프로필 저장 구현은 테스트용 SQLite DB에서 재시작 후 조회·중복 저장·append-only 이력을 검증했다. 실제 프로젝트 DB에는 프로필을 쓰지 않았다.
+- 상세 범위와 한계: docs/ITERATION_05_REPORT.md.
