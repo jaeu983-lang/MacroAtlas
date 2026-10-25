@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mes:Structure xmlns:mes="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:com="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common" xmlns:str="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure">
+  <mes:Header>
+    <mes:ID>codelist_CL_NATURE_1792929360065</mes:ID>
+    <mes:Test>false</mes:Test>
+    <mes:Prepared>2026-10-25T12:56:00.065+01:00</mes:Prepared>
+    <mes:Sender id="FR1">
+      <com:Name xml:lang="fr">Institut national de la statistique et des études économiques</com:Name>
+    </mes:Sender>
+    <mes:Receiver id="unknown"/>
+    <mes:Source xml:lang="fr">Banque de données macro-économiques</mes:Source>
+  </mes:Header>
+  <mes:Structures>
+    <str:Codelists>
+      <str:Codelist id="CL_NATURE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Codelist=FR1:CL_NATURE(1.0)" agencyID="FR1" version="1.0">
+        <com:Name xml:lang="fr">Nature</com:Name>
+        <com:Name xml:lang="en">Nature</com:Name>
+        <str:Code id="AUTRE_MODE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).AUTRE_MODE">
+          <com:Name xml:lang="fr">Autre mode</com:Name>
+          <com:Name xml:lang="en">Other mode</com:Name>
+        </str:Code>
+        <str:Code id="CONTRIB_GLISSEMENT_ANNUEL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).CONTRIB_GLISSEMENT_ANNUEL">
+          <com:Name xml:lang="fr">Contribution au glissement annuel</com:Name>
+          <com:Name xml:lang="en">Contribution to annual change</com:Name>
+        </str:Code>
+        <str:Code id="CUMUL_12_MOIS" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).CUMUL_12_MOIS">
+          <com:Name xml:lang="fr">Cumul sur 12 mois</com:Name>
+          <com:Name xml:lang="en">12-months aggregate</com:Name>
+        </str:Code>
+        <str:Code id="CUMUL_DEBUT_ANNEE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).CUMUL_DEBUT_ANNEE">
+          <com:Name xml:lang="fr">Cumul depuis le début de l'année</com:Name>
+          <com:Name xml:lang="en">Year-to-date aggregate</com:Name>
+        </str:Code>
+        <str:Code id="ENCOURS" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).ENCOURS">
+          <com:Name xml:lang="fr">Encours</com:Name>
+          <com:Name xml:lang="en">Outstanding amount</com:Name>
+        </str:Code>
+        <str:Code id="FLUX" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).FLUX">
+          <com:Name xml:lang="fr">Flux</com:Name>
+          <com:Name xml:lang="en">Flow</com:Name>
+        </str:Code>
+        <str:Code id="GLISSEMENT_ANNUEL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).GLISSEMENT_ANNUEL">
+          <com:Name xml:lang="fr">Glissement annuel</com:Name>
+          <com:Name xml:lang="en">Year-on-year change</com:Name>
+        </str:Code>
+        <str:Code id="GLISSEMENT_TRIMESTRIEL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).GLISSEMENT_TRIMESTRIEL">
+          <com:Name xml:lang="fr">Glissement trimestriel</com:Name>
+          <com:Name xml:lang="en">Quarter on quarter change</com:Name>
+        </str:Code>
+        <str:Code id="INDICE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE">
+          <com:Name xml:lang="fr">Indice</com:Name>
+          <com:Name xml:lang="en">Index</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_GINI" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_GINI">
+          <com:Name xml:lang="fr">Indice de Gini</com:Name>
+          <com:Name xml:lang="en">Gini indice</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_PRIX" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_PRIX">
+          <com:Name xml:lang="fr">Indice de prix</com:Name>
+          <com:Name xml:lang="en">Price index</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_SIMPSON" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_SIMPSON">
+          <com:Name xml:lang="fr">Indice de Simpson</com:Name>
+          <com:Name xml:lang="en">Simpson indice</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_VAL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_VAL">
+          <com:Name xml:lang="fr">Indice en valeur</com:Name>
+          <com:Name xml:lang="en">Value index</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_VOL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_VOL">
+          <com:Name xml:lang="fr">Indice en volume</com:Name>
+          <com:Name xml:lang="en">Volume index</com:Name>
+        </str:Code>
+        <str:Code id="INDICE_VOLUME" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).INDICE_VOLUME">
+          <com:Name xml:lang="fr">Indice de volume</com:Name>
+          <com:Name xml:lang="en">Volume index</com:Name>
+        </str:Code>
+        <str:Code id="MOODYS" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).MOODYS">
+          <com:Name xml:lang="fr">Indice Moody's</com:Name>
+          <com:Name xml:lang="en">Moody's index</com:Name>
+        </str:Code>
+        <str:Code id="MOYENNE_ANNUELLE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).MOYENNE_ANNUELLE">
+          <com:Name xml:lang="fr">Moyenne annuelle</com:Name>
+          <com:Name xml:lang="en">Annual average</com:Name>
+        </str:Code>
+        <str:Code id="MOYENNE_INDICES" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).MOYENNE_INDICES">
+          <com:Name xml:lang="fr">Moyenne des quatre dernières observations</com:Name>
+          <com:Name xml:lang="en">Average of the 4 latest values</com:Name>
+        </str:Code>
+        <str:Code id="POND" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).POND">
+          <com:Name xml:lang="fr">Pondérations d'indice</com:Name>
+          <com:Name xml:lang="en">Index weightings</com:Name>
+        </str:Code>
+        <str:Code id="POND_VOL" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).POND_VOL">
+          <com:Name xml:lang="fr">Pondérations en volume</com:Name>
+          <com:Name xml:lang="en">Volume weightings</com:Name>
+        </str:Code>
+        <str:Code id="PRIX_MOYEN" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).PRIX_MOYEN">
+          <com:Name xml:lang="fr">Prix moyen</com:Name>
+          <com:Name xml:lang="en">Average price</com:Name>
+        </str:Code>
+        <str:Code id="PROPORTION" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).PROPORTION">
+          <com:Name xml:lang="fr">Proportion</com:Name>
+          <com:Name xml:lang="en">Proportion</com:Name>
+        </str:Code>
+        <str:Code id="PROPORTION_POURCENTAGE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).PROPORTION_POURCENTAGE">
+          <com:Name xml:lang="fr">Proportion en %</com:Name>
+          <com:Name xml:lang="en">Proportion in %</com:Name>
+        </str:Code>
+        <str:Code id="RATIO" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).RATIO">
+          <com:Name xml:lang="fr">Ratio</com:Name>
+          <com:Name xml:lang="en">Ratio</com:Name>
+        </str:Code>
+        <str:Code id="REUTERS" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).REUTERS">
+          <com:Name xml:lang="fr">Indice Reuter's</com:Name>
+          <com:Name xml:lang="en">Reuter's index</com:Name>
+        </str:Code>
+        <str:Code id="SO" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).SO">
+          <com:Name xml:lang="fr">Sans objet</com:Name>
+          <com:Name xml:lang="en">Not applicable</com:Name>
+        </str:Code>
+        <str:Code id="SOLDE_OPINIONS" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).SOLDE_OPINIONS">
+          <com:Name xml:lang="fr">Solde opinions</com:Name>
+          <com:Name xml:lang="en">Balance opinions</com:Name>
+        </str:Code>
+        <str:Code id="SOLDE_PROPORTION" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).SOLDE_PROPORTION">
+          <com:Name xml:lang="fr">Solde d'opinions</com:Name>
+          <com:Name xml:lang="en">Balance of two proportions</com:Name>
+        </str:Code>
+        <str:Code id="TAUX" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).TAUX">
+          <com:Name xml:lang="fr">Taux</com:Name>
+          <com:Name xml:lang="en">Rate</com:Name>
+        </str:Code>
+        <str:Code id="TAUX_EVOLUTION" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).TAUX_EVOLUTION">
+          <com:Name xml:lang="fr">Taux d'évolution</com:Name>
+          <com:Name xml:lang="en">Evolution rate</com:Name>
+        </str:Code>
+        <str:Code id="VALEUR_ABSOLUE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).VALEUR_ABSOLUE">
+          <com:Name xml:lang="fr">Valeur absolue</com:Name>
+          <com:Name xml:lang="en">Absolute value</com:Name>
+        </str:Code>
+        <str:Code id="VARIATIONS_A" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).VARIATIONS_A">
+          <com:Name xml:lang="fr">Variations annuelles</com:Name>
+          <com:Name xml:lang="en">Annual change</com:Name>
+        </str:Code>
+        <str:Code id="VARIATIONS_DEBUT_ANNEE" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).VARIATIONS_DEBUT_ANNEE">
+          <com:Name xml:lang="fr">Variations depuis le début de l'année</com:Name>
+          <com:Name xml:lang="en">Year-to-date change</com:Name>
+        </str:Code>
+        <str:Code id="VARIATIONS_M" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).VARIATIONS_M">
+          <com:Name xml:lang="fr">Variations mensuelles</com:Name>
+          <com:Name xml:lang="en">Monthly change</com:Name>
+        </str:Code>
+        <str:Code id="VARIATIONS_T" urn="urn:sdmx:org.sdmx.infomodel.codelist.Code=FR1:CL_NATURE(1.0).VARIATIONS_T">
+          <com:Name xml:lang="fr">Variations trimestrielles</com:Name>
+          <com:Name xml:lang="en">Quaterly change</com:Name>
+        </str:Code>
+      </str:Codelist>
+    </str:Codelists>
+  </mes:Structures>
+</mes:Structure>

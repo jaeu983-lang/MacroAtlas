@@ -529,13 +529,13 @@ _ROWS = (
         ),
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        live_validation=LiveValidation.FAILED,
-        live_scope="Iteration 32: direct BDM datastructure/FR1/IPC-2015-COICOP/1.0 returned HTTP 404 on its sole request; no accepted response archive or live metadata PASS.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 33: direct BDM codelist/FR1/CL_NATURE/1.0, one HTTP 200 request, metadata contract and archive/hash read-back only. Prior Iteration 32 IPC-2015-COICOP DSD HTTP 404 remains failed; no observation ingestion.",
         status_note=(
-            "INSEE BDM data and metadata methods, mocked route tests and synthetic metadata fixtures. "
+            "INSEE BDM data and metadata methods, mocked route tests and synthetic/recorded metadata fixtures. "
             "Official user guide distinguishes direct HTTPS from signed-in API portal. "
-            "Documented example DSD returned 404; current resource/route needs official evidence "
-            "and a new request budget. No fallback, observation or workflow validation."
+            "CL_NATURE codelist metadata validated in Iteration 33. Prior DSD 404 retained; "
+            "that DSD, observations and general workflow remain unverified."
         ),
     ),
 )

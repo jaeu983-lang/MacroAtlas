@@ -45,7 +45,7 @@ Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 
 | ECB | ECB_EXR1 1.0 DSD HTTP 200 저장, 최초 파서 오류 수정 후 같은 bytes 오프라인 재검증 통과, 차원 6개 | 최초 실패 이력 보존; codelist 미조회, 관측치·일반 workflow 미검증 |
 | Eurostat | NAMA_10_GDP 1.0 dataflow metadata HTTP 200·계약·archive/hash 통과 | DS-prefixed Comext/Prodcom·async·연결 DSD·관측치·일반 workflow 미검증 |
 | Deutsche Bundesbank | BBK BBEX3 dataflow metadata HTTP 200·계약·archive/hash 통과, 반환 version 1.0 | 전체 인증·413/async·연결 DSD·관측치·일반 workflow 미검증 |
-| INSEE | 직접 BDM metadata 메서드·합성 fixture; 공식 예제 IPC-2015-COICOP/1.0 요청 HTTP 404 실패 | 현재 유효 route/ID 공식 근거와 새 예산 필요. live metadata PASS 없음, portal auth·관측치·workflow 미검증 |
+| INSEE | Iteration 33 CL_NATURE/1.0 codelist HTTP 200·계약·archive/hash 통과; synthetic/recorded fixture | Iteration 32 IPC-2015-COICOP DSD 404는 여전히 실패. 해당 DSD·portal auth·관측치·workflow 미검증 |
 
 ### 공식 파일 경로 일부 구현
 

@@ -99,11 +99,14 @@ def run_checks(settings, *, sources=None, fixture=False):
     sdmx = any(source in SDMX_SELECTIONS for source in selected)
     if sdmx and any(source in SOURCES for source in selected):
         raise ValueError("Run SDMX and BEA/e-Stat metadata budgets separately")
+    iterations = {SDMX_SELECTIONS[source].iteration for source in selected} if sdmx else {31}
+    if len(iterations) != 1:
+        raise ValueError("Run numbered iteration budgets separately")
     report_dir = settings.project_root / "reports"
     if report_dir.is_symlink() or not report_dir.resolve().is_relative_to(settings.project_root):
         raise ValueError("Reports must stay inside the project")
     report_dir.mkdir(exist_ok=True)
-    iteration = 32 if sdmx else 31
+    iteration = iterations.pop()
     path = report_dir / f"iteration_{iteration}_api_metadata_{uuid4().hex}.json"
     report = {"evidence": "synthetic_fixture" if fixture else "live_metadata_canary",
               "started_at": datetime.now(UTC).isoformat(), "status": "running",
@@ -218,7 +221,10 @@ def revalidate_sdmx_archives(settings, original_path):
               "original_report_sha256": hashlib.sha256(original_bytes).hexdigest(),
               "started_at": datetime.now(UTC).isoformat(), "status": "running",
               "observations_accepted": False, "new_http_requests": 0, "results": []}
-    path = report_dir / f"iteration_32_archive_revalidation_{uuid4().hex}.json"
+    iterations = {SDMX_SELECTIONS[source].iteration for source in sources}
+    if len(iterations) != 1:
+        raise ValueError("Revalidate numbered iteration budgets separately")
+    path = report_dir / f"iteration_{iterations.pop()}_archive_revalidation_{uuid4().hex}.json"
     with path.open("x+", encoding="utf-8") as output:
         _write(output, report)
         for old in rows:

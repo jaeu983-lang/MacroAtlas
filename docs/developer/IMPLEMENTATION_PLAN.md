@@ -48,6 +48,19 @@
 - 실행 예산은 source당 1회, 총 6회, retry 0, 동시 요청 1개였다. BIS·OECD·Eurostat·Bundesbank는 최초 canary 통과, ECB는 최초 HTTP 200 응답의 파서 실패 후 같은 archive의 수정 후 오프라인 재검증 통과, INSEE는 HTTP 404 실패다. 최초 보고서는 수정하지 않았다.
 - Census·BLS 보류, 기존 Gate U 실패 보존과 독립 source gate 원칙은 유지한다. 결과는 [Iteration 32 report](history/ITERATION_32_REPORT.md), 공식 route·인증/제한 근거는 [metadata audit](connectors/SDMX_METADATA_CANARY.md)를 따른다. IMF 역시 SDMX 기관이지만 기존 adapter가 없어 이번 6곳과 구분한다. INSEE 현재 route/ID 재조사와 IMF·BOJ 구현은 이후 별도 후보이며 Iteration 33은 시작하지 않았다.
 
+### Iteration 33 — INSEE metadata 복구 (Gate X)
+
+- 사용자 D-103은 33과 34의 순차 실행을 승인했다. 33의 engineering gate/보고서를 끝낸 뒤 34를 시작한다. Census/BLS 보류와 기존 Gate U·Iteration 32 실패 이력은 보존한다.
+- 공식 INSEE user guide §IV에 명시된 작은 `codelist/FR1/CL_NATURE/1.0`을 별도 명시 선택으로 추가한다. 과거 IPC DSD 요청을 통과로 바꾸지 않는다. XML codelist의 ID·agency·version·이름·code/label·중복과 archive/hash를 검사한다.
+- 합성 fixture·안전/저장 회귀를 통과한 뒤 새 예산에서 INSEE metadata 최대 1회, retry 0, concurrency 1로 호출한다. 문서/API 오류는 성공 처리하지 않는다. 전체 offline·Ruff·credential 비노출과 별도 보고서/feature commit으로 마무리한다.
+- **완료:** Gate X engineering와 INSEE CL_NATURE 1.0 metadata sub-gate PASS. 단발 HTTP 200, 10,180 bytes와 archive/hash 확인. 기존 DSD 404는 실패로 보존한다. Live 전 전체 1,059 passed/1 skipped, recorded/registry 후 관련 250 passed와 Ruff PASS. [Iteration 33 report](history/ITERATION_33_REPORT.md).
+
+### Iteration 34 — IMF 공식 API 준비 상태와 metadata (Gate Y)
+
+- IMF 공식 API 페이지와 연결된 도구별 안내에서 정확한 root/route·ID/version·인증·이용/제한·표현 형식의 공개 근거를 먼저 확보한다. Swagger login과 데이터 API 인증을 혼동하지 않는다.
+- 근거가 충분하면 source adapter·합성 fixture·계약·archive/read-back을 추가하고 offline gate 이후 IMF metadata 최대 1회, retry 0, concurrency 1로 검증한다. 근거/설정/접근이 부족하면 추정 endpoint·로그인 우회 없이 not_ready/not_run으로 명시하고 문서/readiness gate만 완료한다.
+- 33의 source-only 실패는 다른 독립 IMF source를 전역 차단하지 않는다. shared engineering/safety gate 실패를 넘어가지는 않는다. 35·관측치 수집·main merge·push·배포는 제외한다.
+
 모든 작업을 한 줄로 세워 순차 대기시키지 않습니다. Track M과 Track C는 독립된 offline 일을 병행하고, 외부 호출에 대해서만 공통 gate와 해당 기관 gate를 합칩니다.
 
 ### Track M — 공통 엔진 유지

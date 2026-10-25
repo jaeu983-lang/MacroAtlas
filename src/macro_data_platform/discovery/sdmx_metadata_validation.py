@@ -36,10 +36,16 @@ class MetadataSelection:
     resource_id: str
     version: str | None
     ready: bool = True
+    iteration: int = 32
 
     @property
     def url(self):
         return self.client.root + self.path
+
+    @property
+    def operation(self):
+        return ("structure" if self.method in {"get_structure", "get_codelist"}
+                else self.kind.lower())
 
 
 SDMX_SELECTIONS = {
@@ -62,6 +68,9 @@ SDMX_SELECTIONS = {
     "insee": MetadataSelection("EU-05", INSEEClient, "get_datastructure",
         ("IPC-2015-COICOP", "1.0"), "/datastructure/FR1/IPC-2015-COICOP/1.0",
         "DataStructure", "FR1", "IPC-2015-COICOP", "1.0"),
+    "insee-nature": MetadataSelection("EU-05", INSEEClient, "get_codelist",
+        ("CL_NATURE", "1.0"), "/codelist/FR1/CL_NATURE/1.0",
+        "Codelist", "FR1", "CL_NATURE", "1.0", iteration=33),
 }
 
 
@@ -88,8 +97,7 @@ def validate_sdmx_metadata(source: str, response: SdmxApiResponse) -> dict:
     if (response.institution_id != selection.institution_id
             or response.source_agency != get_source_profile(selection.institution_id).name
             or response.source_url != selection.url
-            or response.operation != ("structure" if source in {"bis", "oecd"}
-                                      else selection.kind.lower())):
+            or response.operation != selection.operation):
         return fail("source_or_request_mismatch")
     if response.http_status != 200:
         return fail("http_status_not_success")
@@ -117,7 +125,8 @@ def validate_sdmx_metadata(source: str, response: SdmxApiResponse) -> dict:
         if len(containers) != 1:
             return fail("missing_structures")
         tag = f"{{{STRUCTURE}}}{selection.kind}"
-        group = "Dataflows" if selection.kind == "Dataflow" else "DataStructures"
+        group = {"Dataflow": "Dataflows", "DataStructure": "DataStructures",
+                 "Codelist": "Codelists"}[selection.kind]
         selected = containers[0].findall(f"{{{STRUCTURE}}}{group}/{tag}")
         if len(selected) != 1:
             return fail("empty_or_ambiguous_selection")
@@ -137,6 +146,13 @@ def validate_sdmx_metadata(source: str, response: SdmxApiResponse) -> dict:
                     or refs[0].get("package") != "datastructure"
                     or any(not refs[0].get(k) for k in ("id", "agencyID", "version"))):
                 return fail("invalid_dsd_reference")
+        elif selection.kind == "Codelist":
+            codes = node.findall(f"{{{STRUCTURE}}}Code")
+            if (not codes or any(not n.get("id") for n in codes)
+                    or len({n.get("id") for n in codes}) != len(codes)
+                    or any(not any((label.text or "").strip() for label in
+                                   n.findall(f"{{{COMMON}}}Name")) for n in codes)):
+                return fail("empty_or_invalid_codelist")
         else:
             dimensions = node.findall(
                 f"{{{STRUCTURE}}}DataStructureComponents/{{{STRUCTURE}}}DimensionList/*")

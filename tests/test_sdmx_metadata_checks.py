@@ -98,14 +98,16 @@ def test_invalid_payloads_never_pass(source, change, tmp_path):
                             f'<s:{selection.kind} isExternalReference="true" '.encode()))
     else:
         value = replace(value, body=body.replace(b"<Ref ", b"<BadRef ")
-                        .replace(b"s:DimensionList", b"s:OtherList"))
+                        .replace(b"s:DimensionList", b"s:OtherList")
+                        .replace(b"s:Code ", b"s:OtherCode ")
+                        .replace(b"</s:Code>", b"</s:OtherCode>"))
     assert validate_sdmx_metadata(source, value)["status"] == "needs_review"
 
 
 def test_explicit_sdmx_fixture_runner_preserves_default(tmp_path, monkeypatch):
     monkeypatch.setattr("requests.sessions.Session.request", lambda *_a, **_k: pytest.fail("HTTP"))
     path, report = HELPERS["run_checks"](Settings(tmp_path, network_enabled=True),
-                                         sources=list(SDMX_SELECTIONS), fixture=True)
+        sources=[k for k, v in SDMX_SELECTIONS.items() if v.iteration == 32], fixture=True)
     assert "iteration_32" in path.name and report["status"] == "completed"
     assert len(report["results"]) == 6
     assert sum(row["request_count"] for row in report["results"]) == 0
@@ -227,3 +229,37 @@ def test_recorded_metadata_has_provenance_hash_and_passes_exact_source_contract(
         structures, _ = parse_sdmx_structure(body)
         assert len(structures["datastructures"][0]["dimensions"]) == 6
         assert record["initial_validation_status"] == "source_metadata_needs_review"
+
+
+def test_insee_recovery_is_a_distinct_iteration_budget_and_old_selection_is_preserved(tmp_path):
+    settings = Settings(tmp_path, network_enabled=True)
+    path, report = HELPERS["run_checks"](settings, sources=["insee-nature"], fixture=True)
+    assert "iteration_33" in path.name
+    assert report["results"][0]["status"] == "fixture_metadata_validated"
+    assert SDMX_SELECTIONS["insee"].resource_id == "IPC-2015-COICOP"
+    with pytest.raises(ValueError, match="iteration budgets"):
+        HELPERS["run_checks"](settings, sources=["insee", "insee-nature"], fixture=True)
+
+
+@pytest.mark.parametrize("change", ["empty", "duplicate", "missing_label", "missing_id"])
+def test_codelist_contents_are_checked(change, tmp_path):
+    value = response("insee-nature", Settings(tmp_path, network_enabled=True))
+    code = b'<s:Code id="SYNTHETIC"><c:Name xml:lang="en">Test only</c:Name></s:Code>'
+    replacement = {"empty": b"", "duplicate": code + code,
+                   "missing_label": b'<s:Code id="SYNTHETIC"/>',
+                   "missing_id": b'<s:Code><c:Name>Test</c:Name></s:Code>'}[change]
+    assert validate_sdmx_metadata("insee-nature", replace(
+        value, body=value.body.replace(code, replacement)))["status"] == "needs_review"
+
+
+def test_recorded_insee_codelist_provenance_and_contract(tmp_path):
+    folder = ROOT / "tests" / "fixtures" / "sdmx_metadata"
+    record = json.loads((folder / "recorded_insee_nature.provenance.json").read_text(
+        encoding="utf-8"))
+    body = (folder / record["file"]).read_bytes()
+    assert hashlib.sha256(body).hexdigest() == record["sha256"]
+    value = replace(response("insee-nature", Settings(tmp_path, network_enabled=True)),
+                    body=body, content_type=record["content_type"], source_url=record["source_url"])
+    assert validate_sdmx_metadata("insee-nature", value) == record["validation"]
+    structures, _ = parse_sdmx_structure(body)
+    assert len(structures["codelists"][0]["codes"]) > 0

@@ -81,12 +81,13 @@ def test_sdmx_metadata_live_scope_is_separate_from_general_ingestion():
         profile = get_source_profile(institution_id)
         assert profile.adapter_status == AdapterStatus.PARTIAL
         assert profile.fixture_scope == FixtureScope.SOURCE_SPECIFIC
-        assert profile.live_validation == (LiveValidation.FAILED if institution_id == "EU-05"
-                                           else LiveValidation.PARTIAL)
+        assert profile.live_validation == LiveValidation.PARTIAL
         assert "mocked route tests" in profile.status_note
         assert "Iteration 32" in profile.live_scope
         assert "workflow" in profile.status_note
-    assert "404" in get_source_profile("EU-05").live_scope
+    assert "404 remains failed" in get_source_profile("EU-05").live_scope
+    assert "Iteration 33" in get_source_profile("EU-05").live_scope
+    assert "CL_NATURE" in get_source_profile("EU-05").live_scope
     assert "offline" in get_source_profile("EU-01").live_scope
     with pytest.raises(ValueError, match="exact scope"):
         replace(get_source_profile("EU-05"), live_scope=None)

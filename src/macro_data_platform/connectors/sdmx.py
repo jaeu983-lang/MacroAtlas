@@ -355,6 +355,10 @@ class INSEEClient(_SdmxClient):
         """Direct BDM metadata route, user guide section IV (not API portal auth)."""
         return self._get("datastructure", "datastructure", "FR1", resource_id, version)
 
+    def get_codelist(self, resource_id: str, version: str = "1.0") -> SdmxApiResponse:
+        """User guide IV: FR1 codelists, including the explicit CL_NATURE example."""
+        return self._get("structure", "codelist", "FR1", resource_id, version)
+
     def get_data_by_idbanks(self, idbanks: tuple[str, ...] | list[str],
                             parameters: Mapping[str, str | int] | None = None) -> SdmxApiResponse:
         if not isinstance(idbanks, (tuple, list)) or not 1 <= len(idbanks) <= 100:
