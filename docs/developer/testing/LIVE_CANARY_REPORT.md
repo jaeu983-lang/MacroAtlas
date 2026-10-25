@@ -30,17 +30,17 @@
 | TIC Table 3D 2023-01 | `live_needs_review` | 200 | 확인 | `dataset_contract_changed`; 원본은 보존했으나 validator 미통과 |
 | BoE Bank Rate | `live_contract_validated` | 200 | 확인 | 7 native reporting dates |
 
-Gate U는 7개 모두 `live_contract_validated`여야 통과한다. 원래 실행 보고서는 2/7을 기록했다. 후속 오프라인 재검증에서 저장된 Table 3D 응답이 현재 validator를 통과해, 기존 live 증거까지 합친 최신 source-response contract 근거는 3/7(FRED·BoE·Table 3D)이다. Gate U는 **NOT PASSED**이며 다음 iteration은 시작하지 않는다. MFH는 여전히 검토 대상이고 Census/BLS 원인은 당시 상세 reason이 저장되지 않아 소급 복원할 수 없다. 재요청은 하지 않았다.
+Gate U는 7개 모두 canary 실행 중 `live_contract_validated`여야 통과한다. 원래 실행 판정 2/7(FRED·BoE)은 그대로 유지한다. 이후 저장된 TIC 응답 2개를 오프라인에서 현재 validator로 재평가한 결과 Table 3D와 MFH가 모두 통과했다. 따라서 원래 live 응답과 사후 offline contract 검증을 구분한 최신 source-response 근거는 4/7(FRED·BoE live, TIC 2개는 live raw 저장/hash 확인 후 offline contract validation)이다. 이는 canary 시점의 결과나 원본 receipt를 소급 변경하지 않는다. Gate U는 **NOT PASSED**이며 다음 iteration은 시작하지 않는다. Census/BLS 원인은 당시 상세 reason이 저장되지 않아 소급 복원할 수 없다. 재요청은 하지 않았다.
 
 ## 저장된 원본의 후속 오프라인 재검증
 
 원래 canary 이후, 기존 TIC 원본 bytes에 현재 validator만 오프라인으로 다시 적용했다. HTTP를 호출하지 않았고 기존 원본·manifest·write-once receipt도 수정하지 않았다.
 
 - **TIC Table 3D:** SHA-256은 canary 결과와 일치한다. 원본의 161행에 단독 `"Notes:"` 각주 경계가 있고, 그 앞 160개 표 행은 strict CSV 및 고정 2023-01 구조를 통과했다(자료 행 127개). 이후의 잘못된 형식 각주는 raw에 그대로 남는다. 이것은 원래 실행 시점의 `live_needs_review` receipt를 소급 수정하지 않는다.
-- **TIC MFH:** SHA-256은 canary 결과와 일치한다. 일부 연도 블록에 13개 기간 열과 중복 `(연도, Jun)`이 관측돼 계속 `needs_review`다. 값이나 기간을 합치거나 버리지 않았다.
+- **TIC MFH:** SHA-256은 canary 결과와 일치한다. 현재 validator는 26개 header block과 955개 자료 행을 확인했다. 연월 중복 11쌍은 Series 식별자가 다르게 명시된 공식 series break로 판정되어 `contract_validated`다: 2000-03 II/I와 2002-06부터 2011-06까지의 각 June break. Treasury는 이전 series 경계 월 값을 비교용이라고 각주에 명시한다. 두 값을 병합·삭제하지 않았고 저장 원본도 바꾸지 않았다. [공식 MFH 표와 각주](https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.html).
 - **Census 및 BLS:** 실패 raw/HTTP status가 저장되지 않았고 이전 보고서에도 고정 reason 세부정보가 없어 원인을 소급 판별할 수 없다. 재요청하지 않았다.
 
-Gate U 원판정은 **2/7, NOT PASSED**로 유지한다. 이후 canary 실행기는 키·응답·예외 문구를 남기지 않고 고정 `failure_reason`과 가능한 경우 `failure_http_status`를 기록한다. 이 개선은 새 요청 결과가 있어야만 진단에 도움이 되며 현재 실패를 변경하지 않는다.
+Gate U 원판정은 **2/7, NOT PASSED**로 유지한다. 최신 offline 후속 검증을 합친 근거는 4/7이지만, 이 중 TIC 두 경로는 실행 시점에 `live_needs_review`였으므로 gate 성공으로 소급 승격하지 않는다. 이후 canary 실행기는 키·응답·예외 문구를 남기지 않고 고정 `failure_reason`과 가능한 경우 `failure_http_status`를 기록한다. 이 개선은 새 요청 결과가 있어야만 진단에 도움이 되며 현재 실패를 변경하지 않는다.
 
 원래 canary JSON과 TIC 원본은 `reports/` 및 `data/raw/`의 local-only 파일로 읽혔고 hash가 일치했다. 이 Codex shell에서는 `reports/`에 새 후속 JSON을 만드는 작업이 `PermissionError`로 거부되어 새 기계 판독 JSON은 만들지 않았다. 기존 파일은 수정하지 않았고 후속 판정은 이 문서에 남겼다. 사용자가 앞서 regular PowerShell에서 canary 보고서를 저장한 결과와는 별개의 현재 shell write 제한이다.
 
@@ -57,4 +57,4 @@ $env:MACROATLAS_NETWORK_ENABLED = "true"
 
 network-off 테스트와 synthetic regression 통과는 live gate 완료를 뜻하지 않는다. 이번 live run은 각 source의 실제 응답 범위만 증명하며, 실패나 `needs_review`를 성공으로 승격하지 않는다. 상세 이용 조건은 [데이터셋 계약](../connectors/DATASET_CONTRACTS.md)에 있다.
 
-준비 단계 검증(원래 실행 전): targeted `tests/test_live_canary.py tests/test_dataset_paths.py` **53 passed**; 전체 offline suite **816 passed, 1 skipped, 0 failed (83.39초)**. 이번 후속 변경은 targeted **84 passed, 1 skipped**, 전체 offline suite **821 passed, 1 skipped, 0 failed (74.11초)**, 변경 Python Ruff passed, `git diff --check` passed다. Skip은 Windows symlink 생성 미지원이다. 네트워크 시험 결과와 offline 테스트 결과는 별도 증거다.
+준비 단계 검증(원래 실행 전): targeted `tests/test_live_canary.py tests/test_dataset_paths.py` **53 passed**; 전체 offline suite **816 passed, 1 skipped, 0 failed (83.39초)**. 저장 TIC 응답 검토와 MFH Series-break validator를 포함한 최신 후속 검증은 targeted `tests/test_dataset_paths.py tests/test_official_api_credentials.py tests/test_live_canary.py` **85 passed, 1 skipped**, 전체 offline suite **822 passed, 1 skipped, 0 failed (82.45초)**, 변경 Python Ruff passed다. Skip은 Windows symlink 생성 미지원이다. 이 테스트는 네트워크 요청을 보내지 않았으며 live gate 증거와 별개다.

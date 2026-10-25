@@ -8,9 +8,9 @@ MacroAtlas는 국제금융·거시경제 통계를 공식 출처에서 찾아, �
 
 - 기관 목록에는 21개 출처가 있습니다. 공식 API 문서를 확인한 곳은 15개, 이번 조사에서 명세를 확인하지 못한 곳은 6개입니다. unconfirmed는 API가 없다는 뜻이 아닙니다.
 - API 문서 확인, 어댑터 구현, fixture 검증, 실 API 성공은 서로 다른 상태입니다.
-- 현재 확인된 live 수집은 World Bank의 미국 GDP 고정 경로 하나입니다.
-- BEA와 e-Stat에는 제한된 JSON 클라이언트와 mock 검사가 있지만, 전체 작업 흐름과 실기관 호출은 아직 검증되지 않았습니다.
-- FRED·Census·BLS v1에는 기관별 JSON client와 synthetic fixture의 파일 저장·재조회 검사가 있습니다. BLS는 키 없는 1.0 전용입니다. [예시 파일 테스트](docs/developer/history/ITERATION_28_REPORT.md)는 실제 기관 데이터와 구분합니다.
+- World Bank 미국 GDP 고정 경로의 과거 live 근거 외에, Iteration 30에서 FRED GDP·BoE Bank Rate의 bounded live contract 검증이 통과했습니다. TIC MFH·Table 3D는 live 파일과 hash를 보존한 뒤 현재 validator를 offline 실행해 통과했지만, 원 canary receipt는 `live_needs_review`입니다. 7개 canary의 실행 당시 pass는 2/7이므로 Gate U는 미통과입니다. [결과와 경계](docs/developer/testing/LIVE_CANARY_REPORT.md).
+- BEA와 e-Stat에는 제한된 JSON 클라이언트와 mock 검사가 있지만, 고정 dataset collector 연결과 실기관 호출은 아직 검증되지 않았습니다.
+- FRED·Census·BLS v1의 고정 dataset 요청 경로와 TIC·BoE CSV 경로를 별도 profile collector에 연결했습니다. Census는 보안 검토, BLS 두 경로는 transient 실패 기록이 있어 live 성공이 아닙니다. BLS는 키 없는 1.0 전용입니다. [합성 저장 테스트](docs/developer/history/ITERATION_28_REPORT.md)는 실제 기관 데이터와 구분합니다.
 - 자연어 사용자 에이전트 UI는 목표 구조입니다. 현재 저장소에는 일반 대화형 제품 UI가 없습니다.
 
 ## 운영 기준과 구조

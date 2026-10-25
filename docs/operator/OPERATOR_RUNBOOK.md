@@ -6,9 +6,11 @@
 ## 현재 운영 가능 범위
 
 - 기관 목록: 21개 profile. 공식 API 문서 확인 15개, 문서 명세 미확인 6개, 공식 no-API 확인 0개로 기록돼 있습니다. 미확인은 API 부재가 아닙니다.
-- MacroAtlas live ingestion 확인: World Bank Indicators API의 USA/WDI/GDP 고정 요청 경로.
-- BEA/e-Stat: 제한된 JSON client와 mock 검증. 실제 workflow 연결과 실기관 인증·수집은 미검증.
-- FRED·Census·BLS v1: 기관별 요청·응답 계약 및 synthetic fixture 파일 저장·read-back 검증. BLS는 무키 v1만 사용하며 실기관 호출·일반 workflow는 미검증.
+- 과거 World Bank USA/WDI/GDP 고정 경로에는 제한된 live ingestion 근거가 있습니다.
+- Iteration 30 canary: FRED GDP와 BoE Bank Rate는 단발 live contract/hash 검증에 통과했습니다. TIC MFH·Table 3D는 live HTTP 200 및 raw hash read-back 후 저장 응답의 offline validator가 통과했지만, canary 당시 원 receipt는 `live_needs_review`입니다.
+- 해당 7개 canary의 원 실행 판정은 2/7이며 Gate U는 미통과입니다. Census는 `LICENSE_SECURITY/NEEDS_REVIEW`, BLS v1 두 경로는 `TRANSIENT/FAILED_RETRYABLE`이었고, 당시 상세 transport reason은 보존되지 않았습니다. 요청 예산은 소진됐고 재시도하지 않았습니다. 새 live 시도는 새로 확인된 예산과 사용자의 명시 요청 뒤에만 수행합니다.
+- BEA/e-Stat은 제한 JSON client와 mock 검증만 있으며 이 고정 collector workflow와 실제 기관 인증·수집은 미검증입니다.
+- FRED·Census·BLS v1·TIC·BoE는 각 profile에 고정된 선택/수집 경로를 갖지만, 일반 자연어 workflow로 연결된 것은 아닙니다. BLS는 무키 v1만 사용합니다.
 - MacroAtlas 일반 자연어 UI와 XLSX exporter: 아직 제공되지 않습니다.
 
 기관별 근거는 [기관 카탈로그](reference/INSTITUTION_CATALOG.md)와 [API 조사](reference/INSTITUTION_API_AUDIT.md), 실행·승인 주기는 [OPERATING_PLAN.md](OPERATING_PLAN.md)를 봅니다.

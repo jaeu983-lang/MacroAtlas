@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** Iteration 30 Gate U의 7개 bounded live canary는 **NOT PASSED**다. 원래 실행은 7회·재시도 0회였고 당시 2/7이 contract validation을 통과했다. 이후 저장된 Table 3D live response를 오프라인에서 현재 validator로 검증해 최신 근거는 3/7(FRED·BoE·Table 3D)이다. MFH는 needs review, Census는 보안 검토, BLS 두 경로는 transient 실패다. `.env`의 `MACROATLAS_NETWORK_ENABLED=false`는 유지했다. 이 Codex shell의 후속 JSON 쓰기는 `reports/` PermissionError로 거부되어 상세를 tracked report에 기록했다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [canary 상태](testing/LIVE_CANARY_REPORT.md), [회차 보고서](history/ITERATION_30_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
+**현재 작업:** Iteration 30 Gate U의 7개 bounded live canary는 **NOT PASSED**다. 원래 실행은 7회·재시도 0회였고 당시 2/7이 contract validation을 통과했다. 이후 실제 저장된 TIC 응답 두 개를 오프라인에서 현재 validator로 검증했다. 최신 source-response contract 근거는 4/7(FRED·BoE live validation, TIC 두 응답은 live 저장/hash 확인 후 offline validation)이다. MFH 중복 월은 공식 Series ID와 Treasury 각주로 series break를 확인해 두 값을 보존한다. Census는 보안 검토, BLS 두 경로는 transient 실패 상태다. `.env`의 `MACROATLAS_NETWORK_ENABLED=false`는 유지했다. 이 Codex shell의 후속 JSON 쓰기는 `reports/` PermissionError로 거부되어 상세를 tracked report에 기록했다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [canary 상태](testing/LIVE_CANARY_REPORT.md), [회차 보고서](history/ITERATION_30_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
 
 ## 실행 준비 상태
 
@@ -12,12 +12,12 @@
 |---|---|---|
 | 기관 registry | 21/21 프로필 | source별 결과 record 기반이 있음 |
 | API 문서 | 15 documented / 6 unconfirmed / 0 not_offered | unconfirmed는 API가 없다는 뜻이 아님 |
-| MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. 새 3곳은 synthetic JSON 검증·파일 read-back; World Bank 외 일반 workflow 연결은 별도 |
-| 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조·원본/manifest/receipt/hash read-back; API 상태는 unconfirmed 유지 |
-| 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 1회 live canary | 원래 실행은 2/7 통과·2건 검토·3건 실패. 저장 응답 재검증 후 최신 근거 3/7 통과·1건 검토·3건 실패. Gate U 미통과 |
+| MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. FRED·Census·BLS는 고정 collector profile 4개; live 결과는 아래 Gate U 상세 참조. 일반 자연어 workflow는 미구현 |
+| 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조와 저장 검증; Iteration 30에서 3개 요청. TIC 2개는 saved raw의 offline validator 통과, BoE live contract pass; API 상태는 unconfirmed 유지 |
+| 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 1회 live canary | 원래 실행은 2/7 통과·2건 검토·3건 실패. 저장 응답 재검증 후 최신 source-response 근거 4/7; 실행 시점 Gate U 미통과 |
 | 문서 확인 API의 다음 대상 | Iteration 31 IMF 상세 route/auth 후보, BOJ·Board crosswalk, 기존 clients workflow/live 준비 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. BLS2는 현재 제외 |
-| live | World Bank 고정 경로 과거 partial; Iteration 30 canary 7개 시도 | 최신 source-response contract 근거 3/7; 나머지 4개는 needs review/실패·원인 미확정. 7/7 성공 증거가 아님 |
-| 전체 offline suite | 821 passed, 1 skipped, 0 failed | Iteration 30 후속 parser/진단 변경까지 검증; 전기관 live 성공 증거 아님 |
+| live | World Bank 고정 경로 과거 partial; Iteration 30 canary 7개 시도 | 최신 source-response contract 근거 4/7(두 TIC는 사후 offline validation); Census/BLS 3개 실패·원인 미확정. 7/7 성공 증거가 아님 |
+| 전체 offline suite | 822 passed, 1 skipped, 0 failed | Iteration 30 후속 MFH parser/진단 변경까지 검증; 전기관 live 성공 증거 아님 |
 
 이 제약은 공통 readiness audit와 offline fixture 작업을 막지 않습니다. 실제 series, 인증된 live 요청, 비교·계산·파생 XLSX는 source별 문서·용도·이용 조건을 확정한 뒤 해당 gate에서 결정합니다.
 

@@ -584,10 +584,10 @@
 
 ## Iteration 30 저장 응답 검토 및 안전한 실패 진단 — D-098 (2026-10-25)
 
-- **상태: PARTIAL; GATE U NOT PASSED.** 원래 7개 live 요청과 결과는 변경하지 않았다. 원래 실행 판정은 2/7이며 후속 Table 3D 재검증을 반영한 최신 source-response contract 근거는 3/7이다. 작업은 저장된 TIC raw의 오프라인 재검증과 다음 canary의 안전한 실패 분류 개선으로 제한했다.
+- **상태: PARTIAL; GATE U NOT PASSED.** 원래 7개 live 요청과 결과는 변경하지 않았다. 원래 실행 판정은 2/7이며 후속 TIC 2개 재검증을 반영한 최신 source-response contract 근거는 4/7이다(FRED·BoE live 검증, TIC 두 원본은 live 저장/hash 검증 후 offline contract 검증). Gate U는 실행 시점 7/7 조건을 충족하지 못했으므로 계속 실패다. 작업은 저장 TIC raw의 오프라인 재검증과 다음 canary의 안전한 실패 분류 개선으로 제한했다.
 - **Table 3D:** 실제 저장 파일에서 단독 `"Notes:"` 행 전까지의 160개 CSV 행을 strict parser로 검증한다. raw 5,982 bytes와 기존 canary SHA-256을 유지했고, 127개 자료 행은 고정 2023-01 source contract를 충족했다. 각주 내용은 parsed data로 다루지 않는다. 이 결과는 원래 receipt를 갱신하지 않는 후속 offline assessment다. 경계가 둘 이상이면 fail-closed한다.
-- **MFH:** 실제 저장 원본에는 일부 header block에 13개 기간 열과 중복 연월이 관측됐다. 공식 의미가 해결되지 않아 어떤 열도 결합·삭제하지 않으며 계속 `needs_review`다.
+- **MFH:** 원본 hash가 일치하는 98,124-byte saved response를 오프라인 재검증했다. 현재 validator는 26개 header block, 955개 자료 행과 11개 중복 연월 쌍을 확인했다. 2000-03의 II/I 및 2002-06부터 2011-06까지의 June pair는 서로 다른 Series ID가 명시되고, Treasury 공식 각주가 series break 및 이전 series 추정치의 비교 전용 성격을 설명하므로 `contract_validated`로 기록한다. 모든 값·열은 raw에 보존하며 병합·삭제하지 않는다. [공식 MFH 표/각주](https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.html).
 - **실패 진단:** 다음 canary 결과에는 fixed `failure_reason`과 응답을 받은 경우 `failure_http_status`를 기록한다. 예외 문구·응답 본문·credential은 기록하지 않는다. 기존 Census/BLS 결과는 상세 사유를 남기지 않아 과거 원인 복구가 불가능하다.
-- **검증:** `tests/test_dataset_paths.py`, `tests/test_official_api_credentials.py`, `tests/test_live_canary.py` 84 passed, 1 skipped; 전체 offline suite 821 passed, 1 skipped, 0 failed (74.11초); 변경 Python Ruff와 `git diff --check` 통과. Skip은 Windows symlink 미지원이다. 실제 raw 재검증은 네트워크 0회이며 raw hash가 기존 canary report와 일치했다.
-- **중단 지점:** Gate U는 원래 2/7이며 여전히 실패다. Table 3D offline revalidation은 live retry가 아니며 전체 gate를 통과시키지 않는다. MFH·Census·BLS가 미해결인 동안 Iteration 31, 사용자 실행 연결, IMF adapter, soak 및 후속 엔진은 시작하지 않는다.
+- **검증:** `tests/test_dataset_paths.py`, `tests/test_official_api_credentials.py`, `tests/test_live_canary.py` 85 passed, 1 skipped; 전체 offline suite 822 passed, 1 skipped, 0 failed (82.45초); 변경 Python Ruff 통과. 최종 문서 반영 뒤 `git diff --check`로 확인한다. Skip은 Windows symlink 미지원이다. 실제 raw 재검증은 네트워크 0회이며 raw hash가 기존 canary report와 일치했다.
+- **중단 지점:** Gate U 실행 시점 판정은 2/7이며 계속 실패다. 후속 오프라인 검증 후 source-response 근거는 4/7이나, 이는 live gate 통과가 아니다. Census와 BLS 두 경로가 unresolved인 동안 Iteration 31, 사용자 실행 연결, IMF adapter, soak 및 후속 엔진은 시작하지 않는다.
 - **보고서 경로:** 원래 local-only canary JSON/raw는 읽혔고 hash 확인됐다. 현재 Codex shell은 `reports/`에 새 post-run JSON 쓰기를 `PermissionError`로 거부했다. 기존 산출물은 수정하지 않고 결과를 tracked report에 기록했다.

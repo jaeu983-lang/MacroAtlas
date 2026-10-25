@@ -31,6 +31,8 @@ SDMX 결과는 세 층으로 별도 판정한다. **공통 전송**의 TLS/host/
 
 **Iteration 28 delta:** FRED v1·Census·BLS v1 client와 source-specific synthetic JSON 계약 검사·파일 저장/read-back을 추가했다. FRED의 페이지·real-time 조건, Census header/row 문자열·null·sentinel, BLS v1만의 무키 POST·25 series/10년 한도와 warning/부분 선택을 검증한다. BLS2는 제외한다. Provider payload의 실기관 수집, live/auth, normalized DB 및 일반 workflow는 이 결과로 통과시키지 않는다. [Iteration 28 report](../history/ITERATION_28_REPORT.md)와 [FRED](../connectors/FRED.md)/[Census](../connectors/CENSUS.md)/[BLS v1](../connectors/BLS.md)을 따른다.
 
+**Iteration 29–30 delta:** 고정 API profile 4개(FRED·Census·BLS 2개)와 공식 CSV profile 3개(TIC 2개·BoE 1개)를 collector로 연결해 fixture/save/read-back을 검사했다. Iteration 30은 7개를 각각 1회 live 시도, retry 0회로 제한했다. 원 실행 pass는 2/7(FRED·BoE)이며 Census는 보안 검토, BLS 2개는 transient 실패, TIC 2개는 당시 contract review였다. 같은 저장 TIC raw를 현재 validator로 offline 재평가한 뒤 최신 source-response contract 근거는 4/7이지만, Gate U 원판정은 미통과다. 이 결과는 전기관 지원이나 자연어 workflow E2E를 뜻하지 않는다. 자세한 사항은 [Iteration 30 보고서](../history/ITERATION_30_REPORT.md)와 [live canary 결과](LIVE_CANARY_REPORT.md)를 따른다.
+
 아래 상태는 `source_registry.py`와 기존 기관 구현 현황표를 기준으로 한다. `fixture_scope`가 `generic` 또는 `scenario_only`이면 그 기관의 실제 API 응답을 재현한 fixture가 아니다.
 
 | ID | 기관 / API 제공자 관계 | API 문서 상태 | 현재 코드 / fixture | live evidence | 검증 묶음 |

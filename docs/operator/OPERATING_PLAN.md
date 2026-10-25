@@ -13,8 +13,9 @@
 - 조사 대상은 21개 기관·서비스입니다.
 - 공식 API 문서 확인: 15개. 조사 범위에서 문서 명세 미확인: 6개. API 미제공을 공식 문서로 확인한 곳: 0개.
 - 미확인 6개는 “API가 없다”가 아니라 추가 문서 조사가 필요하다는 뜻입니다.
-- 실 API로 확인된 MacroAtlas 수집 범위는 World Bank USA/WDI/GDP 고정 경로 하나입니다.
-- BEA와 e-Stat은 제한된 API 클라이언트와 mock fixture가 있으나, workflow 연결과 live 인증·수집은 미검증입니다.
+- World Bank USA/WDI/GDP 고정 workflow는 과거 제한 live 검증이 있습니다. Iteration 30에서는 FRED GDP와 BoE Bank Rate bounded request가 live contract/hash 확인됐고, TIC MFH·Table 3D는 live 원본 저장/hash read-back 뒤 현재 validator를 offline 재실행해 통과했습니다. TIC 두 원래 receipt는 실행 당시 `live_needs_review`였으므로 Gate U를 통과한 것은 아닙니다.
+- Iteration 30의 7개 live canary는 원 실행 기준 2/7 통과, 최신 저장 응답 contract 근거 4/7이며 Gate U는 미통과입니다. Census는 `LICENSE_SECURITY/NEEDS_REVIEW`, BLS 두 경로는 `TRANSIENT/FAILED_RETRYABLE`이었고 당시 구체 원인은 보고되지 않았습니다. 예산 소진 후 재시도하지 않았습니다. 상세는 [canary 보고서](../developer/testing/LIVE_CANARY_REPORT.md)를 따릅니다.
+- BEA와 e-Stat은 제한된 API 클라이언트와 mock fixture가 있으나, dataset collector 연결과 live 인증·수집은 미검증입니다.
 - 자연어 지시를 받는 제품 에이전트 UI는 아직 구현되지 않았습니다. 저장소에는 Python 서비스와 데이터 엔진이 있습니다.
 - 현재 개선 분석기는 오류·피드백을 읽어 사람 검토용 후보를 만들며, 코드를 자동 수정하지 않습니다.
 

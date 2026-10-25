@@ -20,7 +20,9 @@ Iteration 29는 기관 client를 공통 데이터셋 선택·실행·원본 보�
 
 `ingestion/datasets.py`는 profile→binding→archive→validator→receipt를 연결한다. `ingestion/dataset_validators.py`에 출처별 구조 검사를 둔다. 기존 API clients가 JSON envelope·선택·기간을 먼저 검증하며 파일은 완료된 raw를 먼저 저장한다. 파일 구조 변화는 `needs_review`로 남기고 관측치 수집 성공으로 승격하지 않는다. JSON client가 반환 전에 거부한 잘못된 HTTP/envelope는 이 collector가 raw 보존하지 못한다. HTTP 실패·HTML 로그인 페이지·크기 초과도 완성 파일로 저장하지 않는다.
 
-TIC Table 3D parser는 원본에서 확인한 단독 CSV 행 `"Notes:"` 또는 `Notes:`를 각주 경계로 인식한다. 경계 앞의 표만 strict CSV로 검증하고, 경계 뒤의 각주 텍스트는 파싱하지 않지만 전체 응답 bytes는 raw archive에 그대로 보존한다. 경계가 여러 번 나오면 `needs_review`로 닫는다. 이 예외는 Table 3D에만 적용하며 일반 CSV의 strict parsing을 완화하지 않는다. MFH의 반복 헤더는 관측된 모든 기간이 유일하게 해석될 때만 계약 검증한다. 중복 연월이나 12개를 넘는 열은 의미를 임의로 정리하지 않고 `needs_review`로 남긴다.
+TIC Table 3D parser는 원본에서 확인한 단독 CSV 행 `"Notes:"` 또는 `Notes:`를 각주 경계로 인식한다. 경계 앞의 표만 strict CSV로 검증하고, 경계 뒤의 각주 텍스트는 파싱하지 않지만 전체 응답 bytes는 raw archive에 그대로 보존한다. 경계가 여러 번 나오면 `needs_review`로 닫는다. 이 예외는 Table 3D에만 적용하며 일반 CSV의 strict parsing을 완화하지 않는다.
+
+MFH 반복 헤더는 1–13개 기간 열을 읽는다. 같은 연월이 두 번 있는 경우에는 해당 열의 Series 식별자가 서로 다른 인식 가능한 Roman-series ID일 때만 공식 series break로 기록하고, source order를 보존한다. 실제 MFH 원본에서는 2000-03의 II/I와 2002-06부터 2011-06까지의 새/이전 series 비교 열이 관측됐다. Treasury 각주는 이전 series의 경계 월 값을 비교용으로 표시한다고 설명한다. 두 값은 합치거나 하나를 정답으로 선택하지 않으며, raw 전체와 두 열을 보존한다. 반복 월의 Series ID가 없거나 서로 같거나, 세 번 이상 나타나는 경우는 `needs_review`로 fail-closed한다. 이는 파일 구조 계약 판정이며 series 간 방법론적 동등성이나 분석용 시계열 연속화를 판정하지 않는다. [공식 MFH 역사 표와 series-break 각주](https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.html), [Treasury Securities (B) 안내](https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-holdings-of-us-and-foreign-securities).
 
 `storage/api_responses.py`는 파일 bytes와 request manifest를 기관별 write-once 폴더에 보존한다. 함수 이름은 기존 호환성을 위해 유지했다. JSON은 redacted payload의 canonical UTF-8이며 원 HTTP bytes가 아니다. CSV는 Requests content decoding 이후 entity bytes이며 원 행·결측을 수정하지 않는다. CSV revision header ETag/Last-Modified는 제공될 때만 남긴다. 헤더만으로 immutable vintage를 보장하지 않는다. API provider와 file provider를 구분한다.
 

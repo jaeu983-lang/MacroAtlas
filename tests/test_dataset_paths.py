@@ -232,17 +232,39 @@ def test_tic_table3d_ambiguous_notes_boundary_requires_review(tmp_path):
     }
 
 
-def test_tic_mfh_13_column_duplicate_period_shape_stays_unaccepted(tmp_path):
-    config = settings(tmp_path)
-    months = ["Dec", "Jun", "Jun", "Mar", "Dec", "Sep", "Jun", "Mar", "Dec", "Sep", "Jun", "Mar", "Dec"]
-    years = ["2025", "2025", "2025", "2025", "2024", "2024", "2024", "2024",
-             "2023", "2023", "2023", "2023", "2022"]
-    body = (",,MAJOR FOREIGN HOLDERS OF TREASURY SECURITIES,\n"
+def _mfh_2011_series_break_fixture(second_june_series="XI"):
+    months = ["Dec", "Nov", "Oct", "Sep", "Aug", "Jul", "Jun", "Jun", "May", "Apr", "Mar", "Feb", "Jan"]
+    series_labels = ["Series 17/", "Series", "", "", "", "", "Series 16/", "Series", "", "", "", "", ""]
+    series_codes = ["XIII", "XII", "", "", "", "", "XII", second_june_series, "", "", "", "", ""]
+    return (",,MAJOR FOREIGN HOLDERS OF TREASURY SECURITIES,\n"
             ",,,(in billions of dollars)\n"
             ",,HOLDINGS 1/ AT END OF PERIOD\n"
-            f",{','.join(months)},\nCountry,{','.join(years)},\n"
-            f",{','.join(['------'] * len(years))},\n"
-            f"Synthetic A,{','.join(['1'] * len(years))},\n\n").encode()
+            f",{','.join(series_labels)}\n"
+            f",{','.join(series_codes)}\n"
+            f",{','.join(months)}\n"
+            f"Country,{','.join(['2011'] * len(months))}\n"
+            f",{','.join(['------'] * len(months))}\n"
+            f"Synthetic A,{','.join(['1'] * len(months))}\n\n").encode()
+
+
+def test_tic_mfh_series_break_columns_are_preserved_and_identified(tmp_path):
+    config = settings(tmp_path)
+    body = _mfh_2011_series_break_fixture()
+    collector, _ = fixture_collector(config, "tic.mfh.history", body=body)
+    saved = collector.collect("tic.mfh.history", CASES["tic.mfh.history"])
+    receipt, raw = read_dataset_artifact(config, saved)
+
+    assert raw == body
+    assert receipt["validation"]["status"] == "contract_validated"
+    assert receipt["validation"]["series_breaks"] == [
+        {"period_key": "2011-06", "series_ids_in_source_order": ["XII", "XI"]},
+    ]
+    assert "series_break_comparison_columns_retained_in_raw" in receipt["validation"]["warnings"]
+
+
+def test_tic_mfh_duplicate_period_without_distinct_series_requires_review(tmp_path):
+    config = settings(tmp_path)
+    body = _mfh_2011_series_break_fixture(second_june_series="XII")
     collector, _ = fixture_collector(config, "tic.mfh.history", body=body)
     saved = collector.collect("tic.mfh.history", CASES["tic.mfh.history"])
     receipt, raw = read_dataset_artifact(config, saved)

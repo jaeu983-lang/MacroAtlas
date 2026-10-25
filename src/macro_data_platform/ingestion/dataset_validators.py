@@ -8,6 +8,10 @@ from macro_data_platform.ingestion.formats import parse_table
 
 _MONTHS = {name: index + 1 for index, name in enumerate(
     ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))}
+_ROMAN_SERIES = frozenset({
+    "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII",
+    "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX",
+})
 
 
 def _fail():
@@ -49,26 +53,63 @@ def _api_rows(profile, response):
     _fail()
 
 
+def _mfh_series_codes(rows, country_row_index, period_count):
+    label_row_index, code_row_index = country_row_index - 3, country_row_index - 2
+    if label_row_index < 0 or code_row_index < 0:
+        return None
+    labels, codes = rows[label_row_index], rows[code_row_index]
+    explicit = {}
+    for period_index in range(period_count):
+        column_index = period_index + 1
+        label = labels[column_index].strip() if column_index < len(labels) else ""
+        code = codes[column_index].strip().upper() if column_index < len(codes) else ""
+        if re.fullmatch(r"Series(?:\s+[0-9]+/)?", label, flags=re.IGNORECASE):
+            if code not in _ROMAN_SERIES:
+                _fail()
+            explicit[period_index] = code
+    if not explicit:
+        return None
+    first_index = min(explicit)
+    current = explicit[first_index]
+    result = []
+    for period_index in range(period_count):
+        if period_index in explicit:
+            current = explicit[period_index]
+        result.append(current)
+    return result
+
+
 def _mfh(profile, response):
     rows = parse_table(response.body, "csv").rows
     text = " ".join(" ".join(row) for row in rows).casefold()
     if "major foreign holders of treasury securities" not in text or "billions of dollars" not in text:
         _fail()
-    periods, count, blocks = set(), 0, 0
+    periods, count, blocks, series_breaks = set(), 0, 0, []
     for index, row in enumerate(rows):
         if not row or row[0].strip() != "Country":
             continue
         years = [value.strip() for value in row[1:]]
         while years and not years[-1]:
             years.pop()
-        if index == 0 or not 1 <= len(years) <= 12 or any(not re.fullmatch(r"[0-9]{4}", value) for value in years):
+        if index == 0 or not 1 <= len(years) <= 13 or any(not re.fullmatch(r"[0-9]{4}", value) for value in years):
             _fail()
         months = [value.strip() for value in rows[index - 1][1:1 + len(years)]]
         if len(months) != len(years) or any(value not in _MONTHS for value in months):
             _fail()
         block_periods = [f"{year}-{_MONTHS[month]:02}" for year, month in zip(years, months, strict=True)]
-        if len(set(block_periods)) != len(block_periods):
-            _fail()
+        period_positions = {}
+        for period_index, period in enumerate(block_periods):
+            period_positions.setdefault(period, []).append(period_index)
+        duplicate_periods = {period: positions for period, positions in period_positions.items()
+                             if len(positions) > 1}
+        series_codes = _mfh_series_codes(rows, index, len(years)) if duplicate_periods else None
+        for period, positions in duplicate_periods.items():
+            if len(positions) != 2 or series_codes is None:
+                _fail()
+            distinct_codes = [series_codes[position] for position in positions]
+            if any(code not in _ROMAN_SERIES for code in distinct_codes) or len(set(distinct_codes)) != 2:
+                _fail()
+            series_breaks.append({"period_key": period, "series_ids_in_source_order": distinct_codes})
         periods.update(block_periods)
         blocks += 1
         block_count = 0
@@ -90,9 +131,13 @@ def _mfh(profile, response):
         count += block_count
     if not blocks:
         _fail()
+    warnings = ["aggregates_and_notes_retained_in_raw"]
+    if series_breaks:
+        warnings.append("series_break_comparison_columns_retained_in_raw")
     return {"data_row_count": count, "source_row_count": len(rows), "header_blocks": blocks,
             "period_keys": sorted(periods), "scope": "full_file_native_blocks; not country-normalized",
-            "complete_dataset_assessed": False, "warnings": ["aggregates_and_notes_retained_in_raw"]}
+            "series_breaks": sorted(series_breaks, key=lambda item: (item["period_key"], item["series_ids_in_source_order"])),
+            "complete_dataset_assessed": False, "warnings": warnings}
 
 
 def _table3d(profile, response):
