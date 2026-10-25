@@ -2,10 +2,10 @@
 
 ## D-097 — 7개 live canary 실행 한도 (2026-10-25)
 
-- **상태: PREPARED; GATE U PENDING.** 사용자가 Max 기준으로 다음 live 검증을 최대한 진행하도록 했다. Iteration 30은 FRED·Census·BLS v1·TIC·BoE의 등록 7개 dataset selection에 요청당 1회, retry 0회 제한으로 준비했다.
-- **근거:** FRED key/rate/third-party terms, Census API 일일 query budget, 무키 BLS v1, Treasury TIC file scope, BoE Database 재사용 조건을 [dataset contract](../connectors/DATASET_CONTRACTS.md)에 기록했다. `--live`는 `Settings.from_project_env` network flag를 존중하고 false일 때 source client를 생성하지 않는다.
-- **현황:** 설정 확인 시 `MACROATLAS_NETWORK_ENABLED=false`, FRED/Census key configured (값을 출력하지 않음). source request 0회; [preflight JSON](../../../reports/iteration_30_live_canary_d8a291e6301f4eb7a8be637f25a5d8b4.json)에서 7개 모두 `not_run_network_disabled`. 자동으로 opt-in을 바꾸지 않았다.
-- **검증:** network-off preflight unit test와 offline dataset regression 통과 여부를 회차 보고서에 기록한다. Gate U 성공은 실제 기관 요청 및 raw/hash read-back이 source별로 확인돼야 한다. 미통과 상태에서 Iteration 31 IMF 작업을 시작하지 않는다.
+- **상태: LIVE ATTEMPTED; GATE U NOT PASSED.** 사용자가 요청한 1회 canary를 실행했다. FRED·Census·BLS v1·TIC·BoE의 7개 선택을 각각 한 번 시도했고 재시도는 0회였다.
+- **근거와 설정:** FRED key/rate/third-party terms, Census API 일일 query budget, 무키 BLS v1, Treasury TIC file scope, BoE Database 재사용 조건은 [dataset contract](../connectors/DATASET_CONTRACTS.md)에 있다. 실행 시 process-only `MACROATLAS_NETWORK_ENABLED=true`를 사용했고 `.env`의 `false`는 유지했다. credential 값은 출력·기록하지 않았다.
+- **결과:** FRED와 BoE contract validation 및 raw hash read-back 통과. TIC 두 경로는 HTTP 200 및 raw hash read-back 후 `dataset_contract_changed`. Census는 `LICENSE_SECURITY/NEEDS_REVIEW`, BLS 두 경로는 `TRANSIENT/FAILED_RETRYABLE`. 따라서 7/7 통과 조건을 만족하지 못했다. [live report](../testing/LIVE_CANARY_REPORT.md), [Iteration 30 report](ITERATION_30_REPORT.md), local-only [run JSON](../../../reports/iteration_30_live_canary_ffc0fe15c3b440a28c65b64aa9b5bb81.json) 참조.
+- **다음 단계:** 이번 실행의 요청 예산은 소진됐고 retry는 금지됐다. Census 보안 분류·TIC schema 변화·BLS transient 원인을 먼저 검토한다. Gate U를 통과하기 전 Iteration 31로 넘어가지 않는다.
 
 ## D-096 — API·공식 파일 데이터셋 실행 계약 (2026-10-25)
 

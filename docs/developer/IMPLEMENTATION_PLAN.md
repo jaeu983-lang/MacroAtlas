@@ -134,12 +134,12 @@ Track C의 목표는 21개 기관·서비스의 준비 상태와 선택 dataset/
 - **공식 이용 근거:** FRED key·rate/third-party terms, Census query budget, BLS unauthenticated v1 제한, Treasury TIC 배포/coverage 한계, BoE Database 재사용 조건을 [canary guide](connectors/DATASET_CONTRACTS.md)에 기록한다.
 - **선행 조건:** `.env` 또는 명시 process setting `MACROATLAS_NETWORK_ENABLED=true`; FRED/Census user keys는 기존 local settings에서만 읽는다. live helper는 false면 네트워크 호출 없이 7개 `not_run_network_disabled` 결과만 쓴다. 자동으로 user setting을 켜지 않는다. BLS v1은 키를 쓰지 않는다.
 - **Gate U 성공 기준:** source별 실제 요청 수·HTTP outcome·선택 identity·contract validator·raw 저장·hash read-back 결과를 구별. 7곳 전체가 성공할 때만 전체 통과. 일부 실패는 부분 결과로 기록하고 재시도하지 않는다. 초과호출·credential 출력·경로 이탈·응답 크기 초과·source mismatch 시 중단한다.
-- **현재 판정:** live gate **PENDING / network opt-in false**. FRED/Census credential은 configured로 확인했으나 값은 출력하지 않았다. 준비·문서·network-off fail-closed 검증은 가능하다. opt-in이 들어오면 bounded live run을 다시 실행한다. Gate U를 통과하기 전 Iteration 31 IMF 문서 조사를 시작하지 않는다.
+- **현재 판정:** live gate **PARTIAL / NOT PASSED**. 2026-10-25 사용자가 요청해 process-only network opt-in으로 7개 경로를 각각 한 번 실행했고 재시도는 0회였다. FRED와 BoE는 contract validation 및 hash read-back 통과, TIC 2개는 HTTP 200·원본 read-back 후 `dataset_contract_changed`, Census는 `LICENSE_SECURITY/NEEDS_REVIEW`, BLS 2개는 `TRANSIENT/FAILED_RETRYABLE`이다. 전체 Gate U 성공 조건은 미충족이며 Iteration 31은 보류한다. 세부는 [live canary 보고서](testing/LIVE_CANARY_REPORT.md)와 [회차 보고서](history/ITERATION_30_REPORT.md)를 따른다.
 - **준비 검사 결과:** network-off live preflight는 7개 `not_run_network_disabled`, 요청 0회. targeted 53 passed; 전체 offline 816 passed, 1 skipped, 0 failed; 변경 Python Ruff 통과. 세부는 [live canary 상태](testing/LIVE_CANARY_REPORT.md), local-only [preflight JSON](../../reports/iteration_30_live_canary_d8a291e6301f4eb7a8be637f25a5d8b4.json).
 
 ## 다음 네 주 권장 일정
 
-- Iteration 29 이후: IMF 상세 route/auth 문서 gate를 Iteration 30 후보로 둡니다. 키 조사·공통 HTTP·REST/CSV client 검증을 IMF 검증으로 간주하지 않습니다. 미구현 API·공식 파일 경로는 기관/데이터셋별 다음 회차에서 다룹니다.
+- Iteration 30 Gate U 통과 후: IMF 상세 route/auth 문서 조사를 Iteration 31 후보로 둡니다. 현재 Gate U는 미통과이므로 source별 review를 먼저 마치며, 키 조사·공통 HTTP·REST/CSV client 검증을 IMF 검증으로 간주하지 않습니다. 미구현 API·공식 파일 경로는 기관/데이터셋별 다음 회차에서 다룹니다.
 - 2–3주차: FRED/Board, BLS, Census, BOJ, World Bank generic path, BEA, e-Stat을 API family별 개별 작업으로 연결합니다. 같은 batch 안에서도 제공자·기관·인증·응답 schema는 독립 판정합니다.
 - 이후: SDMX와 REST clients에 source payload fixture/parser, workflow/storage/read-back, recovery gates를 추가합니다. API 미확인 6개 기관은 별도로 표별 공식 접근 경로를 조사하고, source-specific offline gate와 live readiness를 통과한 기관만 bounded live canary 후보로 둡니다. 일정은 기관 응답·인증·허용 조건에 따라 바뀔 수 있습니다.
 
