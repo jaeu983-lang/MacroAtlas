@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "fred.gdp",
+    "institution_id": "US-02",
+    "dataset_id": "GDP",
+    "title": "FRED GDP observation page",
+    "access_method": "api",
+    "adapter_id": "fred_observations",
+    "validator_id": "fred_page",
+    "source_url": "https://api.stlouisfed.org/fred/series/observations",
+    "documentation_urls": [
+      "https://fred.stlouisfed.org/docs/api/fred/series_observations.html"
+    ],
+    "fixed_parameters": [
+      [
+        "series_id",
+        "GDP"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      "."
+    ],
+    "notes": [
+      "An explicit page, not full history; unit/frequency and original agency require metadata."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "d20a7dd4037ca68d952194f3e95ace5b53ee9ca8dbf6784a6045d1ab41f80dc6",
+  "raw": {
+    "institution_id": "US-02",
+    "raw_path": "data/raw/api/US-02/483ded2b23fc4e2fa1781603c16ccea3/response.json",
+    "manifest_path": "data/raw/api/US-02/483ded2b23fc4e2fa1781603c16ccea3/request.json",
+    "raw_sha256": "f485404daec5b5a858f8267c67de86c3ddcc5c4088d2e0895fc091d2fe6a8bd8",
+    "manifest_sha256": "56aa886b60f4ac11a242c114e61f9a05c3a1ff17534f1ba54da7130a8ad5524a"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 3,
+    "scope": "explicit_page_only",
+    "source_count": 3,
+    "offset": 0,
+    "limit": 1000,
+    "complete_dataset_assessed": false
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": [
+    {
+      "name": "series_id",
+      "value": "GDP"
+    },
+    {
+      "name": "observation_start",
+      "value": "2023-01-01"
+    },
+    {
+      "name": "observation_end",
+      "value": "2023-12-31"
+    },
+    {
+      "name": "limit",
+      "value": "1000"
+    },
+    {
+      "name": "offset",
+      "value": "0"
+    },
+    {
+      "name": "realtime_start",
+      "value": "2024-01-01"
+    },
+    {
+      "name": "realtime_end",
+      "value": "2024-01-01"
+    },
+    {
+      "name": "file_type",
+      "value": "json"
+    }
+  ]
+}

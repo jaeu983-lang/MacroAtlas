@@ -1,0 +1,90 @@
+{
+  "evidence": "live_metadata_canary",
+  "started_at": "2026-10-25T10:50:23.438509+00:00",
+  "status": "completed",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "bea",
+    "estat"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 2,
+    "automatic_retries": 0
+  },
+  "results": [
+    {
+      "source": "bea",
+      "institution_id": "US-04",
+      "request_count": 1,
+      "mock_requests": 0,
+      "http_status": 200,
+      "artifact": {
+        "institution_id": "US-04",
+        "raw_path": "data/raw/api/US-04/8d936bcf38234aa8b86581fa3bde44a6/response.json",
+        "manifest_path": "data/raw/api/US-04/8d936bcf38234aa8b86581fa3bde44a6/request.json",
+        "raw_sha256": "56da2d2691d5d69da1f1c86864298b0922cd1838290fdaca91335be0a9db4204",
+        "manifest_sha256": "e34ba345c268c6ddf6178db123adb5053319218360c97de6d019bb319fd3c830"
+      },
+      "stored_bytes": 1302,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "reason": "selected_metadata_present",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "entry_count": 13,
+        "identifiers": [
+          "NIPA",
+          "NIUnderlyingDetail",
+          "MNE",
+          "FixedAssets",
+          "ITA",
+          "IIP",
+          "InputOutput",
+          "IntlServTrade",
+          "IntlServSTA",
+          "GDPbyIndustry",
+          "Regional",
+          "UnderlyingGDPbyIndustry",
+          "APIDatasetMetaData"
+        ]
+      },
+      "status": "live_metadata_validated"
+    },
+    {
+      "source": "estat",
+      "institution_id": "JP-03",
+      "request_count": 1,
+      "mock_requests": 0,
+      "http_status": 200,
+      "artifact": {
+        "institution_id": "JP-03",
+        "raw_path": "data/raw/api/JP-03/eb488978a4b2422e9088be120eb03bdc/response.json",
+        "manifest_path": "data/raw/api/JP-03/eb488978a4b2422e9088be120eb03bdc/request.json",
+        "raw_sha256": "cc9dad50cde5cd746837181efe6de158bdd773dcfd541835fd0c9ce2283de209",
+        "manifest_sha256": "8fa76b1842565b7854b11c469af99dec536b506fc3e9ab7fc11352c8bae2148f"
+      },
+      "stored_bytes": 1285,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "reason": "selected_metadata_present",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "entry_count": 1,
+        "identifiers": [
+          "0003355222"
+        ]
+      },
+      "status": "live_metadata_validated"
+    }
+  ],
+  "finished_at": "2026-10-25T10:50:27.936008+00:00"
+}

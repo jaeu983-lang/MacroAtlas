@@ -1,0 +1,62 @@
+{
+  "evidence": "live_metadata_canary",
+  "started_at": "2026-10-25T12:06:23.765766+00:00",
+  "status": "completed",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "imf-cpi"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 1,
+    "automatic_retries": 0,
+    "concurrency": 1,
+    "per_source_maximum": 1
+  },
+  "results": [
+    {
+      "source": "imf-cpi",
+      "institution_id": "INT-01",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "live_metadata_validated",
+      "artifact": {
+        "institution_id": "INT-01",
+        "raw_path": "data/raw/api/INT-01/e36c3094145c4922a2c8b60b105d684a/response.bin",
+        "manifest_path": "data/raw/api/INT-01/e36c3094145c4922a2c8b60b105d684a/request.json",
+        "raw_sha256": "21819c7befea5776e3786dd66f6c6fc1eca6b3479ba893fb95fd435392da2681",
+        "manifest_sha256": "2d5306f7658dd4b62fd3345bf4d2b2e162e2c1a6969aaa830c25d3eaa52aca27"
+      },
+      "http_status": 200,
+      "stored_bytes": 3234,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "IMF.STA",
+          "id": "CPI",
+          "version": "5.0.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:CPI"
+        ]
+      }
+    }
+  ],
+  "finished_at": "2026-10-25T12:06:24.731488+00:00"
+}

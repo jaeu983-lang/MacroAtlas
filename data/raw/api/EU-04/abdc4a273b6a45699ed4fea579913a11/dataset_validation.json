@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "boe.bank_rate",
+    "institution_id": "EU-04",
+    "dataset_id": "IUDBEDR",
+    "title": "Official Bank Rate CSV download",
+    "access_method": "official_file",
+    "adapter_id": "boe_csv",
+    "validator_id": "boe_tn",
+    "source_url": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp",
+    "documentation_urls": [
+      "https://www.bankofengland.co.uk/boeapps/database/help.asp"
+    ],
+    "fixed_parameters": [
+      [
+        "series_id",
+        "IUDBEDR"
+      ],
+      [
+        "CSVF",
+        "TN"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      "",
+      ".."
+    ],
+    "notes": [
+      "Native reporting dates only; no calendar filling, month-end alignment or inferred unit."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "83ef7826096c8ec8f2adcc3b048003b4e0e2d0682478be482e6dff3ce3016939",
+  "raw": {
+    "institution_id": "EU-04",
+    "raw_path": "data/raw/api/EU-04/abdc4a273b6a45699ed4fea579913a11/response.csv",
+    "manifest_path": "data/raw/api/EU-04/abdc4a273b6a45699ed4fea579913a11/request.json",
+    "raw_sha256": "3c89f149a060f9a2de361fd3d04a27e3d9af4ef955b66e51ad83d68a1acf9bcd",
+    "manifest_sha256": "4eb5e0f32854353079155b2697c1f105eaa57a14ffafe8e69ef4f3b6e7278899"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 7,
+    "columns": [
+      "DATE",
+      "IUDBEDR"
+    ],
+    "scope": "native_reporting_dates_only",
+    "complete_dataset_assessed": false,
+    "warnings": [
+      "no_calendar_fill_or_month_end_alignment"
+    ]
+  },
+  "run_evidence": "source_request_not_live_verified",
+  "request_parameters": [
+    {
+      "name": "csv.x",
+      "value": "yes"
+    },
+    {
+      "name": "Datefrom",
+      "value": "01/Jan/2024"
+    },
+    {
+      "name": "Dateto",
+      "value": "10/Jan/2024"
+    },
+    {
+      "name": "SeriesCodes",
+      "value": "IUDBEDR"
+    },
+    {
+      "name": "CSVF",
+      "value": "TN"
+    },
+    {
+      "name": "UsingCodes",
+      "value": "Y"
+    },
+    {
+      "name": "VPD",
+      "value": "Y"
+    },
+    {
+      "name": "VFD",
+      "value": "N"
+    }
+  ]
+}

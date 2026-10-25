@@ -1,0 +1,220 @@
+{
+  "evidence": "live_metadata_canary",
+  "started_at": "2026-10-25T11:37:13.133029+00:00",
+  "status": "completed_with_issues",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "bis",
+    "oecd",
+    "ecb",
+    "eurostat",
+    "bundesbank",
+    "insee"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 6,
+    "automatic_retries": 0,
+    "concurrency": 1,
+    "per_source_maximum": 1
+  },
+  "results": [
+    {
+      "source": "bis",
+      "institution_id": "INT-02",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "live_metadata_validated",
+      "artifact": {
+        "institution_id": "INT-02",
+        "raw_path": "data/raw/api/INT-02/82cd1cf245224873930156733cf9fba1/response.bin",
+        "manifest_path": "data/raw/api/INT-02/82cd1cf245224873930156733cf9fba1/request.json",
+        "raw_sha256": "451319d21ed316ef7740807c4401c73b4ff03078b0a1da9e4e1010309b4771e1",
+        "manifest_sha256": "5d26c1107f286585c3c70d77d0d736b77c238e3db18b62f3c29a5f97cafc7b4e"
+      },
+      "http_status": 200,
+      "stored_bytes": 1172,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "BIS",
+          "id": "WS_TC",
+          "version": "2.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:WS_TC"
+        ]
+      }
+    },
+    {
+      "source": "oecd",
+      "institution_id": "INT-03",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "live_metadata_validated",
+      "artifact": {
+        "institution_id": "INT-03",
+        "raw_path": "data/raw/api/INT-03/cab6b274fa2c412d807e66e4e5ee1081/response.bin",
+        "manifest_path": "data/raw/api/INT-03/cab6b274fa2c412d807e66e4e5ee1081/request.json",
+        "raw_sha256": "253156e518e44b328605534081f29d98a5a471c73466588baea5ff4db6d398bc",
+        "manifest_sha256": "b2b2e9f7db1adb3729d351d07047b34873049303a5ca7fa3e5ca462999e842d2"
+      },
+      "http_status": 200,
+      "stored_bytes": 9063,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "OECD.SDD.NAD",
+          "id": "DSD_NAMAIN1@DF_QNA",
+          "version": "1.1"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:DSD_NAMAIN1@DF_QNA"
+        ]
+      }
+    },
+    {
+      "source": "ecb",
+      "institution_id": "EU-01",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "source_metadata_needs_review",
+      "artifact": {
+        "institution_id": "EU-01",
+        "raw_path": "data/raw/api/EU-01/f7ee278287ff4ca78580d171288a4971/response.bin",
+        "manifest_path": "data/raw/api/EU-01/f7ee278287ff4ca78580d171288a4971/request.json",
+        "raw_sha256": "6ccf83db9654b581b051c85c41c44e9b9884755c90819f084c5c52d001e93539",
+        "manifest_sha256": "fbdc8470501893681988c6a185c3c87b12bedde20306c75083236ba84e0d62a6"
+      },
+      "http_status": 200,
+      "stored_bytes": 24416,
+      "read_back_verified": true,
+      "validation": {
+        "status": "needs_review",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "invalid_structure"
+      }
+    },
+    {
+      "source": "eurostat",
+      "institution_id": "EU-02",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "live_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-02",
+        "raw_path": "data/raw/api/EU-02/810a75e79c004de5b9a68872a180ab1b/response.bin",
+        "manifest_path": "data/raw/api/EU-02/810a75e79c004de5b9a68872a180ab1b/request.json",
+        "raw_sha256": "34d55dbfdb4853f02bfb9e72418212dc6e58a457a04ed71ab85ee60c18c83a86",
+        "manifest_sha256": "7dffec9e95b0ae374882cd514d11b76ebc814ae45d2edaab3bc564e0d3de756c"
+      },
+      "http_status": 200,
+      "stored_bytes": 4574,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "ESTAT",
+          "id": "NAMA_10_GDP",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:NAMA_10_GDP"
+        ]
+      }
+    },
+    {
+      "source": "bundesbank",
+      "institution_id": "EU-03",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "live_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-03",
+        "raw_path": "data/raw/api/EU-03/a42158a01d674e3286e38f6371701f36/response.bin",
+        "manifest_path": "data/raw/api/EU-03/a42158a01d674e3286e38f6371701f36/request.json",
+        "raw_sha256": "bed7d676637cf41d9cbd404d16139da2c382d627099bc45235ebd4e805483b47",
+        "manifest_sha256": "ce045de587e59db197883d0f8d2f8b26ddd4d8d9b487c862cc915ae4f59dd718"
+      },
+      "http_status": 200,
+      "stored_bytes": 1622,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "BBK",
+          "id": "BBEX3",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:BBEX3"
+        ]
+      }
+    },
+    {
+      "source": "insee",
+      "institution_id": "EU-05",
+      "request_count": 1,
+      "mock_requests": 0,
+      "status": "request_failed",
+      "failure_code": "SITE_CHANGED",
+      "failure_stage": "FAILED_TERMINAL",
+      "failure_reason": "unspecified",
+      "failure_http_status": 404,
+      "failure_response_kind": "other"
+    }
+  ],
+  "finished_at": "2026-10-25T11:37:20.937324+00:00"
+}

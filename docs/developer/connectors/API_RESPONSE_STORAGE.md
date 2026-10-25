@@ -4,6 +4,8 @@
 
 **Iteration 34 현재:** IMF 공개 SDMX metadata client가 추가되어 13 API sources와 기존 공식 파일 2 sources의 write-once archive를 지원한다. INSEE CL_NATURE와 IMF CPI 단건의 entity/manifest/hash를 확인했고 원 실패·이전 산출물은 보존했다. [33](../history/ITERATION_33_REPORT.md), [34](../history/ITERATION_34_REPORT.md)를 따른다.
 
+**Codex Cloud handoff (2026-10-25):** `data/raw/api/`의 기존 write-once response/manifest archives are versioned so cloud tasks can inspect the same provider evidence. Machine-readable validation reports for Iterations 31–34 are versioned under `reports/`. `.env`, `.venv`, test caches/databases, and unrelated generated reports remain excluded. API archive contents are produced by the redacting writer described below; credential values must never be committed.
+
 **Status:** common write-once file storage and hash-checked read-back cover 12 API source clients plus 2 official-file source clients (TIC/BoE, Iteration 29). Tests use synthetic/mocked responses; no new institution was collected live. [Dataset contracts](DATASET_CONTRACTS.md) add seven explicit API/file selections, pinned profiles and validation receipts.
 
 ## Covered client sources

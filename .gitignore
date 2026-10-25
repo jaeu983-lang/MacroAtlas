@@ -10,9 +10,16 @@ __pycache__/
 reports/*
 !reports/.gitkeep
 !reports/iteration_12_benchmark.json
+!reports/iteration_31_api_metadata_*.json
+!reports/iteration_32_api_metadata_*.json
+!reports/iteration_32_archive_revalidation_*.json
+!reports/iteration_33_api_metadata_*.json
+!reports/iteration_34_api_metadata_*.json
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
+!data/raw/api/
+!data/raw/api/**
 !data/processed/.gitkeep
 *.sqlite
 *.db

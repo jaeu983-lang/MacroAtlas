@@ -1,0 +1,1 @@
+{"GET_STATS_LIST":{"DATALIST_INF":{"NUMBER":100,"RESULT_INF":{"FROM_NUMBER":1,"NEXT_KEY":2,"TO_NUMBER":1},"TABLE_INF":{"@id":"0000000001","TITLE":{"$":"Synthetic English catalogue fixture"}}},"PARAMETER":{"LANG":"E","LIMIT":1,"appId":"[REDACTED]"},"RESULT":{"ERROR_MSG":"Synthetic fixture","STATUS":0}}}

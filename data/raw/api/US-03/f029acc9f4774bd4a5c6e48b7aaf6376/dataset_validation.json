@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "tic.mfh.history",
+    "institution_id": "US-03",
+    "dataset_id": "mfhhis01",
+    "title": "Major foreign holders of Treasury securities, history",
+    "access_method": "official_file",
+    "adapter_id": "tic_csv",
+    "validator_id": "tic_mfh_blocks",
+    "source_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.csv",
+    "documentation_urls": [
+      "https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-holdings-of-us-and-foreign-securities"
+    ],
+    "fixed_parameters": [
+      [
+        "file_id",
+        "mfhhis01"
+      ]
+    ],
+    "unit": "in billions of dollars",
+    "frequency": "monthly",
+    "missing_tokens": [
+      "",
+      "n.a.",
+      ".."
+    ],
+    "notes": [
+      "Multiple year/month header blocks, aggregates and notes retained; full file, no country filter.",
+      "Treasury securities holdings are not total country debt or all-sector liabilities."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "8ea425b616b1b5cf93edad3f9e39bd993980165d6626fcd88e47f342608b7a5a",
+  "raw": {
+    "institution_id": "US-03",
+    "raw_path": "data/raw/api/US-03/f029acc9f4774bd4a5c6e48b7aaf6376/response.csv",
+    "manifest_path": "data/raw/api/US-03/f029acc9f4774bd4a5c6e48b7aaf6376/request.json",
+    "raw_sha256": "9b9042b78f0fba75e28f28044155cb358489b49a92afd4e6c5ff879f7877d420",
+    "manifest_sha256": "fab26f3ec95d3cac498919b3d02f54e81997da3bb3f6770b39d22bf17d20f36f"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 6,
+    "source_row_count": 20,
+    "header_blocks": 2,
+    "period_keys": [
+      "2024-11",
+      "2024-12",
+      "2025-11",
+      "2025-12"
+    ],
+    "scope": "full_file_native_blocks; not country-normalized",
+    "complete_dataset_assessed": false,
+    "warnings": [
+      "aggregates_and_notes_retained_in_raw"
+    ]
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": []
+}

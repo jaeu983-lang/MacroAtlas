@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "tic.treasury_holdings.2023_01",
+    "institution_id": "US-03",
+    "dataset_id": "slt3d",
+    "title": "Table 3D Treasury holdings, January 2023 snapshot",
+    "access_method": "official_file",
+    "adapter_id": "tic_csv",
+    "validator_id": "tic_table3d",
+    "source_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt3d.csv",
+    "documentation_urls": [
+      "https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-holdings-of-us-and-foreign-securities"
+    ],
+    "fixed_parameters": [
+      [
+        "file_id",
+        "slt3d"
+      ],
+      [
+        "source_period",
+        "2023-01"
+      ]
+    ],
+    "unit": "Millions of dollars",
+    "frequency": "monthly",
+    "missing_tokens": [
+      "",
+      "n.a."
+    ],
+    "notes": [
+      "The official linked file inspected for structure is January 2023, not a latest-data guarantee.",
+      "Region/total/memo rows and missing text are preserved, without country-code mapping."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "63596e6ced644cafdf2ba8e38e5beec0e8f05a632c8484958215c630e64d19b8",
+  "raw": {
+    "institution_id": "US-03",
+    "raw_path": "data/raw/api/US-03/5e192b8cbe5a4d76b0875dfb6015ece9/response.csv",
+    "manifest_path": "data/raw/api/US-03/5e192b8cbe5a4d76b0875dfb6015ece9/request.json",
+    "raw_sha256": "7e8100a3aef8e2668d633384234b091c57ff538df558b2a33552e2bda63525cd",
+    "manifest_sha256": "f17785ddaaa372297d48b4c511eee2576bf1805363f0d2982d63d586cc3f2e1e"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 4,
+    "source_row_count": 14,
+    "source_period": "2023-01",
+    "scope": "fixed_2023_01_snapshot; not_latest",
+    "complete_dataset_assessed": false,
+    "warnings": [
+      "regional_totals_and_memo_rows_retained_in_raw"
+    ]
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": []
+}

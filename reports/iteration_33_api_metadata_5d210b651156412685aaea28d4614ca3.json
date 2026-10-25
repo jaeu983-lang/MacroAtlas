@@ -1,0 +1,60 @@
+{
+  "evidence": "synthetic_fixture",
+  "started_at": "2026-10-25T11:55:45.937848+00:00",
+  "status": "completed",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "insee-nature"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 0,
+    "automatic_retries": 0,
+    "concurrency": 1,
+    "per_source_maximum": 1
+  },
+  "results": [
+    {
+      "source": "insee-nature",
+      "institution_id": "EU-05",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-05",
+        "raw_path": "data/raw/api/EU-05/53036c0635684311be887dcc6b30462c/response.bin",
+        "manifest_path": "data/raw/api/EU-05/53036c0635684311be887dcc6b30462c/request.json",
+        "raw_sha256": "45a60cfca165dcf90a47d5f23641994202a48ba3e504c1f773fe9f952637db66",
+        "manifest_sha256": "3e429e155a7726f2867b4785ab0967fcfa3642ef35fd48801d60426cf955de57"
+      },
+      "http_status": 200,
+      "stored_bytes": 658,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Codelist",
+          "agency": "FR1",
+          "id": "CL_NATURE",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 0,
+          "datastructures": 0,
+          "codelists": 1
+        },
+        "warnings": []
+      }
+    }
+  ],
+  "finished_at": "2026-10-25T11:55:45.969746+00:00"
+}

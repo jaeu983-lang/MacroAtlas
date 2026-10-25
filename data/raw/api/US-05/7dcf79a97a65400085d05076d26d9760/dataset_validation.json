@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "bls.cpi",
+    "institution_id": "US-05",
+    "dataset_id": "CUUR0000SA0",
+    "title": "BLS selected CPI series, v1",
+    "access_method": "api",
+    "adapter_id": "bls_v1",
+    "validator_id": "bls_v1",
+    "source_url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+    "documentation_urls": [
+      "https://www.bls.gov/developers/api_signature.htm"
+    ],
+    "fixed_parameters": [
+      [
+        "series_ids",
+        "CUUR0000SA0"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      ""
+    ],
+    "notes": [
+      "No key/v2; M13 remains the source Annual period, not a thirteenth month."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "5530135e527e26f1a0f906ad048fd5f24089056ca867ab4602d3203bf1149165",
+  "raw": {
+    "institution_id": "US-05",
+    "raw_path": "data/raw/api/US-05/7dcf79a97a65400085d05076d26d9760/response.json",
+    "manifest_path": "data/raw/api/US-05/7dcf79a97a65400085d05076d26d9760/request.json",
+    "raw_sha256": "d552f0e5d383cbee4ff496c2d66253945286c4b7c0d048ef31a7f36940b2bd14",
+    "manifest_sha256": "0a5a75f1d51c64235e911bb2b4dca2b2510cd24ec591b1e633bac40403483ffb"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 1,
+    "scope": "selected_series_and_years",
+    "complete_dataset_assessed": false
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": [
+    {
+      "name": "seriesid",
+      "value": "[\"CUUR0000SA0\"]"
+    },
+    {
+      "name": "startyear",
+      "value": "2023"
+    },
+    {
+      "name": "endyear",
+      "value": "2023"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "institution_id": "JP-03",
+  "source_agency": "e-Stat",
+  "api_provider": "e-Stat",
+  "source_url": "https://api.e-stat.go.jp/rest/3.0/app/json/getStatsList",
+  "operation": "getStatsList",
+  "http_method": "GET",
+  "dataset_id": "metadata_catalogue",
+  "series_id": null,
+  "retrieved_at": "2026-10-25T10:50:27.823188+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/json; charset=utf-8",
+  "mode": "api_response",
+  "representation": "Sanitized JSON payload serialized as canonical UTF-8; not original HTTP bytes.",
+  "representation_code": "sanitized_json_payload_canonical_utf8",
+  "request_parameters": [
+    {
+      "name": "lang",
+      "value": "E"
+    },
+    {
+      "name": "limit",
+      "value": "1"
+    }
+  ],
+  "byte_count": 1285,
+  "raw_sha256": "cc9dad50cde5cd746837181efe6de158bdd773dcfd541835fd0c9ce2283de209",
+  "raw_filename": "response.json",
+  "access_method": "api",
+  "raw_path": "data/raw/api/JP-03/eb488978a4b2422e9088be120eb03bdc/response.json"
+}

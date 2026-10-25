@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "tic.mfh.history",
+    "institution_id": "US-03",
+    "dataset_id": "mfhhis01",
+    "title": "Major foreign holders of Treasury securities, history",
+    "access_method": "official_file",
+    "adapter_id": "tic_csv",
+    "validator_id": "tic_mfh_blocks",
+    "source_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.csv",
+    "documentation_urls": [
+      "https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-holdings-of-us-and-foreign-securities"
+    ],
+    "fixed_parameters": [
+      [
+        "file_id",
+        "mfhhis01"
+      ]
+    ],
+    "unit": "in billions of dollars",
+    "frequency": "monthly",
+    "missing_tokens": [
+      "",
+      "n.a.",
+      ".."
+    ],
+    "notes": [
+      "Multiple year/month header blocks, aggregates and notes retained; full file, no country filter.",
+      "Treasury securities holdings are not total country debt or all-sector liabilities."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "8ea425b616b1b5cf93edad3f9e39bd993980165d6626fcd88e47f342608b7a5a",
+  "raw": {
+    "institution_id": "US-03",
+    "raw_path": "data/raw/api/US-03/b5e97409db2840c2b413a1ac10c0624f/response.csv",
+    "manifest_path": "data/raw/api/US-03/b5e97409db2840c2b413a1ac10c0624f/request.json",
+    "raw_sha256": "d0f4693d7b346f9993fae472c440f93c9fd3cebafcf31c15d1c8a8fc96950e56",
+    "manifest_sha256": "bc3c391e6af8094617f3dc74c7c2bd8d3e544a3170716abdab0bf816bbc6d307"
+  },
+  "validation": {
+    "status": "needs_review",
+    "reason_code": "dataset_contract_changed",
+    "observations_accepted": false
+  },
+  "run_evidence": "source_request_not_live_verified",
+  "request_parameters": []
+}

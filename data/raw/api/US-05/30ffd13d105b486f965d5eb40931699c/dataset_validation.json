@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "bls.unemployment",
+    "institution_id": "US-05",
+    "dataset_id": "LNS14000000",
+    "title": "BLS selected unemployment series, v1",
+    "access_method": "api",
+    "adapter_id": "bls_v1",
+    "validator_id": "bls_v1",
+    "source_url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+    "documentation_urls": [
+      "https://www.bls.gov/developers/api_signature.htm"
+    ],
+    "fixed_parameters": [
+      [
+        "series_ids",
+        "LNS14000000"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      ""
+    ],
+    "notes": [
+      "No key/v2; values and footnotes retained; no inferred unit or frequency."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "8b2eca825af7908bbae6a134b88f10fbee9487c67ea0792e90f97965f0218ef8",
+  "raw": {
+    "institution_id": "US-05",
+    "raw_path": "data/raw/api/US-05/30ffd13d105b486f965d5eb40931699c/response.json",
+    "manifest_path": "data/raw/api/US-05/30ffd13d105b486f965d5eb40931699c/request.json",
+    "raw_sha256": "c5802c09f84b0fb227b7b56d6e0e190b6060478c89b50355cccaca0423843832",
+    "manifest_sha256": "c5173de75256a394a3a783999f3c75ea5e72eea1ee62065328f663a86e786f89"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 2,
+    "scope": "selected_series_and_years",
+    "complete_dataset_assessed": false
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": [
+    {
+      "name": "seriesid",
+      "value": "[\"LNS14000000\"]"
+    },
+    {
+      "name": "startyear",
+      "value": "2023"
+    },
+    {
+      "name": "endyear",
+      "value": "2023"
+    }
+  ]
+}

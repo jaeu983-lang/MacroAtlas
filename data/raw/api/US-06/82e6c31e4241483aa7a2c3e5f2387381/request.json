@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "institution_id": "US-06",
+  "source_agency": "Census",
+  "api_provider": "Census",
+  "source_url": "https://api.census.gov/data/2023/acs/acs5",
+  "operation": "data",
+  "http_method": "GET",
+  "dataset_id": "2023/acs/acs5",
+  "series_id": null,
+  "retrieved_at": "2026-10-25T07:23:19.510035+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/json",
+  "mode": "api_response",
+  "representation": "Sanitized JSON payload serialized as canonical UTF-8; not original HTTP bytes.",
+  "representation_code": "sanitized_json_payload_canonical_utf8",
+  "request_parameters": [
+    {
+      "name": "get",
+      "value": "NAME,B01001_001E"
+    },
+    {
+      "name": "for",
+      "value": "state:*"
+    }
+  ],
+  "byte_count": 117,
+  "raw_sha256": "21338f736b3131c83b0edfebd733612abcc82b464fdd804674d2e2be0a4bd799",
+  "raw_filename": "response.json",
+  "raw_path": "data/raw/api/US-06/82e6c31e4241483aa7a2c3e5f2387381/response.json"
+}

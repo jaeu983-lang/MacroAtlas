@@ -40,6 +40,12 @@ BLS_API_KEY=
 
 최신 overlay: Iteration 31에서 기존 BEA/e-Stat 키로 metadata API 1회씩을 성공했고 저장·재조회를 확인했습니다. 이 범위를 다른 dataset·메서드·관측치 전체의 권한으로 일반화하지 않습니다. Census·BLS는 사용자 지시로 보류했으므로 재개 전 key 재입력 요청이나 live retry를 진행하지 않습니다.
 
+## Codex Cloud에서 API 사용
+
+저장소에는 비밀값 없는 [`.env.example`](../../.env.example), API 연결 코드, 기관별 근거 문서, fixture와 테스트가 포함됩니다. 실제 키는 저장소나 대화에 넣지 않습니다. Codex Cloud 환경을 만들고 게시한 뒤, Codex Cloud의 개인 vault/environment variables에 필요한 값만 등록합니다. Cloud task에서 값이 필요할 때 같은 이름으로 선택해 사용하며, 각 작업은 연결된 GitHub 계정이 해당 저장소에 접근할 수 있어야 합니다.
+
+현재 키가 필요한 활성 API 경로는 `BEA_API_KEY`, `ESTAT_APP_ID`, `FRED_API_KEY`입니다. Census와 BLS는 D-101에 따라 보류하며 키를 추가·요청하지 않습니다. BLS v1은 키를 쓰지 않습니다. 선택한 IMF 공개 metadata와 확인된 공개 SDMX/API 경로는 별도 비밀키 없이 요청합니다. 실제 API 호출에는 Codex Cloud 환경의 네트워크 접근 정책도 해당 공식 API 호스트를 허용해야 하며, 이는 GitHub 저장소 권한과 별개입니다.
+
 ## 21개 기관·서비스의 발급 판단
 
 아래의 “추가 발급 안내 없음”은 확인한 공개 통계 경로에 별도 키를 신청할 근거가 없다는 뜻입니다. 인증 없음을 명시한 문서, 무키 요청 예시, 아직 미확인인 상태를 구별합니다. 기존 registry의 `authentication=unknown`을 문서 예시만으로 `none`으로 바꾸지 않습니다.
