@@ -46,7 +46,7 @@ BLS_API_KEY=
 
 | ID | 기관·서비스 | 이번 발급 판단과 근거 |
 |---|---|---|
-| INT-01 | IMF | **계정/상세 문서 조사 대기.** [공식 API 안내](https://data.imf.org/en/Resource-Pages/IMF-API)는 beta portal 계정으로 Swagger에 로그인하라고 설명합니다. 실제 링크도 sign-in 페이지로 이동했습니다. 이것만으로 데이터 조회에 발급형 API key가 필요하다고 단정할 수 없습니다. `IMF_API_KEY` 이름은 추가하지 않습니다. |
+| INT-01 | IMF | **선택한 공개 metadata는 key 불필요.** Iteration 34에서 공식 MATLAB/R public-user 안내의 root·CPI 식별자를 확인하고 CPI dataflow HTTP 200·archive/hash 검증을 무키 1회로 통과했습니다. Swagger 로그인 및 elevated/private data 인증은 별개이며 지원하지 않습니다. `IMF_API_KEY`는 추가하지 않습니다. [공식 근거](../developer/connectors/IMF.md). |
 | INT-02 | BIS | **추가 발급 안내 없음.** [공식 API](https://stats.bis.org/api-doc/v2/)는 공개 통계·metadata GET 경로를 제시합니다. 경로의 `{key}`는 SDMX 차원 선택 key이며 발급받는 비밀 API key가 아닙니다. |
 | INT-03 | OECD | **추가 발급 안내 없음.** [공식 안내](https://www.oecd.org/en/data/insights/data-explainers/2024/09/api.html)의 공개 SDMX 요청 예시는 키를 포함하지 않습니다. 무료 이용·약관·rate limiting은 별도 적용되며 인증의 live 검증은 하지 않았습니다. |
 | INT-04 | World Bank | **키 불필요 명시.** [Indicators API 인증 안내](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation)는 API key 등 인증이 필요 없다고 명시합니다. |

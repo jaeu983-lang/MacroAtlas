@@ -11,6 +11,7 @@ from macro_data_platform.connectors.sdmx import (
     BundesbankClient,
     ECBClient,
     EurostatClient,
+    IMFClient,
     INSEEClient,
     OECDClient,
     SdmxApiTransport,
@@ -168,6 +169,19 @@ def test_insee_idbank_request_is_bounded_and_numeric():
         client.get_data_by_idbanks(["00123"] * 101)
 
     assert session.calls == []
+
+
+def test_imf_public_metadata_route_negotiates_structure_without_authentication():
+    client, session = _make_client(IMFClient)
+    result = client.get_dataflow("IMF.STA", "CPI")
+    url, options = session.calls[0]
+    assert url == "https://api.imf.org/external/sdmx/2.1/dataflow/IMF.STA/CPI/latest"
+    assert result.institution_id == "INT-01" and result.operation == "dataflow"
+    assert options["headers"]["Accept"] == "application/vnd.sdmx.structure+xml;version=2.1"
+    assert "Authorization" not in options["headers"]
+    assert options.get("params", {}) == {}
+    assert options["allow_redirects"] is False
+    assert not hasattr(client, "get_data")
 
 
 def test_transport_rejects_unreviewed_hosts_and_credential_parameters():

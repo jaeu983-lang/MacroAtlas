@@ -14,7 +14,7 @@ Iteration 29 구현 보충: API 문서 집계는 15 documented / 6 unconfirmed /
 
 | ID | 기관·API 제공 주체 | API 상태 | 공식 근거와 확인 사항 | 인증/제한 메모 |
 |---|---|---|---|---|
-| INT-01 | IMF | documented | [IMF Data API](https://data.imf.org/en/Resource-Pages/IMF-API)는 SDMX 2.1·3.0을 명시한다. | Swagger portal 로그인은 API 인증 증거가 아니므로 인증은 unknown. |
+| INT-01 | IMF | documented | [IMF Data API](https://data.imf.org/en/Resource-Pages/IMF-API) 및 [공식 MATLAB/R public 안내 조사](../../developer/connectors/IMF.md). | Iteration 34 공개 CPI metadata는 무키 1회 HTTP 200·계약·archive/hash 통과. Swagger/private auth와 별개이며 관측치 미검증. |
 | INT-02 | BIS | documented | [BIS SDMX API v2](https://stats.bis.org/api-doc/v2/)는 공개 통계·메타데이터용 REST API와 SDMX 하위집합을 문서화한다. [Iteration 22 BIS 프로필](../../developer/connectors/BIS.md)은 `WS_TC` 2.0 후보의 공식 정의·coverage를 정리한다. | 기존 감사 근거는 키 불필요로 안내; 이번 회차에서 인증·쿼터·접근성 live 미검증. |
 | INT-03 | OECD | documented | [OECD SDMX REST Swagger](https://sdmx.oecd.org/public/swagger/index.html?urls.primaryName=v1)는 REST API 사양을 제공한다. | 인증과 외부 endpoint 접근성은 live 미검증. |
 | INT-04 | World Bank | documented | [Indicators API v2](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392)는 version 2 및 데이터 호출을 문서화한다. | API 키 불필요. MacroAtlas live 범위는 USA/WDI/GDP 한 경로만 해당. |

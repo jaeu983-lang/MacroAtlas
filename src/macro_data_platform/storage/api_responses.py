@@ -36,6 +36,7 @@ _SENSITIVE_QUERY_NAMES = frozenset({
 # These are the API clients currently implemented. A provider is not inferred
 # from a display label: its institution ID and official HTTPS host must agree.
 _SOURCE_PROFILES = {
+    "INT-01": ("IMF", "api.imf.org"),
     "INT-02": ("BIS", "stats.bis.org"),
     "INT-03": ("OECD", "sdmx.oecd.org"),
     "EU-01": ("ECB", "data-api.ecb.europa.eu"),

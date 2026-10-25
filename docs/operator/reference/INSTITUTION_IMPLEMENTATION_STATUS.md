@@ -1,10 +1,12 @@
 # 기관별 MacroAtlas 구축 상태
 
 **기준일:** 2026-10-25\
-**원본 상태:** `src/macro_data_platform/discovery/source_registry.py`의 21개 기관 프로필과 Iteration 32까지의 보고서.
+**원본 상태:** `src/macro_data_platform/discovery/source_registry.py`의 21개 기관 프로필과 Iteration 34까지의 보고서.
 **목적:** 공식 API 문서 보유 여부와 MacroAtlas 안에 실제 기관별 실행 경로가 있는지를 분리해 보여준다. 21개 전체의 offline/live 검증 기준과 실행 순서는 [전기관 검증 프로그램](../../developer/testing/ALL_INSTITUTION_VALIDATION_PROGRAM.md)을 따른다.
 
 ## 현재 요약
+
+Iteration 33 INSEE CL_NATURE 1.0 codelist와 Iteration 34 IMF CPI dataflow(반환 version 5.0.0)는 각각 무키 GET 1회, HTTP 200·metadata 계약·archive/hash read-back을 통과했다. INSEE의 과거 DSD 404와 Gate U 실패는 그대로 유지한다. [33 보고서](../../developer/history/ITERATION_33_REPORT.md), [34 보고서](../../developer/history/ITERATION_34_REPORT.md). 다음 표의 구현 집계는 IMF metadata client 추가를 반영한다.
 
 Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 계약·archive/hash 범위로 통과했다. ECB는 최초 파서 실패 이력을 보존하고 같은 저장 응답을 수정 후 오프라인 재검증했다. INSEE는 HTTP 404 실패이며 추가 요청하지 않았다. 전체 offline 1,032 passed, 1 skipped다. [Iteration 32 보고서](../../developer/history/ITERATION_32_REPORT.md)를 따른다. IMF도 SDMX API 기관이며 이번 기존 client 6곳과는 별도 구현 대상이다.
 
@@ -15,9 +17,9 @@ Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 
 | MacroAtlas 구현 상태 | 기관 수 | 의미 |
 |---|---:|---|
 | 제한 경로 구현·실 API 검증 일부 | 1 | World Bank의 미국 WDI GDP 고정 경로. Iteration 30에서는 FRED GDP·BoE Bank Rate의 bounded live 응답과 TIC 파일 2개도 별도 범위에서 확인했다. |
-| API 클라이언트 일부 구현 | 11 | BEA, e-Stat, SDMX 6기관과 FRED·Census·BLS v1. FRED·Census·BLS는 고정 collector profile 일부가 있으며 일반 자연어 workflow와 정규화 DB는 미구현. live overlay는 아래 기관별 표에 기록. |
+| API 클라이언트 일부 구현 | 12 | BEA, e-Stat, IMF를 포함한 SDMX 7기관과 FRED·Census·BLS v1. 일반 자연어 workflow·정규화 DB는 미구현. live overlay는 아래 기관별 표에 기록. |
 | 공식 파일 클라이언트 일부 구현 | 2 | TIC 2개·BoE 1개 CSV의 다운로드·계약 검사·raw/receipt 저장·hash read-back. 합성 fixture 검증. |
-| fixture 구성요소만 있음 | 4 | IMF synthetic SDMX, 중국 3개 기관 탐색 fixture. 전용 API 요청 경로는 없다. |
+| fixture 구성요소만 있음 | 3 | 중국 3개 기관 탐색 fixture. 전용 API 요청 경로는 없다. |
 | 기관 전용 클라이언트 없음 | 3 | Board 전용 crosswalk, BOJ, 일본 MOF. 공통 FRED client를 Board 전용 검증으로 일반화하지 않음. |
 | **전체** | **21** | 자연어 UI 및 전 기관용 자동 검색 기능은 구축되어 있지 않다. |
 
@@ -31,10 +33,11 @@ Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 
 
 ### API 호출 클라이언트 일부만 있음
 
-아래 11개 source는 limited Python API clients가 있습니다. FRED·Census·BLS에는 고정 dataset profile collector 연결과 synthetic 검사가 있고, source별 live 성공/실패는 표에 구분합니다. Iteration 31–32의 metadata 검증은 일반 discovery/ingestion workflow 성공과 별개입니다. 공통 archive helper로 저장·hash 확인 read-back 할 수 있습니다.
+아래 12개 source는 limited Python API clients가 있습니다. FRED·Census·BLS에는 고정 dataset profile collector 연결과 synthetic 검사가 있고, source별 live 성공/실패는 표에 구분합니다. Iteration 31–34의 metadata 검증은 일반 discovery/ingestion workflow 성공과 별개입니다. 공통 archive helper로 저장·hash 확인 read-back 할 수 있습니다.
 
 | 기관 | 구현된 부분 | 아직 없는 부분 |
 |---|---|---|
+| IMF | 공개 SDMX 2.1 metadata client, CPI dataflow 최신 version 5.0.0 HTTP 200·계약·archive/hash 통과 | 연결 DSD·관측치·private auth·전체 dataset·일반 workflow 미검증 |
 | BEA | JSON GET, GetDataSetList metadata 13개 live 계약·archive/hash read-back; synthetic/recorded source fixture | 관측치 source semantics·정규화·일반 workflow와 다른 API 메서드의 live 검증 |
 | e-Stat | JSON GET, getStatsList(lang=E, limit=1) metadata 1건 live 계약·archive/hash read-back; synthetic/recorded source fixture | 관측치 source semantics·정규화·일반 workflow와 getMetaInfo/getStatsData live 검증 |
 | FRED/ALFRED | v1 metadata·검색·명시적 관측치 page·release/source, synthetic archive/read-back | 2026-10-25 FRED GDP 1개 고정 page live contract/hash 검증; v2, Board crosswalk, 전체 자동 pagination·workflow·범용 인증/coverage |
@@ -62,7 +65,6 @@ Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 
 
 | 기관 | fixture가 다루는 범위 | 실제 API/자료 조회 |
 |---|---|---|
-| IMF | IMF 형태의 합성 SDMX 구조·series metadata | 없음. API 문서는 있지만 상세 Swagger는 beta portal login을 안내해 route/auth 근거가 확보되지 않음 |
 | PBOC | 사이트 탐색 fixture | 없음 |
 | SAFE | 사이트 탐색 fixture | 없음 |
 | 중국 NBS | 사이트 탐색 fixture | 없음 |

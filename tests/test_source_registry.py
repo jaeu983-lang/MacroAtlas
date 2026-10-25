@@ -63,8 +63,13 @@ def test_api_availability_does_not_imply_connector_or_live_validation():
     world_bank = get_source_profile("INT-04")
 
     assert imf.api_availability == ApiAvailability.DOCUMENTED
-    assert imf.adapter_status == AdapterStatus.FIXTURES_ONLY
-    assert imf.live_validation == LiveValidation.NOT_RUN
+    assert imf.adapter_status == AdapterStatus.PARTIAL
+    assert imf.fixture_scope == FixtureScope.SOURCE_SPECIFIC
+    assert imf.authentication == AuthRequirement.NONE
+    assert imf.live_validation == LiveValidation.PARTIAL
+    assert "CPI dataflow metadata only" in imf.live_scope
+    assert "5.0.0" in imf.live_scope
+    assert "No observation ingestion" in imf.live_scope
     assert bea.api_availability == ApiAvailability.DOCUMENTED
     assert bea.adapter_status == AdapterStatus.PARTIAL
     assert bea.fixture_scope == FixtureScope.SOURCE_SPECIFIC

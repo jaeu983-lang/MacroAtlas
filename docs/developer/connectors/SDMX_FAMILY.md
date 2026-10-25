@@ -1,5 +1,7 @@
 # SDMX API connector batch — Iteration 24
 
+**Iteration 33–34 현재:** INSEE CL_NATURE 1.0 codelist와 신규 IMF public metadata client의 CPI dataflow(5.0.0)가 각 무키 1회 HTTP 200·source 계약·archive/hash 통과다. 기존 6곳에 IMF metadata-only adapter를 추가했으며 관측치/private API는 지원하지 않는다. [INSEE 공식 근거](INSEE_METADATA_RECOVERY.md), [IMF 공식 public root/auth/ID 근거](IMF.md), [33](../history/ITERATION_33_REPORT.md), [34](../history/ITERATION_34_REPORT.md). 아래 과거 IMF 미구현/INSEE 실패 설명은 당시 이력이며 원 결과는 바꾸지 않는다.
+
 **Iteration 32 현재 overlay:** 아래 Iteration 24–26 원래 상태는 이력이다. 여섯 source에 각 1회, 총 6회·retry 0으로 metadata만 요청했다. BIS WS_TC 2.0·OECD QNA 1.1·Eurostat NAMA_10_GDP 1.0·Bundesbank BBEX3는 최초 계약/저장/hash 통과다. ECB ECB_EXR1 1.0은 최초 파서 실패를 보존하고 AttributeRelationship 차원 참조 처리 수정 후 같은 저장 bytes로 오프라인 재검증 통과했다. INSEE IPC-2015-COICOP 1.0은 HTTP 404 실패이며 추가 호출하지 않았다. [공식 경로/접근 조건 audit](SDMX_METADATA_CANARY.md)와 [Iteration 32 결과](../history/ITERATION_32_REPORT.md)를 따른다. JSON 성공 파싱·관측치·일반 workflow는 미검증이다. IMF도 SDMX API 기관이며 기존 client가 없어 별도 후보로 남는다.
 
 **상태:** 공통 HTTP 전송 기초, SDMX 계열 transport wrapper, provider별 route adapter가 나뉘어 있습니다. Iteration 26에서 HTTP 기초를 World Bank/JSON 계열과 공유하면서 SDMX route·식별자·payload 계약은 유지했습니다. Iteration 25에서는 6개 SDMX source 응답을 파일로 보존하고 hash 확인 후 read-back하는 offline 검사를 추가했습니다. 공식 provider payload fixture, metadata/observation parsing, auth 성공과 live API 호출은 여전히 별도 미검증 단계입니다. 구조 세부는 [공통 HTTP 전송 설계](HTTP_TRANSPORT.md)를 참고합니다.

@@ -1,0 +1,35 @@
+{
+  "evidence": "recorded_live_metadata_http_entity_bytes",
+  "source": "imf-cpi",
+  "file": "recorded_imf_cpi.xml",
+  "original_report": "reports/iteration_34_api_metadata_27f467392f2d4bee99b070b5f98d0f8a.json",
+  "sha256": "21819c7befea5776e3786dd66f6c6fc1eca6b3479ba893fb95fd435392da2681",
+  "source_url": "https://api.imf.org/external/sdmx/2.1/dataflow/IMF.STA/CPI/latest",
+  "retrieved_at": "2026-10-25T12:06:24.674049+00:00",
+  "content_type": "application/vnd.sdmx.structure+xml;version=2.1",
+  "representation": "http_entity_bytes_after_requests_content_decoding",
+  "validation": {
+    "status": "metadata_contract_validated",
+    "scope": "metadata_only",
+    "observations_accepted": false,
+    "complete_dataset_assessed": false,
+    "reason": "selected_metadata_present",
+    "entry_count": 1,
+    "selected": {
+      "kind": "Dataflow",
+      "agency": "IMF.STA",
+      "id": "CPI",
+      "version": "5.0.0"
+    },
+    "structure_counts": {
+      "dataflows": 1,
+      "datastructures": 0,
+      "codelists": 0
+    },
+    "warnings": [
+      "unresolved_dsd:CPI"
+    ]
+  },
+  "credential_scan": "pass",
+  "pii_review": "Published public CPI structural metadata; no personal records selected."
+}

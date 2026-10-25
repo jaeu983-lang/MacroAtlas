@@ -2,12 +2,15 @@
 
 **현재 근거:** [Iteration 32 metadata overlay](#iteration-32-metadata-overlay)와 [회차 보고서](../history/ITERATION_32_REPORT.md)를 참조한다. 아래 원래 Iteration 25 gate는 역사적 fixture 범위이며 최신 source별 live 결과와 구분한다.
 
+**Iteration 34 현재:** IMF 공개 SDMX metadata client가 추가되어 13 API sources와 기존 공식 파일 2 sources의 write-once archive를 지원한다. INSEE CL_NATURE와 IMF CPI 단건의 entity/manifest/hash를 확인했고 원 실패·이전 산출물은 보존했다. [33](../history/ITERATION_33_REPORT.md), [34](../history/ITERATION_34_REPORT.md)를 따른다.
+
 **Status:** common write-once file storage and hash-checked read-back cover 12 API source clients plus 2 official-file source clients (TIC/BoE, Iteration 29). Tests use synthetic/mocked responses; no new institution was collected live. [Dataset contracts](DATASET_CONTRACTS.md) add seven explicit API/file selections, pinned profiles and validation receipts.
 
 ## Covered client sources
 
 | Institution ID | Source | Response representation |
 |---|---|---|
+| `INT-01` | IMF public metadata | Response entity bytes; one CPI dataflow metadata selection only. |
 | `INT-04` | World Bank | Existing response entity bytes; the established `raw/worldbank/` path remains in use. |
 | `US-04` | BEA | Canonical UTF-8 JSON made from the transport-sanitized payload. |
 | `JP-03` | e-Stat | Canonical UTF-8 JSON made from the transport-sanitized payload. |

@@ -2,7 +2,8 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** 사용자 지시 D-101로 Census·BLS를 보류하고 기존 Gate U는 NOT PASSED 이력으로 유지한다. Iteration 32는 기존 SDMX 6곳에 각 1회 metadata 요청을 수행했다(총 6회, retry 0). BIS·OECD·Eurostat·Bundesbank는 최초 계약·archive/hash 검사 통과, ECB는 최초 파서 실패를 보존하고 저장 bytes로 수정 후 오프라인 재검증 통과, INSEE는 HTTP 404 실패다. [Iteration 32 보고서](history/ITERATION_32_REPORT.md)를 따른다. BEA/e-Stat의 Iteration 31 metadata 근거는 유지하며 관측치 ingestion으로 확대하지 않는다. IMF도 SDMX 기관이지만 상세 route/auth·adapter 준비가 별도로 필요하다. Iteration 33은 시작하지 않는다.
+**Iteration 33–34 overlay:** 사용자 D-103에 따라 순차 실행했다. 33 INSEE CL_NATURE 1.0은 HTTP 200·계약·archive/hash, 34 IMF 공개 CPI dataflow(5.0.0)도 HTTP 200·계약·archive/hash 통과다. 각 1회, 총 2회, retry 0. IMF metadata client 추가로 API archive 대상은 13개이며 관측치/일반 workflow와 구별한다. [33 보고서](history/ITERATION_33_REPORT.md), [34 보고서](history/ITERATION_34_REPORT.md). 아래 32 기록은 해당 시점 이력이다.\
+**Iteration 32 이력:** 기존 SDMX 6곳 각 1회 요청 중 BIS·OECD·Eurostat·Bundesbank는 최초 통과, ECB는 최초 파서 실패 후 같은 bytes 오프라인 재검증 통과, INSEE DSD는 404 실패였다. [Iteration 32 보고서](history/ITERATION_32_REPORT.md)는 변경하지 않는다. 현재 33–34 metadata 결과는 위 overlay를 따르며 Gate U 실패와 Census/BLS 보류는 유지한다.
 
 ## 실행 준비 상태
 
@@ -12,12 +13,12 @@
 |---|---|---|
 | 기관 registry | 21/21 프로필 | source별 결과 record 기반이 있음 |
 | API 문서 | 15 documented / 6 unconfirmed / 0 not_offered | unconfirmed는 API가 없다는 뜻이 아님 |
-| MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. FRED·Census·BLS는 고정 collector profile 4개; live 결과는 아래 Gate U 상세 참조. 일반 자연어 workflow는 미구현 |
+| MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + IMF 포함 SDMX client 7개 | 13개 source archive 가능. Metadata 성공은 관측치/일반 workflow 성공과 별개이며 Gate U 실패는 유지 |
 | 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조와 저장 검증; Iteration 30에서 3개 요청. TIC 2개는 saved raw의 offline validator 통과, BoE live contract pass; API 상태는 unconfirmed 유지 |
 | 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 bounded live canary | 후속 실행은 7회·재시도 0회, 4/7 통과. Census 302 redirect 거부, BLS 503 두 건; Gate U 미통과 |
 | 문서 확인 API의 다음 대상 | Iteration 32 metadata 5곳 통과/INSEE 404 실패; IMF·BOJ·Board crosswalk는 별도 후보 | INSEE 현재 route/ID 공식 근거와 새 예산 필요. Census·BLS는 사용자 재개 전 보류 |
 | live | World Bank 고정 경로 과거 partial; Iteration 30에서 canary 2회 | 최신 run의 live source-contract pass 4/7; Census `redirect_refused`/302와 BLS `http_transient_status`/503 두 건. 7/7 성공 증거가 아님 |
-| 전체 offline suite | 1,032 passed, 1 skipped, 0 failed | Iteration 32 metadata·recorded fixture·ECB 파서 수정·registry 범위까지 검증; 전기관 live 성공 증거 아님 |
+| 전체 offline suite | 1,085 passed, 1 skipped, 0 failed | Iteration 34 IMF metadata·INSEE/IMF recorded fixture·registry까지 검증; 전기관 live 성공 증거 아님 |
 
 이 제약은 공통 readiness audit와 offline fixture 작업을 막지 않습니다. 실제 series, 인증된 live 요청, 비교·계산·파생 XLSX는 source별 문서·용도·이용 조건을 확정한 뒤 해당 gate에서 결정합니다.
 

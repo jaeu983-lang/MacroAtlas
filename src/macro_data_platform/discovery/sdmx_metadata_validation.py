@@ -12,6 +12,7 @@ from macro_data_platform.connectors.sdmx import (
     BundesbankClient,
     ECBClient,
     EurostatClient,
+    IMFClient,
     INSEEClient,
     OECDClient,
     SdmxApiResponse,
@@ -71,6 +72,9 @@ SDMX_SELECTIONS = {
     "insee-nature": MetadataSelection("EU-05", INSEEClient, "get_codelist",
         ("CL_NATURE", "1.0"), "/codelist/FR1/CL_NATURE/1.0",
         "Codelist", "FR1", "CL_NATURE", "1.0", iteration=33),
+    "imf-cpi": MetadataSelection("INT-01", IMFClient, "get_dataflow",
+        ("IMF.STA", "CPI", "latest"), "/dataflow/IMF.STA/CPI/latest",
+        "Dataflow", "IMF.STA", "CPI", None, iteration=34),
 }
 
 

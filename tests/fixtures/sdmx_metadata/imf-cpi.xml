@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC Iteration 34 fixture; no live version/DSD claim. -->
+<m:Structure xmlns:m="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:s="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure" xmlns:c="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common">
+<m:Header><m:ID>synthetic-imf-cpi</m:ID></m:Header>
+<m:Structures><s:Dataflows><s:Dataflow agencyID="IMF.STA" id="CPI" version="1.0"><c:Name xml:lang="en">Synthetic CPI metadata</c:Name><s:Structure><Ref agencyID="IMF.STA" id="SYNTHETIC_DSD" version="1.0" class="DataStructure" package="datastructure"/></s:Structure></s:Dataflow></s:Dataflows></m:Structures>
+</m:Structure>

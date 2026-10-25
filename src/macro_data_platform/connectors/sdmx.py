@@ -29,6 +29,7 @@ MAX_SDMX_REQUEST_SECONDS = 30
 MAX_URL_LENGTH = 8192
 
 _ROOTS = {
+    "INT-01": ("https://api.imf.org/external/sdmx/2.1", "IMF"),
     "INT-02": ("https://stats.bis.org/api/v2", "BIS"),
     "INT-03": ("https://sdmx.oecd.org/public/rest/v1", "OECD"),
     "EU-01": ("https://data-api.ecb.europa.eu/service", "ECB"),
@@ -243,6 +244,21 @@ class _SdmxClient:
         return self.transport.get(
             self.institution_id, _path(self.root, *segments), operation, parameters,
         )
+
+
+class IMFClient(_SdmxClient):
+    """Public IMF_DATA entry point documented by IMF's MATLAB/R support guides.
+
+    Only structural metadata is implemented; private/authenticated data is excluded.
+    """
+
+    institution_id = "INT-01"
+    root = _ROOTS[institution_id][0]
+    API_DOCS = "https://data.imf.org/en/Resource-Pages/IMF-API"
+
+    def get_dataflow(self, agency_id: str, resource_id: str,
+                     version: str = "latest") -> SdmxApiResponse:
+        return self._get("dataflow", "dataflow", agency_id, resource_id, version)
 
 
 class BISClient(_SdmxClient):

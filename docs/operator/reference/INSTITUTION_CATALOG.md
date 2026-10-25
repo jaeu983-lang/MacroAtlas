@@ -38,7 +38,7 @@ Iteration 29: TIC MFH 역사·January 2023 Table 3D, BoE IUDBEDR의 공식 CSV �
 
 | 기관 ID | A–H 시나리오 | 기관 / 제공 서비스 | API 상태·우선순위 | API 계열 / 제공 주체 | 인증 안내 | 구현·fixture | live |
 |---|---|---|---|---|---|---|---|
-| INT-01 | A | IMF | `documented` / API 우선 | SDMX 2.1·3.0; [공식 API 안내](https://data.imf.org/en/Resource-Pages/IMF-API) | API 인증 미확인; Swagger 로그인과 API 인증은 별개 | 합성 SDMX fixture; 기관 어댑터 없음 | 미실행 |
+| INT-01 | A | IMF | `documented` / API 우선 | SDMX 2.1·3.0; [공식 API 안내](https://data.imf.org/en/Resource-Pages/IMF-API) | 선택 public metadata 무키; private/Swagger auth 별도 | partial 2.1 metadata client·synthetic/recorded fixture | CPI dataflow 5.0.0 단건 HTTP 200·계약·archive/hash 통과 |
 | INT-02 | B | BIS | `documented` / API 우선 | SDMX REST 2.1; [공식 명세](https://stats.bis.org/api-doc/v2/) | 키 불필요로 안내 | partial raw-response client·mock route; 실제 payload fixture 없음 | 미실행 |
 | INT-03 | H | OECD | `documented` / API 우선 | SDMX REST v1·v2; [공식 Swagger](https://sdmx.oecd.org/public/swagger/index.html?urls.primaryName=v1) | 미확인; 외부 접근/인증 live 미검증 | partial raw-response client·mock route; 실제 payload fixture 없음 | 미실행 |
 | INT-04 | H | World Bank | `documented` / API 우선 | Indicators API v2; [공식 안내](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392) | 키 불필요 | 미국 GDP 고정 경로 일부 | 제한 live: USA/WDI/GDP 한 경로 |
@@ -52,7 +52,7 @@ Iteration 29: TIC MFH 역사·January 2023 Table 3D, BoE IUDBEDR의 공식 CSV �
 | EU-02 | E | Eurostat | `documented` / API 우선 | Catalogue, SDMX 2.1·3.0, Statistics JSON-stat; [공식 API 안내](https://ec.europa.eu/eurostat/en/web/user-guides/data-browser/api-data-access/api-introduction) | 키 불필요 | partial raw-response client·mock route; 실제 payload fixture 없음 | 미실행 |
 | EU-03 | — | Deutsche Bundesbank | `documented` / API 우선 | SDMX REST; [공식 API 가이드](https://statistiken.bundesbank.de/statistiken-en/help-991452?article=bundesbank-sdmx-web-service-api-991448) | 미확인; 명세에 근거한 정책 미등록 | partial raw-response client·mock route; 실제 payload fixture 없음 | 미실행 |
 | EU-04 | — | Bank of England | `unconfirmed` / API 조사 우선 | 일반 API 명세 미발견; [공식 통계 FAQ](https://www.bankofengland.co.uk/statistics/faqs) | 미확인 | 공식 DB HTML·Excel·XML·CSV 다운로드 안내; API 부재로 확정하지 않음 | 미실행 |
-| EU-05 | — | INSEE | `documented` / API 우선 | SDMX 2.1 REST·BDM/idbank; [공식 서비스 안내](https://www.insee.fr/en/information/2868055) | 미확인; 무료 제공이 무인증을 뜻하지 않음 | partial raw-response client·mock route; 실제 payload fixture 없음 | 미실행 |
+| EU-05 | — | INSEE | `documented` / API 우선 | SDMX 2.1 REST·BDM/idbank; [공식 서비스 안내](https://www.insee.fr/en/information/2868055) | 직접 BDM metadata 단발 무키 확인; portal auth 별도 | partial client·synthetic/recorded metadata fixture | CL_NATURE 1.0 codelist HTTP 200·계약·archive/hash 통과; 옛 DSD 404 보존 |
 | JP-01 | F | Bank of Japan | `documented` / API 우선 | Time-Series Data Search REST JSON/CSV; [공식 안내](https://www.stat-search.boj.or.jp/info/nme_aphelp_en.html) | 누구나 사용할 수 있다고 안내 | 기관 어댑터 없음 | 미실행 |
 | JP-02 | F | Japan Ministry of Finance | `unconfirmed` / API 조사 우선 | MOF 고유 API 명세 미발견; [공식 통계](https://www.mof.go.jp/english/statistics/index.html) | 미확인 | 일부 CSV·SDMX 파일; e-Stat 등 배포 경로는 표별 확인 필요 | 미실행 |
 | JP-03 | F | e-Stat | `documented` / API 우선 | REST API v3.0; [공식 사양](https://www.e-stat.go.jp/api/en/api-info/api-spec) | `ESTAT_APP_ID` 필요 | JSON GET·synthetic/recorded metadata fixture; 일반 workflow 미연결 | getStatsList(lang=E, limit=1) metadata·archive/read-back 부분 통과 |

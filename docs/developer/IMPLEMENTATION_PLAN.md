@@ -60,6 +60,8 @@
 - IMF 공식 API 페이지와 연결된 도구별 안내에서 정확한 root/route·ID/version·인증·이용/제한·표현 형식의 공개 근거를 먼저 확보한다. Swagger login과 데이터 API 인증을 혼동하지 않는다.
 - 근거가 충분하면 source adapter·합성 fixture·계약·archive/read-back을 추가하고 offline gate 이후 IMF metadata 최대 1회, retry 0, concurrency 1로 검증한다. 근거/설정/접근이 부족하면 추정 endpoint·로그인 우회 없이 not_ready/not_run으로 명시하고 문서/readiness gate만 완료한다.
 - 33의 source-only 실패는 다른 독립 IMF source를 전역 차단하지 않는다. shared engineering/safety gate 실패를 넘어가지는 않는다. 35·관측치 수집·main merge·push·배포는 제외한다.
+- **실행 결과:** 공식 MATLAB 안내에서 public root, R 안내에서 IMF.STA/CPI를 확보하고 표준 SDMX 2.1 route를 조합했다. 무키 1회 요청은 HTTP 200, CPI dataflow version 5.0.0, 3,234 bytes, source 계약·archive/hash 통과다. 연결 DSD는 미조회로 남긴다. Live 전 전체 offline 1,084 passed/1 skipped 및 Ruff PASS. [공식 근거](connectors/IMF.md), [Iteration 34 report](history/ITERATION_34_REPORT.md).
+- **최종 Gate Y:** 전체 offline 1,085 passed/1 skipped/0 failed, 변경 Python Ruff PASS. Engineering gate와 이 CPI metadata sub-gate만 PASS다. 33→34 예외는 완료 후 소진하며 다음 task는 다시 한 회차 원칙을 따른다.
 
 모든 작업을 한 줄로 세워 순차 대기시키지 않습니다. Track M과 Track C는 독립된 offline 일을 병행하고, 외부 호출에 대해서만 공통 gate와 해당 기관 gate를 합칩니다.
 

@@ -39,7 +39,7 @@ SDMX 결과는 세 층으로 별도 판정한다. **공통 전송**의 TLS/host/
 
 | ID | 기관 / API 제공자 관계 | API 문서 상태 | 현재 코드 / fixture | live evidence | 검증 묶음 |
 |---|---|---|---|---|---|
-| INT-01 | IMF | documented | fixture-only / source-specific synthetic | 미실행 | SDMX |
+| INT-01 | IMF | documented | partial public 2.1 metadata client / synthetic·recorded | Iteration 34 CPI dataflow 5.0.0, 1회 HTTP 200·계약·archive/hash | SDMX, 관측치/private auth 미검증 |
 | INT-02 | BIS | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
 | US-03 | Treasury TIC | unconfirmed | fixture-only / source-specific parser | 미실행 | API 표별 조사 → 공식 파일 검토 |
 | US-04 | BEA | documented | partial JSON client / synthetic·recorded metadata | GetDataSetList 13개 metadata와 archive/read-back 부분 통과 | 관측치·일반 workflow 별도 |
@@ -59,7 +59,7 @@ SDMX 결과는 세 층으로 별도 판정한다. **공통 전송**의 TLS/host/
 | US-06 | U.S. Census Bureau | documented | partial metadata/table client; synthetic JSON/file round-trip | 미실행 | 개별 REST·인증 |
 | EU-03 | Deutsche Bundesbank | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
 | EU-04 | Bank of England | unconfirmed | adapter·기관 fixture 없음 | 미실행 | API 표별 조사 → 공식 파일 검토 |
-| EU-05 | INSEE | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
+| EU-05 | INSEE | documented | partial SDMX metadata client / synthetic·recorded | Iteration 33 CL_NATURE 1.0, 1회 HTTP 200·계약·archive/hash; 이전 DSD 404 유지 | SDMX, 관측치 미검증 |
 
 기관/API 제공자와 통계 작성기관은 별도 ID로 기록한다. 특히 Board DDP → FRED와 FRED/ALFRED는 같은 API 제공자를 사용할 수 있지만 자료 출처·series lineage를 합치지 않고 각각 요구 범위를 검증한다.
 

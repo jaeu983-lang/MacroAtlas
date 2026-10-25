@@ -67,7 +67,7 @@ def test_invalid_payloads_never_pass(source, change, tmp_path):
         attr, old = {"wrong_id": ("id", selection.resource_id),
                      "wrong_agency": ("agencyID", selection.agency),
                      "wrong_version": ("version", selection.version or "1.0")}[change]
-        new = "" if change == "wrong_version" and source == "bundesbank" else "WRONG"
+        new = "" if change == "wrong_version" and selection.version is None else "WRONG"
         value = replace(value, body=body.replace(f'{attr}="{old}"'.encode(),
                                                 f'{attr}="{new}"'.encode()))
     elif change == "source":
@@ -252,14 +252,31 @@ def test_codelist_contents_are_checked(change, tmp_path):
         value, body=value.body.replace(code, replacement)))["status"] == "needs_review"
 
 
-def test_recorded_insee_codelist_provenance_and_contract(tmp_path):
+@pytest.mark.parametrize("source", ["insee-nature", "imf-cpi"])
+def test_recorded_followup_metadata_provenance_and_contract(source, tmp_path):
     folder = ROOT / "tests" / "fixtures" / "sdmx_metadata"
-    record = json.loads((folder / "recorded_insee_nature.provenance.json").read_text(
+    record = json.loads((folder / f"recorded_{source.replace('-', '_')}.provenance.json").read_text(
         encoding="utf-8"))
     body = (folder / record["file"]).read_bytes()
     assert hashlib.sha256(body).hexdigest() == record["sha256"]
-    value = replace(response("insee-nature", Settings(tmp_path, network_enabled=True)),
+    value = replace(response(source, Settings(tmp_path, network_enabled=True)),
                     body=body, content_type=record["content_type"], source_url=record["source_url"])
-    assert validate_sdmx_metadata("insee-nature", value) == record["validation"]
+    assert validate_sdmx_metadata(source, value) == record["validation"]
     structures, _ = parse_sdmx_structure(body)
-    assert len(structures["codelists"][0]["codes"]) > 0
+    if source == "insee-nature":
+        assert len(structures["codelists"][0]["codes"]) > 0
+    else:
+        assert structures["dataflows"][0]["version"] == "5.0.0"
+        assert record["validation"]["warnings"] == ["unresolved_dsd:CPI"]
+
+
+def test_imf_selection_has_independent_budget_and_no_credential_route(tmp_path, monkeypatch):
+    monkeypatch.setattr("requests.sessions.Session.request", lambda *_a, **_k: pytest.fail("HTTP"))
+    settings = Settings(tmp_path, network_enabled=True)
+    path, report = HELPERS["run_checks"](settings, sources=["imf-cpi"], fixture=True)
+    assert "iteration_34" in path.name
+    assert report["results"][0]["status"] == "fixture_metadata_validated"
+    assert report["results"][0]["institution_id"] == "INT-01"
+    assert report["results"][0]["request_count"] == 0
+    with pytest.raises(ValueError, match="iteration budgets"):
+        HELPERS["run_checks"](settings, sources=["imf-cpi", "insee-nature"])
