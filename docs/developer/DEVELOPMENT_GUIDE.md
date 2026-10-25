@@ -27,6 +27,13 @@ py -3 -m venv .venv
 
 fixture와 mocked HTTP를 기본으로 사용합니다. 네트워크를 쓰지 않는 검사와 source live 시험은 별개로 기록합니다. 테스트나 lint가 실행되지 않으면 이유를 쓰고 성공으로 보고하지 않습니다.
 
+Windows의 기존 `pytest-of-<사용자>` Temp가 접근 거부로 막히면 저장소 내부의 고유 `--basetemp`로 검증합니다. 기존 사용자 Temp의 ACL이나 내용을 변경하지 않습니다.
+
+```powershell
+$taskTestRoot = Join-Path (Get-Location) ('reports\pytest_' + [guid]::NewGuid().ToString('N'))
+.\.venv\Scripts\python.exe -m pytest --basetemp $taskTestRoot -p no:cacheprovider -ra
+```
+
 ## 구현 경계
 
 - 공통 workflow·validation·storage/recovery는 공통 엔진에 둡니다.

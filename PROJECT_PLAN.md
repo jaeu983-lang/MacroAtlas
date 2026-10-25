@@ -32,6 +32,8 @@ MacroAtlas는 사용자의 자연어 요청을 받아 국제금융·거시경제
 
 정확한 구현 경계는 [현재 구조](docs/developer/ARCHITECTURE.md), 기관별 근거는 [기관 목록](docs/operator/reference/INSTITUTION_CATALOG.md)과 [API 조사](docs/operator/reference/INSTITUTION_API_AUDIT.md), 회차별 증거는 회차 보고서를 봅니다.
 
+현재 Gate U 실패를 좁힌 추가 근거는 [Census·BLS 진단](docs/developer/testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 따릅니다. Census 302는 공식 invalid-key 안내이며 사용자 활성화 완료 응답과 별개로 현재 키가 서버에서 거부됩니다. BLS GET·POST 비교는 모두 503 HTML로 끝났고 앞단 오류/접근 페이지 가능성만 확인했습니다. 코드에는 안전한 인증 실패 분류와 등록 profile별 단발 실행을 보강했으며 전체 offline suite는 846 passed, 1 skipped입니다. live 자료 성공이나 Gate U 통과로 승격하지 않습니다.
+
 ### 제품 범위
 
 Iteration 29는 API 4개 dataset binding과 TIC·BoE 공식 CSV 3개 binding을 version/hash profile 아래 연결합니다. 12개 API client와 별도 공식 파일 client 2곳의 raw 보존이 가능하며, 새 dataset 경로는 합성 fixture·원본/검증 receipt·hash read-back 범위입니다. API 문서 상태와 기존 live 범위는 바뀌지 않습니다. [데이터셋 계약](docs/developer/connectors/DATASET_CONTRACTS.md)을 따릅니다.

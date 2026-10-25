@@ -18,6 +18,8 @@ FRED는 애플리케이션별 키를 사용하도록 안내하며 각 사용자�
 
 Census의 과거 안내에 있던 무키 500회/IP 기준을 현재 데이터 조회에 적용하지 않습니다. [2026년 공식 안내](https://www.census.gov/library/video/2026/adrm/requesting-a-census-data-api-key.html)는 데이터 요청의 키 의무화를 명시합니다. [2026년 6월 공식 뉴스레터](https://content.govdelivery.com/accounts/USCENSUS/bulletins/41aaf23)는 metadata 조회는 키 없이 허용한다고 별도로 설명합니다.
 
+Iteration 30 진단에서 현재 로컬 Census 키는 공식 `invalid_key.html`로 거부됐습니다. 활성화 링크를 완료했다는 사용자 확인이 있어도 실제 서버 판정은 별도로 봅니다. 발급 메일의 정확한 키를 `.env`에 다시 넣고 필요하면 공식 절차로 재발급하세요. 키를 대화로 보내지 마세요. 코드의 `invalid_api_key`는 키를 출력하지 않는 고정 진단명이며, 자동 redirect follow로 해결하지 않습니다. [진단과 1회 재검증 명령](../developer/testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md).
+
 BLS FAQ의 등록 v2 기준은 하루 500회, 요청당 50개 series·20년이며, 등록 없는 v1은 하루 25회, 요청당 25개 series·10년입니다. 이 한도를 요청 목표량으로 채우는 방식으로 사용하지 않습니다. 자동 갱신 기능은 없습니다.
 
 ## 값을 넣는 파일

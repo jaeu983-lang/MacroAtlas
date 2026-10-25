@@ -1,6 +1,8 @@
 # Iteration 30 — bounded live canary 상태
 
-**현재 상태: PARTIAL — Gate U NOT PASSED.** 2026-10-25에 7개 경로를 각 1회씩 다시 실행한 후속 canary도 마쳤다(두 run 합계 14회, 각 run에서 재시도 0회). 최신 실행은 4/7 경로가 live source-contract 검증과 hash read-back을 통과했다. Census는 redirect 차단(HTTP 302), BLS 두 경로는 일시 상태(HTTP 503)로 실패했다. 프로세스에서만 `MACROATLAS_NETWORK_ENABLED=true`를 설정했고 `.env`는 수정하지 않았다. [후속 live run JSON](../../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json).
+**현재 상태: PARTIAL — Gate U NOT PASSED.** 마지막 전체 canary는 4/7 통과였다. 이후 새 제한 진단에서 Census 302 목적지가 공식 `invalid_key.html`임을 확인했다. BLS는 기존 POST 두 경로와 공식 GET·예제 POST 비교까지 모두 503 HTML을 반환했다. Akamai·JavaScript 표식은 앞단 오류/접근 페이지 가능성의 근거이며 차단 정책은 확정되지 않았다. [원인·코드 수정·재개 조건](CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 따른다. 기존 전체 run [JSON](../../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json)은 변경하지 않는다.
+
+이번 추가 진단은 5회(Census 1, BLS 4), 자동 재시도 0회였다. 이전 전체 canary 14회와 합쳐 저장소가 기록한 source 요청은 19회이며, 추가 5회는 7개 전체 gate run이 아니다. 코드에는 Census 인증 오류 분류, 고정 media category, `--profile` 선택과 부분 실행의 `not_assessed_partial_scope` 판정을 추가했다. 새 분류 자체는 offline 회귀로 검증했으며 추가 live 요청은 하지 않았다.
 
 ## 후속 live run — 2026-10-25 (7회, 재시도 0회)
 
@@ -16,7 +18,7 @@
 
 이 후속 실행 자체의 통과는 **4/7**이며 Gate U는 7/7 조건을 만족하지 못해 **NOT PASSED**다. `live_contract_validated`는 해당 고정 source contract와 저장 무결성만 의미한다. 완전한 데이터셋, 정규화된 observation 수용, 다기관 전체 지원을 뜻하지 않는다. 이전 실행 결과와 receipt는 이 후속 실행으로 소급 변경하지 않는다.
 
-### 실패별 다음 조치
+### 두 번째 전체 run 당시의 후속 조치 (이력)
 
 - **Census:** 현재 redirect 거부 정책을 유지하고 자동으로 따라가지 않는다. 기존 실행에는 `Location`이 보존되지 않아 목적지를 추정하지 않는다. 새 요청 예산을 정한 뒤에만 한 번의 안전한 진단으로 redirect의 scheme/host/path를 query 값 없이 기록하고, 그 host가 공식 허용 경로인지 확인한다. 그 전에는 endpoint·키·네트워크 우회 변경을 하지 않는다.
 - **BLS:** 503은 실제 HTTP 응답이지만 장애 원인이 점검/과부하/중간 게이트웨이 중 무엇인지는 확인되지 않았다. 이미 두 v1 요청을 보냈으므로 이번 예산에서 재시도하지 않는다. 별도 예산을 정한 뒤 공식 v1 endpoint 상태와 새 단발 응답을 재확인한다. v2 전환이나 임의 재시도는 하지 않는다.

@@ -4,6 +4,12 @@
 **Scope:** Seven registered dataset paths, one request attempt each, zero automatic retries.
 **Setting:** `MACROATLAS_NETWORK_ENABLED=true` was set for this process only at the user's request. The repository `.env` remained unchanged.
 
+## Latest targeted diagnosis and correction
+
+Five further source requests (Census 1, BLS 4; zero automatic retries) confirmed that Census redirects to its official `invalid_key.html`. The two registered BLS POST requests, a documented single-series GET, and a documented Python-style POST all returned HTTP 503 HTML. The latter two error samples contained Akamai/JavaScript markers; an edge access/error response is a hypothesis, not a verified policy decision. Gate U remains NOT PASSED; no new successful source artifact was produced and no later iteration started.
+
+The code now maps only recognized official Census data-key redirects to `AUTH_ACCESS` with fixed reasons, reports fixed JSON/HTML/other failure categories, and supports an explicitly selected subset of registered live profiles. Partial success cannot become a full Gate U pass. Details, local evidence, remaining credential/source actions and verification are in [the diagnosis report](../testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md). The earlier run records below are historical and remain unchanged.
+
 ## Follow-up live canary — run 2
 
 A later user-authorized run repeated the same seven bounded profiles once each, with zero retries. It again set the network opt-in for that process only and left `.env` unchanged. The local-only result is [follow-up canary JSON](../../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json).

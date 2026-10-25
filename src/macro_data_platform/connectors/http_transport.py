@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -88,6 +88,8 @@ class HttpResponse:
     retry_after: str | None
     etag: str | None = None
     last_modified: str | None = None
+    # Transient header only: may contain credentials, so exclude it from repr/logs.
+    redirect_location: str | None = field(default=None, repr=False)
 
 
 class BoundedHttpTransport:
@@ -207,6 +209,7 @@ class BoundedHttpTransport:
                         retry_after=response.headers.get("Retry-After"),
                         etag=response.headers.get("ETag"),
                         last_modified=response.headers.get("Last-Modified"),
+                        redirect_location=response.headers.get("Location") if 300 <= status < 400 else None,
                     )
         except HttpTransportError:
             raise

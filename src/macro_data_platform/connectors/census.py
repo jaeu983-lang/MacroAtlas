@@ -5,6 +5,7 @@ from collections.abc import Mapping, Sequence
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.official_api import (
     ConnectorFailure,
+    ConnectorFailureReason,
     JsonApiResponse,
     JsonApiTransport,
     validate_parameters,
@@ -64,7 +65,8 @@ class CensusClient:
         credential = self.settings.census_api_key
         if not credential:
             raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
-                                   "CENSUS_API_KEY is not configured in local settings.")
+                                   "CENSUS_API_KEY is not configured in local settings.",
+                                   reason=ConnectorFailureReason.MISSING_API_KEY)
         response = self.transport.get_json(
             "Census", f"{API_ROOT}/{dataset}", "data",
             {"get": ",".join(variables), **selected, "key": credential}, credential,

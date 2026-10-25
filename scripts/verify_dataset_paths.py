@@ -131,10 +131,14 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--fixture", action="store_true")
     mode.add_argument("--live", action="store_true")
+    parser.add_argument("--profile", action="append", choices=tuple(LIVE_CASES),
+                        help="Run only this registered live profile; repeat for multiple profiles")
     arguments = parser.parse_args()
     if arguments.live:
-        run_live()
+        run_live(profile_ids=arguments.profile)
         return
+    if arguments.profile:
+        parser.error("--profile requires --live")
     settings = Settings(ROOT, network_enabled=True, fred_api_key="synthetic-fred-only",
                         census_api_key="synthetic-census-only", bls_api_key="synthetic-unused-bls")
     results = []
@@ -155,18 +159,27 @@ def main():
     print(f"{len(results)} dataset contracts saved and hash-verified; live requests: 0")
 
 
-def run_live(*, root: Path | None = None, settings: Settings | None = None):
+def run_live(*, root: Path | None = None, settings: Settings | None = None,
+             profile_ids: list[str] | tuple[str, ...] | None = None):
     """One request per registered dataset; respect the user's persisted network opt-in."""
+    if profile_ids is not None and (
+        not isinstance(profile_ids, (list, tuple)) or not profile_ids
+        or any(not isinstance(item, str) or item not in LIVE_CASES for item in profile_ids)
+        or len(set(profile_ids)) != len(profile_ids)
+    ):
+        raise ValueError("Live profiles must be distinct registered profile identifiers")
+    selected = dict(LIVE_CASES) if profile_ids is None else {item: LIVE_CASES[item] for item in profile_ids}
     root = ROOT if root is None else root
     settings = Settings.from_project_env(root) if settings is None else settings
     timestamp = datetime.now(UTC).isoformat()
     report = {"evidence": "live_canary", "started_at": timestamp,
-              "network_enabled": settings.network_enabled, "retry_count": 0, "results": []}
+              "network_enabled": settings.network_enabled, "retry_count": 0, "results": [],
+              "profile_scope": list(selected)}
     if not settings.network_enabled:
         report.update({"status": "not_run_network_disabled",
                        "note": "MACROATLAS_NETWORK_ENABLED is false; no source request was attempted."})
         report["results"] = [{"profile_id": profile_id, "status": "not_run_network_disabled"}
-                             for profile_id in LIVE_CASES]
+                             for profile_id in selected]
     else:
         from macro_data_platform.connectors.official_api import ConnectorFailure
         from macro_data_platform.discovery.datasets import get_dataset_profile
@@ -174,7 +187,7 @@ def run_live(*, root: Path | None = None, settings: Settings | None = None):
         from macro_data_platform.storage.datasets import read_dataset_artifact
 
         collector = DatasetCollector(settings)
-        for profile_id, parameters in LIVE_CASES.items():
+        for profile_id, parameters in selected.items():
             profile = get_dataset_profile(profile_id)
             missing_key = ((profile.institution_id == "US-02" and not settings.fred_api_key)
                            or (profile.institution_id == "US-06" and not settings.census_api_key))
@@ -206,6 +219,7 @@ def run_live(*, root: Path | None = None, settings: Settings | None = None):
                                           "failure_stage": error.status.value,
                                           "failure_reason": error.reason.value,
                                           "failure_http_status": error.http_status,
+                                          "failure_response_kind": error.response_kind,
                                           "request_count": LIVE_REQUESTS_PER_DATASET})
             except (ValueError, TypeError, OSError, KeyError, IndexError, AttributeError, RuntimeError) as error:
                 # Fixed exception classes only; omit text that could carry response or credential data.
@@ -214,8 +228,13 @@ def run_live(*, root: Path | None = None, settings: Settings | None = None):
                                           "request_count": LIVE_REQUESTS_PER_DATASET})
         statuses = {row["status"] for row in report["results"]}
         report["status"] = "completed" if statuses == {"live_contract_validated"} else "completed_with_issues"
-        report["request_budget"] = {"planned_maximum": len(LIVE_CASES), "automatic_retries": 0,
-                                    "bls_v1_maximum": 2, "bls_v2_used": False}
+    report["request_budget"] = {"planned_maximum": len(selected), "automatic_retries": 0,
+                                "bls_v1_maximum": sum(item.startswith("bls.") for item in selected),
+                                "bls_v2_used": False}
+    report["gate_u_assessment"] = (
+        "not_assessed_partial_scope" if set(selected) != set(LIVE_CASES)
+        else "passed" if report["status"] == "completed" else "not_passed"
+    )
     report["finished_at"] = datetime.now(UTC).isoformat()
     path = root / "reports" / f"iteration_30_live_canary_{uuid4().hex}.json"
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

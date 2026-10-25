@@ -32,6 +32,8 @@
 
 API 계열 wrapper는 현행 공개 class와 메서드, 기관별 URL/query/credential 처리, 상태 코드의 의미, 크기 제한, parser/redaction, 최종 오류 메시지와 response model을 보유한다. 공통층의 transport 오류를 기존 계열의 `ConnectorFailure` 상태·코드로 매핑한다. 사용자 입력 또는 credential이 포함될 수 있는 URL/예외 상세는 오류 메시지로 내보내지 않는다.
 
+HTTP response의 redirect `Location`은 후속 요청 없이 wrapper의 source 오류 분류에만 일시 전달하며 dataclass repr에서 제외한다. query에 credential이 있을 수 있어 이 header를 archive/report에 serialize하지 않는다. Census의 공식 key-error host/path 판단은 JSON family wrapper가 맡는다. 실패 응답의 media type은 report에 `json`·`html`·`other` 고정 category로만 기록한다.
+
 ## 경계 및 보존 계약
 
 - 이 작업은 **전송 중복 제거**이지 source adapter 통합이나 새 API 구현이 아니다.

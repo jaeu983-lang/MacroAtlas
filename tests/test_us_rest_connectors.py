@@ -10,7 +10,11 @@ from macro_data_platform.config import Settings
 from macro_data_platform.connectors.bls import BLSClient
 from macro_data_platform.connectors.census import CensusClient
 from macro_data_platform.connectors.fred import FREDClient
-from macro_data_platform.connectors.official_api import ConnectorFailure, JsonApiTransport
+from macro_data_platform.connectors.official_api import (
+    ConnectorFailure,
+    ConnectorFailureReason,
+    JsonApiTransport,
+)
 from macro_data_platform.contracts import ErrorCode
 from macro_data_platform.storage.api_responses import read_api_response, save_api_response
 
@@ -216,6 +220,73 @@ def test_required_credentials_are_checked_without_network(tmp_path, source):
     with pytest.raises(ConnectorFailure) as error:
         data_call(source, client)
     assert error.value.code == ErrorCode.AUTH_ACCESS and not session.calls
+    if source == "Census":
+        assert error.value.reason == ConnectorFailureReason.MISSING_API_KEY
+
+
+@pytest.mark.parametrize("target,reason", [
+    ("https://api.census.gov/data/invalid_key.html?key=" + SECRET, "invalid_api_key"),
+    ("/data/invalid_key.html", "invalid_api_key"),
+    ("https://api.census.gov/data/missing_key.html", "missing_api_key"),
+])
+def test_census_official_key_redirect_is_auth_failure_without_following_or_leaking(
+    tmp_path, target, reason,
+):
+    _, client, session = make(tmp_path, "Census", b"must remain unread", status=302,
+                              headers={"Location": target})
+    session.response.iter_content = lambda **_kwargs: pytest.fail("redirect body was read")
+    with pytest.raises(ConnectorFailure) as error:
+        data_call("Census", client)
+    assert error.value.reason.value == reason
+    assert error.value.code == ErrorCode.AUTH_ACCESS
+    assert error.value.http_status == 302
+    assert len(session.calls) == 1
+    assert session.calls[0][2]["allow_redirects"] is False
+    assert SECRET not in str(error.value) and target not in str(error.value)
+    assert not (tmp_path / "data").exists()
+
+
+@pytest.mark.parametrize("target", [
+    "https://api.census.gov.evil.example/data/invalid_key.html",
+    "https://api.census.gov@evil.example/data/invalid_key.html",
+    "https://user@api.census.gov/data/invalid_key.html",
+    "http://api.census.gov/data/invalid_key.html",
+    "https://api.census.gov:443/data/invalid_key.html",
+    "https://api.census.gov/data/invalid_key.html#fragment",
+    "https://api.census.gov/data/unknown.html",
+    "https://[invalid", "\n/data/invalid_key.html", "x" * 8193, None,
+])
+def test_unrecognized_census_redirect_stays_refused(tmp_path, target):
+    _, client, session = make(tmp_path, "Census", {}, status=302, headers={"Location": target})
+    with pytest.raises(ConnectorFailure) as error:
+        data_call("Census", client)
+    assert error.value.reason == ConnectorFailureReason.REDIRECT_REFUSED
+    assert error.value.code == ErrorCode.LICENSE_SECURITY
+    assert len(session.calls) == 1
+
+
+def test_census_keyless_metadata_redirect_does_not_claim_supplied_key_invalid(tmp_path):
+    _, client, session = make(tmp_path, "Census", {}, status=302,
+                              headers={"Location": "/data/invalid_key.html"})
+    with pytest.raises(ConnectorFailure) as error:
+        client.list_datasets()
+    assert error.value.reason == ConnectorFailureReason.REDIRECT_REFUSED
+    assert len(session.calls) == 1
+
+
+def test_bls_html_503_is_reported_safely_without_retry_or_api_fallback(tmp_path):
+    _, client, session = make(tmp_path, "BLS", b"private error details " + SECRET.encode(),
+                              status=503, headers={"Content-Type": "text/html; charset=utf-8"})
+    session.response.iter_content = lambda **_kwargs: pytest.fail("503 body was read")
+    with pytest.raises(ConnectorFailure) as error:
+        data_call("BLS", client)
+    assert error.value.reason == ConnectorFailureReason.HTTP_TRANSIENT_STATUS
+    assert error.value.response_kind == "html"
+    assert error.value.http_status == 503
+    assert SECRET not in str(error.value)
+    assert len(session.calls) == 1
+    assert session.calls[0][1] == "https://api.bls.gov/publicAPI/v1/timeseries/data/"
+    assert not (tmp_path / "data").exists()
 
 
 @pytest.mark.parametrize("source", ["FRED", "Census", "BLS"])

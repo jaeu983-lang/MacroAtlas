@@ -8,8 +8,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
-from urllib.parse import quote, quote_plus, urlsplit
+from typing import Any, Literal
+from urllib.parse import quote, quote_plus, urljoin, urlsplit
 
 import requests
 
@@ -52,16 +52,20 @@ class ConnectorFailure(Exception):
     def __init__(
         self, status: StageStatus, code: ErrorCode, message: str, *,
         reason: ConnectorFailureReason | None = None, http_status: int | None = None,
+        response_kind: Literal["json", "html", "other"] | None = None,
     ):
         if reason is not None and not isinstance(reason, ConnectorFailureReason):
             raise TypeError("reason must be a ConnectorFailureReason")
         if http_status is not None and (type(http_status) is not int or not 100 <= http_status <= 599):
             raise ValueError("http_status must be a valid HTTP status")
+        if response_kind not in {None, "json", "html", "other"}:
+            raise ValueError("response_kind must be a fixed media category")
         super().__init__(message)
         self.status = status
         self.code = code
         self.reason = reason or ConnectorFailureReason.UNSPECIFIED
         self.http_status = http_status
+        self.response_kind = response_kind
 
 
 class ConnectorFailureReason(str, Enum):
@@ -85,6 +89,26 @@ class ConnectorFailureReason(str, Enum):
     UNEXPECTED_TRANSPORT_FAILURE = "unexpected_transport_failure"
     UNEXPECTED_MEDIA_TYPE = "unexpected_media_type"
     INVALID_JSON = "invalid_json"
+    INVALID_API_KEY = "invalid_api_key"
+    MISSING_API_KEY = "missing_api_key"
+
+
+def _census_key_redirect(endpoint: str, location: str | None) -> ConnectorFailureReason | None:
+    """Recognize only official key-error pages; never follow or retain their URLs."""
+    if (not isinstance(location, str) or not 1 <= len(location) <= 8192
+            or any(ord(char) < 32 or ord(char) == 127 for char in location)):
+        return None
+    try:
+        parts = urlsplit(urljoin(endpoint, location))
+        if (parts.scheme != "https" or parts.netloc.lower() != "api.census.gov"
+                or parts.fragment):
+            return None
+    except ValueError:
+        return None
+    return {
+        "/data/invalid_key.html": ConnectorFailureReason.INVALID_API_KEY,
+        "/data/missing_key.html": ConnectorFailureReason.MISSING_API_KEY,
+    }.get(parts.path)
 
 
 @dataclass(frozen=True)
@@ -231,6 +255,9 @@ class JsonApiTransport:
             self._raise_transport_failure(source_agency, exc)
 
         status = response.status_code
+        media_type = response.content_type.split(";", 1)[0].strip().lower()
+        response_kind = ("json" if media_type in {"application/json", "text/json"}
+                         else "html" if media_type == "text/html" else "other")
         if status in {401, 403}:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
@@ -238,18 +265,30 @@ class JsonApiTransport:
                  if source_agency == "BLS"
                  else f"{source_agency} denied API access; check the local credential."),
                 reason=ConnectorFailureReason.AUTH_DENIED, http_status=status,
+                response_kind=response_kind,
             )
         if status == 429 or status == 408 or 500 <= status < 600:
             raise ConnectorFailure(
                 StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                 f"{source_agency} returned a temporary API failure.",
                 reason=ConnectorFailureReason.HTTP_TRANSIENT_STATUS, http_status=status,
+                response_kind=response_kind,
             )
         if 300 <= status < 400:
+            key_reason = (_census_key_redirect(endpoint, response.redirect_location)
+                          if source_agency == "Census" and method == "data" and "key" in parameters
+                          else None)
+            if key_reason is not None:
+                raise ConnectorFailure(
+                    StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
+                    "Census rejected the data API key; activate or replace CENSUS_API_KEY locally.",
+                    reason=key_reason, http_status=status, response_kind=response_kind,
+                )
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 f"{source_agency} redirected the API request; redirect was refused.",
                 reason=ConnectorFailureReason.REDIRECT_REFUSED, http_status=status,
+                response_kind=response_kind,
             )
         if status in {404, 410}:
             raise ConnectorFailure(

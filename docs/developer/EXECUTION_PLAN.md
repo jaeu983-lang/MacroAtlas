@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** Iteration 30 Gate U는 **NOT PASSED**다. 첫 canary와 후속 canary는 각각 7회·재시도 0회였다. 최신 후속 run은 4/7 live source-contract pass(FRED, 두 TIC profile, BoE), Census HTTP 302 `redirect_refused`, BLS 두 profile HTTP 503 `http_transient_status`다. `.env`는 수정하지 않았고 후속 run에서만 프로세스 network opt-in을 사용했다. Census redirect 목적지는 기록되지 않아 원인은 더 구체화되지 않았으며, BLS 503의 서버 측 원인도 알 수 없다. 네트워크 추가 호출 예산을 소진했으므로 재시도하지 않는다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [canary 상태](testing/LIVE_CANARY_REPORT.md), [회차 보고서](history/ITERATION_30_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
+**현재 작업:** Iteration 30 Gate U는 **NOT PASSED**다. 마지막 전체 run은 4/7 live source-contract pass였다. 추가 5회 진단(Census 1, BLS 4; 자동 retry 0)에서 Census는 공식 invalid-key redirect, BLS는 기존 POST와 공식 GET·예제 POST 모두 503 HTML이었다. BLS의 Akamai/JavaScript 표식은 앞단 오류/접근 페이지 가능성을 나타내지만 정책·장애 원인은 미확정이다. Census 키 재입력/재발급과 BLS 기관/네트워크 확인이 남는다. 코드에는 Census 인증 오류와 고정 response category, `--profile` 선택 및 부분 실행의 gate 미평가를 추가했다. 전체 offline suite는 846 passed, 1 skipped다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [실패 진단](testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md), [canary 상태](testing/LIVE_CANARY_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
 
 ## 실행 준비 상태
 
@@ -17,7 +17,7 @@
 | 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 bounded live canary | 후속 실행은 7회·재시도 0회, 4/7 통과. Census 302 redirect 거부, BLS 503 두 건; Gate U 미통과 |
 | 문서 확인 API의 다음 대상 | Iteration 31 IMF 상세 route/auth 후보, BOJ·Board crosswalk, 기존 clients workflow/live 준비 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. BLS2는 현재 제외 |
 | live | World Bank 고정 경로 과거 partial; Iteration 30에서 canary 2회 | 최신 run의 live source-contract pass 4/7; Census `redirect_refused`/302와 BLS `http_transient_status`/503 두 건. 7/7 성공 증거가 아님 |
-| 전체 offline suite | 822 passed, 1 skipped, 0 failed | Iteration 30 후속 MFH parser/진단 변경까지 검증; 전기관 live 성공 증거 아님 |
+| 전체 offline suite | 846 passed, 1 skipped, 0 failed | Census 안전한 키 오류 분류·부분 canary gate 회귀까지 검증; 전기관 live 성공 증거 아님 |
 
 이 제약은 공통 readiness audit와 offline fixture 작업을 막지 않습니다. 실제 series, 인증된 live 요청, 비교·계산·파생 XLSX는 source별 문서·용도·이용 조건을 확정한 뒤 해당 gate에서 결정합니다.
 

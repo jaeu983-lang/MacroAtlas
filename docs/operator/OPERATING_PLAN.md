@@ -14,7 +14,7 @@
 - 공식 API 문서 확인: 15개. 조사 범위에서 문서 명세 미확인: 6개. API 미제공을 공식 문서로 확인한 곳: 0개.
 - 미확인 6개는 “API가 없다”가 아니라 추가 문서 조사가 필요하다는 뜻입니다.
 - World Bank USA/WDI/GDP 고정 workflow는 과거 제한 live 검증이 있습니다. Iteration 30 후속 canary에서는 FRED GDP·TIC MFH·Table 3D·BoE Bank Rate 4개 profile이 live source contract와 hash read-back을 통과했습니다.
-- Iteration 30 Gate U는 **NOT PASSED**입니다. 후속 7회 실행에서 Census는 HTTP 302 redirect를 안전하게 거부했고, BLS 두 profile은 각각 HTTP 503을 받았습니다. Census 목적지와 BLS 서버 측 원인은 미확정입니다. 해당 run은 재시도 0회이며 새 live 호출 예산은 소진됐습니다. 상세와 재개 조건은 [canary 보고서](../developer/testing/LIVE_CANARY_REPORT.md)를 따릅니다.
+- Iteration 30 Gate U는 **NOT PASSED**입니다. 마지막 전체 run은 4/7 통과였고, 추가 제한 진단에서 Census의 공식 invalid-key redirect와 BLS GET·POST 모두의 503 HTML을 확인했습니다. 키 재입력/재발급 및 BLS 기관·네트워크 확인 후 새 예산으로 재개합니다. 부분 실행은 전체 gate 성공이 아니며 [실패 진단·재개 조건](../developer/testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 따릅니다.
 - BEA와 e-Stat은 제한된 API 클라이언트와 mock fixture가 있으나, dataset collector 연결과 live 인증·수집은 미검증입니다.
 - 자연어 지시를 받는 제품 에이전트 UI는 아직 구현되지 않았습니다. 저장소에는 Python 서비스와 데이터 엔진이 있습니다.
 - 현재 개선 분석기는 오류·피드백을 읽어 사람 검토용 후보를 만들며, 코드를 자동 수정하지 않습니다.

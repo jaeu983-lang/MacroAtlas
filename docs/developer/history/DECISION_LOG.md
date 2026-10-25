@@ -600,3 +600,12 @@
 - **BLS 실패:** v1 unemployment·CPI POST가 각각 HTTP 503 `http_transient_status`, `TRANSIENT/FAILED_RETRYABLE`로 종료됐다. 두 요청 외의 retry는 없으며, HTTP status만으로 provider-side 원인을 특정할 수 없다.
 - **후속 조치:** 추가 외부 요청은 하지 않는다. 새로운 예산을 정한 뒤 Census redirect 목적지를 query 값 없이 제한 기록하고 공식 host와 대조한다. BLS는 새 예산에서 필요한 profile만 별도 단발 확인하고 v1 계약을 유지한다. 모든 Gate U profile 통과 전까지 Iteration 31·soak는 보류한다.
 - **보안/한계:** `.env`, key 값, 응답 본문, redirect query는 변경·출력·저장하지 않았다. 원 canary와 이전 receipts는 소급 수정하지 않았다. 이번 기록은 실제 live evidence를 추가하지만 Gate U 성공을 의미하지 않는다.
+
+## Census 인증 분류·BLS 오류 진단과 선택 canary — D-100 (2026-10-25)
+
+- **상태: IMPLEMENTED DIAGNOSTICS; GATE U NOT PASSED.** 사용자가 Census와 BLS 문제를 모두 처리하도록 요청했다. Iteration 30의 실패 복구만 진행하고 다음 iteration은 시작하지 않았다.
+- **실제 진단:** Census 1회, BLS 4회(GET 1·POST 3), 총 5회·자동 retry 0회. Census는 공식 `invalid_key.html`, BLS는 기존 collector 두 POST와 공식 GET·예제 POST 비교 모두 503 HTML이었다. BLS 비교 표본의 Akamai/JavaScript 표식은 앞단 오류/접근 페이지 가설이며 차단 정책을 확정하지 않는다. [진단 보고서](../testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)에 로컬 JSON·공식 문서·상세 budget을 연결한다.
+- **변경:** HTTP Location은 repr 비노출인 메모리 필드로만 전달한다. JSON family의 Census data 요청만 공식 key-error host/path를 AUTH_ACCESS와 고정 invalid/missing key reason으로 매핑한다. 실패 media type은 json/html/other만 보존한다. `--profile`은 등록된 ID만 허용하고 부분 성공은 `not_assessed_partial_scope`다. redirect follow·v2·자동 retry·raw overwrite는 추가하지 않았다.
+- **검증:** 관련 테스트 146 passed, 1 skipped; 전체 offline suite 846 passed, 1 skipped, 0 failed (72.70초); 변경 Python Ruff 통과. Symlink 생성 미지원 1건은 제외했다. 기본 pytest Temp에서 WinError 5를 재현했고 저장소 내 고유 basetemp를 사용해 검증했다. 코드 분류 자체의 새 live 검증은 하지 않았다.
+- **남은 사람/외부 조치:** 사용자는 Census 활성화 완료를 확인했지만 현재 설정값은 서버가 거부했다. 프로세스 override·외부 따옴표·명백한 placeholder·다른 기관 key 동일 값은 발견되지 않았다. 키 재입력/재발급은 사용자 조치다. BLS는 기관/네트워크 접근 상태 확인 뒤 새 예산에서 재개한다. 이번 작업에서 credentials를 바꾸거나 외부 문의를 발송하지 않았다.
+- **gate 경계:** 새 정상 자료 artifact는 없다. 이전 전체 canary의 4/7 성공은 유지하지만 부분 진단을 gate 통과로 합산하지 않는다. main 통합 전 사람의 diff 검토가 남는다.

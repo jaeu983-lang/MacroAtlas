@@ -142,7 +142,8 @@ def test_response_size_is_bounded_by_header_and_stream(tmp_path, headers):
 
 
 def test_non_success_status_body_can_be_left_unread_by_family_policy(tmp_path):
-    response = FakeResponse(b"must not be read", status=302)
+    location = "https://api.example.gov/key-error?key=synthetic-secret"
+    response = FakeResponse(b"must not be read", status=302, headers={"Location": location})
     response.iter_content = lambda **_kwargs: pytest.fail("redirect body must not be read")
     session = FakeSession(response)
 
@@ -150,6 +151,8 @@ def test_non_success_status_body_can_be_left_unread_by_family_policy(tmp_path):
 
     assert result.status_code == 302
     assert result.body == b""
+    assert result.redirect_location == location
+    assert location not in repr(result) and "synthetic-secret" not in repr(result)
     assert session.request[1]["allow_redirects"] is False
 
 

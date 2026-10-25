@@ -34,8 +34,8 @@
 | BEA | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
 | e-Stat | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
 | FRED/ALFRED | v1 metadata·검색·명시적 관측치 page·release/source, synthetic archive/read-back | 2026-10-25 FRED GDP 1개 고정 page live contract/hash 검증; v2, Board crosswalk, 전체 자동 pagination·workflow·범용 인증/coverage |
-| BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | 후속 canary의 두 경로 모두 HTTP 503 `http_transient_status`; 구체 서버 측 원인 미확정. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
-| Census | catalogue/variables/geographies, keyed header/row table과 synthetic archive/read-back | 후속 ACS query는 HTTP 302 `redirect_refused`로 안전 중단; redirect 목적지는 기록되지 않아 원인 미확정. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |
+| BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | 기존 POST·공식 GET·예제 POST 모두 503 HTML; 앞단 오류/접근 페이지 가능성과 일치하나 정확한 정책·장애 원인 미확정. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
+| Census | catalogue/variables/geographies, keyed header/row table, 공식 key-error redirect의 안전한 AUTH_ACCESS 분류와 synthetic archive/read-back | 실제 ACS query는 공식 `invalid_key.html` redirect; 현재 key 거부 확인. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |
 | BIS | SDMX v2 raw-response routes와 mocked routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |
 | OECD | SDMX v1 raw-response routes와 mocked routes, 공통 file archive/read-back helper | 인증/외부 접근 조건, provider payload fixture·parse, workflow, live |
 | ECB | SDMX 2.1 dataflow/structure/data routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |

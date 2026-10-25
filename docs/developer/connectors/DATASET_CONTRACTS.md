@@ -59,6 +59,14 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 .venv\Scripts\python.exe scripts/verify_dataset_paths.py --live
 ```
 
+실패한 등록 경로만 새 예산에서 확인할 때는 `--profile`을 반복 지정한다. 알 수 없는 ID·중복·빈 선택은 요청 전에 거부한다. 이 옵션은 `--live`에서만 사용하며, endpoint를 임의로 입력할 수 없다.
+
+```powershell
+.venv\Scripts\python.exe scripts/verify_dataset_paths.py --live --profile census.acs2023.population
+```
+
+부분 실행은 전부 성공해도 `gate_u_assessment=not_assessed_partial_scope`이며, 전체 7개 동일 run 성공만 `passed`다. Report는 선택된 profile에 맞는 최대 요청량/BLS budget과 고정 `failure_response_kind`(json/html/other)를 기록한다. Census 공식 key-error redirect는 AUTH_ACCESS와 고정 invalid/missing-key reason으로 구분한다. [현재 원인과 재개 조건](../testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 먼저 확인한다.
+
 실행기는 실제 `.env`를 불러올 때 key 값을 출력하지 않는다. network opt-in이 false이면 모든 경로를 `not_run_network_disabled`로 남기고 source request를 하지 않는다. 인증 누락은 `not_run_missing_key`; 실제 오류는 고정 오류 코드·단계·reason token·HTTP 상태만 기록한다. 오류 문구, 응답 본문, 키는 보고서에 넣지 않는다. 기존 보고서는 이 필드를 소급해서 갖지 않는다. 각 source 결과는 raw hash와 read-back 검증을 기록한다. BLS 무키 v1의 두 request는 하루 25회 문서 제한 안의 최소시험이며, 다른 작업량도 합산해야 한다.
 
 ## 사용 조건과 live 전 확인
