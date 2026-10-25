@@ -7,6 +7,7 @@ import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any
 from urllib.parse import quote, quote_plus, urlsplit
 
@@ -48,10 +49,42 @@ _SENSITIVE_REQUEST_NAMES = _SENSITIVE_FIELD_NAMES | {"key"}
 class ConnectorFailure(Exception):
     """Safe, fixed-text failure; transport/library details never cross this boundary."""
 
-    def __init__(self, status: StageStatus, code: ErrorCode, message: str):
+    def __init__(
+        self, status: StageStatus, code: ErrorCode, message: str, *,
+        reason: ConnectorFailureReason | None = None, http_status: int | None = None,
+    ):
+        if reason is not None and not isinstance(reason, ConnectorFailureReason):
+            raise TypeError("reason must be a ConnectorFailureReason")
+        if http_status is not None and (type(http_status) is not int or not 100 <= http_status <= 599):
+            raise ValueError("http_status must be a valid HTTP status")
         super().__init__(message)
         self.status = status
         self.code = code
+        self.reason = reason or ConnectorFailureReason.UNSPECIFIED
+        self.http_status = http_status
+
+
+class ConnectorFailureReason(str, Enum):
+    """Safe, stable diagnostic labels; never contains response or request text."""
+
+    UNSPECIFIED = "unspecified"
+    NETWORK_DISABLED = "network_disabled"
+    UNREVIEWED_ENDPOINT = "unreviewed_endpoint"
+    ENDPOINT_SAFETY_CHECK = "endpoint_safety_check"
+    AUTH_DENIED = "auth_denied"
+    HTTP_TRANSIENT_STATUS = "http_transient_status"
+    REDIRECT_REFUSED = "redirect_refused"
+    ENDPOINT_NOT_FOUND = "endpoint_not_found"
+    HTTP_UNEXPECTED_STATUS = "http_unexpected_status"
+    TLS_VERIFICATION_FAILED = "tls_verification_failed"
+    ELAPSED_TIMEOUT = "elapsed_timeout"
+    RESPONSE_TOO_LARGE = "response_too_large"
+    INVALID_RESPONSE_CHUNK = "invalid_response_chunk"
+    UNSAFE_ENDPOINT = "unsafe_endpoint"
+    TRANSPORT_FAILURE = "transport_failure"
+    UNEXPECTED_TRANSPORT_FAILURE = "unexpected_transport_failure"
+    UNEXPECTED_MEDIA_TYPE = "unexpected_media_type"
+    INVALID_JSON = "invalid_json"
 
 
 @dataclass(frozen=True)
@@ -159,12 +192,14 @@ class JsonApiTransport:
                 StageStatus.NEEDS_REVIEW,
                 ErrorCode.LICENSE_SECURITY,
                 "Network access is not enabled for this API request.",
+                reason=ConnectorFailureReason.NETWORK_DISABLED,
             )
         http_method = "GET" if json_body is None else "POST"
         if not self._reviewed_endpoint(source_agency, endpoint, http_method):
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 "Only a reviewed official HTTPS endpoint is allowed.",
+                reason=ConnectorFailureReason.UNREVIEWED_ENDPOINT,
             )
         parts = urlsplit(endpoint)
         if (parts.scheme != "https" or parts.username is not None or parts.password is not None
@@ -172,6 +207,7 @@ class JsonApiTransport:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 "The API endpoint failed its HTTPS safety check.",
+                reason=ConnectorFailureReason.ENDPOINT_SAFETY_CHECK,
             )
         if sum(len(name) + len(str(value)) + 2 for name, value in parameters.items()) > 8192:
             raise ValueError("JSON API request parameters exceed the supported length")
@@ -201,26 +237,31 @@ class JsonApiTransport:
                 ("BLS denied public v1 API access; review its access conditions."
                  if source_agency == "BLS"
                  else f"{source_agency} denied API access; check the local credential."),
+                reason=ConnectorFailureReason.AUTH_DENIED, http_status=status,
             )
         if status == 429 or status == 408 or 500 <= status < 600:
             raise ConnectorFailure(
                 StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                 f"{source_agency} returned a temporary API failure.",
+                reason=ConnectorFailureReason.HTTP_TRANSIENT_STATUS, http_status=status,
             )
         if 300 <= status < 400:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 f"{source_agency} redirected the API request; redirect was refused.",
+                reason=ConnectorFailureReason.REDIRECT_REFUSED, http_status=status,
             )
         if status in {404, 410}:
             raise ConnectorFailure(
                 StageStatus.FAILED_TERMINAL, ErrorCode.SITE_CHANGED,
                 f"{source_agency} API endpoint was not found.",
+                reason=ConnectorFailureReason.ENDPOINT_NOT_FOUND, http_status=status,
             )
         if status != 200:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
                 f"{source_agency} returned an unexpected HTTP status.",
+                reason=ConnectorFailureReason.HTTP_UNEXPECTED_STATUS, http_status=status,
             )
 
         content_type = response.content_type
@@ -228,7 +269,10 @@ class JsonApiTransport:
 
         media_type = content_type.split(";", 1)[0].strip().lower()
         if media_type not in {"application/json", "text/json"}:
-            raise self._schema_failure(source_agency, "expected a JSON response")
+            raise self._schema_failure(
+                source_agency, "expected a JSON response",
+                reason=ConnectorFailureReason.UNEXPECTED_MEDIA_TYPE, http_status=status,
+            )
         try:
             def reject_constant(value: str) -> None:
                 raise ValueError("nonstandard JSON constant")
@@ -237,7 +281,10 @@ class JsonApiTransport:
             safe_payload = _redact_payload(parsed, secrets)
             self._validate_finite_json(safe_payload)
         except (ValueError, UnicodeError, RecursionError):
-            raise self._schema_failure(source_agency, "response was not valid bounded JSON") from None
+            raise self._schema_failure(
+                source_agency, "response was not valid bounded JSON",
+                reason=ConnectorFailureReason.INVALID_JSON, http_status=status,
+            ) from None
         safe_parameters = tuple(
             (_redact_text(name, secrets), _redact_text(str(value), secrets))
             for name, value in parameters.items()
@@ -272,29 +319,40 @@ class JsonApiTransport:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 f"{source_agency} API TLS verification failed; access stopped.",
+                reason=ConnectorFailureReason.TLS_VERIFICATION_FAILED,
             ) from None
         if error.reason == "elapsed_timeout":
             raise ConnectorFailure(
                 StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                 f"{source_agency} API response exceeded the time limit.",
+                reason=ConnectorFailureReason.ELAPSED_TIMEOUT,
             ) from None
         if error.reason == "response_too_large":
-            raise JsonApiTransport._schema_failure(source_agency, "response exceeds the size limit") from None
+            raise JsonApiTransport._schema_failure(
+                source_agency, "response exceeds the size limit",
+                reason=ConnectorFailureReason.RESPONSE_TOO_LARGE,
+            ) from None
         if error.reason == "invalid_chunk":
-            raise JsonApiTransport._schema_failure(source_agency, "response was not valid bounded JSON") from None
+            raise JsonApiTransport._schema_failure(
+                source_agency, "response was not valid bounded JSON",
+                reason=ConnectorFailureReason.INVALID_RESPONSE_CHUNK,
+            ) from None
         if error.reason == "unsafe_endpoint":
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 "The API endpoint failed its HTTPS safety check.",
+                reason=ConnectorFailureReason.UNSAFE_ENDPOINT,
             ) from None
         if error.reason == "request_failure":
             raise ConnectorFailure(
                 StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                 f"{source_agency} API transport failed; no complete response was accepted.",
+                reason=ConnectorFailureReason.TRANSPORT_FAILURE,
             ) from None
         raise ConnectorFailure(
             StageStatus.NEEDS_REVIEW, ErrorCode.INTERNAL_BUG,
             f"{source_agency} API transport stopped after an unexpected error; details were suppressed.",
+            reason=ConnectorFailureReason.UNEXPECTED_TRANSPORT_FAILURE,
         ) from None
 
     @staticmethod
@@ -309,7 +367,11 @@ class JsonApiTransport:
                 JsonApiTransport._validate_finite_json(item)
 
     @staticmethod
-    def _schema_failure(source_agency: str, detail: str) -> ConnectorFailure:
+    def _schema_failure(
+        source_agency: str, detail: str, *,
+        reason: ConnectorFailureReason = ConnectorFailureReason.UNSPECIFIED,
+        http_status: int | None = None,
+    ) -> ConnectorFailure:
         labels = {
             "response exceeds the size limit": "response exceeded the one MiB limit",
             "expected a JSON response": "expected a documented JSON response",
@@ -318,4 +380,5 @@ class JsonApiTransport:
         return ConnectorFailure(
             StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
             f"{source_agency} API {labels.get(detail, 'response failed validation')}.",
+            reason=reason, http_status=http_status,
         )

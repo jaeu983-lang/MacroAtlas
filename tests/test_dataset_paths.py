@@ -24,6 +24,7 @@ from macro_data_platform.discovery.source_registry import (
     get_source_profile,
 )
 from macro_data_platform.ingestion.datasets import DatasetCollector
+from macro_data_platform.ingestion.formats import FormatParseError, parse_table
 from macro_data_platform.storage.api_responses import read_api_response, save_api_response
 from macro_data_platform.storage.datasets import read_dataset_artifact, save_dataset_receipt
 
@@ -196,6 +197,61 @@ def test_source_specific_periods_missing_and_aggregates_stay_raw(tmp_path):
         else:
             assert receipt["validation"]["data_row_count"] == 3
             assert b".." in body and b",0" in body
+
+
+def test_tic_table3d_validates_structured_section_and_keeps_malformed_notes_raw(tmp_path):
+    config = settings(tmp_path)
+    table = (HELPERS["FIXTURES"] / "tic_table3d.csv").read_bytes()
+    body = table + b'"Notes:"\r\n"malformed "quoted" note\r\n'
+    with pytest.raises(FormatParseError):
+        parse_table(body, "csv")
+
+    collector, _ = fixture_collector(config, "tic.treasury_holdings.2023_01", body=body)
+    saved = collector.collect("tic.treasury_holdings.2023_01", CASES["tic.treasury_holdings.2023_01"])
+    receipt, raw = read_dataset_artifact(config, saved)
+
+    assert raw == body
+    assert receipt["validation"]["status"] == "contract_validated"
+    assert receipt["validation"]["notes_section_present"] is True
+    assert receipt["validation"]["validated_section_row_count"] == 14
+    assert "notes_section_retained_only_in_raw" in receipt["validation"]["warnings"]
+
+
+def test_tic_table3d_ambiguous_notes_boundary_requires_review(tmp_path):
+    config = settings(tmp_path)
+    table = (HELPERS["FIXTURES"] / "tic_table3d.csv").read_bytes()
+    body = table + b'"Notes:"\r\n"Notes:"\r\n'
+    collector, _ = fixture_collector(config, "tic.treasury_holdings.2023_01", body=body)
+    saved = collector.collect("tic.treasury_holdings.2023_01", CASES["tic.treasury_holdings.2023_01"])
+    receipt, raw = read_dataset_artifact(config, saved)
+
+    assert raw == body
+    assert receipt["validation"] == {
+        "status": "needs_review", "reason_code": "dataset_contract_changed",
+        "observations_accepted": False,
+    }
+
+
+def test_tic_mfh_13_column_duplicate_period_shape_stays_unaccepted(tmp_path):
+    config = settings(tmp_path)
+    months = ["Dec", "Jun", "Jun", "Mar", "Dec", "Sep", "Jun", "Mar", "Dec", "Sep", "Jun", "Mar", "Dec"]
+    years = ["2025", "2025", "2025", "2025", "2024", "2024", "2024", "2024",
+             "2023", "2023", "2023", "2023", "2022"]
+    body = (",,MAJOR FOREIGN HOLDERS OF TREASURY SECURITIES,\n"
+            ",,,(in billions of dollars)\n"
+            ",,HOLDINGS 1/ AT END OF PERIOD\n"
+            f",{','.join(months)},\nCountry,{','.join(years)},\n"
+            f",{','.join(['------'] * len(years))},\n"
+            f"Synthetic A,{','.join(['1'] * len(years))},\n\n").encode()
+    collector, _ = fixture_collector(config, "tic.mfh.history", body=body)
+    saved = collector.collect("tic.mfh.history", CASES["tic.mfh.history"])
+    receipt, raw = read_dataset_artifact(config, saved)
+
+    assert raw == body
+    assert receipt["validation"] == {
+        "status": "needs_review", "reason_code": "dataset_contract_changed",
+        "observations_accepted": False,
+    }
 
 
 @pytest.mark.parametrize("target", ["receipt", "raw", "manifest"])

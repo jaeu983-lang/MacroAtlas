@@ -20,6 +20,8 @@ Iteration 29는 기관 client를 공통 데이터셋 선택·실행·원본 보�
 
 `ingestion/datasets.py`는 profile→binding→archive→validator→receipt를 연결한다. `ingestion/dataset_validators.py`에 출처별 구조 검사를 둔다. 기존 API clients가 JSON envelope·선택·기간을 먼저 검증하며 파일은 완료된 raw를 먼저 저장한다. 파일 구조 변화는 `needs_review`로 남기고 관측치 수집 성공으로 승격하지 않는다. JSON client가 반환 전에 거부한 잘못된 HTTP/envelope는 이 collector가 raw 보존하지 못한다. HTTP 실패·HTML 로그인 페이지·크기 초과도 완성 파일로 저장하지 않는다.
 
+TIC Table 3D parser는 원본에서 확인한 단독 CSV 행 `"Notes:"` 또는 `Notes:`를 각주 경계로 인식한다. 경계 앞의 표만 strict CSV로 검증하고, 경계 뒤의 각주 텍스트는 파싱하지 않지만 전체 응답 bytes는 raw archive에 그대로 보존한다. 경계가 여러 번 나오면 `needs_review`로 닫는다. 이 예외는 Table 3D에만 적용하며 일반 CSV의 strict parsing을 완화하지 않는다. MFH의 반복 헤더는 관측된 모든 기간이 유일하게 해석될 때만 계약 검증한다. 중복 연월이나 12개를 넘는 열은 의미를 임의로 정리하지 않고 `needs_review`로 남긴다.
+
 `storage/api_responses.py`는 파일 bytes와 request manifest를 기관별 write-once 폴더에 보존한다. 함수 이름은 기존 호환성을 위해 유지했다. JSON은 redacted payload의 canonical UTF-8이며 원 HTTP bytes가 아니다. CSV는 Requests content decoding 이후 entity bytes이며 원 행·결측을 수정하지 않는다. CSV revision header ETag/Last-Modified는 제공될 때만 남긴다. 헤더만으로 immutable vintage를 보장하지 않는다. API provider와 file provider를 구분한다.
 
 `storage/datasets.py`는 같은 폴더에 `dataset_validation.json`을 배타 생성한다. 전체 profile snapshot·version/hash, safe 요청 조건, raw/manifest 경로와 hash, 검증 결과·범위·fixture 증거를 남긴다. `SavedDatasetArtifact`의 pinned hash로 세 파일을 read-back한다. 이후 registry가 바뀌어도 저장한 snapshot을 조용히 재해석하지 않는다. Hash는 우발적 변경 검출용이며 외부 서명이나 악의적인 전면 교체 방지를 뜻하지 않는다. pin 참조는 호출자가 보존해야 한다. 알려진 키가 파일 본문에 나타나면 원본을 수정하는 대신 보존을 거부한다. 실제 `.env`는 이 검증에서 읽지 않는다.
@@ -55,7 +57,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 .venv\Scripts\python.exe scripts/verify_dataset_paths.py --live
 ```
 
-실행기는 실제 `.env`를 불러올 때 key 값을 출력하지 않는다. network opt-in이 false이면 모든 경로를 `not_run_network_disabled`로 남기고 source request를 하지 않는다. 인증 누락은 `not_run_missing_key`; 실제 오류는 고정 오류 코드/종류만 기록한다. 각 source 결과는 raw hash와 read-back 검증을 기록한다. BLS 무키 v1의 두 request는 하루 25회 문서 제한 안의 최소시험이며, 다른 작업량도 합산해야 한다.
+실행기는 실제 `.env`를 불러올 때 key 값을 출력하지 않는다. network opt-in이 false이면 모든 경로를 `not_run_network_disabled`로 남기고 source request를 하지 않는다. 인증 누락은 `not_run_missing_key`; 실제 오류는 고정 오류 코드·단계·reason token·HTTP 상태만 기록한다. 오류 문구, 응답 본문, 키는 보고서에 넣지 않는다. 기존 보고서는 이 필드를 소급해서 갖지 않는다. 각 source 결과는 raw hash와 read-back 검증을 기록한다. BLS 무키 v1의 두 request는 하루 25회 문서 제한 안의 최소시험이며, 다른 작업량도 합산해야 한다.
 
 ## 사용 조건과 live 전 확인
 

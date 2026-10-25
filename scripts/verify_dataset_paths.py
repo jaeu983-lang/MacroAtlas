@@ -204,6 +204,8 @@ def run_live(*, root: Path | None = None, settings: Settings | None = None):
                 report["results"].append({"profile_id": profile_id, "status": "live_request_failed",
                                           "failure_code": error.code.value,
                                           "failure_stage": error.status.value,
+                                          "failure_reason": error.reason.value,
+                                          "failure_http_status": error.http_status,
                                           "request_count": LIVE_REQUESTS_PER_DATASET})
             except (ValueError, TypeError, OSError, KeyError, IndexError, AttributeError, RuntimeError) as error:
                 # Fixed exception classes only; omit text that could carry response or credential data.

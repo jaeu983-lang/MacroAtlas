@@ -96,7 +96,16 @@ def _mfh(profile, response):
 
 
 def _table3d(profile, response):
-    rows = parse_table(response.body, "csv").rows
+    lines = response.body.splitlines(keepends=True)
+    notes_markers = [
+        index for index, line in enumerate(lines)
+        if line.rstrip(b"\r\n").strip() in {b'"Notes:"', b"Notes:"}
+    ]
+    if len(notes_markers) > 1:
+        _fail()
+    notes_present = bool(notes_markers)
+    table_body = b"".join(lines[:notes_markers[0]]) if notes_present else response.body
+    rows = parse_table(table_body, "csv").rows
     joined = " ".join("".join(row) for row in rows)
     if "TABLE 3D:" not in joined or "Millions of dollars" not in joined or "January 2023" not in joined:
         _fail()
@@ -117,9 +126,12 @@ def _table3d(profile, response):
         count += 1
     if count == 0 or profile.fixed.get("source_period") != "2023-01":
         _fail()
-    return {"data_row_count": count, "source_row_count": len(rows), "source_period": "2023-01",
+    warnings = ["regional_totals_and_memo_rows_retained_in_raw"]
+    if notes_present:
+        warnings.append("notes_section_retained_only_in_raw")
+    return {"data_row_count": count, "validated_section_row_count": len(rows), "source_period": "2023-01",
             "scope": "fixed_2023_01_snapshot; not_latest", "complete_dataset_assessed": False,
-            "warnings": ["regional_totals_and_memo_rows_retained_in_raw"]}
+            "notes_section_present": notes_present, "warnings": warnings}
 
 
 def _boe(profile, response):

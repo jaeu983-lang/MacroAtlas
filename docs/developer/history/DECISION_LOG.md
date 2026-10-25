@@ -581,3 +581,13 @@
 - **출처·데이터 보존:** synthetic fixtures를 공식 live 응답으로 표시하지 않는다. FRED page/count/real-time, Census null·문자열·음수 sentinel·선행 0, BLS M13·footnotes·문자열을 보존하며 BLS warning/선택 누락을 성공으로 숨기지 않는다. JSON 보존물은 sanitized canonical serialization이지 정확한 HTTP 원 bytes가 아니다.
 - **검증:** 기관별 source tests 71 passed; 전체 offline 763 passed, 1 skipped, 0 failed (70.76초); 수정 Python Ruff 통과. HTTP를 차단한 fixture 스크립트로 프로젝트 raw 파일 3개를 생성·read-back했고 [결과](../../../reports/iteration_28_offline_1ed43019cf344e5d86c64d5d79105a79.json)를 남겼다. Windows symlink 미지원으로 기존 test 한 개가 skip됐다.
 - **한계:** `.env`/실제 키 읽기·변경, 실제 통계 API/인증 요청, 자동 pagination/일일 budget scheduler/재시도, 전체 기관 workflow·정규화 DB·가공·XLSX는 수행하지 않았다. Client 범위와 현재 미검증은 [FRED](../connectors/FRED.md), [Census](../connectors/CENSUS.md), [BLS v1](../connectors/BLS.md), [Iteration 28 report](ITERATION_28_REPORT.md)에 기록한다. stage/commit/merge/publish하지 않았다.
+
+## Iteration 30 저장 응답 검토 및 안전한 실패 진단 — D-098 (2026-10-25)
+
+- **상태: PARTIAL; GATE U NOT PASSED.** 원래 7개 live 요청과 결과는 변경하지 않았다. 원래 실행 판정은 2/7이며 후속 Table 3D 재검증을 반영한 최신 source-response contract 근거는 3/7이다. 작업은 저장된 TIC raw의 오프라인 재검증과 다음 canary의 안전한 실패 분류 개선으로 제한했다.
+- **Table 3D:** 실제 저장 파일에서 단독 `"Notes:"` 행 전까지의 160개 CSV 행을 strict parser로 검증한다. raw 5,982 bytes와 기존 canary SHA-256을 유지했고, 127개 자료 행은 고정 2023-01 source contract를 충족했다. 각주 내용은 parsed data로 다루지 않는다. 이 결과는 원래 receipt를 갱신하지 않는 후속 offline assessment다. 경계가 둘 이상이면 fail-closed한다.
+- **MFH:** 실제 저장 원본에는 일부 header block에 13개 기간 열과 중복 연월이 관측됐다. 공식 의미가 해결되지 않아 어떤 열도 결합·삭제하지 않으며 계속 `needs_review`다.
+- **실패 진단:** 다음 canary 결과에는 fixed `failure_reason`과 응답을 받은 경우 `failure_http_status`를 기록한다. 예외 문구·응답 본문·credential은 기록하지 않는다. 기존 Census/BLS 결과는 상세 사유를 남기지 않아 과거 원인 복구가 불가능하다.
+- **검증:** `tests/test_dataset_paths.py`, `tests/test_official_api_credentials.py`, `tests/test_live_canary.py` 84 passed, 1 skipped; 전체 offline suite 821 passed, 1 skipped, 0 failed (74.11초); 변경 Python Ruff와 `git diff --check` 통과. Skip은 Windows symlink 미지원이다. 실제 raw 재검증은 네트워크 0회이며 raw hash가 기존 canary report와 일치했다.
+- **중단 지점:** Gate U는 원래 2/7이며 여전히 실패다. Table 3D offline revalidation은 live retry가 아니며 전체 gate를 통과시키지 않는다. MFH·Census·BLS가 미해결인 동안 Iteration 31, 사용자 실행 연결, IMF adapter, soak 및 후속 엔진은 시작하지 않는다.
+- **보고서 경로:** 원래 local-only canary JSON/raw는 읽혔고 hash 확인됐다. 현재 Codex shell은 `reports/`에 새 post-run JSON 쓰기를 `PermissionError`로 거부했다. 기존 산출물은 수정하지 않고 결과를 tracked report에 기록했다.

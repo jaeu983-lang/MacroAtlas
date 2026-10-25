@@ -13,6 +13,7 @@ from macro_data_platform.connectors.estat import API_ROOT as ESTAT_ROOT
 from macro_data_platform.connectors.estat import EStatClient
 from macro_data_platform.connectors.official_api import (
     ConnectorFailure,
+    ConnectorFailureReason,
     JsonApiTransport,
 )
 from macro_data_platform.contracts import ErrorCode, StageStatus
@@ -242,15 +243,17 @@ def test_network_disabled_stops_before_session_creation(tmp_path):
     assert error.value.code == ErrorCode.LICENSE_SECURITY
 
 
-@pytest.mark.parametrize(("status", "expected_status", "expected_code"), [
-    (403, StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS),
-    (429, StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT),
-    (503, StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT),
-    (302, StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY),
-    (404, StageStatus.FAILED_TERMINAL, ErrorCode.SITE_CHANGED),
+@pytest.mark.parametrize(("status", "expected_status", "expected_code", "expected_reason"), [
+    (403, StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS, ConnectorFailureReason.AUTH_DENIED),
+    (429, StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
+     ConnectorFailureReason.HTTP_TRANSIENT_STATUS),
+    (503, StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
+     ConnectorFailureReason.HTTP_TRANSIENT_STATUS),
+    (302, StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY, ConnectorFailureReason.REDIRECT_REFUSED),
+    (404, StageStatus.FAILED_TERMINAL, ErrorCode.SITE_CHANGED, ConnectorFailureReason.ENDPOINT_NOT_FOUND),
 ])
 def test_http_failures_are_classified_without_echoing_request_values(
-    tmp_path, status, expected_status, expected_code,
+    tmp_path, status, expected_status, expected_code, expected_reason,
 ):
     settings = _settings(tmp_path, BEA_API_KEY=_TEST_CREDENTIAL,
                          MACROATLAS_NETWORK_ENABLED="true")
@@ -261,6 +264,8 @@ def test_http_failures_are_classified_without_echoing_request_values(
 
     assert error.value.status == expected_status
     assert error.value.code == expected_code
+    assert error.value.reason == expected_reason
+    assert error.value.http_status == status
     assert _TEST_CREDENTIAL not in str(error.value)
 
 
@@ -278,6 +283,10 @@ def test_invalid_json_or_media_type_fails_closed(tmp_path, body, content_type):
         EStatClient(settings, transport).get_stats_list()
 
     assert error.value.code == ErrorCode.SCHEMA_CHANGED
+    assert error.value.reason in {
+        ConnectorFailureReason.UNEXPECTED_MEDIA_TYPE, ConnectorFailureReason.INVALID_JSON,
+    }
+    assert error.value.http_status == 200
     assert _TEST_CREDENTIAL not in str(error.value)
 
 
@@ -290,6 +299,7 @@ def test_transport_errors_hide_request_library_details(tmp_path):
         EStatClient(settings, transport).get_stats_list()
 
     assert error.value.code == ErrorCode.TRANSIENT
+    assert error.value.reason == ConnectorFailureReason.TRANSPORT_FAILURE
     assert _TEST_CREDENTIAL not in str(error.value)
 
 
@@ -302,6 +312,22 @@ def test_unexpected_transport_errors_are_suppressed(tmp_path):
         BEAClient(settings, transport).get_dataset_list()
 
     assert error.value.code == ErrorCode.INTERNAL_BUG
+    assert error.value.reason == ConnectorFailureReason.UNEXPECTED_TRANSPORT_FAILURE
+    assert _TEST_CREDENTIAL not in str(error.value)
+
+
+def test_tls_failure_has_safe_reason_without_transport_details(tmp_path):
+    settings = _settings(tmp_path, CENSUS_API_KEY=_TEST_CREDENTIAL,
+                         MACROATLAS_NETWORK_ENABLED="true")
+    transport, _ = _transport(settings, error=requests.exceptions.SSLError(_TEST_CREDENTIAL))
+
+    with pytest.raises(ConnectorFailure) as error:
+        from macro_data_platform.connectors.census import CensusClient
+        CensusClient(settings, transport).get_data("2023/acs/acs5", ["NAME"], {"for": "state:06"})
+
+    assert error.value.code == ErrorCode.LICENSE_SECURITY
+    assert error.value.reason == ConnectorFailureReason.TLS_VERIFICATION_FAILED
+    assert error.value.http_status is None
     assert _TEST_CREDENTIAL not in str(error.value)
 
 
@@ -316,3 +342,5 @@ def test_response_size_limit_is_enforced(tmp_path):
         EStatClient(settings, transport).get_stats_list()
 
     assert error.value.code == ErrorCode.SCHEMA_CHANGED
+    assert error.value.reason == ConnectorFailureReason.RESPONSE_TOO_LARGE
+    assert error.value.http_status is None
