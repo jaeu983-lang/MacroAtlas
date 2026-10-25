@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** Iteration 30 Gate U의 7개 bounded live canary는 **NOT PASSED**다. 원래 실행은 7회·재시도 0회였고 당시 2/7이 contract validation을 통과했다. 이후 실제 저장된 TIC 응답 두 개를 오프라인에서 현재 validator로 검증했다. 최신 source-response contract 근거는 4/7(FRED·BoE live validation, TIC 두 응답은 live 저장/hash 확인 후 offline validation)이다. MFH 중복 월은 공식 Series ID와 Treasury 각주로 series break를 확인해 두 값을 보존한다. Census는 보안 검토, BLS 두 경로는 transient 실패 상태다. `.env`의 `MACROATLAS_NETWORK_ENABLED=false`는 유지했다. 이 Codex shell의 후속 JSON 쓰기는 `reports/` PermissionError로 거부되어 상세를 tracked report에 기록했다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [canary 상태](testing/LIVE_CANARY_REPORT.md), [회차 보고서](history/ITERATION_30_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
+**현재 작업:** Iteration 30 Gate U의 7개 bounded live canary는 **NOT PASSED**다. 원래 실행은 7회·재시도 0회였고 당시 2/7이 contract validation을 통과했다. 이후 실제 저장된 TIC 응답 두 개를 오프라인에서 현재 validator로 검증했다. 최신 source-response contract 근거는 4/7(FRED·BoE live validation, TIC 두 응답은 live 저장/hash 확인 후 offline validation)이다. MFH 중복 월은 공식 Series ID와 Treasury 각주로 series break를 확인해 두 값을 보존한다. Census는 보안 검토, BLS 두 경로는 transient 실패 상태다. `.env`의 `MACROATLAS_NETWORK_ENABLED=false`가 현재 확인됐다. 기본 샌드박스의 후속 JSON 쓰기는 `PermissionError`였으나 network-off preflight를 승인된 elevated shell로 저장해 7개 `not_run_network_disabled`, 요청 0회임을 확인했다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [canary 상태](testing/LIVE_CANARY_REPORT.md), [회차 보고서](history/ITERATION_30_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
 
 ## 실행 준비 상태
 

@@ -42,7 +42,7 @@ Gate U는 7개 모두 canary 실행 중 `live_contract_validated`여야 통과�
 
 Gate U 원판정은 **2/7, NOT PASSED**로 유지한다. 최신 offline 후속 검증을 합친 근거는 4/7이지만, 이 중 TIC 두 경로는 실행 시점에 `live_needs_review`였으므로 gate 성공으로 소급 승격하지 않는다. 이후 canary 실행기는 키·응답·예외 문구를 남기지 않고 고정 `failure_reason`과 가능한 경우 `failure_http_status`를 기록한다. 이 개선은 새 요청 결과가 있어야만 진단에 도움이 되며 현재 실패를 변경하지 않는다.
 
-원래 canary JSON과 TIC 원본은 `reports/` 및 `data/raw/`의 local-only 파일로 읽혔고 hash가 일치했다. 이 Codex shell에서는 `reports/`에 새 후속 JSON을 만드는 작업이 `PermissionError`로 거부되어 새 기계 판독 JSON은 만들지 않았다. 기존 파일은 수정하지 않았고 후속 판정은 이 문서에 남겼다. 사용자가 앞서 regular PowerShell에서 canary 보고서를 저장한 결과와는 별개의 현재 shell write 제한이다.
+원래 canary JSON과 TIC 원본은 `reports/` 및 `data/raw/`의 local-only 파일로 읽혔고 hash가 일치했다. 기본 샌드박스에서는 `reports/` 새 파일 쓰기가 `PermissionError`로 거부됐다. 2026-10-25 현재 `.env` 네트워크 허용이 false임을 확인한 뒤, network-off `--live` preflight를 승인된 elevated shell로 재실행해 [최신 preflight JSON](../../../reports/iteration_30_live_canary_c1fa08b936df44869eebefc81e34ca42.json)을 저장했다. 보고서는 `not_run_network_disabled` 7건, 요청 0회, retry 0회다. 따라서 저장 경로는 승인된 실행 컨텍스트에서 확인됐지만, 새 live canary나 Gate U 증거는 아니다. 기존 canary raw·receipt는 바꾸지 않았다.
 
 ## 검사된 코드·절차
 

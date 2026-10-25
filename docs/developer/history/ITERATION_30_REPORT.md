@@ -39,7 +39,7 @@ The canary report writer now has a regression-tested path for recording fixed fa
 
 Follow-up offline verification after the MFH Series-break update: targeted tests **85 passed, 1 skipped**; full suite **822 passed, 1 skipped, 0 failed in 82.45 seconds**; Ruff passed. The skip requires Windows symlink creation. `git diff --check` is recorded after final documentation updates. These checks made zero live requests.
 
-Report-path review: the original canary JSON and TIC raw files were readable and their recorded hashes matched. Creating a separate post-run JSON under `reports/` from this Codex shell returned `PermissionError`; no existing report, raw file, or receipt was overwritten. The post-run findings are recorded here and in the live-canary report. The user previously ran the canary from regular PowerShell and its files were saved, so this write denial is specific to the current execution context; it is not evidence that the original canary report was lost.
+Report-path review: the original canary JSON and TIC raw files were readable and their recorded hashes matched. A later network-off preflight confirmed the local `.env` network switch was false. Default sandbox output to `reports/` returned `PermissionError` without issuing requests; the same network-off run under the approved elevated context saved [a preflight JSON](../../../reports/iteration_30_live_canary_c1fa08b936df44869eebefc81e34ca42.json) with seven `not_run_network_disabled` results, zero requests, and zero retries. No existing report, raw file, or receipt was overwritten. This proves report output only in the approved execution context; it does not change Gate U or the original canary results.
 
 ## Evidence and limitations
 
