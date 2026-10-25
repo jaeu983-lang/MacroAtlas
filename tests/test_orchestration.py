@@ -133,6 +133,32 @@ def test_resume_reuses_valid_prefix_and_only_retries_failed_stage_after_restart(
     assert store.get(task_id)["stages"][:2] == initial["stages"]
 
 
+def test_transient_retry_backoff_is_durable_and_enforced_even_with_approval(store):
+    clock = Clock()
+    engine = MockEngine(
+        StageResult(StageStatus.FAILED_RETRYABLE, error_code=ErrorCode.TRANSIENT,
+                    retry_after_seconds=2.0),
+        success(),
+    )
+    runner, task_id = setup_task(store, {("one", "1"): engine}, clock=clock)
+
+    first = runner.run(task_id)
+    due = datetime.fromisoformat(first["stages"][-1]["result"]["retry_not_before"])
+    assert engine.calls[0].attempt_no == 1
+    with pytest.raises(ValueError, match="backoff"):
+        runner.resume(task_id, approved=True)
+
+    clock.value = due - timedelta(seconds=1)
+    with pytest.raises(ValueError, match="backoff"):
+        runner.resume(task_id)
+    clock.value = due
+    final = runner.resume(task_id)
+
+    assert final["status"] == TaskStatus.COMPLETED
+    assert engine.calls[1].attempt_no == 2
+    assert [row["attempt_no"] for row in final["stages"]] == [1, 2]
+
+
 @pytest.mark.parametrize("reason", ["missing_validator", "denied", "exception", "expired",
                                          "zero_ttl", "clock_reversed"])
 def test_unverified_or_stale_prefix_is_reexecuted(store, reason):

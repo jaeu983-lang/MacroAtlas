@@ -1,0 +1,6 @@
+SYNTHETIC FIXTURE — not copied from the linked Treasury page.
+
+Sample usage guidance for exercising document classification and expiry handling.
+Guide category: usage_policy
+Suggested tags: web_table, archive
+This content is test data and does not establish current access or reuse terms.

@@ -1,15 +1,19 @@
 """One documented WDI GDP endpoint; no discovery, credentials or bulk queries."""
 import json
 import math
-import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urlencode
 
-import requests
-
 from macro_data_platform.config import Settings
+from macro_data_platform.connectors.http_transport import (
+    BoundedHttpTransport,
+    HttpEndpointPolicy,
+    HttpTransportError,
+)
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus, utc
 
 INDICATOR = "NY.GDP.MKTP.CD"
@@ -22,10 +26,12 @@ MAX_BYTES = 1024 * 1024
 class ConnectorFailure(Exception):
     """Only fixed safe messages cross the engine/history boundary."""
 
-    def __init__(self, status: StageStatus, code: ErrorCode, message: str):
+    def __init__(self, status: StageStatus, code: ErrorCode, message: str,
+                 retry_after_seconds: float | None = None):
         super().__init__(message)
         self.status = status
         self.code = code
+        self.retry_after_seconds = retry_after_seconds
 
 
 def schema_failure(message: str) -> ConnectorFailure:
@@ -60,6 +66,8 @@ class Download:
     retrieved_at: datetime
     content_type: str
     kind: EvidenceKind
+    retry_after_seconds: float | None = None
+    retry_after_exceeds_limit: bool = False
 
     def __post_init__(self) -> None:
         utc(self.retrieved_at)
@@ -69,63 +77,103 @@ class Download:
             raise ValueError("download must distinguish fixture from live API")
         if len(self.body) > MAX_BYTES:
             raise ValueError("download exceeds response limit")
+        if (type(self.status_code) is not int or not 100 <= self.status_code <= 599
+                or type(self.retry_after_exceeds_limit) is not bool
+                or self.retry_after_seconds is not None and (
+                    type(self.retry_after_seconds) not in {int, float}
+                    or not math.isfinite(self.retry_after_seconds)
+                    or not 0 <= self.retry_after_seconds <= 86_400)):
+            raise ValueError("invalid HTTP status or retry-after value")
+
+
+def _retry_after(value: str | None, now: datetime) -> tuple[float | None, bool]:
+    if not value:
+        return None, False
+    try:
+        seconds = float(value.strip())
+    except ValueError:
+        try:
+            target = parsedate_to_datetime(value)
+            if target.tzinfo is None:
+                target = target.replace(tzinfo=UTC)
+            seconds = (target - now).total_seconds()
+        except (TypeError, ValueError, OverflowError):
+            return None, False
+    if not math.isfinite(seconds) or seconds < 0:
+        return None, False
+    if seconds > 86_400:
+        return None, True
+    return seconds, False
 
 
 class WorldBankTransport:
     """Live GET only. Disabled by default through Settings; no implicit retries."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, session_factory: Callable[[], Any] | None = None):
         self.settings = settings
+        self.http = BoundedHttpTransport(settings, session_factory)
 
     def fetch(self, query: GDPQuery) -> Download:
         if self.settings.network_enabled is not True:
             raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                                    "Network access is not enabled for this collection.")
-        deadline = time.monotonic() + 30
+        endpoint = query.url
         try:
-            with requests.Session() as session:
-                # Do not consult .netrc, credential stores or implicit proxy settings.
-                session.trust_env = False
-                with session.get(
-                    query.url, timeout=(5, 20), stream=True, allow_redirects=False,
-                    headers={"Accept": "application/json", "User-Agent": "MacroAtlas/0.1"},
-                ) as response:
-                    length = response.headers.get("Content-Length")
-                    if length is not None and length.isdecimal() and int(length) > MAX_BYTES:
-                        raise schema_failure("Response exceeds the one MiB collection budget.")
-                    chunks = []
-                    size = 0
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if time.monotonic() > deadline:
-                            raise ConnectorFailure(StageStatus.FAILED_RETRYABLE,
-                                                   ErrorCode.TRANSIENT,
-                                                   "Response exceeded the collection time budget.")
-                        size += len(chunk)
-                        if size > MAX_BYTES:
-                            raise schema_failure("Response exceeds the one MiB collection budget.")
-                        chunks.append(chunk)
-                    return Download(
-                        query.url, b"".join(chunks), response.status_code, datetime.now(UTC),
-                        response.headers.get("Content-Type", ""), EvidenceKind.LIVE_API,
-                    )
-        except requests.exceptions.SSLError:
-            raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
-                                   "TLS verification failed; access stopped.") from None
-        except requests.RequestException:
-            raise ConnectorFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
-                                   "World Bank transport failed; no complete response saved.") from None
+            response = self.http.get(
+                endpoint,
+                policy=HttpEndpointPolicy(
+                    hostname="api.worldbank.org",
+                    path_prefix="/v2/country/USA/indicator/NY.GDP.MKTP.CD",
+                    exact_path="/v2/country/USA/indicator/NY.GDP.MKTP.CD",
+                    allow_query_in_url=True,
+                ),
+                parameters=None,
+                headers={"Accept": "application/json", "User-Agent": "MacroAtlas/0.1"},
+                max_response_bytes=MAX_BYTES,
+                max_elapsed_seconds=30,
+                body_statuses=None,
+            )
+        except HttpTransportError as exc:
+            if exc.reason == "tls_failure":
+                raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
+                                       "TLS verification failed; access stopped.") from None
+            if exc.reason == "elapsed_timeout":
+                raise ConnectorFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
+                                       "Response exceeded the collection time budget.") from None
+            if exc.reason == "response_too_large":
+                raise schema_failure("Response exceeds the one MiB collection budget.") from None
+            if exc.reason == "unsafe_endpoint":
+                raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
+                                       "The official endpoint failed its HTTPS safety check.") from None
+            if exc.reason == "invalid_chunk":
+                raise schema_failure("Response failed bounded transport validation.") from None
+            if exc.reason == "request_failure":
+                raise ConnectorFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
+                                       "World Bank transport failed; no complete response saved.") from None
+            raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.INTERNAL_BUG,
+                                   "World Bank transport stopped unexpectedly; details were suppressed.") from None
+
+        retry_after, retry_after_exceeds = _retry_after(response.retry_after, response.retrieved_at)
+        return Download(
+            endpoint, response.body, response.status_code, response.retrieved_at,
+            response.content_type, EvidenceKind.LIVE_API, retry_after, retry_after_exceeds,
+        )
 
 
 def check_http(download: Download) -> None:
     status = download.status_code
     if status == 200:
         return
+    if status == 429 and download.retry_after_exceeds_limit:
+        raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.TRANSIENT,
+                               "Source Retry-After exceeds the supported wait policy; review required.")
     if status in {401, 403}:
         raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
                                "World Bank access was denied; no authentication bypass attempted.")
-    if status == 429 or 500 <= status < 600:
+    if status == 429 or 500 <= status < 600 or status == 408:
         raise ConnectorFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
-                               "World Bank returned a temporary HTTP failure; retry manually later.")
+                               "World Bank returned a temporary HTTP failure; resume after bounded backoff.",
+                               download.retry_after_seconds)
     if 300 <= status < 400:
         raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                                "Redirect refused; the official endpoint requires review.")

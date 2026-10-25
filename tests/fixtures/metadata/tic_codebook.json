@@ -1,0 +1,16 @@
+{
+  "fixture_notice": "SYNTHETIC extracted sheet/codebook; not an actual Treasury table or file URL.",
+  "dataset_id":"TEST_TIC", "sheet":"Monthly holdings",
+  "mappings":{"frequency":{"M":"monthly"},"unit":{"BUSD":"billion USD"}},
+  "columns":{"id":"Series","label":"Title","definition":"Notes","concept_id":"Concept",
+    "countries":"Geography","dimensions":"Filters","frequency_code":"Frequency","unit_code":"Unit",
+    "available_start":"First","available_end":"Last","availability_status":"Availability",
+    "auth_requirement":"Auth","stock_flow":"StockFlow","measure":"Measure","scope":"Scope"},
+  "rows":[
+    {"Series":"TEST_HOLDINGS","Title":{"en":"Treasury holdings","ko":"국채 보유잔액"},
+     "Notes":"Synthetic end-period holdings; excludes transactions.",
+     "Concept":"treasury_holdings","Geography":["JPN"],"Filters":{},"Frequency":"M",
+     "Unit":"BUSD","First":"2020-01","Last":"2022-12","Availability":"available","Auth":"none",
+     "StockFlow":"stock","Measure":"level","Scope":"foreign_holders"}
+  ]
+}

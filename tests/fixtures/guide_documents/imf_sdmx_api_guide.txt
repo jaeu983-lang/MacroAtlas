@@ -1,0 +1,6 @@
+SYNTHETIC FIXTURE — not copied from the linked IMF page.
+
+Sample API guide text for exercising guide storage and strategy reuse.
+Guide category: api_guide
+Suggested tags: sdmx, dataflow
+This content is test data and does not document a working endpoint.

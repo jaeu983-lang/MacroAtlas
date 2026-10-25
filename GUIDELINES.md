@@ -50,6 +50,12 @@ Classify links as:
 
 Name similarity is a candidate-generation method only. Mapping decisions must consider definitions, units, frequency, coverage, methodology, revisions, and dimension codes.
 
+Search inclusion is distinct from statistical equivalence. A broad query may include
+evidence-backed subtypes even when their Concept IDs differ; broad GDP includes nominal
+and real GDP while preserving their price and measurement differences. Show related
+indicators separately, explain inclusion, and resolve unspecified types before collection.
+Do not infer subtype relations from matching labels or identifiers alone.
+
 ## 5. Raw and normalized data
 Keep raw API payloads or reproducible raw extracts separate from normalized tables. Transformations must be documented and reproducible. Distinguish zero, missing, suppressed, not applicable, and unavailable values where source metadata permits.
 

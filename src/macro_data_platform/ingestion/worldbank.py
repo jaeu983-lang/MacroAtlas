@@ -11,6 +11,7 @@ from macro_data_platform.connectors.worldbank import (
     parse_gdp,
 )
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.ingestion.retry import retry_delay
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.raw_downloads import save_worldbank_download
 
@@ -47,8 +48,12 @@ class WorldBankGDPEngine:
             refs = (saved.raw_path, saved.manifest_path)
             parsed = parse_gdp(download, query)
         except ConnectorFailure as failure:
+            delay = (retry_delay(request.attempt_no, failure.retry_after_seconds)
+                     if failure.status == StageStatus.FAILED_RETRYABLE else None)
             return StageResult(failure.status, {**paths, "source_url": query.url}, refs,
-                               (str(failure),), failure.code)
+                               (str(failure),), failure.code,
+                               "Resume only after the recorded backoff." if delay is not None else None,
+                               delay)
         except OSError:
             return StageResult(StageStatus.FAILED_TERMINAL,
                                {**paths, "source_url": query.url}, refs,

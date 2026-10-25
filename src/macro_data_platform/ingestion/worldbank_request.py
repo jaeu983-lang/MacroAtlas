@@ -23,7 +23,7 @@ from macro_data_platform.workflow_extensions import ConfirmedDelivery, VariantAt
 
 
 def _query(request, candidate) -> GDPQuery:
-    if (candidate.institution_id != "worldbank" or candidate.dataset_id != SOURCE
+    if (candidate.institution_id not in {"worldbank", "INT-04"} or candidate.dataset_id != SOURCE
             or candidate.series_id is not None
             or dict(candidate.series_key) != {
                 "source": SOURCE, "country": "USA", "indicator": INDICATOR,
@@ -64,7 +64,9 @@ def _plan(confirmed: ConfirmedDelivery, settings: Settings, at: datetime) -> Tas
     confirmed = ConfirmedDelivery.from_dict(confirmed.to_dict())
     ConfirmedDelivery(confirmed.offer, confirmed.delivery, at, "followup")
     query = _query(confirmed.offer.request, confirmed.offer.candidate)
-    if confirmed.offer.requirements != VariantAttributes():
+    if confirmed.offer.requirements not in (
+        VariantAttributes(), VariantAttributes(price_basis="nominal"),
+    ):
         raise ValueError("Variant filtering is unsupported by the fixed World Bank path")
     selected = {item.link_id: item for item in confirmed.offer.links}
     # Only the already documented fixed query URL is delivered. This does not verify it online.

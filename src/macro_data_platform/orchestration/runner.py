@@ -3,7 +3,7 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -151,8 +151,7 @@ class Orchestrator:
             self._event(connection, doc, "TASK_RESUMED" if resume else "TASK_STARTED")
             return token
 
-    @staticmethod
-    def _check_resume(doc: dict, *, approved: bool) -> None:
+    def _check_resume(self, doc: dict, *, approved: bool) -> None:
         if doc["status"] not in {
             TaskStatus.FAILED, TaskStatus.PARTIAL, TaskStatus.NEEDS_REVIEW, TaskStatus.CANCELLED,
         }:
@@ -166,6 +165,11 @@ class Orchestrator:
                 raise ValueError("terminal failure requires a new task")
             if latest["status"] == StageStatus.NEEDS_REVIEW and not approved:
                 raise ValueError("review acknowledgement required before resume")
+            retry_not_before = (latest.get("result") or {}).get("retry_not_before")
+            if retry_not_before is not None:
+                scheduled = datetime.fromisoformat(retry_not_before)
+                if scheduled.tzinfo is None or datetime.fromisoformat(self._now()) < scheduled:
+                    raise ValueError("retry backoff has not elapsed")
 
     @staticmethod
     def _owned(doc: dict, token: str) -> None:
@@ -284,7 +288,7 @@ class Orchestrator:
                 result = self.engines[(spec.engine, spec.engine_version)].run(StageInput(
                     task_id, current["request"], spec.stage_id, json_snapshot(spec.input_data),
                     json_snapshot(upstream["payload"]) if upstream else None,
-                    tuple(row["input_refs"]),
+                    tuple(row["input_refs"]), row["attempt_no"],
                 ))
                 if not isinstance(result, StageResult) or result.status not in OUTCOMES:
                     raise ValueError("engine must return a terminal stage result")
@@ -297,6 +301,12 @@ class Orchestrator:
                         result.warnings, result.error_code, result.retry_hint,
                     )
                 serialized = json_snapshot(asdict(result))
+                if (result.status == StageStatus.FAILED_RETRYABLE
+                        and result.retry_after_seconds is not None):
+                    serialized["retry_not_before"] = (
+                        datetime.fromisoformat(self._now())
+                        + timedelta(seconds=result.retry_after_seconds)
+                    ).isoformat()
             except Exception:  # noqa: BLE001 - isolate injected engines without logging secrets
                 serialized = json_snapshot(asdict(StageResult(
                     StageStatus.FAILED_TERMINAL, error_code=ErrorCode.INTERNAL_BUG,

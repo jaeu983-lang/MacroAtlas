@@ -1,4 +1,5 @@
 """Iteration 01 value contracts; execution and persistence belong to iteration 02."""
+import math
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -107,6 +108,7 @@ class StageResult(Generic[T]):
     warnings: tuple[str, ...] = ()
     error_code: ErrorCode | None = None
     retry_hint: str | None = None
+    retry_after_seconds: float | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.status, StageStatus):
@@ -121,6 +123,14 @@ class StageResult(Generic[T]):
             and self.error_code is not None
         ):
             raise ValueError("successful results cannot contain an error code")
+        if self.retry_after_seconds is not None and (
+            self.status != StageStatus.FAILED_RETRYABLE
+            or self.error_code != ErrorCode.TRANSIENT
+            or type(self.retry_after_seconds) not in {int, float}
+            or not math.isfinite(self.retry_after_seconds)
+            or not 0 <= self.retry_after_seconds <= 86_400
+        ):
+            raise ValueError("retry delay must be bounded and belong to a transient retry")
         for ref in self.evidence_refs:
             required(ref, "evidence_ref")
 

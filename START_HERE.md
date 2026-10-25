@@ -1,10 +1,15 @@
-# 국제금융 데이터 플랫폼 기획 패키지
+# MacroAtlas 시작하기
 
-- **먼저 읽을 파일:** [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
-- **최상위 기획서:** [`PROJECT_PLAN.md`](PROJECT_PLAN.md)
-- **14회 구현 계획:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
-- **기관 사전 조사:** [`docs/INSTITUTION_CATALOG.md`](docs/INSTITUTION_CATALOG.md)
-- **실증 테스트 사례:** [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)
-- **결정 기록:** [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md)
+## 사용자
 
-이 패키지는 코드가 아닌 **기획 파일**이며, 현재 프로젝트의 `src/`, `tests/`, `AGENTS.md`를 덮어쓰지 않는다.
+먼저 [사용자 문서](docs/user/README.md)에서 요청·확인·결과 검토 흐름을 봅니다.
+
+## 운영자
+
+[운영자 문서](docs/operator/README.md)에서 설정, 키 보관, 승인된 실행과 장애 대응을 확인합니다.
+
+## 개발자
+
+[개발자 문서](docs/developer/README.md)에서 사용자 아키텍처를 먼저 읽고, 코드 구조·구현 계획·검증 안내로 이어갑니다.
+
+[제품 기획](PROJECT_PLAN.md)은 제품 목적과 완료 기준을 정의합니다. 현재 코드와 목표 기능, 기관 문서 조사와 실 API 검증은 각각 구분해 확인하세요.

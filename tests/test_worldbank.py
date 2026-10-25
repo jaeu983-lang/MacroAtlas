@@ -204,7 +204,7 @@ def test_raw_saves_are_distinct_and_never_overwrite(tmp_path):
 
 def test_uuid_collision_fails_instead_of_overwriting_raw(tmp_path, monkeypatch):
     monkeypatch.setattr("macro_data_platform.storage.raw_downloads.uuid4",
-                        lambda: type("FixedID", (), {"hex": "fixed"})())
+                        lambda: type("FixedID", (), {"hex": "0" * 32})())
     settings = Settings(tmp_path)
     first = save_worldbank_download(settings, fixture_download())
     with pytest.raises(FileExistsError):
@@ -279,6 +279,26 @@ def test_live_transport_settings_with_mocked_session_use_tls_and_no_implicit_cre
     assert session.get.call_count == 1
 
 
+@pytest.mark.parametrize(("header", "status", "expected"), [
+    ("25", StageStatus.FAILED_RETRYABLE, 25.0),
+    ("90000", StageStatus.NEEDS_REVIEW, None),
+])
+def test_rate_limit_retry_after_is_recorded_and_bounded(tmp_path, monkeypatch,
+                                                        header, status, expected):
+    session, _ = mocked_session(monkeypatch, status=429, headers={
+        "Content-Type": "text/plain", "Retry-After": header,
+    })
+
+    result = WorldBankGDPEngine(Settings(tmp_path, network_enabled=True)).run(stage_input())
+
+    assert result.status == status
+    assert result.error_code == ErrorCode.TRANSIENT
+    assert result.retry_after_seconds == expected
+    assert session.get.call_count == 1
+    if expected is not None:
+        assert result.retry_after_seconds <= 86_400
+
+
 @pytest.mark.parametrize("error,status,code", [
     (requests.Timeout("private detail"), StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT),
     (requests.ConnectionError("private detail"), StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT),
@@ -306,7 +326,7 @@ def test_oversized_or_over_budget_download_is_not_saved_as_complete(tmp_path, mo
         body = b"x" * (MAX_BYTES + 1)
     else:
         ticks = iter([0, 31])
-        monkeypatch.setattr("macro_data_platform.connectors.worldbank.time.monotonic",
+        monkeypatch.setattr("macro_data_platform.connectors.http_transport.time.monotonic",
                             lambda: next(ticks))
     mocked_session(monkeypatch, body=body, headers=headers)
     result = WorldBankGDPEngine(Settings(tmp_path, network_enabled=True)).run(stage_input())
@@ -335,12 +355,15 @@ def test_offline_vertical_slice_integrates_with_durable_orchestrator_and_manual_
     transport = FixtureTransport(fixture_download(status=503), fixture_download())
     engine = WorldBankGDPEngine(settings, transport)
     store = HistoryStore(settings)
-    runner = Orchestrator(store, {("worldbank_gdp", "1"): engine})
+    now = [FIXTURE_TIME]
+    runner = Orchestrator(store, {("worldbank_gdp", "1"): engine},
+                          clock=lambda: now[0])
     task = runner.create("fixture GDP query")
     runner.plan(task.task_id, TaskPlan((StageSpec("collect", "worldbank_gdp",
                                                 {"start_year": 2020, "end_year": 2022}),)))
     initial = runner.run(task.task_id)
     assert initial["status"] == TaskStatus.FAILED
+    now[0] = datetime.fromisoformat(initial["stages"][-1]["result"]["retry_not_before"])
     result = runner.resume(task.task_id)
     assert result["status"] == TaskStatus.COMPLETED
     assert result["stages"][-1]["result"]["payload"]["mode"] == "fixture"
