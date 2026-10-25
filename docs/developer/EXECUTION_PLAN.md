@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** 사용자 지시 D-101로 Census·BLS를 active API rollout에서 보류했다. 기존 Gate U는 NOT PASSED 이력으로 보존하고 다른 기관의 독립 gate를 진행한다. Iteration 31에서는 BEA GetDataSetList 13개 metadata와 e-Stat getStatsList(lang=E, limit=1) 1건을 실제 API로 확인하고 파일 저장/hash read-back을 통과했다(기관당 1회, 총 2회, retry 0). 이 범위는 metadata-only이며 observation ingestion은 미검증이다. 다음 source 후보는 SDMX 6곳이며 IMF·BOJ route/auth·구현은 별도 회차다. [Iteration 31 보고서](history/ITERATION_31_REPORT.md)를 따른다.
+**현재 작업:** 사용자 지시 D-101로 Census·BLS를 보류하고 기존 Gate U는 NOT PASSED 이력으로 유지한다. Iteration 32는 기존 SDMX 6곳에 각 1회 metadata 요청을 수행했다(총 6회, retry 0). BIS·OECD·Eurostat·Bundesbank는 최초 계약·archive/hash 검사 통과, ECB는 최초 파서 실패를 보존하고 저장 bytes로 수정 후 오프라인 재검증 통과, INSEE는 HTTP 404 실패다. [Iteration 32 보고서](history/ITERATION_32_REPORT.md)를 따른다. BEA/e-Stat의 Iteration 31 metadata 근거는 유지하며 관측치 ingestion으로 확대하지 않는다. IMF도 SDMX 기관이지만 상세 route/auth·adapter 준비가 별도로 필요하다. Iteration 33은 시작하지 않는다.
 
 ## 실행 준비 상태
 
@@ -15,9 +15,9 @@
 | MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. FRED·Census·BLS는 고정 collector profile 4개; live 결과는 아래 Gate U 상세 참조. 일반 자연어 workflow는 미구현 |
 | 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조와 저장 검증; Iteration 30에서 3개 요청. TIC 2개는 saved raw의 offline validator 통과, BoE live contract pass; API 상태는 unconfirmed 유지 |
 | 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 bounded live canary | 후속 실행은 7회·재시도 0회, 4/7 통과. Census 302 redirect 거부, BLS 503 두 건; Gate U 미통과 |
-| 문서 확인 API의 다음 대상 | Iteration 31 BEA/e-Stat metadata 검증 완료 후 SDMX 6곳 payload/metadata; IMF·BOJ·Board crosswalk는 별도 후보 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. Census·BLS는 사용자 재개 전 보류 |
+| 문서 확인 API의 다음 대상 | Iteration 32 metadata 5곳 통과/INSEE 404 실패; IMF·BOJ·Board crosswalk는 별도 후보 | INSEE 현재 route/ID 공식 근거와 새 예산 필요. Census·BLS는 사용자 재개 전 보류 |
 | live | World Bank 고정 경로 과거 partial; Iteration 30에서 canary 2회 | 최신 run의 live source-contract pass 4/7; Census `redirect_refused`/302와 BLS `http_transient_status`/503 두 건. 7/7 성공 증거가 아님 |
-| 전체 offline suite | 884 passed, 1 skipped, 0 failed | Iteration 31 metadata·실제 recorded fixture·registry 범위까지 검증; 전기관 live 성공 증거 아님 |
+| 전체 offline suite | 1,032 passed, 1 skipped, 0 failed | Iteration 32 metadata·recorded fixture·ECB 파서 수정·registry 범위까지 검증; 전기관 live 성공 증거 아님 |
 
 이 제약은 공통 readiness audit와 offline fixture 작업을 막지 않습니다. 실제 series, 인증된 live 요청, 비교·계산·파생 XLSX는 source별 문서·용도·이용 조건을 확정한 뒤 해당 gate에서 결정합니다.
 

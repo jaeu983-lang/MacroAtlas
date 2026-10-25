@@ -619,3 +619,11 @@
 - **Iteration 31 결과:** BEA GetDataSetList 13개 dataset metadata 및 e-Stat getStatsList(lang=E, limit=1) 표 1건이 HTTP 200·source 계약·archive/hash read-back을 통과했다. 실제 요청 2회, retry 0, Census/BLS 0회. 합성 fixture와 실제 sanitized recorded fixture 및 provenance/hash를 별도로 보존했다. Engineering Gate V와 해당 두 metadata sub-gate PASS다. 관측치/전체 workflow 성공은 아니다.
 - **최종 검증:** 전체 offline 884 passed, 1 skipped, 0 failed(66.66초). Skip은 Windows symlink 생성 미지원이다. 변경 Python Ruff·공백 및 관련 41개 파일의 실제 credential 비노출 검사를 통과했다. 결과는 `codex/iteration-31-api-metadata` feature branch에 커밋한다. 실제 `.env`와 keys는 이번 회차에서 수정하지 않았다.
 - **handoff:** 사용자는 이번 작업을 마친 뒤 Gate U 설명과 다음 채팅 요청문을 작성하라고 지시했다. [Iteration 32 prompt](../planning/ITERATION_32_SDMX_HANDOFF.md)는 다음 별도 task용이며 이번 task에서 Iteration 32를 시작하지 않았다.
+
+## SDMX metadata 독립 source gate — D-102 (2026-10-25)
+
+- **사용자 승인:** handoff 요청문에 따라 Iteration 32 한 회차, 테스트·보고서·feature branch 커밋까지 수행한다. main merge·push·Iteration 33은 하지 않는다. D-101의 Census/BLS 보류와 Gate U NOT PASSED는 유지한다.
+- **예산/결과:** 기존 SDMX clients 6곳에 각 1회, 총 6회, retry 0, concurrency 1. BIS·OECD·Eurostat·Bundesbank는 최초 HTTP 200·metadata 계약·archive/hash PASS. ECB는 최초 parser failure를 보존하고 AttributeRelationship 참조를 차원 정의로 잘못 세던 코드를 수정한 뒤 동일 저장 bytes로 HTTP 0회 재검증 PASS. INSEE는 공식 예제 DSD 요청 HTTP 404 FAIL, 추가 요청 없음.
+- **판정 분리:** Gate W engineering PASS와 metadata source sub-gate 5 PASS/1 FAIL을 구분한다. 최초 report·archive를 덮어쓰지 않고 replay report와 original report hash를 보존한다. fixture provenance에도 ECB 최초 실패를 남긴다.
+- **검증:** live 전 전체 1,024 passed/1 skipped, 최종 전체 1,032 passed/1 skipped(72.85초). Windows symlink 제한 skip이며 변경 Python Ruff PASS. [Iteration 32 report](ITERATION_32_REPORT.md), [공식 metadata audit](../connectors/SDMX_METADATA_CANARY.md)를 따른다.
+- **남은 결정:** INSEE 현재 route/ID 공식 근거와 새 예산이 필요하다. IMF도 SDMX이지만 기존 client가 없고 route/auth 근거 확보가 남아 이번 6곳에서 제외했다. BOJ·다른 API 확장도 이후 별도 회차 선택이다. 관측치/일반 workflow/비교·XLSX로 확대하지 않는다.

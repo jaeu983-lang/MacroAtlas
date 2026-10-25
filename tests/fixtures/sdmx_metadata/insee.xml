@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic engineering fixture; not a recorded provider response. -->
+<m:Structure xmlns:m="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:s="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure" xmlns:c="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common">
+<m:Header><m:ID>synthetic-insee</m:ID><m:Test>true</m:Test><m:Prepared>2026-10-25T00:00:00Z</m:Prepared><m:Sender id="FR1"/></m:Header>
+<m:Structures><s:DataStructures><s:DataStructure agencyID="FR1" id="IPC-2015-COICOP" version="1.0"><c:Name xml:lang="en">Synthetic insee metadata</c:Name><s:DataStructureComponents><s:DimensionList id="DimensionDescriptor"><s:Dimension id="FREQ" position="1"/><s:TimeDimension id="TIME_PERIOD" position="2"/></s:DimensionList></s:DataStructureComponents></s:DataStructure></s:DataStructures></m:Structures>
+</m:Structure>

@@ -1,5 +1,7 @@
 # 21개 기관 공식 API 상태 조사
 
+**현재:** [Iteration 32 결과 overlay](#iteration-32-결과-overlay), metadata 5곳 통과/INSEE 404 실패를 별도로 기록한다. 아래 초기 감사와 Iteration 31 기록은 소급 변경하지 않는다.
+
 Iteration 31 현재 overlay: 사용자 지시로 Census·BLS는 active rollout에서 보류한다. 공식 API 문서 집계 15/6/0은 그대로이며, BEA GetDataSetList 13개 및 e-Stat getStatsList(E, limit=1) metadata의 실제 요청·source 계약·archive/read-back은 [Iteration 31](../../developer/history/ITERATION_31_REPORT.md)에서 확인했다. 아래 원래 조사 범위와 후속 live 증거를 구분한다.
 
 Iteration 29 구현 보충: API 문서 집계는 15 documented / 6 unconfirmed / 0 not_offered 그대로입니다. TIC·BoE에는 검토된 공식 CSV 3개 다운로드 경로와 dataset별 합성 검증을 추가했습니다. 일반 API 미제공·live 성공으로 바꾸지 않습니다. [데이터셋 계약](../../developer/connectors/DATASET_CONTRACTS.md) 참조.
@@ -50,3 +52,6 @@ Iteration 29 구현 보충: API 문서 집계는 15 documented / 6 unconfirmed /
 Iteration 24에서 BIS, OECD, ECB, Eurostat, Deutsche Bundesbank, INSEE에 공식 문서 경로 기반 SDMX raw-response clients와 기관별 mocked route tests를 추가했다. Iteration 25는 현재 client가 있는 9개 source의 response object를 파일로 저장하고 hash/manifest를 검증해 다시 읽는 공통 helper를 추가했으며, 전체 offline suite 666 passed, 1 skipped였다. BEA/e-Stat 저장물은 exact HTTP bytes가 아닌 sanitized JSON payload serialization이다. World Bank 외 8개 helper 호출은 기관 discovery/ingestion workflow에 아직 연결되지 않았으며, source response parsing·인증 성공·실제 endpoint 도달성은 검증되지 않았다. 기관별 route 및 제한은 [SDMX connector batch](../../developer/connectors/SDMX_FAMILY.md)와 [API response file archive](../../developer/connectors/API_RESPONSE_STORAGE.md)를 참고한다.
 
 IMF 역시 SDMX API 문서가 있지만, 공식 API 페이지는 Swagger 상세 탐색에 beta portal 계정 로그인을 안내한다. 해당 route/auth 자료를 확인하기 전에는 요청 경로를 만들지 않았다. Iteration 25는 기존 client의 저장 경로만 추가했으며, 신규 API route는 만들지 않았다. 나머지 documented API의 현황은 [전기관 검증 프로그램](../../developer/testing/ALL_INSTITUTION_VALIDATION_PROGRAM.md)을 따른다.
+# Iteration 32 결과 overlay
+
+공식 API 문서 집계 15/6/0은 유지한다. BIS·OECD·Eurostat·Bundesbank 선택 metadata는 최초 HTTP 200·계약·archive/hash 통과, ECB는 최초 파서 실패 후 같은 저장 응답의 수정 후 오프라인 재검증 통과, INSEE는 공식 예제 DSD의 HTTP 404로 실패다. 요청은 각 1회, 총 6회, retry 0이다. [경로·ID·접근/이용/format 근거](../../developer/connectors/SDMX_METADATA_CANARY.md), [Iteration 32 report](../../developer/history/ITERATION_32_REPORT.md)를 따른다. Census·BLS 보류와 Gate U NOT PASSED 이력은 유지한다. IMF도 SDMX 기관이며 상세 route/auth·adapter 준비는 별도다.

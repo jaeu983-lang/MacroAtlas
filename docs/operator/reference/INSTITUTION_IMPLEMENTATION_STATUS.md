@@ -1,10 +1,12 @@
 # 기관별 MacroAtlas 구축 상태
 
 **기준일:** 2026-10-25\
-**원본 상태:** `src/macro_data_platform/discovery/source_registry.py`의 21개 기관 프로필과 Iteration 30까지의 보고서.
+**원본 상태:** `src/macro_data_platform/discovery/source_registry.py`의 21개 기관 프로필과 Iteration 32까지의 보고서.
 **목적:** 공식 API 문서 보유 여부와 MacroAtlas 안에 실제 기관별 실행 경로가 있는지를 분리해 보여준다. 21개 전체의 offline/live 검증 기준과 실행 순서는 [전기관 검증 프로그램](../../developer/testing/ALL_INSTITUTION_VALIDATION_PROGRAM.md)을 따른다.
 
 ## 현재 요약
+
+Iteration 32는 BIS·OECD·ECB·Eurostat·Bundesbank의 선택 metadata 5곳을 계약·archive/hash 범위로 통과했다. ECB는 최초 파서 실패 이력을 보존하고 같은 저장 응답을 수정 후 오프라인 재검증했다. INSEE는 HTTP 404 실패이며 추가 요청하지 않았다. 전체 offline 1,032 passed, 1 skipped다. [Iteration 32 보고서](../../developer/history/ITERATION_32_REPORT.md)를 따른다. IMF도 SDMX API 기관이며 이번 기존 client 6곳과는 별도 구현 대상이다.
 
 사용자 지시 D-101로 Census·BLS는 active rollout에서 보류한다. 독립 Iteration 31에서는 BEA GetDataSetList 13개와 e-Stat getStatsList(lang=E, limit=1) 1건의 실제 metadata API·저장/hash read-back을 통과했다. 두 source는 registry에 metadata-only PARTIAL로 기록한다. [Iteration 31 결과](../../developer/history/ITERATION_31_REPORT.md).
 
@@ -29,7 +31,7 @@
 
 ### API 호출 클라이언트 일부만 있음
 
-아래 11개 source는 limited Python API clients가 있습니다. 그중 FRED·Census·BLS에는 고정 dataset profile collector 연결과 synthetic contract 검사도 있으며, FRED의 한 page는 live contract/hash 확인, Census 한 경로와 BLS 두 경로는 canary 실패가 기록됐습니다. 나머지 source의 일반 discovery/ingestion workflow와 live 호출은 미검증입니다. 공통 archive helper로 저장·hash 확인 read-back 할 수 있습니다. SDMX raw clients의 provider payload parsing은 이 검사 범위와 구별합니다.
+아래 11개 source는 limited Python API clients가 있습니다. FRED·Census·BLS에는 고정 dataset profile collector 연결과 synthetic 검사가 있고, source별 live 성공/실패는 표에 구분합니다. Iteration 31–32의 metadata 검증은 일반 discovery/ingestion workflow 성공과 별개입니다. 공통 archive helper로 저장·hash 확인 read-back 할 수 있습니다.
 
 | 기관 | 구현된 부분 | 아직 없는 부분 |
 |---|---|---|
@@ -38,12 +40,12 @@
 | FRED/ALFRED | v1 metadata·검색·명시적 관측치 page·release/source, synthetic archive/read-back | 2026-10-25 FRED GDP 1개 고정 page live contract/hash 검증; v2, Board crosswalk, 전체 자동 pagination·workflow·범용 인증/coverage |
 | BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | 기존 POST·공식 GET·예제 POST 모두 503 HTML; 앞단 오류/접근 페이지 가능성과 일치하나 정확한 정책·장애 원인 미확정. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
 | Census | catalogue/variables/geographies, keyed header/row table, 공식 key-error redirect의 안전한 AUTH_ACCESS 분류와 synthetic archive/read-back | 실제 ACS query는 공식 `invalid_key.html` redirect; 현재 key 거부 확인. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |
-| BIS | SDMX v2 raw-response routes와 mocked routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |
-| OECD | SDMX v1 raw-response routes와 mocked routes, 공통 file archive/read-back helper | 인증/외부 접근 조건, provider payload fixture·parse, workflow, live |
-| ECB | SDMX 2.1 dataflow/structure/data routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |
-| Eurostat | SDMX 2.1 dataflow/structure/data routes, 공통 file archive/read-back helper | DS-prefixed Comext/Prodcom 경로, async, provider payload fixture·parse, workflow, live |
-| Deutsche Bundesbank | SDMX data/metadata routes, 공통 file archive/read-back helper | 인증, 413/async 경로, provider payload fixture·parse, workflow, live |
-| INSEE | BDM/idbank와 dataflow data routes, 공통 file archive/read-back helper | API portal auth, provider payload fixture·parse, workflow, live |
+| BIS | WS_TC 2.0 dataflow metadata HTTP 200·계약·archive/hash 통과, synthetic/recorded fixture | 연결 DSD 미조회, 관측치·일반 workflow 미검증 |
+| OECD | OECD.SDD.NAD QNA 1.1 dataflow metadata HTTP 200·계약·archive/hash 통과, 무키 단발 | 전체 인증·coverage, 연결 DSD·관측치·일반 workflow 미검증 |
+| ECB | ECB_EXR1 1.0 DSD HTTP 200 저장, 최초 파서 오류 수정 후 같은 bytes 오프라인 재검증 통과, 차원 6개 | 최초 실패 이력 보존; codelist 미조회, 관측치·일반 workflow 미검증 |
+| Eurostat | NAMA_10_GDP 1.0 dataflow metadata HTTP 200·계약·archive/hash 통과 | DS-prefixed Comext/Prodcom·async·연결 DSD·관측치·일반 workflow 미검증 |
+| Deutsche Bundesbank | BBK BBEX3 dataflow metadata HTTP 200·계약·archive/hash 통과, 반환 version 1.0 | 전체 인증·413/async·연결 DSD·관측치·일반 workflow 미검증 |
+| INSEE | 직접 BDM metadata 메서드·합성 fixture; 공식 예제 IPC-2015-COICOP/1.0 요청 HTTP 404 실패 | 현재 유효 route/ID 공식 근거와 새 예산 필요. live metadata PASS 없음, portal auth·관측치·workflow 미검증 |
 
 ### 공식 파일 경로 일부 구현
 

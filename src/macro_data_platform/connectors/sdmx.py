@@ -128,7 +128,9 @@ class SdmxApiTransport:
                 policy=endpoint_policy,
                 parameters=safe_parameters,
                 headers={
-                    "Accept": "*/*",
+                    "Accept": ("application/vnd.sdmx.structure+xml;version=2.1"
+                               if operation in {"structure", "dataflow", "datastructure"}
+                               else "*/*"),
                     "Accept-Encoding": "identity",
                     "User-Agent": "MacroAtlas/0.1",
                 },
@@ -167,30 +169,37 @@ class SdmxApiTransport:
             ) from None
 
         status = response.status_code
+        response_kind = ("html" if "html" in response.content_type.lower() else
+                         "json" if "json" in response.content_type.lower() else "other")
         if status in {401, 403}:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
                 f"{source_agency} denied SDMX API access; review its access conditions.",
+                http_status=status, response_kind=response_kind,
             )
         if status in {408, 429} or 500 <= status < 600:
             raise ConnectorFailure(
                 StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                 f"{source_agency} returned a temporary SDMX API failure.",
+                http_status=status, response_kind=response_kind,
             )
         if 300 <= status < 400:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                 f"{source_agency} redirected the SDMX API request; redirect was refused.",
+                http_status=status, response_kind=response_kind,
             )
         if status in {404, 410}:
             raise ConnectorFailure(
                 StageStatus.FAILED_TERMINAL, ErrorCode.SITE_CHANGED,
                 f"{source_agency} SDMX API endpoint was not found.",
+                http_status=status, response_kind=response_kind,
             )
         if status != 200:
             raise ConnectorFailure(
                 StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
                 f"{source_agency} returned an unexpected SDMX API status.",
+                http_status=status, response_kind=response_kind,
             )
 
         query = urlencode(safe_parameters)
@@ -341,6 +350,10 @@ class INSEEClient(_SdmxClient):
     institution_id = "EU-05"
     root = _ROOTS[institution_id][0]
     API_DOCS = "https://www.insee.fr/en/information/2868055"
+
+    def get_datastructure(self, resource_id: str, version: str = "1.0") -> SdmxApiResponse:
+        """Direct BDM metadata route, user guide section IV (not API portal auth)."""
+        return self._get("datastructure", "datastructure", "FR1", resource_id, version)
 
     def get_data_by_idbanks(self, idbanks: tuple[str, ...] | list[str],
                             parameters: Mapping[str, str | int] | None = None) -> SdmxApiResponse:

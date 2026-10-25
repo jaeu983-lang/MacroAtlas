@@ -76,14 +76,20 @@ def test_api_availability_does_not_imply_connector_or_live_validation():
     assert "fixed route only" in world_bank.live_scope
 
 
-def test_sdmx_route_clients_are_partial_and_do_not_claim_live_validation():
+def test_sdmx_metadata_live_scope_is_separate_from_general_ingestion():
     for institution_id in ("INT-02", "INT-03", "EU-01", "EU-02", "EU-03", "EU-05"):
         profile = get_source_profile(institution_id)
         assert profile.adapter_status == AdapterStatus.PARTIAL
         assert profile.fixture_scope == FixtureScope.SOURCE_SPECIFIC
-        assert profile.live_validation == LiveValidation.NOT_RUN
+        assert profile.live_validation == (LiveValidation.FAILED if institution_id == "EU-05"
+                                           else LiveValidation.PARTIAL)
         assert "mocked route tests" in profile.status_note
-        assert "live" in profile.status_note
+        assert "Iteration 32" in profile.live_scope
+        assert "workflow" in profile.status_note
+    assert "404" in get_source_profile("EU-05").live_scope
+    assert "offline" in get_source_profile("EU-01").live_scope
+    with pytest.raises(ValueError, match="exact scope"):
+        replace(get_source_profile("EU-05"), live_scope=None)
 
 
 def test_authentication_profiles_only_contain_environment_variable_names():

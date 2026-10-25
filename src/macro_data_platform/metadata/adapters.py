@@ -130,8 +130,9 @@ def _names(node):
     return result
 
 
-def _sdmx(document):
-    text = document.body.decode("utf-8-sig")
+def parse_sdmx_structure(body: bytes):
+    """Parse source structures without performing HTTP or creating candidates."""
+    text = body.decode("utf-8-sig")
     _check("<!DOCTYPE" not in text.upper() and "<!ENTITY" not in text.upper(),
            "DTD and entity declarations are forbidden")
     root = ET.fromstring(text)
@@ -164,7 +165,12 @@ def _sdmx(document):
             structures["dataflows"].append(item)
         else:
             dims = []
-            for dimension in node.iter():
+            # AttributeRelationship also contains Dimension references without IDs.
+            # Only DimensionList children define DSD dimensions.
+            dimension_definitions = [child for container in node.iter()
+                                     if _local(container.tag) == "DimensionList"
+                                     for child in container]
+            for dimension in dimension_definitions:
                 if _local(dimension.tag) in {"Dimension", "TimeDimension", "MeasureDimension"}:
                     refs = [dict(n.attrib) for n in dimension.iter() if _local(n.tag) == "Ref"]
                     dims.append({"id": dimension.get("id"), "position": dimension.get("position"),
@@ -186,8 +192,13 @@ def _sdmx(document):
                     ref.get("agencyID"), ref.get("id"), ref.get("version")
                 ) not in known_codes:
                     warnings.append("unresolved_codelist:" + str(dimension["id"]))
+    return structures, tuple(warnings)
+
+
+def _sdmx(document):
+    structures, warnings = parse_sdmx_structure(document.body)
     return MetadataResult(document.document_id, structures_json=json.dumps(structures),
-                          warnings=tuple(warnings))
+                          warnings=warnings)
 
 
 def read_metadata(document: MetadataDocument, institution: InstitutionCandidate, *,

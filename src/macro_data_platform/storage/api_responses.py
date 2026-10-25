@@ -192,6 +192,8 @@ def _response_envelope(
             response.http_status, response.retrieved_at, response.content_type,
         )
         body = response.body
+        if any(value.encode("utf-8") in body for value in secrets):
+            raise ValueError("SDMX response contains a configured credential; archival was refused")
         representation = "http_entity_bytes_after_requests_content_decoding"
         request_parameters = []
         mode = "api_response"

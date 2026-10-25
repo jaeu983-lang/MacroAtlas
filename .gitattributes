@@ -1,0 +1,3 @@
+# Recorded provider entities retain original CRLF/trailing spaces and provenance hashes.
+# Treat as binary in Git diffs; source contracts and SHA-256 are checked by pytest.
+tests/fixtures/sdmx_metadata/recorded_*.xml -text -diff

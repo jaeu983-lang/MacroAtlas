@@ -1,5 +1,7 @@
 # API response file archive — Iteration 25
 
+**현재 근거:** [Iteration 32 metadata overlay](#iteration-32-metadata-overlay)와 [회차 보고서](../history/ITERATION_32_REPORT.md)를 참조한다. 아래 원래 Iteration 25 gate는 역사적 fixture 범위이며 최신 source별 live 결과와 구분한다.
+
 **Status:** common write-once file storage and hash-checked read-back cover 12 API source clients plus 2 official-file source clients (TIC/BoE, Iteration 29). Tests use synthetic/mocked responses; no new institution was collected live. [Dataset contracts](DATASET_CONTRACTS.md) add seven explicit API/file selections, pinned profiles and validation receipts.
 
 ## Covered client sources
@@ -45,3 +47,6 @@ The existing fixed World Bank workflow invokes `save_worldbank_download`, delega
 `python scripts/verify_rest_adapters.py --fixture` writes three synthetic project-local artifacts, verifies read-back, and produces a report under `reports/iteration_28_offline_*.json`. The script blocks real HTTP and never loads `.env`. Fixture evidence is explicit in its report; archive `mode=api_response` alone is not a live-success claim.
 
 This gate does not prove endpoint reachability, authentication, provider payload correctness, dataset completeness, or all-institution live success. See [the full institution validation program](../testing/ALL_INSTITUTION_VALIDATION_PROGRAM.md) for the remaining source gates.
+# Iteration 32 metadata overlay
+
+SDMX 6곳을 명시적으로 선택해 기존 write-once 저장과 manifest/hash read-back을 재사용한다. HTTP 200과 의미 계약 통과는 별도이며 실패도 성공으로 승격하지 않는다. SDMX 원 bytes에 실제 설정 credential이 들어 있으면 저장을 거부한다. Recorded XML은 `.gitattributes -text`로 checkout에서도 hash를 유지한다. `verify_api_metadata.py --read-back-report <기존 보고서>`는 원 보고서와 저장물을 수정하지 않고 HTTP 0회 재검증 보고서를 새로 만든다. [Iteration 32](../history/ITERATION_32_REPORT.md)에서 최초 canary와 ECB 수정 후 재검증을 구분한다.

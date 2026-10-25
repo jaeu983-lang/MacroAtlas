@@ -44,6 +44,7 @@ class FixtureScope(str, Enum):
 class LiveValidation(str, Enum):
     NOT_RUN = "not_run"
     PARTIAL = "partial"
+    FAILED = "failed"
 
 
 def _validate_urls(urls: tuple[str, ...], field_name: str) -> None:
@@ -157,9 +158,9 @@ class SourceAccessProfile:
             or self.api_availability != ApiAvailability.DOCUMENTED
         ):
             raise ValueError("API provider must be set only for a documented API")
-        if self.live_validation == LiveValidation.PARTIAL:
+        if self.live_validation in {LiveValidation.PARTIAL, LiveValidation.FAILED}:
             if not isinstance(self.live_scope, str) or not self.live_scope.strip():
-                raise ValueError("partial live validation requires its exact scope")
+                raise ValueError("tested live validation requires its exact scope")
         elif self.live_scope is not None:
             raise ValueError("unrun live validation cannot claim a tested scope")
 
@@ -255,7 +256,9 @@ _ROWS = (
         non_api_methods=("official CSV/SDMX ZIP bulk download",),
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="BIS SDMX v2 mocked route tests and common file archive/read-back tests use mocked bytes; no official response fixture, provider parsing, workflow integration, or live query exists.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 32: BIS WS_TC 2.0 dataflow metadata only; one HTTP 200 request, source contract and archive/hash read-back. No observation ingestion.",
+        status_note="SDMX mocked route tests plus synthetic/recorded metadata fixtures. Iteration 32 selected metadata validated; referenced DSD remains unresolved, no general workflow or observation validation.",
     ),
     _profile(
         "US-03", "Treasury TIC", "C",
@@ -289,7 +292,9 @@ _ROWS = (
         authentication=AuthRequirement.NONE,
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="ECB SDMX mocked route tests and common file archive/read-back tests use mocked bytes; no official response fixture, provider parsing, workflow integration, or live request exists.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 32: ECB ECB_EXR1 1.0 DSD metadata only; one HTTP 200 archive, six dimensions validated after parser fix by offline hash read-back, no new HTTP. No observation ingestion.",
+        status_note="SDMX mocked route tests plus synthetic/recorded metadata fixtures. Initial duplicate-dimension parser failure retained in canary report; AttributeRelationship references excluded from definitions and same saved bytes revalidated separately. No general workflow validation.",
     ),
     _profile(
         "EU-02", "Eurostat", "E",
@@ -299,7 +304,9 @@ _ROWS = (
         authentication=AuthRequirement.NONE,
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="Eurostat SDMX 2.1 mocked route tests and common file archive/read-back tests use mocked bytes; no official response fixture, provider parsing, workflow integration, or live request exists. API returns current values without historical observation versions.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 32: ESTAT NAMA_10_GDP 1.0 dataflow metadata only; one HTTP 200 request, source contract and archive/hash read-back. No observation ingestion.",
+        status_note="SDMX mocked route tests plus synthetic/recorded metadata fixtures. Selected dataflow metadata validated; referenced DSD, workflow and observations remain unverified. API returns current values without historical observation versions.",
     ),
     _profile(
         "JP-02", "Japan MOF", "F",
@@ -363,7 +370,9 @@ _ROWS = (
         official_sources=("https://sdmx.oecd.org/public/",),
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="OECD SDMX v1 mocked route tests and common file archive/read-back tests use mocked bytes; no official response fixture, provider parsing, workflow integration, or live request exists. Authentication and endpoint reachability remain unverified.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 32: OECD.SDD.NAD DSD_NAMAIN1@DF_QNA 1.1 dataflow metadata only; one uncredentialed HTTP 200 request, contract and archive/hash read-back. No observation ingestion.",
+        status_note="SDMX mocked route tests plus synthetic/recorded metadata fixtures. Selected public metadata route succeeded without credentials; global authentication/coverage is not inferred. Referenced DSD, observations and general workflow remain unverified.",
     ),
     _profile(
         "INT-04", "World Bank", "H",
@@ -487,11 +496,12 @@ _ROWS = (
         non_api_methods=("official CSV and SDMX downloads",),
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="Iteration 32: BBK BBEX3 dataflow metadata only, returned version 1.0; one uncredentialed HTTP 200 request, contract and archive/hash read-back. No observation ingestion.",
         status_note=(
-            "Bundesbank SDMX mocked route tests and common file archive/read-back tests use mocked bytes; "
-            "no official response fixture, provider parsing, workflow integration, or live "
-            "request exists. Authentication "
-            "requirements remain unknown."
+            "Bundesbank SDMX mocked route tests plus synthetic/recorded metadata fixtures. "
+            "Selected public metadata route succeeded without credentials; global authentication "
+            "remains unknown. Referenced DSD, observations and general workflow remain unverified."
         ),
     ),
     _profile(
@@ -519,11 +529,13 @@ _ROWS = (
         ),
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
+        live_validation=LiveValidation.FAILED,
+        live_scope="Iteration 32: direct BDM datastructure/FR1/IPC-2015-COICOP/1.0 returned HTTP 404 on its sole request; no accepted response archive or live metadata PASS.",
         status_note=(
-            "INSEE BDM SDMX mocked route tests and common file archive/read-back tests use mocked bytes; "
-            "no official response fixture, provider parsing, workflow integration, or live "
-            "request exists. Authentication "
-            "details and live reachability remain unverified."
+            "INSEE BDM data and metadata methods, mocked route tests and synthetic metadata fixtures. "
+            "Official user guide distinguishes direct HTTPS from signed-in API portal. "
+            "Documented example DSD returned 404; current resource/route needs official evidence "
+            "and a new request budget. No fallback, observation or workflow validation."
         ),
     ),
 )

@@ -29,7 +29,7 @@
 
 ## 지금의 개발·운영 큐
 
-**현재 사용자 지시(D-101): Census·BLS는 보류하고 다른 기관 API에 집중한다.** 기존 Gate U는 NOT PASSED 이력으로 유지하며, 보류 두 기관을 재호출하지 않는다. 새 작업은 독립 source gate로 진행한다. 이번 Iteration 31은 키/클라이언트가 준비된 BEA·e-Stat의 작은 metadata 요청과 파일 저장·hash read-back부터 검증한다. 관측치 수집 전체나 자연어 workflow 성공으로 확대하지 않는다.
+**현재 사용자 지시(D-101): Census·BLS는 보류하고 다른 기관 API에 집중한다.** 기존 Gate U는 NOT PASSED 이력으로 유지하며, 보류 두 기관을 재호출하지 않는다. Iteration 31에 이어 Iteration 32의 SDMX metadata 독립 source gate를 수행했다. 관측치 수집 전체나 자연어 workflow 성공으로 확대하지 않는다.
 
 ### Iteration 31 — BEA·e-Stat metadata API 검증 (Gate V)
 
@@ -41,12 +41,12 @@
 - **실제 결과:** BEA 13개 dataset metadata, e-Stat 영어 요청 목록 1건이 HTTP 200·기관 계약·파일 저장/hash read-back을 통과했다. 합계 2회·retry 0, Census·BLS 요청 0이다. Source registry는 두 기관을 metadata-only PARTIAL로 표시한다. [회차 보고서](history/ITERATION_31_REPORT.md)에 fixture/live 증거와 검증 결과를 보존한다.
 - **검증:** Engineering Gate V와 두 source의 metadata live sub-gate PASS. 전체 offline suite 884 passed, 1 skipped(66.66초), source별 합성 fixture와 실제 저장 응답의 recorded fixture를 구분한다. 다음 별도 task의 준비된 요청문은 [Iteration 32 handoff](planning/ITERATION_32_SDMX_HANDOFF.md)다.
 
-### 다음 task 후보: Iteration 32 — SDMX 6곳 metadata 계약 (Gate W 제안)
+### Iteration 32 — SDMX 6곳 metadata 계약 (Gate W)
 
 - BIS·OECD·ECB·Eurostat·Bundesbank·INSEE의 현 raw client에 대해 공식 metadata route/ID·응답 계약·source fixture와 archive/read-back을 검증한다. 필요한 metadata 메서드는 공식 근거가 있는 범위만 추가한다.
 - Engineering gate는 source별 fixture와 안전/저장 회귀다. live metadata sub-gate는 실제 source 계약·저장·hash 재조회가 통과한 기관만 성공이다. 준비되지 않은 source는 not_ready/not_run으로 기록한다.
-- 다음 task가 승인되어 실행될 경우의 제안 예산은 source당 최대 1회, 총 최대 6회, retry 0, 동시 요청 1개다. 이번 Iteration 31에서는 이 요청을 보내지 않았다.
-- Census·BLS 보류, 기존 Gate U 실패 보존과 독립 source gate 원칙은 유지한다. 정확한 실행 요청문은 [다음 채팅 handoff](planning/ITERATION_32_SDMX_HANDOFF.md)를 사용한다.
+- 실행 예산은 source당 1회, 총 6회, retry 0, 동시 요청 1개였다. BIS·OECD·Eurostat·Bundesbank는 최초 canary 통과, ECB는 최초 HTTP 200 응답의 파서 실패 후 같은 archive의 수정 후 오프라인 재검증 통과, INSEE는 HTTP 404 실패다. 최초 보고서는 수정하지 않았다.
+- Census·BLS 보류, 기존 Gate U 실패 보존과 독립 source gate 원칙은 유지한다. 결과는 [Iteration 32 report](history/ITERATION_32_REPORT.md), 공식 route·인증/제한 근거는 [metadata audit](connectors/SDMX_METADATA_CANARY.md)를 따른다. IMF 역시 SDMX 기관이지만 기존 adapter가 없어 이번 6곳과 구분한다. INSEE 현재 route/ID 재조사와 IMF·BOJ 구현은 이후 별도 후보이며 Iteration 33은 시작하지 않았다.
 
 모든 작업을 한 줄로 세워 순차 대기시키지 않습니다. Track M과 Track C는 독립된 offline 일을 병행하고, 외부 호출에 대해서만 공통 gate와 해당 기관 gate를 합칩니다.
 

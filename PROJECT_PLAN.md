@@ -20,7 +20,7 @@ MacroAtlas는 사용자의 자연어 요청을 받아 국제금융·거시경제
 
 ## 3. 현재 구현과 목표를 구분
 
-2026-10-25 사용자 지시(D-101)로 Census·BLS는 active API rollout에서 보류한다. 기존 Gate U 실패 이력과 코드는 보존하며, 다른 기관은 독립 source gate에서 진행한다. 현재 Iteration 31은 BEA·e-Stat metadata API와 archive/read-back 검증이고, 다음으로 SDMX 제공자와 미구현 API 기관을 기관별로 진행한다. 보류 source는 사용자의 재개 지시 전까지 live 호출하지 않는다.
+2026-10-25 사용자 지시(D-101)로 Census·BLS는 active API rollout에서 보류한다. 기존 Gate U 실패 이력과 코드는 보존하며, 다른 기관은 독립 source gate에서 진행한다. Iteration 32는 기존 SDMX 6곳의 metadata 계약과 archive/read-back 검증이다. BIS·OECD·ECB·Eurostat·Bundesbank 5곳은 선택 metadata만 통과했고 INSEE는 공식 예제 DSD 요청의 HTTP 404로 실패했다. ECB 최초 파서 실패는 보존하고 같은 저장 bytes의 수정 후 오프라인 재검증으로 구분한다. [회차 보고서](docs/developer/history/ITERATION_32_REPORT.md)를 따른다. 보류 source는 사용자의 재개 지시 전까지 live 호출하지 않는다.
 
 Iteration 31 결과는 BEA dataset metadata 13개와 e-Stat 영어 요청 목록 1건의 HTTP 200·source 계약·archive/hash read-back 통과다. Engineering Gate V와 두 source의 metadata sub-gate를 통과했으며 전체 offline 884 passed, 1 skipped다. source registry는 metadata-only PARTIAL 근거를 기록하고 관측치 수집 전체로 확대하지 않는다. [회차 보고서](docs/developer/history/ITERATION_31_REPORT.md)를 따른다.
 
