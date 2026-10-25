@@ -47,7 +47,28 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 .venv\Scripts\python.exe -m pytest tests/test_dataset_paths.py -p no:cacheprovider -ra
 ```
 
-스크립트는 실제 HTTP를 차단하고 synthetic key·합성 fixture만 사용한다. 프로젝트 `data/raw/api/<institution>/<uuid>/`에 원본·manifest·receipt를 만들고 `reports/iteration_29_offline_*.json`에 검증 참조를 기록한다. `contract_validated`는 이 source 구조 검사 통과만 뜻하며 live·통계 의미·정규화·전국가 완전성 검증이 아니다.
+### 7개 경로 제한 live canary
+
+먼저 로컬 `.env`의 `MACROATLAS_NETWORK_ENABLED=true`와 필요한 `FRED_API_KEY`, `CENSUS_API_KEY` 설정을 사용자가 검토한다. 이후 아래 명령은 이 7개 범위만 각각 한 번 요청하며 retry하지 않는다. FRED observations는 2024–2025 최대 8개, Census는 ACS2023의 California 1개 state row, BLS v1은 series당 2024년 한 해(키/v2 미사용), BoE는 10일, TIC는 등록된 두 CSV다.
+
+```powershell
+.venv\Scripts\python.exe scripts/verify_dataset_paths.py --live
+```
+
+실행기는 실제 `.env`를 불러올 때 key 값을 출력하지 않는다. network opt-in이 false이면 모든 경로를 `not_run_network_disabled`로 남기고 source request를 하지 않는다. 인증 누락은 `not_run_missing_key`; 실제 오류는 고정 오류 코드/종류만 기록한다. 각 source 결과는 raw hash와 read-back 검증을 기록한다. BLS 무키 v1의 두 request는 하루 25회 문서 제한 안의 최소시험이며, 다른 작업량도 합산해야 한다.
+
+## 사용 조건과 live 전 확인
+
+- [FRED terms/rate errors](https://fred.stlouisfed.org/docs/api/terms_of_use.html)에서 API key 필수, 과도한 대역폭 제한, 120 requests/minute 초과 시 429 가능성을 확인했다. 각각 한 번 요청하며 series별 제3자 권리는 별도로 확인해야 한다.
+- [Census API key guide](https://www.census.gov/data/developers/guidance/api-user-guide.API_Key.html)와 [2026 key 안내](https://www.census.gov/library/video/2026/adrm/requesting-a-census-data-api-key.html)는 2026-05-11 이후 모든 data query에 API key가 필요하다고 설명한다. [query guide](https://www.census.gov/data/developers/guidance/api-user-guide.Query_Limits.html)는 요청당 최대 50개 변수를 안내한다. Census terms는 제한 우회 시 접근 제한을 허용한다. configured key로 좁은 state query 한 번만 요청한다.
+- [BLS v1 developer guide](https://www.bls.gov/developers/)는 v1을 등록 불필요한 public API로 표시한다. project policy는 더 보수적으로 하루 25회 범위를 유지한다. 이 canary는 두 번만 요청하고 키와 v2는 사용하지 않는다.
+- [Treasury TIC file guide](https://home.treasury.gov/data/treasury-international-capital-tic-system/contact-tic-using-tic)는 CSV 등 공식 파일 배포를 안내한다. [TIC 설명](https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/description-of-TIC-system)은 TIC가 미 국제 자본 흐름·cross-border claims/liabilities 계열임을 구분하며 이 profile은 미국 국채 외국인 보유다.
+- [BoE database help](https://www.bankofengland.co.uk/boeapps/database/help.asp)는 series 선택·다운로드 흐름을 안내하고 [법률·재사용 조건](https://www.bankofengland.co.uk/legal)은 database data 재사용에 UK Open Government Licence를 제시한다. 선택 series에 별도 조건이 있는지 확인한다.
+- FRED API를 다른 사용자에게 제공하는 제품 flow를 열기 전, 사용 조건이 요구하는 Terms 링크/동의와 “uses FRED API but is not endorsed or certified” notice를 실제 사용자 화면에 반영해야 한다.
+
+위의 live 정책 근거 조사와 실제 source 호출은 별도 증거다. 사용자의 network setting이 false이면 helper는 자동으로 이를 켜지 않는다.
+
+`--fixture` 스크립트는 실제 HTTP를 차단하고 synthetic key·합성 fixture만 사용한다. 프로젝트 `data/raw/api/<institution>/<uuid>/`에 원본·manifest·receipt를 만들고 `reports/iteration_29_offline_*.json`에 검증 참조를 기록한다. `--live`는 별도 settings gate를 사용한다. `contract_validated`는 이 source 구조 검사 통과만 뜻하며 live·통계 의미·정규화·전국가 완전성 검증이 아니다.
 
 ## 공식 파일 조사 근거와 해석
 

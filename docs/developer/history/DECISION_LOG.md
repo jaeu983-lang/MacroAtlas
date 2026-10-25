@@ -1,5 +1,12 @@
 # Decision Log — 설계 변경·미해결 판단
 
+## D-097 — 7개 live canary 실행 한도 (2026-10-25)
+
+- **상태: PREPARED; GATE U PENDING.** 사용자가 Max 기준으로 다음 live 검증을 최대한 진행하도록 했다. Iteration 30은 FRED·Census·BLS v1·TIC·BoE의 등록 7개 dataset selection에 요청당 1회, retry 0회 제한으로 준비했다.
+- **근거:** FRED key/rate/third-party terms, Census API 일일 query budget, 무키 BLS v1, Treasury TIC file scope, BoE Database 재사용 조건을 [dataset contract](../connectors/DATASET_CONTRACTS.md)에 기록했다. `--live`는 `Settings.from_project_env` network flag를 존중하고 false일 때 source client를 생성하지 않는다.
+- **현황:** 설정 확인 시 `MACROATLAS_NETWORK_ENABLED=false`, FRED/Census key configured (값을 출력하지 않음). source request 0회; [preflight JSON](../../../reports/iteration_30_live_canary_d8a291e6301f4eb7a8be637f25a5d8b4.json)에서 7개 모두 `not_run_network_disabled`. 자동으로 opt-in을 바꾸지 않았다.
+- **검증:** network-off preflight unit test와 offline dataset regression 통과 여부를 회차 보고서에 기록한다. Gate U 성공은 실제 기관 요청 및 raw/hash read-back이 source별로 확인돼야 한다. 미통과 상태에서 Iteration 31 IMF 작업을 시작하지 않는다.
+
 ## D-096 — API·공식 파일 데이터셋 실행 계약 (2026-10-25)
 
 - **상태: IMPLEMENTED; ITERATION 29 GATE T PASSED.** API와 비API를 모두 준비하라는 사용자 요청에 따라 API 4개/FRED·Census·BLS v1, 공식 CSV 3개/TIC·BoE의 명시적 dataset profile을 공통 실행·검증·보존 계약으로 연결했다. 기관별 규칙은 binding/validator에 둔다.

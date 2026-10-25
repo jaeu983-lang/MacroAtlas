@@ -2,6 +2,7 @@
 import argparse
 import json
 from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
@@ -26,6 +27,7 @@ from macro_data_platform.connectors.official_files import (
 from macro_data_platform.contracts import EvidenceKind
 from macro_data_platform.discovery.datasets import get_dataset_profile
 from macro_data_platform.ingestion.datasets import DatasetCollector
+from macro_data_platform.storage.api_responses import read_api_response
 from macro_data_platform.storage.datasets import read_dataset_artifact
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +41,17 @@ CASES = {
     "tic.mfh.history": {}, "tic.treasury_holdings.2023_01": {},
     "boe.bank_rate": {"start": "2025-01-01", "end": "2025-01-10"},
 }
+LIVE_CASES = {
+    "fred.gdp": {"start": "2024-01-01", "end": "2025-12-31", "limit": 8,
+                 "realtime_start": "2025-12-31", "realtime_end": "2025-12-31"},
+    "census.acs2023.population": {"predicates": {"for": "state:06"}},
+    "bls.unemployment": {"start_year": 2024, "end_year": 2024},
+    "bls.cpi": {"start_year": 2024, "end_year": 2024},
+    "tic.mfh.history": {},
+    "tic.treasury_holdings.2023_01": {},
+    "boe.bank_rate": {"start": "2024-01-01", "end": "2024-01-10"},
+}
+LIVE_REQUESTS_PER_DATASET = 1
 
 
 class FixtureResponse:
@@ -115,8 +128,13 @@ def fixture_collector(settings, profile_id, *, body=None, status=200, content_ty
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--fixture", action="store_true", required=True)
-    parser.parse_args()
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--fixture", action="store_true")
+    mode.add_argument("--live", action="store_true")
+    arguments = parser.parse_args()
+    if arguments.live:
+        run_live()
+        return
     settings = Settings(ROOT, network_enabled=True, fred_api_key="synthetic-fred-only",
                         census_api_key="synthetic-census-only", bls_api_key="synthetic-unused-bls")
     results = []
@@ -135,6 +153,73 @@ def main():
                                   "results": results}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(report)
     print(f"{len(results)} dataset contracts saved and hash-verified; live requests: 0")
+
+
+def run_live(*, root: Path | None = None, settings: Settings | None = None):
+    """One request per registered dataset; respect the user's persisted network opt-in."""
+    root = ROOT if root is None else root
+    settings = Settings.from_project_env(root) if settings is None else settings
+    timestamp = datetime.now(UTC).isoformat()
+    report = {"evidence": "live_canary", "started_at": timestamp,
+              "network_enabled": settings.network_enabled, "retry_count": 0, "results": []}
+    if not settings.network_enabled:
+        report.update({"status": "not_run_network_disabled",
+                       "note": "MACROATLAS_NETWORK_ENABLED is false; no source request was attempted."})
+        report["results"] = [{"profile_id": profile_id, "status": "not_run_network_disabled"}
+                             for profile_id in LIVE_CASES]
+    else:
+        from macro_data_platform.connectors.official_api import ConnectorFailure
+        from macro_data_platform.discovery.datasets import get_dataset_profile
+        from macro_data_platform.ingestion.datasets import DatasetCollector
+        from macro_data_platform.storage.datasets import read_dataset_artifact
+
+        collector = DatasetCollector(settings)
+        for profile_id, parameters in LIVE_CASES.items():
+            profile = get_dataset_profile(profile_id)
+            missing_key = ((profile.institution_id == "US-02" and not settings.fred_api_key)
+                           or (profile.institution_id == "US-06" and not settings.census_api_key))
+            if missing_key:
+                report["results"].append({"profile_id": profile_id, "status": "not_run_missing_key"})
+                continue
+            try:
+                saved = collector.collect(profile_id, parameters)
+                receipt, raw = read_dataset_artifact(settings, saved)
+                archive = read_api_response(settings, saved.raw)
+                validation = receipt["validation"]
+                report["results"].append({
+                    "profile_id": profile_id,
+                    "status": "live_contract_validated" if validation["status"] == "contract_validated"
+                    else "live_needs_review",
+                    "access_method": profile.access_method,
+                    "request_count": LIVE_REQUESTS_PER_DATASET,
+                    "raw_path": saved.raw.raw_path,
+                    "raw_sha256": saved.raw.raw_sha256,
+                    "raw_bytes": len(raw),
+                    "retrieved_at": receipt["raw"].get("retrieved_at"),
+                    "http_status": archive.manifest["http_status"],
+                    "validation": validation,
+                    "read_back_verified": True,
+                })
+            except ConnectorFailure as error:
+                report["results"].append({"profile_id": profile_id, "status": "live_request_failed",
+                                          "failure_code": error.code.value,
+                                          "failure_stage": error.status.value,
+                                          "request_count": LIVE_REQUESTS_PER_DATASET})
+            except (ValueError, TypeError, OSError, KeyError, IndexError, AttributeError, RuntimeError) as error:
+                # Fixed exception classes only; omit text that could carry response or credential data.
+                report["results"].append({"profile_id": profile_id, "status": "live_contract_or_storage_failed",
+                                          "failure_type": type(error).__name__,
+                                          "request_count": LIVE_REQUESTS_PER_DATASET})
+        statuses = {row["status"] for row in report["results"]}
+        report["status"] = "completed" if statuses == {"live_contract_validated"} else "completed_with_issues"
+        report["request_budget"] = {"planned_maximum": len(LIVE_CASES), "automatic_retries": 0,
+                                    "bls_v1_maximum": 2, "bls_v2_used": False}
+    report["finished_at"] = datetime.now(UTC).isoformat()
+    path = root / "reports" / f"iteration_30_live_canary_{uuid4().hex}.json"
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(path)
+    print(f"Live canary status: {report['status']}; source requests attempted: "
+          f"{sum(row.get('request_count', 0) for row in report['results'])}")
 
 
 if __name__ == "__main__":

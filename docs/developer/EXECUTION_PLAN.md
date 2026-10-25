@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** Iteration 29 Gate T 완료. API 4개·공식 CSV 3개 dataset profile→binding→raw/검증 receipt→hash read-back을 synthetic fixture로 확인했습니다. 전체 offline 815 passed, 1 skipped, 0 failed. [보고서](history/ITERATION_29_REPORT.md) 참조. 다음 후보는 Iteration 30 IMF 상세 route/auth 문서 gate이며 이번 작업에서는 시작하지 않았습니다. 기존 live evidence는 확장하지 않습니다.
+**현재 작업:** Iteration 29 Gate T 완료 후 Iteration 30 Gate U의 7개 bounded live canary를 준비합니다. `.env`에서 FRED/Census 키가 구성된 것은 확인했고 값을 출력하지 않았습니다. `MACROATLAS_NETWORK_ENABLED=false`라 live 요청은 시도하지 않습니다. [canary 계획](IMPLEMENTATION_PLAN.md), [실행 명세](connectors/DATASET_CONTRACTS.md) 참조. Gate U를 통과한 뒤 Iteration 31 IMF 상세 route/auth 문서를 진행합니다.
 
 ## 실행 준비 상태
 
@@ -14,7 +14,8 @@
 | API 문서 | 15 documented / 6 unconfirmed / 0 not_offered | unconfirmed는 API가 없다는 뜻이 아님 |
 | MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. 새 3곳은 synthetic JSON 검증·파일 read-back; World Bank 외 일반 workflow 연결은 별도 |
 | 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조·원본/manifest/receipt/hash read-back; API 상태는 unconfirmed 유지 |
-| 문서 확인 API의 다음 대상 | Iteration 30 IMF 상세 route/auth 후보, BOJ·Board crosswalk, 기존 clients workflow/live 준비 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. BLS2는 현재 제외 |
+| 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 1회 live canary | 현재 MACROATLAS_NETWORK_ENABLED=false로 요청 0회. opt-in 후 Gate U 통과 전까지 다음 iteration은 보류 |
+| 문서 확인 API의 다음 대상 | Iteration 31 IMF 상세 route/auth 후보, BOJ·Board crosswalk, 기존 clients workflow/live 준비 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. BLS2는 현재 제외 |
 | live | World Bank 고정 경로 하나만 과거 partial | Iteration 28은 공식 문서 브라우징 + synthetic fixtures; 실제 key·통계 API 요청 0회 |
 | 전체 offline suite | 815 passed, 1 skipped, 0 failed | Iteration 29 전체 suite; 전기관 live 성공 증거 아님 |
 

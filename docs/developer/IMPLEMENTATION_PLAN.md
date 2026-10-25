@@ -127,6 +127,16 @@ Track C의 목표는 21개 기관·서비스의 준비 상태와 선택 dataset/
 - **원칙:** Parser 선택은 등록된 코드 ID만 사용합니다. API·파일 raw와 검증 결과를 별도로 보존하고 validation 실패를 수집 성공으로 바꾸지 않습니다. 공통 코어에는 기관명 조건문을 퍼뜨리지 않습니다.
 - **결과:** Gate T PASS. 전체 offline 815 passed, 1 skipped, 0 failed (76.67초). 7개 synthetic dataset artifact를 원본·manifest·검증 receipt로 저장하고 hash read-back했습니다. BLS2·실제 키·live 통계 요청은 제외했습니다. [회차 보고서](history/ITERATION_29_REPORT.md) 및 [데이터셋 계약](connectors/DATASET_CONTRACTS.md) 참조.
 
+### Iteration 30 — 7개 dataset bounded live canary (Gate U)
+
+- **사용자 지시:** 합성 데이터셋 검사 다음에 가능한 실제 API·공식 파일 경로를 최대한 확인한다. 이번 작업은 등록된 API 4개와 CSV 3개, 각 1회만 대상으로 한다.
+- **요청 범위:** FRED GDP 최대 8개 observation(2024–2025), Census ACS 2023 California 한 state row, BLS v1 두 series 각각 2024 한 해(총 POST 2회), TIC 등록 CSV 2개, BoE IUDBEDR 10일. 자동 재시도·pagination·v2/API fallback 금지. 완료 raw는 hash 검증 receipt와 함께 저장한다.
+- **공식 이용 근거:** FRED key·rate/third-party terms, Census query budget, BLS unauthenticated v1 제한, Treasury TIC 배포/coverage 한계, BoE Database 재사용 조건을 [canary guide](connectors/DATASET_CONTRACTS.md)에 기록한다.
+- **선행 조건:** `.env` 또는 명시 process setting `MACROATLAS_NETWORK_ENABLED=true`; FRED/Census user keys는 기존 local settings에서만 읽는다. live helper는 false면 네트워크 호출 없이 7개 `not_run_network_disabled` 결과만 쓴다. 자동으로 user setting을 켜지 않는다. BLS v1은 키를 쓰지 않는다.
+- **Gate U 성공 기준:** source별 실제 요청 수·HTTP outcome·선택 identity·contract validator·raw 저장·hash read-back 결과를 구별. 7곳 전체가 성공할 때만 전체 통과. 일부 실패는 부분 결과로 기록하고 재시도하지 않는다. 초과호출·credential 출력·경로 이탈·응답 크기 초과·source mismatch 시 중단한다.
+- **현재 판정:** live gate **PENDING / network opt-in false**. FRED/Census credential은 configured로 확인했으나 값은 출력하지 않았다. 준비·문서·network-off fail-closed 검증은 가능하다. opt-in이 들어오면 bounded live run을 다시 실행한다. Gate U를 통과하기 전 Iteration 31 IMF 문서 조사를 시작하지 않는다.
+- **준비 검사 결과:** network-off live preflight는 7개 `not_run_network_disabled`, 요청 0회. targeted 53 passed; 전체 offline 816 passed, 1 skipped, 0 failed; 변경 Python Ruff 통과. 세부는 [live canary 상태](testing/LIVE_CANARY_REPORT.md), local-only [preflight JSON](../../reports/iteration_30_live_canary_d8a291e6301f4eb7a8be637f25a5d8b4.json).
+
 ## 다음 네 주 권장 일정
 
 - Iteration 29 이후: IMF 상세 route/auth 문서 gate를 Iteration 30 후보로 둡니다. 키 조사·공통 HTTP·REST/CSV client 검증을 IMF 검증으로 간주하지 않습니다. 미구현 API·공식 파일 경로는 기관/데이터셋별 다음 회차에서 다룹니다.
