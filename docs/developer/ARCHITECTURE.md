@@ -193,7 +193,7 @@ BIS의 Credit to the non-financial sector는 40개 초과 경제의 분기 자�
 
 ## 현재 기관 상태
 
-현재 기준 문서에 기록된 목록은 21개 source profile이다. 공식 API 문서 확인 15개, 조사 범위에서 명세 미확인 6개, 공식 no-API 확인 0개다. 미확인은 부재 증거가 아니다. World Bank의 고정 USA/WDI/GDP 경로 외에 Iteration 29에서 FRED·Census·BLS v1 API 4개와 TIC·BoE 파일 3개를 고정 profile collector에 연결했다. Iteration 30의 7개 bounded live canary는 1회씩 시도했고, 실행 시점 contract pass는 2/7이다. 저장된 TIC raw 두 개를 사후 offline 재검증한 현재 source-response 근거는 4/7이지만 Gate U는 계속 미통과다. 이 증거는 자연어 workflow나 범용 기관 지원을 뜻하지 않는다. 나머지 API clients는 별도 저장 helper의 offline/mock round-trip 범위다. source별 상세와 한계는 [기관 구현 상태](../operator/reference/INSTITUTION_IMPLEMENTATION_STATUS.md), [기관 API 감사표](../operator/reference/INSTITUTION_API_AUDIT.md), [API response 저장 명세](connectors/API_RESPONSE_STORAGE.md), [canary 보고서](testing/LIVE_CANARY_REPORT.md)를 본다.
+현재 기준 문서에 기록된 목록은 21개 source profile이다. 공식 API 문서 확인 15개, 조사 범위에서 명세 미확인 6개, 공식 no-API 확인 0개다. 미확인은 부재 증거가 아니다. World Bank의 고정 USA/WDI/GDP 경로 외에 Iteration 29에서 FRED·Census·BLS v1 API 4개와 TIC·BoE 파일 3개를 고정 profile collector에 연결했다. Iteration 30은 7개 bounded live canary를 두 차례 실행했으며 각 run은 1회 요청, retry 0회로 제한했다. 최신 run은 4/7 live source-contract pass였고 Census 302 redirect refusal, BLS 503 두 건으로 Gate U에 실패했다. 이는 자연어 workflow나 범용 기관 지원을 뜻하지 않는다. 나머지 API clients는 별도 저장 helper의 offline/mock round-trip 범위다. source별 상세와 한계는 [기관 구현 상태](../operator/reference/INSTITUTION_IMPLEMENTATION_STATUS.md), [기관 API 감사표](../operator/reference/INSTITUTION_API_AUDIT.md), [API response 저장 명세](connectors/API_RESPONSE_STORAGE.md), [canary 보고서](testing/LIVE_CANARY_REPORT.md)를 본다.
 
 ## 데이터 무결성 경계
 

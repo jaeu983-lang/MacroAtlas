@@ -584,10 +584,19 @@
 
 ## Iteration 30 저장 응답 검토 및 안전한 실패 진단 — D-098 (2026-10-25)
 
-- **상태: PARTIAL; GATE U NOT PASSED.** 원래 7개 live 요청과 결과는 변경하지 않았다. 원래 실행 판정은 2/7이며 후속 TIC 2개 재검증을 반영한 최신 source-response contract 근거는 4/7이다(FRED·BoE live 검증, TIC 두 원본은 live 저장/hash 검증 후 offline contract 검증). Gate U는 실행 시점 7/7 조건을 충족하지 못했으므로 계속 실패다. 작업은 저장 TIC raw의 오프라인 재검증과 다음 canary의 안전한 실패 분류 개선으로 제한했다.
+- **상태: PARTIAL; GATE U NOT PASSED.** 원래 7개 live 요청과 결과는 변경하지 않았다. 원래 실행 판정은 2/7이며, D-098 작성 시 저장 TIC 2개 재검증을 반영한 source-response contract 근거는 당시 4/7이었다(FRED·BoE live 검증, TIC 두 원본은 live 저장/hash 검증 후 offline contract 검증). Gate U는 실행 시점 7/7 조건을 충족하지 못했으므로 계속 실패다. 작업은 저장 TIC raw의 오프라인 재검증과 다음 canary의 안전한 실패 분류 개선으로 제한했다.
 - **Table 3D:** 실제 저장 파일에서 단독 `"Notes:"` 행 전까지의 160개 CSV 행을 strict parser로 검증한다. raw 5,982 bytes와 기존 canary SHA-256을 유지했고, 127개 자료 행은 고정 2023-01 source contract를 충족했다. 각주 내용은 parsed data로 다루지 않는다. 이 결과는 원래 receipt를 갱신하지 않는 후속 offline assessment다. 경계가 둘 이상이면 fail-closed한다.
 - **MFH:** 원본 hash가 일치하는 98,124-byte saved response를 오프라인 재검증했다. 현재 validator는 26개 header block, 955개 자료 행과 11개 중복 연월 쌍을 확인했다. 2000-03의 II/I 및 2002-06부터 2011-06까지의 June pair는 서로 다른 Series ID가 명시되고, Treasury 공식 각주가 series break 및 이전 series 추정치의 비교 전용 성격을 설명하므로 `contract_validated`로 기록한다. 모든 값·열은 raw에 보존하며 병합·삭제하지 않는다. [공식 MFH 표/각주](https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfhhis01.html).
 - **실패 진단:** 다음 canary 결과에는 fixed `failure_reason`과 응답을 받은 경우 `failure_http_status`를 기록한다. 예외 문구·응답 본문·credential은 기록하지 않는다. 기존 Census/BLS 결과는 상세 사유를 남기지 않아 과거 원인 복구가 불가능하다.
 - **검증:** `tests/test_dataset_paths.py`, `tests/test_official_api_credentials.py`, `tests/test_live_canary.py` 85 passed, 1 skipped; 전체 offline suite 822 passed, 1 skipped, 0 failed (82.45초); 변경 Python Ruff 통과. 최종 문서 반영 뒤 `git diff --check`로 확인한다. Skip은 Windows symlink 미지원이다. 실제 raw 재검증은 네트워크 0회이며 raw hash가 기존 canary report와 일치했다.
-- **중단 지점:** Gate U 실행 시점 판정은 2/7이며 계속 실패다. 후속 오프라인 검증 후 source-response 근거는 4/7이나, 이는 live gate 통과가 아니다. Census와 BLS 두 경로가 unresolved인 동안 Iteration 31, 사용자 실행 연결, IMF adapter, soak 및 후속 엔진은 시작하지 않는다.
+- **중단 지점:** D-098 당시 첫 Gate U run 판정은 2/7이며 미통과였다. 당시 후속 오프라인 검증으로 보강된 source-response 근거 4/7은 live gate 통과가 아니었다. 그 후속 실행 당시 Census/BLS가 unresolved였으므로 Iteration 31, 사용자 실행 연결, IMF adapter, soak 및 후속 엔진을 시작하지 않았다. 최신 상태는 D-099에 기록한다.
 - **보고서 경로:** 원래 local-only canary JSON/raw는 읽혔고 hash 확인됐다. 기본 샌드박스의 `reports/` 쓰기는 `PermissionError`였지만, `.env` 네트워크 설정이 false임을 확인한 뒤 승인된 elevated shell에서 network-off preflight JSON을 저장했다([결과](../../../reports/iteration_30_live_canary_c1fa08b936df44869eebefc81e34ca42.json): 7개 미실행, 0 request, 0 retry). 외부 요청은 하지 않았고 기존 산출물도 수정하지 않았다.
+
+## Iteration 30 후속 live canary — D-099 (2026-10-25)
+
+- **상태: PARTIAL; GATE U NOT PASSED.** 같은 7개 고정 profile에 대해 프로세스에서만 network opt-in을 설정하고 7회 요청, 0회 재시도를 수행했다. `.env`는 수정하지 않았다. [후속 실행 결과](../../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json)는 로컬 `reports/`에만 저장된다.
+- **통과:** FRED GDP, TIC MFH, TIC Table 3D, BoE Bank Rate는 HTTP 200, source contract validation, raw 저장 및 hash read-back을 통과했다(4/7). 이는 고정 선택 범위의 source-contract 근거이며 전체 dataset 또는 정규화 ingestion 승인이 아니다.
+- **Census 실패:** ACS query는 HTTP 302 `redirect_refused`, `LICENSE_SECURITY/NEEDS_REVIEW`로 종료됐다. 실패 응답 본문과 `Location`은 기록하지 않았으므로 redirect가 발생한 이유/목적지는 아직 미확인이다. 자동 redirect 금지는 유지한다.
+- **BLS 실패:** v1 unemployment·CPI POST가 각각 HTTP 503 `http_transient_status`, `TRANSIENT/FAILED_RETRYABLE`로 종료됐다. 두 요청 외의 retry는 없으며, HTTP status만으로 provider-side 원인을 특정할 수 없다.
+- **후속 조치:** 추가 외부 요청은 하지 않는다. 새로운 예산을 정한 뒤 Census redirect 목적지를 query 값 없이 제한 기록하고 공식 host와 대조한다. BLS는 새 예산에서 필요한 profile만 별도 단발 확인하고 v1 계약을 유지한다. 모든 Gate U profile 통과 전까지 Iteration 31·soak는 보류한다.
+- **보안/한계:** `.env`, key 값, 응답 본문, redirect query는 변경·출력·저장하지 않았다. 원 canary와 이전 receipts는 소급 수정하지 않았다. 이번 기록은 실제 live evidence를 추가하지만 Gate U 성공을 의미하지 않는다.

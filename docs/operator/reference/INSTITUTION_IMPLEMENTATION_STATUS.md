@@ -6,7 +6,7 @@
 
 ## 현재 요약
 
-아래의 구현 유형 집계는 live 상태와 별도 축이다. Iteration 30에서는 등록된 7개 고정 profile을 각각 한 번 live 실행했으며, 실행 당시 contract pass는 2/7이다. 저장된 TIC 2개 원본은 사후 offline validator를 통과해 최신 source-response 근거는 4/7이지만 Gate U는 미통과다. [상세 실행·사후 검증 기록](../../developer/testing/LIVE_CANARY_REPORT.md).
+아래의 구현 유형 집계는 live 상태와 별도 축이다. Iteration 30의 후속 canary는 등록된 7개 profile을 각 1회 실행해 4/7 source contract 및 hash read-back을 통과했다. Census는 HTTP 302 redirect 차단, BLS 두 profile은 HTTP 503으로 Gate U는 미통과다. [상세 실행 기록](../../developer/testing/LIVE_CANARY_REPORT.md).
 
 | MacroAtlas 구현 상태 | 기관 수 | 의미 |
 |---|---:|---|
@@ -34,8 +34,8 @@
 | BEA | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
 | e-Stat | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
 | FRED/ALFRED | v1 metadata·검색·명시적 관측치 page·release/source, synthetic archive/read-back | 2026-10-25 FRED GDP 1개 고정 page live contract/hash 검증; v2, Board crosswalk, 전체 자동 pagination·workflow·범용 인증/coverage |
-| BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | Iteration 30의 두 경로는 TRANSIENT 실패; 원 실행에 transport reason 상세 없음. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
-| Census | catalogue/variables/geographies, keyed header/row table과 synthetic archive/read-back | Iteration 30의 고정 ACS query는 LICENSE_SECURITY/NEEDS_REVIEW로 끝남; 구체 원인은 원 실행 보고에서 미기록. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |
+| BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | 후속 canary의 두 경로 모두 HTTP 503 `http_transient_status`; 구체 서버 측 원인 미확정. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
+| Census | catalogue/variables/geographies, keyed header/row table과 synthetic archive/read-back | 후속 ACS query는 HTTP 302 `redirect_refused`로 안전 중단; redirect 목적지는 기록되지 않아 원인 미확정. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |
 | BIS | SDMX v2 raw-response routes와 mocked routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |
 | OECD | SDMX v1 raw-response routes와 mocked routes, 공통 file archive/read-back helper | 인증/외부 접근 조건, provider payload fixture·parse, workflow, live |
 | ECB | SDMX 2.1 dataflow/structure/data routes, 공통 file archive/read-back helper | provider payload fixture·parse, metadata/ingestion workflow, live |
@@ -47,10 +47,10 @@
 
 | 기관 | 데이터셋별 범위 | 미검증·제외 |
 |---|---|---|
-| Treasury TIC | MFH 역사 CSV 반복 연도/월 블록·Series break 기록, Table 3D January 2023 snapshot 별도 profile/validator. 원 bytes·결측·집계·각주 보존. 두 live 응답은 HTTP 200 및 hash read-back; 사후 offline validator 통과. | Gate U 실행 시점은 `dataset_contract_changed`; 전체 raw 최신성 보장, 국가 코드 정규화, 전체 국가·총부채 의미 검증 없음 |
+| Treasury TIC | MFH 역사 CSV 반복 연도/월 블록·Series break 기록, Table 3D January 2023 snapshot 별도 profile/validator. 원 bytes·결측·집계·각주 보존. 후속 canary에서 두 live 응답 모두 HTTP 200, source contract 및 hash read-back 통과. | 전체 raw 최신성 보장, 국가 코드 정규화, 전체 국가·총부채 의미 검증 없음 |
 | Bank of England | IUDBEDR CSVF=TN, 최대 366일 요청, 원 보고 날짜·결측 검증, 원본/receipt 저장. | 2026-10-25 고정 10일 요청 live contract/hash 검증; 일반 시리즈 discovery, 월말 정렬·보간 없음 |
 
-일반 API 명세는 계속 unconfirmed이며 파일 다운로드를 API 구현으로 집계하지 않습니다. [데이터셋 계약](../../developer/connectors/DATASET_CONTRACTS.md)은 API 4개·파일 3개 선택 경로를 Python collector로 실행합니다. 7개 중 원 실행의 live contract pass는 2개였고, 저장 TIC 파일 2개는 현재 validator로 사후 오프라인 검증돼 최신 source-response 근거는 4/7입니다. Gate U는 NOT PASSED입니다. 일반 대화 workflow·정규화 관측치 DB는 별도입니다.
+일반 API 명세는 계속 unconfirmed이며 파일 다운로드를 API 구현으로 집계하지 않습니다. [데이터셋 계약](../../developer/connectors/DATASET_CONTRACTS.md)은 API 4개·파일 3개 선택 경로를 Python collector로 실행합니다. 최신 후속 run은 7개 중 4개 live source-contract pass이며, Census 302 및 BLS 503 두 건으로 Gate U는 NOT PASSED입니다. 일반 대화 workflow·정규화 관측치 DB는 별도입니다.
 
 ### fixture 수준만 있음
 

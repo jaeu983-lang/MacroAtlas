@@ -7,8 +7,8 @@
 
 - 기관 목록: 21개 profile. 공식 API 문서 확인 15개, 문서 명세 미확인 6개, 공식 no-API 확인 0개로 기록돼 있습니다. 미확인은 API 부재가 아닙니다.
 - 과거 World Bank USA/WDI/GDP 고정 경로에는 제한된 live ingestion 근거가 있습니다.
-- Iteration 30 canary: FRED GDP와 BoE Bank Rate는 단발 live contract/hash 검증에 통과했습니다. TIC MFH·Table 3D는 live HTTP 200 및 raw hash read-back 후 저장 응답의 offline validator가 통과했지만, canary 당시 원 receipt는 `live_needs_review`입니다.
-- 해당 7개 canary의 원 실행 판정은 2/7이며 Gate U는 미통과입니다. Census는 `LICENSE_SECURITY/NEEDS_REVIEW`, BLS v1 두 경로는 `TRANSIENT/FAILED_RETRYABLE`이었고, 당시 상세 transport reason은 보존되지 않았습니다. 요청 예산은 소진됐고 재시도하지 않았습니다. 새 live 시도는 새로 확인된 예산과 사용자의 명시 요청 뒤에만 수행합니다.
+- Iteration 30 후속 canary: FRED GDP·TIC MFH·TIC Table 3D·BoE Bank Rate는 HTTP 200, source contract 및 raw hash read-back 검증에 통과했습니다(4/7). 이는 고정 표본만 검증하며 정규화 데이터 제공이나 전기관 준비를 뜻하지 않습니다.
+- Gate U는 미통과입니다. 후속 Census ACS 요청은 HTTP 302 `redirect_refused`로 안전하게 차단됐습니다. redirect 목적지와 body는 저장되지 않아 목적지를 포함한 원인은 아직 모릅니다. BLS v1 unemployment와 CPI는 각각 HTTP 503 `http_transient_status`를 반환했습니다. 서버 측 원인은 HTTP status만으로 특정할 수 없습니다. 7회 예산·재시도 0회를 사용했으므로 새 호출은 별도 예산을 정한 후에만 합니다.
 - BEA/e-Stat은 제한 JSON client와 mock 검증만 있으며 이 고정 collector workflow와 실제 기관 인증·수집은 미검증입니다.
 - FRED·Census·BLS v1·TIC·BoE는 각 profile에 고정된 선택/수집 경로를 갖지만, 일반 자연어 workflow로 연결된 것은 아닙니다. BLS는 무키 v1만 사용합니다.
 - MacroAtlas 일반 자연어 UI와 XLSX exporter: 아직 제공되지 않습니다.
