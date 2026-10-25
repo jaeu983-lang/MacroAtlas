@@ -21,8 +21,12 @@ review; temporary HTTP/transport failures are retryable without immediate retry;
 JSON is returned as a sanitized `JsonApiResponse`, with a safe endpoint, method, HTTP status and
 UTC retrieval timestamp. The payload is not a byte-exact raw archive; sensitive fields and any
 echo of the configured UserID are redacted. Dataset semantics, pagination, licensing, units,
-frequency and revision metadata are not normalized by this client. Workflow/CLI integration and
-live authentication are not implemented.
+frequency and revision metadata are not normalized by this client. General workflow and observation
+ingestion are not implemented. Iteration 31 verified one live GetDataSetList call (13 entries),
+source-envelope validation, sanitized archive and hash read-back. The metadata-only CLI is
+`scripts/verify_api_metadata.py --live --source bea`; one call requires a fresh request budget.
+Synthetic and recorded sanitized metadata fixtures are distinct. See the
+[Iteration 31 report](../history/ITERATION_31_REPORT.md).
 
 ## Local credential setup
 

@@ -9,11 +9,17 @@
 - 과거 World Bank USA/WDI/GDP 고정 경로에는 제한된 live ingestion 근거가 있습니다.
 - Iteration 30 후속 canary: FRED GDP·TIC MFH·TIC Table 3D·BoE Bank Rate는 HTTP 200, source contract 및 raw hash read-back 검증에 통과했습니다(4/7). 이는 고정 표본만 검증하며 정규화 데이터 제공이나 전기관 준비를 뜻하지 않습니다.
 - Gate U는 미통과입니다. 추가 진단에서 Census는 공식 invalid-key redirect였고, BLS는 기존 POST 두 경로 및 공식 GET·예제 POST 모두 503 HTML이었습니다. Census 키 재입력/재발급과 BLS 기관·네트워크 확인이 필요합니다. [진단·재개 절차](../developer/testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)를 따릅니다. 신규 실행은 등록된 `--profile`로 필요한 경로만 고를 수 있으며 부분 성공은 전체 gate 통과가 아닙니다.
-- BEA/e-Stat은 제한 JSON client와 mock 검증만 있으며 이 고정 collector workflow와 실제 기관 인증·수집은 미검증입니다.
+- BEA/e-Stat은 Iteration 31에서 각각 1회 metadata 요청과 source 계약·archive/hash 재조회를 통과했습니다(BEA 목록 13개, e-Stat 영어 요청 목록 1건). 관측치 수집·일반 workflow는 미검증입니다. [실행 명령과 범위](../developer/history/ITERATION_31_REPORT.md).
 - FRED·Census·BLS v1·TIC·BoE는 각 profile에 고정된 선택/수집 경로를 갖지만, 일반 자연어 workflow로 연결된 것은 아닙니다. BLS는 무키 v1만 사용합니다.
 - MacroAtlas 일반 자연어 UI와 XLSX exporter: 아직 제공되지 않습니다.
 
 기관별 근거는 [기관 카탈로그](reference/INSTITUTION_CATALOG.md)와 [API 조사](reference/INSTITUTION_API_AUDIT.md), 실행·승인 주기는 [OPERATING_PLAN.md](OPERATING_PLAN.md)를 봅니다.
+
+## Gate U와 현재 보류 범위
+
+Gate U는 Iteration 30의 **고정 요청 경로 7개**를 검사하는 완료 기준 이름입니다. 대상은 5개 기관/제공자(FRED·Census·BLS·Treasury TIC·BoE)이며 BLS와 TIC가 각각 2개 경로입니다. 같은 전체 run에서 7개 모두 응답 계약·저장·hash read-back을 통과해야 성공입니다. 마지막 전체 run은 4/7이었습니다.
+
+사용자가 이후 Census·BLS를 보류하라고 지시했으므로 Gate U는 실패 이력으로 보존합니다. 전체 프로젝트나 나머지 기관을 계속 막는 기준으로 사용하지 않습니다. BEA·e-Stat은 독립 Gate V에서 metadata만 검증했습니다. 사용자 재개 전 Census·BLS를 호출하거나 기존 7개 전체 `--live` 명령을 반복하지 마세요. [현재 source 우선순위](../developer/planning/ITERATION_32_SDMX_HANDOFF.md)를 따릅니다.
 
 ## 로컬 API key 설정
 

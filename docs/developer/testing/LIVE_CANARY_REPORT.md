@@ -1,5 +1,7 @@
 # Iteration 30 — bounded live canary 상태
 
+**현재 운영 범위(D-101):** 사용자가 Census·BLS를 보류했다. 이 문서의 Gate U 실패는 이력으로 유지하고, 기존 7개 전체 요청을 반복하지 않는다. 다른 기관은 독립 gate로 진행하며 BEA·e-Stat metadata는 [Iteration 31](../history/ITERATION_31_REPORT.md)에서 통과했다.
+
 **현재 상태: PARTIAL — Gate U NOT PASSED.** 마지막 전체 canary는 4/7 통과였다. 이후 새 제한 진단에서 Census 302 목적지가 공식 `invalid_key.html`임을 확인했다. BLS는 기존 POST 두 경로와 공식 GET·예제 POST 비교까지 모두 503 HTML을 반환했다. Akamai·JavaScript 표식은 앞단 오류/접근 페이지 가능성의 근거이며 차단 정책은 확정되지 않았다. [원인·코드 수정·재개 조건](CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 따른다. 기존 전체 run [JSON](../../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json)은 변경하지 않는다.
 
 이번 추가 진단은 5회(Census 1, BLS 4), 자동 재시도 0회였다. 이전 전체 canary 14회와 합쳐 저장소가 기록한 source 요청은 19회이며, 추가 5회는 7개 전체 gate run이 아니다. 코드에는 Census 인증 오류 분류, 고정 media category, `--profile` 선택과 부분 실행의 `not_assessed_partial_scope` 판정을 추가했다. 새 분류 자체는 offline 회귀로 검증했으며 추가 live 요청은 하지 않았다.

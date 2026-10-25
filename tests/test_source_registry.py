@@ -68,7 +68,8 @@ def test_api_availability_does_not_imply_connector_or_live_validation():
     assert bea.api_availability == ApiAvailability.DOCUMENTED
     assert bea.adapter_status == AdapterStatus.PARTIAL
     assert bea.fixture_scope == FixtureScope.SOURCE_SPECIFIC
-    assert bea.live_validation == LiveValidation.NOT_RUN
+    assert bea.live_validation == LiveValidation.PARTIAL
+    assert "GetDataSetList metadata only" in bea.live_scope
     assert world_bank.api_availability == ApiAvailability.DOCUMENTED
     assert world_bank.adapter_status == AdapterStatus.PARTIAL
     assert world_bank.live_validation == LiveValidation.PARTIAL
@@ -94,7 +95,10 @@ def test_authentication_profiles_only_contain_environment_variable_names():
     assert (estat.authentication, estat.credential_env_var) == (AuthRequirement.REQUIRED, "ESTAT_APP_ID")
     assert bea.adapter_status == estat.adapter_status == AdapterStatus.PARTIAL
     assert bea.fixture_scope == estat.fixture_scope == FixtureScope.SOURCE_SPECIFIC
-    assert bea.live_validation == estat.live_validation == LiveValidation.NOT_RUN
+    assert bea.live_validation == estat.live_validation == LiveValidation.PARTIAL
+    assert "metadata only" in bea.live_scope and "metadata only" in estat.live_scope
+    assert "no observation ingestion" in bea.live_scope
+    assert "no observation ingestion" in estat.live_scope
     assert get_source_profile("US-01").api_provider == "Federal Reserve Bank of St. Louis (FRED)"
     assert get_source_profile("US-01").credential_env_var == "FRED_API_KEY"
     assert (get_source_profile("US-05").authentication,

@@ -53,6 +53,8 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 
 ### 7개 경로 제한 live canary
 
+이 7개 전체 명령은 기존 Gate U의 이력 명세다. 사용자 지시 D-101로 Census·BLS는 보류했으므로 현재 작업에서는 실행하지 않는다. 다른 기관의 metadata는 `scripts/verify_api_metadata.py`와 [Iteration 31](../history/ITERATION_31_REPORT.md)을 따른다.
+
 먼저 로컬 `.env`의 `MACROATLAS_NETWORK_ENABLED=true`와 필요한 `FRED_API_KEY`, `CENSUS_API_KEY` 설정을 사용자가 검토한다. 이후 아래 명령은 이 7개 범위만 각각 한 번 요청하며 retry하지 않는다. FRED observations는 2024–2025 최대 8개, Census는 ACS2023의 California 1개 state row, BLS v1은 series당 2024년 한 해(키/v2 미사용), BoE는 10일, TIC는 등록된 두 CSV다.
 
 ```powershell

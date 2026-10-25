@@ -2,7 +2,7 @@
 
 **기준일:** 2026-10-25\
 **모델 작업 크기 기준:** Max 추론 기준\
-**현재 작업:** Iteration 30 Gate U는 **NOT PASSED**다. 마지막 전체 run은 4/7 live source-contract pass였다. 추가 5회 진단(Census 1, BLS 4; 자동 retry 0)에서 Census는 공식 invalid-key redirect, BLS는 기존 POST와 공식 GET·예제 POST 모두 503 HTML이었다. BLS의 Akamai/JavaScript 표식은 앞단 오류/접근 페이지 가능성을 나타내지만 정책·장애 원인은 미확정이다. Census 키 재입력/재발급과 BLS 기관/네트워크 확인이 남는다. 코드에는 Census 인증 오류와 고정 response category, `--profile` 선택 및 부분 실행의 gate 미평가를 추가했다. 전체 offline suite는 846 passed, 1 skipped다. Gate U 통과 전에는 Iteration 31을 진행하지 않는다. 세부는 [실패 진단](testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md), [canary 상태](testing/LIVE_CANARY_REPORT.md), [실행 명세](connectors/DATASET_CONTRACTS.md)를 참조한다.
+**현재 작업:** 사용자 지시 D-101로 Census·BLS를 active API rollout에서 보류했다. 기존 Gate U는 NOT PASSED 이력으로 보존하고 다른 기관의 독립 gate를 진행한다. Iteration 31에서는 BEA GetDataSetList 13개 metadata와 e-Stat getStatsList(lang=E, limit=1) 1건을 실제 API로 확인하고 파일 저장/hash read-back을 통과했다(기관당 1회, 총 2회, retry 0). 이 범위는 metadata-only이며 observation ingestion은 미검증이다. 다음 source 후보는 SDMX 6곳이며 IMF·BOJ route/auth·구현은 별도 회차다. [Iteration 31 보고서](history/ITERATION_31_REPORT.md)를 따른다.
 
 ## 실행 준비 상태
 
@@ -15,9 +15,9 @@
 | MacroAtlas API clients | World Bank·BEA·e-Stat·FRED·Census·BLS v1 제한 client 6개 + SDMX raw client 6개 | 12개 source archive 가능. FRED·Census·BLS는 고정 collector profile 4개; live 결과는 아래 Gate U 상세 참조. 일반 자연어 workflow는 미구현 |
 | 공식 파일 clients | TIC·BoE 2곳, 등록 CSV 3개 | synthetic 표 구조와 저장 검증; Iteration 30에서 3개 요청. TIC 2개는 saved raw의 offline validator 통과, BoE live contract pass; API 상태는 unconfirmed 유지 |
 | 다음 경로 검증 | Iteration 30, API 4개·공식 파일 3개의 bounded live canary | 후속 실행은 7회·재시도 0회, 4/7 통과. Census 302 redirect 거부, BLS 503 두 건; Gate U 미통과 |
-| 문서 확인 API의 다음 대상 | Iteration 31 IMF 상세 route/auth 후보, BOJ·Board crosswalk, 기존 clients workflow/live 준비 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. BLS2는 현재 제외 |
+| 문서 확인 API의 다음 대상 | Iteration 31 BEA/e-Stat metadata 검증 완료 후 SDMX 6곳 payload/metadata; IMF·BOJ·Board crosswalk는 별도 후보 | API 문서가 있어도 dataset/series·인증·이용 범위별 gate를 따름. Census·BLS는 사용자 재개 전 보류 |
 | live | World Bank 고정 경로 과거 partial; Iteration 30에서 canary 2회 | 최신 run의 live source-contract pass 4/7; Census `redirect_refused`/302와 BLS `http_transient_status`/503 두 건. 7/7 성공 증거가 아님 |
-| 전체 offline suite | 846 passed, 1 skipped, 0 failed | Census 안전한 키 오류 분류·부분 canary gate 회귀까지 검증; 전기관 live 성공 증거 아님 |
+| 전체 offline suite | 884 passed, 1 skipped, 0 failed | Iteration 31 metadata·실제 recorded fixture·registry 범위까지 검증; 전기관 live 성공 증거 아님 |
 
 이 제약은 공통 readiness audit와 offline fixture 작업을 막지 않습니다. 실제 series, 인증된 live 요청, 비교·계산·파생 XLSX는 source별 문서·용도·이용 조건을 확정한 뒤 해당 gate에서 결정합니다.
 
@@ -50,7 +50,7 @@ Track M은 현재 코드의 정확성·오류·메모리·시간을 다룹니다
 | 6 | **Iteration 26 — 공통 bounded HTTP 전송층과 API family wrapper, Gate Q PASS** | 세 기존 HTTP loop를 공통 primitive로 이동; World Bank·JSON·SDMX API 의미는 각각 보존; 685 passed/1 skipped | live 0. 이유와 계층 설계는 [HTTP transport](connectors/HTTP_TRANSPORT.md), [report](history/ITERATION_26_REPORT.md) |
 | 7 | **Iteration 27 — API 키 발급 조사·입력 준비, Gate R PASS** | FRED/Census/BLS 키 이름과 safe settings 확장, 기존 BEA/e-Stat 보존, 21개 source 키 발급 안내 | 688 passed/1 skipped. [report](history/ITERATION_27_REPORT.md); live 키 검증 제외 |
 | 8 | **Iteration 28 — FRED/Census/BLS v1, Gate S PASS** | 기관별 JSON client, 한도·오류·비밀값 검사, 파일 저장/read-back과 합성 결과 파일 | 763 passed/1 skipped, live 0. [report](history/ITERATION_28_REPORT.md) |
-| 다음 후보 | **Iteration 29 후보 — IMF 상세 route/auth 문서 gate** | 공식 IMF Data API Swagger는 beta portal 로그인 후 탐색하도록 안내됨; route/auth specification 확보 가능성을 판단 | 공식 route/auth 근거 없이는 경로를 추정하지 않고 IMF client 구현을 보류 |
+| 후속 후보 | **IMF 상세 route/auth 문서 gate** | SDMX metadata 검증 다음의 독립 후보. 공식 IMF Swagger의 beta portal 로그인 안내와 정확한 route/auth specification 확보 가능성을 판단 | 공식 route/auth 근거 없이는 경로를 추정하지 않고 IMF client 구현을 보류 |
 | 후속 REST | 나머지 개별 REST 및 범위 확장 | BOJ, Board crosswalk와 기존 FRED/Census/BLS v1의 workflow/live 준비 | source별 auth·ID·quota·정규화 범위를 독립 검증. BLS2는 현재 제외 |
 | 9 | 기존 REST client의 범위 확장 | World Bank general Indicators API, BEA, e-Stat | fixed/limited client를 dataset discovery·metadata·series data 및 workflow 연결로 확장; 각 기관 독립 gate |
 | 10 | shared API conformance harness 및 request/metadata gap audit | 공통 timeout/error/provenance/fixture/result record, 현재 workflow/contracts와 문서 WP 대조 | 기존 field 보존; 기관 차이를 공통 필드에 억지로 강제하지 않음 |

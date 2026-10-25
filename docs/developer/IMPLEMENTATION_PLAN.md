@@ -29,6 +29,25 @@
 
 ## 지금의 개발·운영 큐
 
+**현재 사용자 지시(D-101): Census·BLS는 보류하고 다른 기관 API에 집중한다.** 기존 Gate U는 NOT PASSED 이력으로 유지하며, 보류 두 기관을 재호출하지 않는다. 새 작업은 독립 source gate로 진행한다. 이번 Iteration 31은 키/클라이언트가 준비된 BEA·e-Stat의 작은 metadata 요청과 파일 저장·hash read-back부터 검증한다. 관측치 수집 전체나 자연어 workflow 성공으로 확대하지 않는다.
+
+### Iteration 31 — BEA·e-Stat metadata API 검증 (Gate V)
+
+- **공식 근거:** BEA GetDataSetList와 e-Stat v3.0 getStatsList. e-Stat은 영어 `lang=E`, `limit=1`만 요청한다.
+- **구현:** HTTP 200과 source API 성공을 분리하는 기관별 envelope 검사, write-once archive/hash read-back, source별 report, synthetic fixture runner. Source API 오류도 성공으로 숨기지 않는다.
+- **Gate V:** fixture에서 정상·오류·빈 목록·형식변화·키 redaction·저장/조회 계약을 통과하고 source별 live 상태를 정확히 기록한다. live sub-gate는 실제 metadata 계약과 저장/read-back을 모두 통과한 source만 성공이다. 코드 gate와 기관 live 성공을 분리한다.
+- **live 예산:** BEA 1회, e-Stat 1회, 자동 retry 0. 네트워크 설정과 해당 key가 없으면 호출하지 않는다. Census·BLS·공식 파일 경로·추가 dataset/observation 요청은 이번 scope에 없다.
+- **다음 큐:** SDMX 6곳의 provider payload/metadata 검증 → IMF·BOJ의 정확한 route/auth와 adapter → 기존 World Bank/FRED 범위 확장. 기관별 독립 회차로 수행하며 BEA/e-Stat 성공을 다른 기관에 전파하지 않는다.
+- **실제 결과:** BEA 13개 dataset metadata, e-Stat 영어 요청 목록 1건이 HTTP 200·기관 계약·파일 저장/hash read-back을 통과했다. 합계 2회·retry 0, Census·BLS 요청 0이다. Source registry는 두 기관을 metadata-only PARTIAL로 표시한다. [회차 보고서](history/ITERATION_31_REPORT.md)에 fixture/live 증거와 검증 결과를 보존한다.
+- **검증:** Engineering Gate V와 두 source의 metadata live sub-gate PASS. 전체 offline suite 884 passed, 1 skipped(66.66초), source별 합성 fixture와 실제 저장 응답의 recorded fixture를 구분한다. 다음 별도 task의 준비된 요청문은 [Iteration 32 handoff](planning/ITERATION_32_SDMX_HANDOFF.md)다.
+
+### 다음 task 후보: Iteration 32 — SDMX 6곳 metadata 계약 (Gate W 제안)
+
+- BIS·OECD·ECB·Eurostat·Bundesbank·INSEE의 현 raw client에 대해 공식 metadata route/ID·응답 계약·source fixture와 archive/read-back을 검증한다. 필요한 metadata 메서드는 공식 근거가 있는 범위만 추가한다.
+- Engineering gate는 source별 fixture와 안전/저장 회귀다. live metadata sub-gate는 실제 source 계약·저장·hash 재조회가 통과한 기관만 성공이다. 준비되지 않은 source는 not_ready/not_run으로 기록한다.
+- 다음 task가 승인되어 실행될 경우의 제안 예산은 source당 최대 1회, 총 최대 6회, retry 0, 동시 요청 1개다. 이번 Iteration 31에서는 이 요청을 보내지 않았다.
+- Census·BLS 보류, 기존 Gate U 실패 보존과 독립 source gate 원칙은 유지한다. 정확한 실행 요청문은 [다음 채팅 handoff](planning/ITERATION_32_SDMX_HANDOFF.md)를 사용한다.
+
 모든 작업을 한 줄로 세워 순차 대기시키지 않습니다. Track M과 Track C는 독립된 offline 일을 병행하고, 외부 호출에 대해서만 공통 gate와 해당 기관 gate를 합칩니다.
 
 ### Track M — 공통 엔진 유지
@@ -134,14 +153,14 @@ Track C의 목표는 21개 기관·서비스의 준비 상태와 선택 dataset/
 - **공식 이용 근거:** FRED key·rate/third-party terms, Census query budget, BLS unauthenticated v1 제한, Treasury TIC 배포/coverage 한계, BoE Database 재사용 조건을 [canary guide](connectors/DATASET_CONTRACTS.md)에 기록한다.
 - **선행 조건:** `.env` 또는 명시 process setting `MACROATLAS_NETWORK_ENABLED=true`; FRED/Census user keys는 기존 local settings에서만 읽는다. live helper는 false면 네트워크 호출 없이 7개 `not_run_network_disabled` 결과만 쓴다. 자동으로 user setting을 켜지 않는다. BLS v1은 키를 쓰지 않는다.
 - **Gate U 성공 기준:** source별 실제 요청 수·HTTP outcome·선택 identity·contract validator·raw 저장·hash read-back 결과를 구별. 7곳 전체가 성공할 때만 전체 통과. 일부 실패는 부분 결과로 기록하고 재시도하지 않는다. 초과호출·credential 출력·경로 이탈·응답 크기 초과·source mismatch 시 중단한다.
-- **현재 판정:** Gate U는 **PARTIAL / NOT PASSED**다. 마지막 전체 canary는 4/7 통과였다. 추가 5회 진단(자동 retry 0)에서 Census는 공식 invalid-key redirect, BLS는 기존 POST 두 개와 공식 GET·예제 POST 모두 503 HTML이었다. 사용자 활성화 완료 응답과 로컬 설정 점검에도 현재 Census 키는 서버가 거부한다. BLS HTML 표식은 앞단 오류/접근 페이지 가능성과 일치하나 정책·장애 원인은 미확정이다. [진단·재개 조건](testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)에 따라 Census 키와 BLS 외부 접근을 확인하며, Iteration 31은 보류한다.
+- **이력 판정:** Gate U는 **PARTIAL / NOT PASSED**다. 마지막 전체 canary는 4/7 통과였고, 후속 진단은 Census invalid-key redirect와 BLS 503 HTML이었다. 이 실패 이력은 유지한다. 이후 사용자 지시 D-101로 두 source를 보류하고 다른 기관은 독립 gate에서 진행한다. Census·BLS 자체의 재개는 사용자 지시와 [진단 조건](testing/CENSUS_BLS_GATE_U_DIAGNOSIS.md)을 따른다.
 - **재현·진단 보강:** TIC Table 3D의 인식된 각주 경계를 합성 fixture로 검증한다. canary 실패 보고서는 앞으로 고정 `failure_reason` 및 있으면 HTTP status만 기록하고 메시지·응답 본문·비밀값은 제외한다. 원래 canary는 소급 수정하지 않는다.
 - **검증 결과:** 최신 Census 오류 분류와 등록 profile 선택 실행은 관련 테스트 **146 passed, 1 skipped**, 전체 offline **846 passed, 1 skipped, 0 failed (72.70초)**, 변경 Python Ruff 통과다. Skip은 Windows symlink 생성 미지원이다. 기본 사용자 pytest Temp 접근 거부를 피하도록 저장소의 고유 `--basetemp`를 사용했다. 새 코드의 source별 추가 live 검증과 Gate U 전체 성공은 미검증이다. 이전 전체 canary JSON은 [후속 실행](../../reports/iteration_30_live_canary_02afcdd6b6254239adf01af824df4e64.json)에 보존한다.
 
 ## 다음 네 주 권장 일정
 
-- Iteration 30 Gate U 통과 후: IMF 상세 route/auth 문서 조사를 Iteration 31 후보로 둡니다. 현재 Gate U는 미통과이므로 source별 review를 먼저 마치며, 키 조사·공통 HTTP·REST/CSV client 검증을 IMF 검증으로 간주하지 않습니다. 미구현 API·공식 파일 경로는 기관/데이터셋별 다음 회차에서 다룹니다.
-- 2–3주차: FRED/Board, BLS, Census, BOJ, World Bank generic path, BEA, e-Stat을 API family별 개별 작업으로 연결합니다. 같은 batch 안에서도 제공자·기관·인증·응답 schema는 독립 판정합니다.
+- D-101 이후: BEA/e-Stat metadata 검증을 Iteration 31로 수행했고, 다음은 기존 SDMX 6곳 payload/metadata다. IMF 상세 route/auth 조사는 이후 독립 후보로 유지하며 기존 client나 다른 기관 metadata 성공을 IMF 검증으로 간주하지 않습니다. Census·BLS는 보류 상태를 유지합니다.
+- 2–3주차: FRED/Board, BOJ, World Bank generic path, BEA, e-Stat을 API family별 개별 작업으로 연결합니다. BLS·Census는 사용자 재개 전 보류합니다. 같은 batch 안에서도 제공자·기관·인증·응답 schema는 독립 판정합니다.
 - 이후: SDMX와 REST clients에 source payload fixture/parser, workflow/storage/read-back, recovery gates를 추가합니다. API 미확인 6개 기관은 별도로 표별 공식 접근 경로를 조사하고, source-specific offline gate와 live readiness를 통과한 기관만 bounded live canary 후보로 둡니다. 일정은 기관 응답·인증·허용 조건에 따라 바뀔 수 있습니다.
 
 각 source 작업의 예상 기간은 문서가 명확한 단순 API가 1–3 작업일, SDMX·인증·revision·대용량 등 복잡한 경우 3–7일 이상입니다. 이는 계획 추정이며 작업량을 줄이기 위해 gate를 생략하지 않습니다.

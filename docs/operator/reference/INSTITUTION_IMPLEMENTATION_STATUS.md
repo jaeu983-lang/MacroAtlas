@@ -6,6 +6,8 @@
 
 ## 현재 요약
 
+사용자 지시 D-101로 Census·BLS는 active rollout에서 보류한다. 독립 Iteration 31에서는 BEA GetDataSetList 13개와 e-Stat getStatsList(lang=E, limit=1) 1건의 실제 metadata API·저장/hash read-back을 통과했다. 두 source는 registry에 metadata-only PARTIAL로 기록한다. [Iteration 31 결과](../../developer/history/ITERATION_31_REPORT.md).
+
 아래의 구현 유형 집계는 live 상태와 별도 축이다. Iteration 30의 후속 canary는 등록된 7개 profile을 각 1회 실행해 4/7 source contract 및 hash read-back을 통과했다. Census는 HTTP 302 redirect 차단, BLS 두 profile은 HTTP 503으로 Gate U는 미통과다. [상세 실행 기록](../../developer/testing/LIVE_CANARY_REPORT.md).
 
 | MacroAtlas 구현 상태 | 기관 수 | 의미 |
@@ -31,8 +33,8 @@
 
 | 기관 | 구현된 부분 | 아직 없는 부분 |
 |---|---|---|
-| BEA | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
-| e-Stat | JSON GET 클라이언트, 요청 parameter 목록, redacted JSON archive/read-back helper | workflow 연결, source payload semantics/정규화·검증, live API 확인 |
+| BEA | JSON GET, GetDataSetList metadata 13개 live 계약·archive/hash read-back; synthetic/recorded source fixture | 관측치 source semantics·정규화·일반 workflow와 다른 API 메서드의 live 검증 |
+| e-Stat | JSON GET, getStatsList(lang=E, limit=1) metadata 1건 live 계약·archive/hash read-back; synthetic/recorded source fixture | 관측치 source semantics·정규화·일반 workflow와 getMetaInfo/getStatsData live 검증 |
 | FRED/ALFRED | v1 metadata·검색·명시적 관측치 page·release/source, synthetic archive/read-back | 2026-10-25 FRED GDP 1개 고정 page live contract/hash 검증; v2, Board crosswalk, 전체 자동 pagination·workflow·범용 인증/coverage |
 | BLS | 무키 v1 POST, 25 series·10년 한도, warning/선택 검증과 synthetic archive/read-back | 기존 POST·공식 GET·예제 POST 모두 503 HTML; 앞단 오류/접근 페이지 가능성과 일치하나 정확한 정책·장애 원인 미확정. v2, key 사용, 일일 budget scheduler, workflow·live 성공 |
 | Census | catalogue/variables/geographies, keyed header/row table, 공식 key-error redirect의 안전한 AUTH_ACCESS 분류와 synthetic archive/read-back | 실제 ACS query는 공식 `invalid_key.html` redirect; 현재 key 거부 확인. 큰 응답 자동 분할, 통계 의미 정규화, workflow·live 성공 |

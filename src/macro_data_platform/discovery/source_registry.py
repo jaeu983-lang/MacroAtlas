@@ -277,7 +277,9 @@ _ROWS = (
         credential_env_var="BEA_API_KEY",
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="BEA JSON GET client and sanitized file archive/read-back tests exist with mocks; workflow integration, provider parsing, and live API validation are not implemented.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="2026-10-25 GetDataSetList metadata only: 13 dataset entries, archived and hash-read-back; no observation ingestion or general workflow validation.",
+        status_note="BEA JSON GET client, synthetic/recorded catalogue fixtures and source envelope checks. Iteration 31 verified one live metadata request and sanitized archive/read-back; observation parsing and general workflow integration remain unverified.",
     ),
     _profile(
         "EU-01", "ECB", "E",
@@ -326,7 +328,9 @@ _ROWS = (
         credential_env_var="ESTAT_APP_ID",
         adapter_status=AdapterStatus.PARTIAL,
         fixture_scope=FixtureScope.SOURCE_SPECIFIC,
-        status_note="e-Stat v3.0 JSON GET client and sanitized file archive/read-back tests exist with mocks; workflow integration, provider parsing, and live API validation are not implemented.",
+        live_validation=LiveValidation.PARTIAL,
+        live_scope="2026-10-25 getStatsList(lang=E, limit=1) metadata only: one table entry, archived and hash-read-back; no observation ingestion or general workflow validation.",
+        status_note="e-Stat v3.0 JSON GET client, synthetic/recorded catalogue fixtures and source envelope checks. Iteration 31 verified one live metadata request and sanitized archive/read-back; observation parsing and general workflow integration remain unverified.",
     ),
     _profile(
         "CN-01", "PBOC", "G",

@@ -6,6 +6,8 @@
 
 ## 현재 기준선
 
+**최신 scope(D-101):** Census·BLS는 보류하고 다른 기관 API를 독립 source gate로 검증한다. Gate U는 7개 고정 경로의 과거 미통과 이력이며 현재 전체 프로젝트의 차단 조건이 아니다. Iteration 31은 BEA/e-Stat metadata만 실제 요청·archive/read-back을 통과했고, 전체 offline 결과는 884 passed, 1 skipped다. 다음 작업 요청문은 [Iteration 32 SDMX handoff](../planning/ITERATION_32_SDMX_HANDOFF.md)를 따른다.
+
 Iteration 23에서 현행 registry와 전체 offline suite를 확인했다.
 
 | 구분 | 확인된 현황 | 의미 |
@@ -40,12 +42,12 @@ SDMX 결과는 세 층으로 별도 판정한다. **공통 전송**의 TLS/host/
 | INT-01 | IMF | documented | fixture-only / source-specific synthetic | 미실행 | SDMX |
 | INT-02 | BIS | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
 | US-03 | Treasury TIC | unconfirmed | fixture-only / source-specific parser | 미실행 | API 표별 조사 → 공식 파일 검토 |
-| US-04 | BEA | documented | partial JSON client / source-specific mock | 미실행 | 개별 REST·인증 |
+| US-04 | BEA | documented | partial JSON client / synthetic·recorded metadata | GetDataSetList 13개 metadata와 archive/read-back 부분 통과 | 관측치·일반 workflow 별도 |
 | EU-01 | ECB | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
 | EU-02 | Eurostat | documented | partial SDMX raw client / mocked route; provider payload fixture 없음 | 미실행 | SDMX |
 | JP-02 | Japan MOF | unconfirmed | adapter·기관 fixture 없음 | 미실행 | API 표별 조사 → 공식 파일 검토 |
 | JP-01 | Bank of Japan | documented | adapter 없음 | 미실행 | 개별 REST |
-| JP-03 | e-Stat | documented | partial JSON client / source-specific mock | 미실행 | 개별 REST·인증 |
+| JP-03 | e-Stat | documented | partial JSON client / synthetic·recorded metadata | getStatsList(E, limit=1) metadata와 archive/read-back 부분 통과 | 관측치·일반 workflow 별도 |
 | CN-01 | PBOC | unconfirmed | fixture-only / scenario-only | 미실행 | API·공식 배포 경로 조사 |
 | CN-02 | SAFE | unconfirmed | fixture-only / scenario-only | 미실행 | API·공식 배포 경로 조사 |
 | CN-03 | China NBS | unconfirmed | fixture-only / scenario-only | 미실행 | API·공식 배포 경로 조사 |

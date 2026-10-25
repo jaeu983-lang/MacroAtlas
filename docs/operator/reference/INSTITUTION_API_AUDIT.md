@@ -1,5 +1,7 @@
 # 21개 기관 공식 API 상태 조사
 
+Iteration 31 현재 overlay: 사용자 지시로 Census·BLS는 active rollout에서 보류한다. 공식 API 문서 집계 15/6/0은 그대로이며, BEA GetDataSetList 13개 및 e-Stat getStatsList(E, limit=1) metadata의 실제 요청·source 계약·archive/read-back은 [Iteration 31](../../developer/history/ITERATION_31_REPORT.md)에서 확인했다. 아래 원래 조사 범위와 후속 live 증거를 구분한다.
+
 Iteration 29 구현 보충: API 문서 집계는 15 documented / 6 unconfirmed / 0 not_offered 그대로입니다. TIC·BoE에는 검토된 공식 CSV 3개 다운로드 경로와 dataset별 합성 검증을 추가했습니다. 일반 API 미제공·live 성공으로 바꾸지 않습니다. [데이터셋 계약](../../developer/connectors/DATASET_CONTRACTS.md) 참조.
 
 **조사일:** 2026-10-25\

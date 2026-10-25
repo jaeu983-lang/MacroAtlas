@@ -1,5 +1,7 @@
 # Gate U — Census 키 오류와 BLS 503 진단
 
+**현재 지시(D-101):** Census·BLS는 보류 상태다. 아래 재개 절차는 이력/참고이며 사용자의 명시적인 재개 전에는 키 입력 요청이나 외부 호출을 진행하지 않는다. 다른 기관 API는 독립 source gate로 진행한다.
+
 **일자:** 2026-10-25
 
 **회차:** Iteration 30 후속 수정. Gate U는 **NOT PASSED**이며 Iteration 31은 시작하지 않는다.

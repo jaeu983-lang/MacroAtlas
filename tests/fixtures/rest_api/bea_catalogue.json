@@ -1,0 +1,6 @@
+{
+  "BEAAPI": {
+    "Request": {"RequestParam": [{"ParameterName": "USERID", "ParameterValue": "fixture-bea-credential"}]},
+    "Results": {"Dataset": [{"DatasetName": "SyntheticNIPA", "DatasetDescription": "Synthetic catalogue fixture, not live BEA data"}]}
+  }
+}

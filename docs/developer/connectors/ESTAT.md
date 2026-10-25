@@ -22,8 +22,11 @@ immediate retry; redirects stop.
 JSON is returned as a sanitized `JsonApiResponse`, with a safe endpoint, method, HTTP status and
 UTC retrieval timestamp. The payload is not a byte-exact raw archive; sensitive fields and any
 echo of the configured Application ID are redacted. Table semantics, pagination, licensing,
-units, frequency and revision metadata are not normalized by this client. Workflow/CLI integration
-and live authentication are not implemented.
+units, frequency and revision metadata are not normalized by this client. General workflow and
+observation ingestion are not implemented. Iteration 31 verified one live getStatsList call with
+`lang=E, limit=1`, STATUS=0 and one table entry, sanitized archive and hash read-back. The
+metadata-only CLI is `scripts/verify_api_metadata.py --live --source estat`; each execution consumes
+a fresh one-request budget. See the [Iteration 31 report](../history/ITERATION_31_REPORT.md).
 
 ## Local credential setup
 

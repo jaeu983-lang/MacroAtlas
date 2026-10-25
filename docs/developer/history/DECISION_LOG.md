@@ -609,3 +609,13 @@
 - **검증:** 관련 테스트 146 passed, 1 skipped; 전체 offline suite 846 passed, 1 skipped, 0 failed (72.70초); 변경 Python Ruff 통과. Symlink 생성 미지원 1건은 제외했다. 기본 pytest Temp에서 WinError 5를 재현했고 저장소 내 고유 basetemp를 사용해 검증했다. 코드 분류 자체의 새 live 검증은 하지 않았다.
 - **남은 사람/외부 조치:** 사용자는 Census 활성화 완료를 확인했지만 현재 설정값은 서버가 거부했다. 프로세스 override·외부 따옴표·명백한 placeholder·다른 기관 key 동일 값은 발견되지 않았다. 키 재입력/재발급은 사용자 조치다. BLS는 기관/네트워크 접근 상태 확인 뒤 새 예산에서 재개한다. 이번 작업에서 credentials를 바꾸거나 외부 문의를 발송하지 않았다.
 - **gate 경계:** 새 정상 자료 artifact는 없다. 이전 전체 canary의 4/7 성공은 유지하지만 부분 진단을 gate 통과로 합산하지 않는다. main 통합 전 사람의 diff 검토가 남는다.
+
+## Census·BLS 보류 및 다른 기관의 독립 API gate — D-101 (2026-10-25)
+
+- **사용자 지시:** “2개는 일단 제외하고 다른기관 api 집중”. Census·BLS를 이번 active rollout에서 보류한다. 키 입력 요청이나 live 재시도를 계속하지 않으며 기존 adapter·fixture·실패 이력은 보존한다.
+- **gate 범위 변경:** Gate U는 기존 7개 기준의 NOT PASSED 상태다. 제외 source를 성공으로 바꾸거나 원 receipt를 수정하지 않는다. 사용자 지시에 따라 다른 기관의 독립 source gate를 허용한다. 한 task/한 High iteration 원칙과 source별 검증·raw·정확성 기준은 유지한다.
+- **이번 회차:** Iteration 31, BEA GetDataSetList·e-Stat getStatsList(lang=E, limit=1)의 기관별 metadata envelope 및 archive/read-back 검증. engineering Gate V와 source별 live sub-gate를 구분한다. 최대 live 2회, source당 1회, retry 0이다.
+- **이후 우선순위:** 기존 SDMX 6곳의 source payload/metadata, IMF·BOJ route/auth와 adapter, World Bank/FRED 범위 확대. 공식 파일 sources는 API 집중 scope 뒤의 별도 작업으로 둔다. 이번 승인으로 여러 번호 회차를 자동 진행하거나 main에 병합하지 않는다.
+- **Iteration 31 결과:** BEA GetDataSetList 13개 dataset metadata 및 e-Stat getStatsList(lang=E, limit=1) 표 1건이 HTTP 200·source 계약·archive/hash read-back을 통과했다. 실제 요청 2회, retry 0, Census/BLS 0회. 합성 fixture와 실제 sanitized recorded fixture 및 provenance/hash를 별도로 보존했다. Engineering Gate V와 해당 두 metadata sub-gate PASS다. 관측치/전체 workflow 성공은 아니다.
+- **최종 검증:** 전체 offline 884 passed, 1 skipped, 0 failed(66.66초). Skip은 Windows symlink 생성 미지원이다. 변경 Python Ruff·공백 및 관련 41개 파일의 실제 credential 비노출 검사를 통과했다. 결과는 `codex/iteration-31-api-metadata` feature branch에 커밋한다. 실제 `.env`와 keys는 이번 회차에서 수정하지 않았다.
+- **handoff:** 사용자는 이번 작업을 마친 뒤 Gate U 설명과 다음 채팅 요청문을 작성하라고 지시했다. [Iteration 32 prompt](../planning/ITERATION_32_SDMX_HANDOFF.md)는 다음 별도 task용이며 이번 task에서 Iteration 32를 시작하지 않았다.

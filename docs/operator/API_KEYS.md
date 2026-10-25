@@ -4,7 +4,7 @@
 
 ## 지금 준비할 키
 
-BEA와 e-Stat을 이미 발급받았다면 기존 값을 사용합니다. 지금 추가로 준비할 것은 **FRED와 Census**입니다. 사용자의 후속 결정에 따라 현재 BLS client는 **무키 v1 전용**입니다. BLS 키 발급은 향후 v2를 도입할 때의 선택 사항이며 지금 입력할 필요가 없습니다.
+기존 BEA·e-Stat 키는 Iteration 31의 metadata 요청에서 작동을 확인했고 기존 값을 사용합니다. **Census·BLS는 사용자 지시로 보류**했으므로 현재 키 입력·재발급을 요구하지 않습니다. 아래 발급 표는 참고 자료입니다. BLS client는 무키 v1 전용이며, 향후 다른 source의 추가 key가 필요하면 그 기관의 공식 auth 근거부터 확인합니다.
 
 | 입력 이름 | 대상과 발급 이유 | 공식 발급 경로 | 받은 뒤 할 일 |
 |---|---|---|---|
@@ -37,6 +37,8 @@ BLS_API_KEY=
 이번 작업은 기존 줄과 값을 보존하고 없는 이름만 빈 줄로 추가합니다. 기존 `MACROATLAS_DATA_DIR`, `MACROATLAS_NETWORK_ENABLED` 설정도 보존합니다. 이 문서나 소스·테스트·대화에는 실제 값을 넣지 않습니다. `.env`는 Git 제외 파일이지만 로컬 평문 파일입니다.
 
 설정 로더는 다섯 이름을 읽을 수 있습니다. **BEA/e-Stat 제한 client와 FRED/Census/BLS v1 client가 구현됐으며 source별 synthetic 응답→파일→read-back을 시험했습니다.** 실제 기관 키 인증·live 호출과 일반 workflow는 별도 미검증입니다. BLS v1은 키를 보내지 않습니다. 값을 저장해도 자동으로 API를 호출하지 않고, 실행 중 서비스는 설정 재로드/재시작이 필요합니다. 같은 이름의 프로세스 환경변수가 `.env`보다 우선합니다.
+
+최신 overlay: Iteration 31에서 기존 BEA/e-Stat 키로 metadata API 1회씩을 성공했고 저장·재조회를 확인했습니다. 이 범위를 다른 dataset·메서드·관측치 전체의 권한으로 일반화하지 않습니다. Census·BLS는 사용자 지시로 보류했으므로 재개 전 key 재입력 요청이나 live retry를 진행하지 않습니다.
 
 ## 21개 기관·서비스의 발급 판단
 
