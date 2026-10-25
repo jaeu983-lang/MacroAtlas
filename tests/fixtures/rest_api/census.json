@@ -1,0 +1,12 @@
+{
+  "catalogue": {"dataset": [{"c_vintage": 2023, "c_dataset": ["acs", "acs5"], "title": "Synthetic catalogue entry"}]},
+  "variables": {"variables": {"NAME": {"label": "Synthetic name", "predicateType": "string"}, "B01001_001E": {"label": "Synthetic estimate", "concept": "Synthetic population", "predicateType": "int"}}},
+  "geographies": {"fips": [{"name": "state", "geoLevelDisplay": "040"}]},
+  "data": [
+    ["NAME", "B01001_001E", "state"],
+    ["Synthetic A", "0", "01"],
+    ["Synthetic B", null, "02"],
+    ["Synthetic C", "-666666666", "04"]
+  ],
+  "trade": [["E_COMMODITY", "ALL_VAL_MO", "time"], ["00", "123.5", "2023-01"]]
+}

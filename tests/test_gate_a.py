@@ -3,6 +3,7 @@ import hashlib
 import json
 import sqlite3
 from dataclasses import replace
+from datetime import datetime
 
 import pytest
 import requests
@@ -215,13 +216,14 @@ def test_tampering_between_collection_and_validation_records_quality_failure(set
 
 
 def test_transient_retry_records_new_artifact_without_overwriting_old_one(setup):
-    settings, _, _, service = setup
+    settings, _, clock, service = setup
     task = child(service, supplied(service))
     transport = FixtureTransport(fixture_download(status=503), fixture_download())
     dispatch = handler(setup, transport)
     first = dispatch.run(task["task_id"])
     first_artifact = dispatch.audit.for_task(task["task_id"], kind="artifact")[0]
     before = (settings.project_root / first_artifact["raw_path"]).read_bytes()
+    clock.value = datetime.fromisoformat(first["stages"][-1]["result"]["retry_not_before"])
     final = dispatch.resume(task["task_id"])
     assert first["status"] == "FAILED" and final["status"] == "COMPLETED"
     assert len(transport.calls) == 2

@@ -1,11 +1,14 @@
 # Agent Operating Rules
 
 ## Project plan precedence
-- Read `PROJECT_PLAN.md`, the matching iteration in `docs/IMPLEMENTATION_PLAN.md`, and relevant institution/scenario documentation before new implementation work.
+- Read `PROJECT_PLAN.md`, the matching iteration in `docs/developer/IMPLEMENTATION_PLAN.md`, and relevant institution/scenario documentation before new implementation work.
 - Treat `PROJECT_PLAN.md` as the product scope and acceptance standard; apply stricter security and data-integrity guidance where different.
 - Implement exactly one numbered High iteration per task. Never advance past a failed gate.
+- Completed user-directed exception (2026-10-25, D-057): The one combined iteration 07 -> 08 task completed sequentially, with iteration 07 checks/report finished before iteration 08 began. See docs/developer/history/ITERATION_07_REPORT.md and docs/developer/history/ITERATION_08_REPORT.md for fixture/live scope and results. The exception is consumed; the default one-iteration-per-task rule applies to future work. It grants no commit or merge authorization.
+- Completed user-directed exception (2026-10-25, D-062): The user explicitly requested completion through iteration 12. Iterations 09–12 completed sequentially, with Gate C and Gate D reports. This exception is consumed; iteration 13 was not started. It grants no checkpoint, commit, or merge authorization. Future tasks return to the one-iteration-per-task rule.
+- Completed user-directed exception (2026-10-25, D-072): The user explicitly requested iterations 13 and 14. They completed sequentially through Gate E; see `docs/developer/history/ITERATION_13_REPORT.md` and `docs/developer/history/ITERATION_14_REPORT.md`. The task-local exception is consumed; future tasks return to one iteration per task. It grants no commit, merge, publish, stage, or checkpoint authorization.
 - Distinguish official-docs research, fixture tests, and live API/ingestion evidence.
-- Record unresolved design decisions in `docs/DECISION_LOG.md`.
+- Record unresolved design decisions in `docs/developer/history/DECISION_LOG.md`.
 
 ## Mission
 Build a reliable international-finance data discovery and ingestion platform for public statistical sources.

@@ -1,0 +1,228 @@
+{
+  "mode": "synthetic_local_sqlite_only",
+  "network_used": false,
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "processor": "AMD64 Family 26 Model 96 Stepping 0, AuthenticAMD"
+  },
+  "repetitions_per_temperature_and_size": 30,
+  "limits": {
+    "rows": 20,
+    "evidence_bytes": 65536,
+    "time_ms": 250,
+    "cache_entries": 128,
+    "cache_bytes": 1048576,
+    "cold_p95_ms": 250.0,
+    "python_allocation_peak_bytes": 1048576
+  },
+  "memory_measurement": "Python tracemalloc peak during one query; excludes native SQLite and process RSS",
+  "results": [
+    {
+      "records_total": 102,
+      "institution_matches": 52,
+      "refresh_batches": 1,
+      "refresh_rows": 102,
+      "query_limit": 20,
+      "cold_ms": {
+        "p50": 5.063,
+        "p95": 8.516,
+        "max": 9.302
+      },
+      "warm_ms": {
+        "p50": 3.363,
+        "p95": 4.309,
+        "max": 7.592
+      },
+      "python_tracemalloc_peak_bytes": 49536,
+      "naive_full_history_baseline": {
+        "p50_ms": 4.97,
+        "p95_ms": 8.661,
+        "rows_decoded_per_lookup": 102,
+        "bytes_decoded_per_lookup": 60333,
+        "python_tracemalloc_peak_bytes": 76687,
+        "indexed_cold_p95_speedup_ratio": 1.02
+      },
+      "cold_index_rows_read_max": 1,
+      "cold_evidence_bytes_read": 593,
+      "warm_index_rows_read": 0,
+      "warm_evidence_bytes_read": 0,
+      "broad_query": {
+        "status": "partial",
+        "index_rows_read": 21,
+        "records_returned": 20,
+        "uncertainties": [
+          "row_budget_exhausted",
+          "potential_conflicts_unchecked_due_to_row_budget",
+          "some_records_are_not_reusable"
+        ]
+      },
+      "query_plan": [
+        "MULTI-INDEX OR",
+        "INDEX 1",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)",
+        "INDEX 2",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)"
+      ],
+      "cache": {
+        "entries": 1,
+        "bytes": 1570,
+        "max_entries": 128,
+        "max_bytes": 1048576
+      },
+      "concept_expansion": {
+        "query_concept": "GDP",
+        "policy_version": "benchmark-gdp-v1",
+        "returned_concepts": [
+          "gdp_nominal",
+          "gdp_real"
+        ],
+        "expansion_depth": 1,
+        "candidates": 2,
+        "read_rows": 2,
+        "evidence_bytes_read": 1153,
+        "all_candidates_non_reusable": true,
+        "search_correct": true
+      },
+      "search_correct": true
+    },
+    {
+      "records_total": 1002,
+      "institution_matches": 502,
+      "refresh_batches": 3,
+      "refresh_rows": 1002,
+      "query_limit": 20,
+      "cold_ms": {
+        "p50": 7.576,
+        "p95": 16.625,
+        "max": 21.711
+      },
+      "warm_ms": {
+        "p50": 5.245,
+        "p95": 8.175,
+        "max": 11.056
+      },
+      "python_tracemalloc_peak_bytes": 71022,
+      "naive_full_history_baseline": {
+        "p50_ms": 40.606,
+        "p95_ms": 58.682,
+        "rows_decoded_per_lookup": 1002,
+        "bytes_decoded_per_lookup": 594933,
+        "python_tracemalloc_peak_bytes": 694535,
+        "indexed_cold_p95_speedup_ratio": 3.53
+      },
+      "cold_index_rows_read_max": 1,
+      "cold_evidence_bytes_read": 593,
+      "warm_index_rows_read": 0,
+      "warm_evidence_bytes_read": 0,
+      "broad_query": {
+        "status": "partial",
+        "index_rows_read": 21,
+        "records_returned": 20,
+        "uncertainties": [
+          "row_budget_exhausted",
+          "potential_conflicts_unchecked_due_to_row_budget",
+          "some_records_are_not_reusable"
+        ]
+      },
+      "query_plan": [
+        "MULTI-INDEX OR",
+        "INDEX 1",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)",
+        "INDEX 2",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)"
+      ],
+      "cache": {
+        "entries": 1,
+        "bytes": 1572,
+        "max_entries": 128,
+        "max_bytes": 1048576
+      },
+      "concept_expansion": {
+        "query_concept": "GDP",
+        "policy_version": "benchmark-gdp-v1",
+        "returned_concepts": [
+          "gdp_nominal",
+          "gdp_real"
+        ],
+        "expansion_depth": 1,
+        "candidates": 2,
+        "read_rows": 2,
+        "evidence_bytes_read": 1153,
+        "all_candidates_non_reusable": true,
+        "search_correct": true
+      },
+      "search_correct": true
+    },
+    {
+      "records_total": 10002,
+      "institution_matches": 5002,
+      "refresh_batches": 21,
+      "refresh_rows": 10002,
+      "query_limit": 20,
+      "cold_ms": {
+        "p50": 12.458,
+        "p95": 13.793,
+        "max": 14.156
+      },
+      "warm_ms": {
+        "p50": 4.996,
+        "p95": 5.944,
+        "max": 6.118
+      },
+      "python_tracemalloc_peak_bytes": 127673,
+      "naive_full_history_baseline": {
+        "p50_ms": 510.253,
+        "p95_ms": 537.964,
+        "rows_decoded_per_lookup": 10002,
+        "bytes_decoded_per_lookup": 5958933,
+        "python_tracemalloc_peak_bytes": 6940803,
+        "indexed_cold_p95_speedup_ratio": 39.0
+      },
+      "cold_index_rows_read_max": 1,
+      "cold_evidence_bytes_read": 593,
+      "warm_index_rows_read": 0,
+      "warm_evidence_bytes_read": 0,
+      "broad_query": {
+        "status": "partial",
+        "index_rows_read": 21,
+        "records_returned": 20,
+        "uncertainties": [
+          "row_budget_exhausted",
+          "potential_conflicts_unchecked_due_to_row_budget",
+          "some_records_are_not_reusable"
+        ]
+      },
+      "query_plan": [
+        "MULTI-INDEX OR",
+        "INDEX 1",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)",
+        "INDEX 2",
+        "SEARCH knowledge_current USING COVERING INDEX knowledge_current_scope (institution_id=?)"
+      ],
+      "cache": {
+        "entries": 1,
+        "bytes": 1573,
+        "max_entries": 128,
+        "max_bytes": 1048576
+      },
+      "concept_expansion": {
+        "query_concept": "GDP",
+        "policy_version": "benchmark-gdp-v1",
+        "returned_concepts": [
+          "gdp_nominal",
+          "gdp_real"
+        ],
+        "expansion_depth": 1,
+        "candidates": 2,
+        "read_rows": 2,
+        "evidence_bytes_read": 1153,
+        "all_candidates_non_reusable": true,
+        "search_correct": true
+      },
+      "search_correct": true
+    }
+  ],
+  "completed_at": "2026-10-25T01:09:31.664753+00:00"
+}

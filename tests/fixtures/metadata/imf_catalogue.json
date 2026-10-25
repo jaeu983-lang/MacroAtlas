@@ -1,0 +1,13 @@
+{
+ "fixture_notice":"SYNTHETIC source series, not real IMF identifiers.",
+ "mappings":{"frequency":{"Q":"quarterly"},"unit":{"MUSD":"million USD"}},
+ "datasets":[{"id":"TEST_BOP","series":[{
+  "id":"TEST_PORTF_USA","series_key":{"FREQ":"Q"},
+  "label":{"en":"Synthetic portfolio investment","ko":"합성 포트폴리오 투자"},
+  "definition":"Synthetic BPM-style financial-account portfolio investment flow.",
+  "concept_id":"portfolio_investment","countries":["USA"],"dimensions":{},
+  "frequency_code":"Q","unit_code":"MUSD","stock_flow":"flow",
+  "available_start":"2020-Q1","available_end":"2022-Q4",
+  "availability_status":"available","auth_requirement":"none","scope":"total_economy"
+ }]}]
+}

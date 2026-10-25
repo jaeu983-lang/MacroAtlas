@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC fixture: identifiers are test-only, no endpoint claim. -->
+<m:Structure xmlns:m="urn:sdmx:org.sdmx.infomodel.message:2.1"
+ xmlns:s="urn:sdmx:org.sdmx.infomodel.structure:2.1"
+ xmlns:c="urn:sdmx:org.sdmx.infomodel.common:2.1">
+ <m:Structures>
+  <s:Dataflows><s:Dataflow agencyID="TEST_IMF" id="TEST_BOP" version="1.0">
+   <c:Name xml:lang="en">Synthetic portfolio investment</c:Name>
+   <c:Name xml:lang="ko">합성 포트폴리오 투자</c:Name>
+   <s:Structure><Ref agencyID="TEST_IMF" id="TEST_DSD" version="1.0" class="DataStructure"/></s:Structure>
+  </s:Dataflow></s:Dataflows>
+  <s:DataStructures><s:DataStructure agencyID="TEST_IMF" id="TEST_DSD" version="1.0">
+   <s:DataStructureComponents><s:DimensionList>
+    <s:Dimension id="FREQ" position="1"><s:LocalRepresentation><s:Enumeration>
+     <Ref agencyID="TEST_IMF" id="TEST_FREQ" version="1.0" class="Codelist"/>
+    </s:Enumeration></s:LocalRepresentation></s:Dimension>
+   </s:DimensionList></s:DataStructureComponents>
+  </s:DataStructure></s:DataStructures>
+  <s:Codelists><s:Codelist agencyID="TEST_IMF" id="TEST_FREQ" version="1.0">
+   <s:Code id="Q"><c:Name xml:lang="en">Quarterly</c:Name><c:Name xml:lang="ko">분기</c:Name></s:Code>
+  </s:Codelist></s:Codelists>
+ </m:Structures>
+</m:Structure>

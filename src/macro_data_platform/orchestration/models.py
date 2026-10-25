@@ -53,3 +53,8 @@ class StageInput:
     input_data: Any
     upstream: Any
     input_refs: tuple[str, ...]
+    attempt_no: int = 1
+
+    def __post_init__(self) -> None:
+        if type(self.attempt_no) is not int or self.attempt_no < 1:
+            raise ValueError("attempt number must be a positive integer")

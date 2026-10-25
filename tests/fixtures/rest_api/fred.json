@@ -1,0 +1,11 @@
+{
+  "series": {"seriess": [{"id": "GDP", "title": "Synthetic GDP fixture", "frequency": "Quarterly", "units": "Synthetic units", "notes": "Invented fixture; not official observations."}]},
+  "search": {"count": 1, "offset": 0, "limit": 100, "seriess": [{"id": "GDP", "title": "Synthetic GDP fixture", "units": "Synthetic units"}]},
+  "observations": {"count": 3, "offset": 0, "limit": 1000, "realtime_start": "2024-01-01", "realtime_end": "2024-01-01", "observations": [
+    {"date": "2023-01-01", "value": "123.5", "realtime_start": "2024-01-01", "realtime_end": "2024-01-01"},
+    {"date": "2023-04-01", "value": ".", "realtime_start": "2024-01-01", "realtime_end": "2024-01-01"},
+    {"date": "2023-07-01", "value": "0", "realtime_start": "2024-01-01", "realtime_end": "2024-01-01"}
+  ]},
+  "release": {"releases": [{"id": 53, "name": "Synthetic release", "link": "https://www.bea.gov/"}]},
+  "sources": {"sources": [{"id": 1, "name": "Synthetic source agency; not verified", "link": "https://www.bea.gov/"}]}
+}

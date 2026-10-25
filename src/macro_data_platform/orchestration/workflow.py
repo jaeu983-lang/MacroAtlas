@@ -262,6 +262,9 @@ class WorkflowService:
                 raise ValueError("stale workflow revision")
             if workflow["confirmation"] is None:
                 raise ValueError("explicit workflow confirmation required")
+            if "discovery_context" in doc:
+                from macro_data_platform.discovery.series import validate_discovery_context
+                validate_discovery_context(self.store, doc)
             confirmed = ConfirmedDelivery.from_dict(workflow["confirmation"])
             ConfirmedDelivery(confirmed.offer, confirmed.delivery, at, "followup")
             context = {"schema_version": 1, "source_workflow_id": workflow_id,
@@ -306,6 +309,9 @@ def validate_workflow_task(store, connection, doc, at: datetime, *, allow_link: 
         raise ValueError("unsupported workflow context")
     source = store.load(connection, context["source_workflow_id"])
     workflow = WorkflowService._workflow(source)
+    if "discovery_context" in source:
+        from macro_data_platform.discovery.series import validate_discovery_context
+        validate_discovery_context(store, source)
     if (workflow["revision"] != context["workflow_revision"]
             or workflow["work_task_id"] != doc["task_id"]
             or workflow["confirmation"] != context["confirmation"]

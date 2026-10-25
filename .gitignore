@@ -9,6 +9,7 @@ __pycache__/
 !.env.example
 reports/*
 !reports/.gitkeep
+!reports/iteration_12_benchmark.json
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep

@@ -1,7 +1,7 @@
 """Alignment 03: supplied fixture evidence, mock transport and real local history only."""
 import json
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 import requests
@@ -276,6 +276,7 @@ def test_http_failure_and_resume_retain_old_raw_and_source_observations(setup, m
     assert failed["error_code"] == "TRANSIENT"
     saved = settings.project_root / failed["payload"]["raw_path"]
     original = saved.read_bytes()
+    clock.value = datetime.fromisoformat(failed["retry_not_before"])
     reopened = WorldBankRequestDispatcher(settings, HistoryStore(settings), clock=clock,
                                          transport=transport)
     result = reopened.resume(task["task_id"])

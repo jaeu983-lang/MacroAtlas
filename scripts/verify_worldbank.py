@@ -33,7 +33,7 @@ def confirmed_verification_task(store: HistoryStore) -> dict:
         "worldbank:documented-profile", "World Bank",
         "https://datahelpdesk.worldbank.org/knowledgebase/articles/898599-indicator-api-queries",
         datetime(2026, 10, 24, tzinfo=UTC), EvidenceKind.OFFICIAL_DOCS,
-        original_ref="docs/connectors/WORLDBANK.md; prior documented profile, not fresh discovery",
+        original_ref="docs/developer/connectors/WORLDBANK.md; prior documented profile, not fresh discovery",
     )
     candidate = Candidate(
         "usa-gdp", "worldbank", "GDP (current US$)",
