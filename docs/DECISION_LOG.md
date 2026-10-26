@@ -677,3 +677,8 @@ hash-verified checkpoint, 128 MiB input/192 MiB output/384 MiB memory/30초 CPU/
 다른 OS·파일은 제한 없는 fallback 없이 미실행 처리한다. output은 문자열 JSONL이며 구조·출처 검증만 포함한다.
 단위·빈도·경제 의미를 채우지 않고, Gate C natural source change/recovery와도 분리한다.
 구현·실측 결과와 알려진 제한은 `docs/ITERATION_19_REPORT.md`에 기록한다.
+
+PR #6은 CI 네 조합 통과 후 merge commit `dfdfa307`로 통합됐다. 보존된 event seq `1`은 child task
+`c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 한 번 처리되어 24,378×21 구조 보존 JSONL을 만들었다.
+원본·manifest·chunk hash와 `handed_off/resolved` 이력을 확인했다. 이번 로컬 처리 결과는 Gate C 자연 revision이나
+자연 장애 후 재개 증거가 아니다. 후속 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.

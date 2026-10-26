@@ -1,5 +1,8 @@
 # 19회차 기획안 — BIS flat 대용량 production handoff
 
+상태: **완료**. PR #6 통합·교차 플랫폼 CI와 보존 BIS flat 원본의 단일 production 실행 결과는
+[19회차 보고서](ITERATION_19_REPORT.md)에 기록했다.
+
 ## 목표
 
 16회차에서 정상적으로 분류된 BIS GLI flat ZIP 한 건에 대해, 기존 deferred event와 보존 raw를
@@ -50,3 +53,10 @@ CSV export, Gate C 확대 판정, 자동 resume/재시도, 환경 publish는 이
 코드/fixture 검토 → 전체 회귀와 교차 OS CI → 보존된 BIS flat event를 지정한 production 실행 → 원본 hash,
 task/event, checkpoint/output manifest 재검증 → 회차 보고서와 현재 상태표 갱신 → commit/push 및 PR 검토.
 production output은 Git에 추가하지 않는다.
+
+## 완료 결과
+
+PR #6은 merge commit `dfdfa307`로 통합됐고 Ubuntu/Windows × Python 3.11/3.12 CI 네 조합이 통과했다.
+기존 event seq `1`을 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 한 번 처리해
+24,378×21의 문자열 JSONL을 만들었다. 원본과 manifest는 불변이었고 output manifest·chunk hash, child task 및
+`handed_off/resolved` 이력을 확인했다. Gate C natural evidence로 사용하지 않는다.

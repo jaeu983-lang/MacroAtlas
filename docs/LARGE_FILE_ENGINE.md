@@ -1,8 +1,9 @@
 # 대용량 엔진 설정·시험·미실행 정책
 
-2026-10-26. 범위: **비API 로컬 파일의 용량·형식 qualification**. 정식 대용량 수집/정규화 승인은 후속이다.
-이 문서는 현재 qualification 정책이다. BIS production handoff의 개발 순서와 완료 조건은
-[제품 로드맵](ROADMAP_2026_10_26.md), 목표 경계는 [제품 아키텍처](PRODUCT_ARCHITECTURE.md)를 따른다.
+2026-10-26. 범위: **비API 로컬 파일의 qualification과 제한된 BIS flat 구조 보존 production 경로**.
+일반 대용량 수집·정규화는 지원하지 않는다. 이 문서는 qualification 정책을 기록한다. BIS handoff의
+지원 범위와 현재 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 목표 경계는
+[제품 아키텍처](PRODUCT_ARCHITECTURE.md)를 따른다.
 
 ## 공식 사례 조사와 선택
 
@@ -116,6 +117,15 @@ Linux에서 입력 128 MiB, 출력 192 MiB, RLIMIT_AS 384 MiB, CPU 30초, wall 6
 무결성뿐이다. 단위·빈도·경제 의미를 정규화하지 않고 Gate C natural revision/recovery 증거로 사용하지 않는다.
 시험 chunk와 production artifact는 별도 경로다. 범용 대용량 export, 다른 provider/format, GB/TB, Windows
 resource worker는 미지원이다.
+
+### 보존 원본 실행 기록
+
+2026-10-26에 통합 HEAD `dfdfa307534c504f8c740fe1a154a7ba47945e10`에서 기존 deferral event seq `1`을
+child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`로 한 번 처리했다. task는 1 attempt에서 완료됐고,
+24,378행·21열을 세 JSONL chunk로 기록했다. output manifest SHA-256은
+`bc0e7434765b03aa0dc78e9bae684abd02cfd5e083387ba950697b4a91151e88`이며 raw·request manifest 원본 해시와
+각 chunk 해시를 재검증했다. deferral 상태는 `handed_off`와 `resolved` 이력을 보존한다. 전체 근거와 식별자는
+[19회차 보고서](ITERATION_19_REPORT.md)에 있다. 이는 로컬 보존본의 구조 처리이며 Gate C natural change/recovery 증거가 아니다.
 
 ## 한계와 다음 연결
 
