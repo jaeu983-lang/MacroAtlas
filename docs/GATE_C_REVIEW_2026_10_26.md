@@ -1,5 +1,9 @@
 # Gate C 증거 재검토 — 2026-10-26
 
+11회차는 이후 사용자의 명시적 진행 지시에 따른 예외로 구현·검증했다. 해당 진행은 Gate C
+통과 선언이 아니며, 이번 task에서 Gate C의 미완료 조건은 그대로 기록한다. 11회차 결과는
+[`ITERATION_11_REPORT.md`](ITERATION_11_REPORT.md)를 참조한다.
+
 최신 정정: **revision 10에서 실행 네트워크 권한을 지정하자 BIS 실측과 Git push가 성공했다.**
 아래 ProxyError 기록은 당시 기본 실행 권한의 결과이며 프록시 서버 장애로 확정할 수 없다.
 최신 원인·복구 증거는 문서 마지막 절을 따른다. Gate C 자체는 아직 미통과다.
@@ -108,6 +112,6 @@
   로컬 보고서는 `reports/gate_c_network_recovery.json`; raw/normalized는 gitignore 대상이다.
 - `source_change_status=first_observation`. 과거 보고서의 BIS hash와 같으며, 실제 개정된
   원본 쌍을 확보한 것은 아니다. Git push 성공도 데이터 품질 게이트 조건이 아니다.
-  실제 개정 비교와 기관별 durable resume는 여전히 NOT_RUN이므로 Gate C 미통과·11회차 보류다.
+  실제 개정 비교와 기관별 durable resume는 여전히 NOT_RUN이므로 Gate C 미통과다.
 - 다음 네트워크 작업은 위 실행 권한을 명시하고 제한된 요청 예산을 유지한다.
   접속 복구를 위해 환경 설정을 다시 게시하거나 키·도메인을 바꿀 필요는 확인되지 않았다.

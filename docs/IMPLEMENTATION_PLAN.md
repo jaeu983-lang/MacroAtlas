@@ -6,27 +6,17 @@
 
 ## 현재 상태 — 2026-10-26
 
-**최신 정정(revision 10):** 기본 실행 sandbox의 네트워크 권한 제한을 확인했다.
-지원되는 실행 네트워크 권한 지정 후 BIS HTTP 200·225행/220열 intake·hash 검증 및 Git push 성공.
-아래 revision 9의 프록시 연결 차단은 해결됐으나 실제 개정 비교/기관별 durable resume는
-여전히 NOT_RUN이어서 Gate C 미통과·11회차 보류다. 자세한 원인은 증거표 마지막 절을 따른다.
-
-후속 보완(revision 9): X04 잔액/거래액·unknown 차원의 순위/확정 차단 fixture 두 경우를 추가해
-**558 tests passed**. BIS GET와 Git push는 실행 프록시 연결 실패로 차단됐다.
-Gate C 미통과·11회차 미시작을 유지한다. 상세와 다음 선행조건은 아래 증거표의 후속 절을 따른다.
-
-최신 재검토: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md). HEAD `aabdc59bb53788f73ff1610be4bef5457ab0440f`,
-활성 runtime revision 6에서 전체 556개 테스트/Ruff 통과. BIS 제한 재수집은 첫 요청의
-`ProxyError`로 BLOCKED이며 실제 source revision·기관 복구 증거가 부족해 **Gate C 미통과,
-11회차 미시작**을 유지한다. 아래의 이전 HEAD/revision 5/local diff 서술은 과거 실행 이력이며,
-현재 checkout과 runtime 상태는 위 최신 증거표를 따른다. 게시 설정의 repository ref는 미확인이다.
+최신: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [11회차 보고서](ITERATION_11_REPORT.md).
+Gate C는 실제 원자료 변경 비교와 기관별 durable resume 증거가 없어 미통과다. 사용자의
+명시적 지시에 따른 순서 예외로 11회차를 구현·검증했다(전체 564 tests passed).
+Gate C 판정은 승격하지 않았다. D/12회차는 미시작이며 본 task 범위 밖이다.
 
 | 게이트 | 상태 | 판정 근거 |
 |---|---|---|
 | A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |
 | B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, CLI, 기관 전체 검색은 이 엔진 게이트 범위 밖이며 아직 미구현. [보고서](ITERATION_08_REPORT.md) |
 | C / 10 | **미통과** | BLS/Census·TIC·BIS의 제한 live 수집과 원본/manifest 검증이 있음. BOJ API 안내는 HTTP 200, 연결된 공식 매뉴얼은 403으로 platform connector 상태는 `BLOCKED`; TIC/BIS live 변경 재수집과 남은 복구 표본이 부족. [보고서](ITERATION_10_REPORT.md) |
-| D / 12 | **미실행** | 11~12회차 기능을 시작하지 않음. |
+| D / 12 | **미실행** | 12회차 기능을 시작하지 않음. 11회차는 Gate C 미통과 상태에서 사용자 명시 지시로 예외 진행했다. |
 | E / 14 | **미실행** | 최종 회귀·릴리스 검토를 시작하지 않음. |
 
 이번 Gate C 후속 변경은 전체 **pytest 556 passed**, Ruff, `git diff --check`를 통과했다.
@@ -36,9 +26,9 @@ Gate C 미통과·11회차 미시작을 유지한다. 상세와 다음 선행조
 실행 중이며 source checkout의 기준 SHA는 위 커밋이다. 현재 uncommitted diff는 GitHub에 없다.
 
 Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 CLI·자연어 UI나 BLS/Census의
-후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. Gate C를 통과하기 전에는 11회차에
-진입하지 않는다. 사용자가 이전에 지시한 08→09 진행은 당시 넓게 잡힌 gate 조건을 넘긴
-명시적 예외였으며, 현재 scope clarification으로 그 이력을 덮어쓰지 않는다. Gate 상태는
+후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. 현재 Gate C는 미통과지만 11회차는
+사용자의 명시적 순서 예외 지시에 따라 구현했다. 사용자가 이전에 지시한 08→09 진행은 당시
+넓게 잡힌 gate 조건을 넘긴 별도 역사적 예외였으며, 현재 scope clarification으로 그 이력을 덮어쓰지 않는다. Gate 상태는
 코드가 존재하거나 한 번의 live 요청이 성공했다는 이유만으로 승격하지 않는다.
 
 **배포 추적성은 별도 상태다.** Gate C와 혼합하지 않는다. 게시된 환경의 checkout은 아래
@@ -54,17 +44,18 @@ GitHub에는 아직 포함되지 않았다.
 | 08 | 로컬 hash-verified metadata와 WDI seed의 lexical ranking, 명시 선택 기록, World Bank fixture E2E | 자연어 parser/CLI, 전체 기관 검색, 미확인 BLS/Census 후보의 자동 승격 |
 | 09 | CSV/TSV/TXT/HTML/ZIP/XLS/XLSX 제한 parser, 수집량 planning helper | PDF/fixed-width, output exporter, queue형 chunk 실행·resume |
 | 10 | BLS/Census/World Bank 품질·오류 진단, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개 제약 | Japan BOJ observation connector, live revision comparison, automatic backoff/rate limiter, 기관 전반 오류 검증 |
-| 11~14 | 계획 문서만 존재 | 사용자 교정 지식화, 지식 검색, 개선 제안, 격리 코드 수정·승인 |
+| 11 | 명시적 feedback store·CLI·revision history | 사용자 지식 자동 재사용·전체 문서 대화 동기화 |
+| 12~14 | 계획 문서만 존재 | 제한 지식 조회, 개선안 생성, 격리 코드 수정·승인 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
 
 ## 다음 작업 순서
 
-현재 local diff에서 10회차 Gate C의 X08 변경 감지 경로를 World Bank 감사 수집과 일반 tabular 파일
-수집으로 보완했다. 공식 TIC Table 5와 BIS Global Liquidity bulk CSV를 실제 원본 파일 intake까지 검증했다.
-이번 수정에 대한 Git commit/push는 하지 않는다. 이어서 허용되는 작업도 **Gate C 종료 조건 보완**이며,
-코드 한 건의 추가만으로 게이트를 통과 처리하지 않는다.
+Gate C 증거를 보완했고, 공식 BIS Global Liquidity bulk CSV를 다시 intake하여 raw/normalized
+hash를 검증했다. 같은 범위에서 첫 관측한 파일이 기존과 같아 live 변경 검출 증거는 아니다.
+사용자의 후속 명시 지시에 따라 11회차를 예외 진행했다. 구현·검증·commit/push 결과는
+`ITERATION_11_REPORT.md`를 따른다.
 
 1. Gate C의 기관 범위는 현재 지원되는 World Bank/BLS/Census API와 로컬 표 parser, 이번에
    실측한 TIC/BIS의 명시 파일 intake로 한정한다.
@@ -79,7 +70,8 @@ GitHub에는 아직 포함되지 않았다.
    capture는 아직 없어 `BLOCKED/NOT_RUN`을 유지한다.
 4. BLS/Census 제한 live smoke와 TIC/BIS live file의 원본·normalized hash를 증거로 연결한다.
    단위·빈도·vintage가 unknown이면 경고를 유지하고 키 값은 출력하지 않는다.
-5. Gate C 조건 미충족 시 미통과를 유지한다. 통과한 뒤 11회차를 별도 task로 시작한다.
+5. Gate C 미통과 상태를 유지한다. 11회차는 사용자 지시에 따라 예외 진행·완료했다.
+   Gate C를 근거로 하는 공개/출시는 보류하고, 12회차는 별도 사용자 지시 전 시작하지 않는다.
 
 Gate C 이후에는 Gate D(11~12), Gate E(13~14)를 한 task당 한 회차로 진행한다.
 필수 검증이 빠진 상태에서 회차 번호만 올리는 것은 완료로 인정하지 않는다.
