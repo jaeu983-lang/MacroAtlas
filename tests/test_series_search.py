@@ -91,6 +91,36 @@ def test_ranking_uses_terms_and_hard_excludes_known_country_or_institution_misma
     assert [item["candidate"].candidate_id for item in ranked] == ["fixture:gdp"]
 
 
+@pytest.mark.parametrize("measure", ["transactions", None])
+def test_holdings_request_cannot_confirm_transaction_or_unknown_measure(measure):
+    """Gate C X04: explicit source dimensions outrank an identical holdings label."""
+    request = wb_request(
+        text="Treasury holdings USA", concept="Treasury holdings",
+        dimensions={"measure": ("holdings",)},
+    )
+    holdings = fixture_candidate(
+        candidate_id="fixture:holdings", label="Treasury holdings USA",
+        definition="Fixture end-of-period holdings, not transactions.",
+        dimensions={"measure": ("holdings",)},
+    )
+    other = fixture_candidate(
+        candidate_id="fixture:other", label=holdings.label,
+        definition="Fixture measure is transactions or remains unverified.",
+        dimensions=None if measure is None else {"measure": (measure,)},
+    )
+    ranked = rank_candidates(request, [other, holdings])
+    by_id = {item["candidate"].candidate_id: item for item in ranked}
+    assert holdings.candidate_id in by_id
+    assert selection(request, holdings).candidate_id == holdings.candidate_id
+    if measure is None:
+        assert by_id[other.candidate_id]["match_status"] == "review_required"
+        assert "dimensions_unknown" in by_id[other.candidate_id]["missing_constraints"]
+    else:
+        assert other.candidate_id not in by_id
+    with pytest.raises(ValueError, match="Dimension (coverage|selection) mismatch"):
+        selection(request, other)
+
+
 def test_offline_archived_bls_metadata_enters_index_but_stays_unverified_for_selection(tmp_path):
     settings = Settings(tmp_path)
     payload = {"status": "REQUEST_SUCCEEDED", "Results": {"series": [{

@@ -6,6 +6,10 @@
 
 ## 현재 상태 — 2026-10-26
 
+후속 보완(revision 9): X04 잔액/거래액·unknown 차원의 순위/확정 차단 fixture 두 경우를 추가해
+**558 tests passed**. BIS GET와 Git push는 실행 프록시 연결 실패로 차단됐다.
+Gate C 미통과·11회차 미시작을 유지한다. 상세와 다음 선행조건은 아래 증거표의 후속 절을 따른다.
+
 최신 재검토: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md). HEAD `aabdc59bb53788f73ff1610be4bef5457ab0440f`,
 활성 runtime revision 6에서 전체 556개 테스트/Ruff 통과. BIS 제한 재수집은 첫 요청의
 `ProxyError`로 BLOCKED이며 실제 source revision·기관 복구 증거가 부족해 **Gate C 미통과,

@@ -1,5 +1,9 @@
 # Latest evidence review — 2026-10-26
 
+Revision 9 follow-up adds two structured X04 fixture cases for holdings versus transactions/unknown
+dimensions; the suite now passes **558 tests**. BIS recapture and Git push still fail at the runtime
+proxy connection. No live revision/recovery evidence or Iteration 11 work is claimed.
+
 See [Gate C evidence review](GATE_C_REVIEW_2026_10_26.md) for the current checkout,
 556 passing tests, and a blocked live BIS recapture (ProxyError before any HTTP response).
 Gate C remains not passed; Iteration 11 remains unstarted. Historical live captures below

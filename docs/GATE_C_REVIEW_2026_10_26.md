@@ -59,3 +59,25 @@
 4. BOJ BLOCKED와 지원 범위를 명시한 최종 Gate C 검토. 종료 조건 충족 전 11회차 보류.
 
 관측치·기관 정의·자격증명·게시 설정을 변경하지 않았다. 이번 작업에 코드 동작 변경은 없다.
+
+## 후속 보완 — revision 9 (2026-10-26)
+
+- 기준 HEAD `5e93c89`, 작업 시작 시 clean. 환경 상태를 재조회하니 revision 9,
+  running/connected, 정책 enforced, observations current, 키·runtime variable ready였다.
+- 08:59:53 UTC (17:59:53 KST)에 위 BIS URL을 GET 1회/timeout 20초/redirect 금지로
+  재확인했다. `ProxyError`로 HTTP 응답 전 차단됐다. 서버 403/503, 실제 개정 또는 복구
+  성공으로 해석할 수 없다. 로컬 기록은 `reports/gate_c_followup_network.json`이다.
+- `git push -u origin codex/gate-c-evidence-review`도 프록시 port 8080 연결 실패로 차단됐다.
+  로컬 커밋 `5e93c89`는 보존돼 있다. proxy 우회나 자격증명 변경은 하지 않았다.
+- X04 fixture를 구체화했다. `tests/test_series_search.py`의
+  `test_holdings_request_cannot_confirm_transaction_or_unknown_measure` 두 경우는 동일한
+  holdings label을 가진 후보라도 명시 차원이 transactions이면 순위에서 제외하고,
+  차원이 unknown이면 review_required로 표시하며, 두 경우 모두 선택 확정을 거부함을 확인한다.
+  올바른 holdings 차원 후보는 확정 가능하다. 이는 명시된 fixture 차원의 검증이며,
+  공식 TIC metadata 발견·자연어 통계 의미 추론이나 live 검증을 주장하지 않는다.
+- `python -m pytest -o addopts='' -q`: **558 passed in 4.20s**.
+  `python -m ruff check .`와 `git diff --check` 통과.
+- 남은 종료 조건 중 X04의 제한 구조화 fixture 증거만 보완됐다. 실제 개정 원본 쌍과
+  기관별 장애 복구 증거는 여전히 없다. **Gate C 미통과, 11회차 미시작**이다.
+  11회차를 시작하라는 지시는 Gate C 보완·통과 후 진행 순서로 적용하며, 통과를 가정하지 않는다.
+  다음 선행 작업은 지원되는 환경 설정/복구 경로를 통한 실행 프록시 연결 복구다.
