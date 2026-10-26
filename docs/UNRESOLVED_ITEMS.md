@@ -13,7 +13,7 @@ provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로
 | BIS GLI flat ZIP 실제 정규화 | 보존된 공식 원본 재처리에서 500,010개 셀을 확인하고 500,000개 상한으로 정상 deferred. 격리 시험은 24,378행·21열을 읽음 | 정식 handoff, 변경 가능한 상태 lifecycle, segmented artifact manifest, checkpoint/resume, 의미·품질 검증과 normalized output이 아직 없음 | 로컬 처리 기능. 접속 오류가 아님 |
 | 정규화 결과 CSV/XLSX 전달 | 현재 구조화 CLI는 저장 경로·상태를 제공하며 범용 exporter가 없음 | CSV 출력 후속 계획의 provenance·무결성·덮어쓰기 방지 구현. XLSX는 별도 범위 | 로컬 결과 처리 기능 |
 | 통계 의미·품질 범위 확대 | World Bank 고정 실측은 quality passed이지만 normalized unit/frequency unknown 경고가 있음. 경제 이상치·개정 역사·기관 간 동등성은 검사 범위 밖 | 공식 metadata로 단위·빈도·정의 확인 및 범위별 품질 검증 설계 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
-| 시험 worker 강제 종료 복구 | 17회차 구현에서 RUNNING task와 orphan scratch 복구가 빠져 있었음. 이번 보완에서 lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 645개 로컬 테스트/Ruff가 통과 | branch push 뒤 현재 HEAD의 PR CI 확인 대기 | 제품 내부 복구 결함. 서버 문제 아님 |
+| 시험 worker 강제 종료 복구 | 17회차 구현에서 RUNNING task와 orphan scratch 복구가 빠져 있었음. lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 코드 HEAD `e2e72a5`의 645개 로컬 테스트/Ruff 및 4조합 CI run 40359478210이 통과 | 구현 검증 완료. PR #4 통합은 PR #3 다음 순서 | 제품 내부 복구 결함. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | 현재 엔진의 중단·영속 목록·조회와 17회차 불변 event 결합 격리 시험 성공 | 정식 정규화 실행 계약, 명시적 인계·완료 상태 변경, 목록 pagination 등 후속 구현 | 제품 내부 처리·운영 기능 |
 
 BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. flat 자료의 실제 정규화는 아직 별도 엔진 대기다.
@@ -65,7 +65,7 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 
 현재 확인한 제품의 활성 transport 장애는 없다. 가장 가까운 완료 작업은 코드 통합이고, 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **현재 보완:** 17회차 trial의 강제 종료 복구를 구현했다. 테스트·정적 검사·PR CI가 새 HEAD에서 통과해야 완료로 친다.
+1. **완료:** 17회차 trial의 강제 종료 복구를 구현했다. 코드 HEAD `e2e72a5`에서 645개 테스트, Ruff, diff 검사와 4조합 CI가 통과했다.
 2. **통합:** PR #3은 열려 있고 PR #4는 PR #3 branch를 base로 하는 stacked PR이다. #3 검토·통합 후 #4를 기본 branch 기준으로 다시 확인해야 한다. 아직 통합 전이므로 제품 기본 경로에 반영된 것으로 표시하지 않는다.
 3. **다음 구현:** 통합 뒤 BIS GLI flat ZIP 하나를 대상으로 정식 대용량 handoff를 만든다. 불변 event와 parent/child task, 명시적 handed_off/resolved 상태, 원본 hash·manifest, chunk/checkpoint/resume, output validation을 수용 조건으로 둔다. 단위·경제 의미는 문자열 값에서 추론하지 않는다. 실패·미지원 입력은 본 실행을 중단하고 원인을 `NOT_EXECUTED`로 남긴다.
 4. **그다음:** 완료·검증된 artifact 계약에 연결되는 World Bank/BOJ CSV exporter를 구현한다. 기존 raw·manifest 확인, null 처리, provenance, 경로·덮어쓰기 방지가 선행 조건이다. XLSX는 별도 결정이다.

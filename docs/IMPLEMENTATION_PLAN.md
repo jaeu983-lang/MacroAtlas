@@ -9,7 +9,8 @@
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
 후속 검토에서 강제 종료 시 orphan worker·scratch 복구 공백을 확인해 17회차 branch에서 보완했다.
-후속 전체 645개 테스트, Ruff, diff 검사가 통과했고 현재 HEAD의 PR CI는 push 후 확인한다.
+후속 전체 645개 테스트, Ruff, diff 검사가 통과했고 새 HEAD CI run
+[`40359478210`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40359478210)에서 Ubuntu/Windows × Python 3.11/3.12 네 조합이 모두 성공했다.
 PR #3은 열려 있고 PR #4는 #3을 base로 하는 stacked PR이라 아직 기본 branch에 통합되지 않았다.
 
 엔진의 실제 진입점·전달 계약·대용량 후속 연결은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 따른다.
@@ -84,9 +85,10 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
 아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
 
-현재 코드의 로컬 회귀 검증은 645개 테스트와 Ruff가 통과했다. 이전 PR #4 HEAD의 CI run
+현재 코드의 로컬 회귀 검증은 645개 테스트와 Ruff가 통과했다. 수정 전 PR #4 HEAD의 CI run
 [40347830649](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40347830649)은
-수정 전 640개 테스트 기준으로 네 조합 모두 성공했다. 현재 HEAD CI는 새 push 뒤 확인한다.
+640개 테스트 기준으로 네 조합 모두 성공했다. 강제 종료 복구를 포함한 현재 HEAD는 새 run
+[`40359478210`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40359478210)에서 네 조합 모두 성공했다.
 16회차 재검증 HEAD `526bc7f`의 CI run
 [40342296370](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40342296370)는
 Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과거 실패, 미관측 증거,

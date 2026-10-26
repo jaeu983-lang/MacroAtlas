@@ -69,6 +69,7 @@ quality/export 연결을 별도 수용 기준으로 구현한 뒤 승인한다. 
 - 추가 회귀 검증: parent descriptor close 뒤 child의 lock 유지, 표시된 orphan만 청소, active lock 중 recovery
   차단, 중단 결과 기록, symlink root 거부.
 
-후속 전체 pytest **645개 통과**, Ruff와 `git diff --check` 통과. 이 수정은 현재 task branch에 있으며
-remote PR CI 결과는 push 이후 별도 확인 대상이다. 정식 대용량 정규화·checkpoint/resume·CSV 전달은
-여전히 후속 구현이다.
+후속 전체 pytest **645개 통과**, Ruff와 `git diff --check` 통과. commit `e2e72a5`를 PR #4 branch에
+push했고 CI run [`40359478210`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40359478210)의
+Ubuntu/Windows × Python 3.11/3.12 네 조합이 모두 통과했다. 정식 대용량 정규화·checkpoint/resume·CSV
+전달은 여전히 후속 구현이다.
