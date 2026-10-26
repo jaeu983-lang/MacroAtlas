@@ -8,3 +8,7 @@ PR #3과 #4는 사용자 명시 지시로 순서대로 통합했다. 통합 HEAD
 - 신규 runner 실패·timeout·dirty-tree 계약과 file scope adapter 테스트를 추가했다.
 
 정식 BIS 대용량 handoff, CSV 전달 및 Gate C 자연 증거는 완료로 처리하지 않는다. runner의 Windows 실동작은 Linux 실행과 구분해 후속 CI에서 확인해야 한다.
+
+## 실행 검증
+
+신규 4개 계약 테스트와 전체 회귀 suite(649개), Ruff, diff 검사 통과. commit `51bd724`를 detached worktree에서 실제 실행한 QA 결과는 PASSED이며 pytest/Ruff/diff/CLI 및 worktree cleanup이 모두 통과했다. 로컬 보고서: `reports/maintenance_qa_b8636be76f214589bcba53c24545c883/report.json`. 원격 PR CI 결과는 GitHub에서 별도로 확인한다.

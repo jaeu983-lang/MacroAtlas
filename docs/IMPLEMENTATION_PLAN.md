@@ -1,5 +1,7 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
+> 18회차 통합 갱신: PR #3/#4는 병합 완료(기본 branch `25f3c87`). 다음 유지보수 QA·범위 adapter·수정/검토 흐름은 [18회차 보고서](ITERATION_18_REPORT.md)를 따른다. 아래 과거 PR 미통합 문구는 이 갱신으로 대체한다.
+
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
 > 역사 보고서는 당시의 증거, [`DECISION_LOG.md`](DECISION_LOG.md)는 설계 선택의 이력을 담는다.
