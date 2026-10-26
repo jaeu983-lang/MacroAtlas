@@ -40,6 +40,30 @@ def _comparison_fingerprint(source: str, raw: bytes) -> tuple[str, str]:
         return hashlib.sha256(raw).hexdigest(), "raw_sha256_fallback_v1"
 
 
+def _comparison_fingerprint_for_source(source: str, raw: bytes) -> tuple[str, str]:
+    if source == "boj":
+        try:
+            def reject_constant(value):
+                raise ValueError(f"invalid JSON constant: {value}")
+
+            document = json.loads(raw, parse_constant=reject_constant)
+            if isinstance(document, dict):
+                document = dict(document)
+                # The BOJ API changes this top-level request timestamp on every response.
+                document.pop("DATE", None)
+            canonical = json.dumps(
+                document, ensure_ascii=False, allow_nan=False, sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+            return hashlib.sha256(canonical).hexdigest(), "boj_json_without_date_v1"
+        except (UnicodeError, ValueError, TypeError, RecursionError):
+            return hashlib.sha256(raw).hexdigest(), "raw_sha256_fallback_v1"
+    comparison, method = _comparison_fingerprint(source, raw)
+    if source == "census":
+        method = "census_json_canonical_v1"
+    return comparison, method
+
+
 def _previous_source_status(settings: Settings, root: Path, source: str, source_url: str,
                             fingerprint: str, current_comparison_sha256: str) -> str:
     if not root.exists():
@@ -98,7 +122,7 @@ def _previous_source_status(settings: Settings, root: Path, source: str, source_
         recorded_hash = manifest.get("raw_sha256")
         if recorded_hash is not None and recorded_hash != previous_hash:
             return "unknown_history_integrity"
-        previous_comparison_hash, _ = _comparison_fingerprint(source, previous_body)
+        previous_comparison_hash, _ = _comparison_fingerprint_for_source(source, previous_body)
         recorded_comparison_hash = manifest.get("comparison_sha256")
         if (recorded_comparison_hash is not None
                 and recorded_comparison_hash != previous_comparison_hash):
@@ -122,13 +146,13 @@ def _previous_source_status(settings: Settings, root: Path, source: str, source_
 
 def save_statistical_download(settings: Settings, source: str, download: ApiDownload,
                               request_metadata: dict) -> dict[str, str]:
-    if source not in {"bls", "census"}:
+    if source not in {"bls", "census", "boj"}:
         raise ValueError("unsupported statistical source")
     root_relative = Path(settings.data_dir) / "raw" / source
     root = settings._inside(str(root_relative))
     root.mkdir(parents=True, exist_ok=True)
     raw_sha256 = hashlib.sha256(download.body).hexdigest()
-    comparison_sha256, comparison_method = _comparison_fingerprint(source, download.body)
+    comparison_sha256, comparison_method = _comparison_fingerprint_for_source(source, download.body)
     fingerprint = _request_fingerprint(download.source_url, request_metadata)
     source_change_status = _previous_source_status(
         settings, root, source, download.source_url, fingerprint, comparison_sha256,
@@ -142,8 +166,11 @@ def save_statistical_download(settings: Settings, source: str, download: ApiDown
         stream.write(download.body)
     manifest = settings._inside(str(relative / "request.json"))
     document = {
-        "source_agency": "U.S. Bureau of Labor Statistics" if source == "bls"
-        else "U.S. Census Bureau",
+        "source_agency": {
+            "bls": "U.S. Bureau of Labor Statistics",
+            "census": "U.S. Census Bureau",
+            "boj": "Bank of Japan",
+        }[source],
         "source_url": download.source_url,
         "retrieved_at": download.retrieved_at.isoformat(),
         "http_status": download.status_code,

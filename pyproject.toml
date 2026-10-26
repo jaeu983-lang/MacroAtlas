@@ -15,6 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
+macroatlas = "macro_data_platform.cli:main"
 macro-feedback = "macro_data_platform.feedback_cli:main"
 macro-patterns = "macro_data_platform.pattern_cli:main"
 

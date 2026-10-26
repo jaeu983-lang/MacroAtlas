@@ -42,3 +42,9 @@ SHA256 `101f4822f48ef210f611a5940ebff604f197b45371ec35db171d3b1d48897466`였고,
 새 원자료 변경도 관측되지 않았다. 반복 manifest와 응답은 gitignored
 `data/raw/boj_recheck_20261026_repeat/`에 보존했다. 이 결과는 API 접근·응답 형식의 재현 확인이며
 Gate C 판정 범위를 확대하지 않는다.
+
+## 후속 제한 collector
+
+이 문서의 D-072/D-073 당시에는 collector가 없었다. 이후 FM08/FXERD01 한 달에 한정한 두-stage
+Orchestrator collector가 추가됐고, live 수집 30행 중 11 null을 보존했다. 현재 동작·한계는
+[`connectors/BOJ.md`](connectors/BOJ.md)와 [`ITERATION_15_REPORT.md`](ITERATION_15_REPORT.md)를 따른다.

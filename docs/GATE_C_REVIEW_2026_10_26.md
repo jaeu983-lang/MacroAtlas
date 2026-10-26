@@ -39,7 +39,7 @@ failure→durable resume은 `NOT_RUN`으로 남는다. BOJ 요청 실측은 API 
 | 장애 후 재개 | PASS, simulated | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after`: 503, `Retry-After: 2`, task/store 재개 전 대기 차단, 동일 task의 성공 및 attempt/event 보존 |
 | 자연 발생 source revision | NOT_RUN | TIC/BIS live exact-scope 반복은 모두 unchanged; 실제 변경 쌍 없음 |
 | 자연 발생 provider failure→resume | NOT_RUN | 기존 BIS 503 당시 task가 저장되지 않았음; 이번 503은 fixture |
-| BOJ API smoke | PASS, scoped live requests | D-072/D-073에서 metadata와 같은 FXERD01/202609 범위가 HTTP 200, 날짜·값 구조 검증; 두 데이터 응답의 요청 범위 값은 동일. collector·Orchestrator 통합은 미구현이며 source revision/장애 복구 증거가 아님 |
+| BOJ API/collector | PASS, scoped live path | D-072/D-073 smoke와 후속 FM08/FXERD01/202609 collector가 HTTP 200; 30 rows·11 null 보존. 다른 series와 natural failure/revision은 미검증이며 Gate C source-event 증거가 아님 |
 
 변경 감지 자동 테스트 `test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization`는
 합성 bytes를 사용한다. 위 controlled copy 결과는 별도의 임시 실행으로 실제 TIC raw를 사용했으며,
@@ -281,3 +281,22 @@ durable resume 성공 증거로 승격하지 않는다.
 첫머리에 기록한 제한 범위에서 통과했으며, 위 natural-live 항목은 이를 취소하지 않고 더 넓은
 검증 범위의 미해결 증거로 남긴다. 11회차는 사용자 예외 지시로 이미 완료됐다. 12회차의 Gate D는
 Orchestrator 연결 및 end-to-end 효율 증거가 없어 계속 미통과다.
+
+## 후속 실제 감시와 collector — 2026-10-26
+
+- `macroatlas watch tic --live` task `dd5fc688-cdf7-4171-9e81-5f8992d3ae49`가 HTTP 200으로
+  완료됐다. `source_change_status=unchanged`; 기존 raw SHA256
+  `e5de973b1a6f13c8ec95707d665ce107f53f467db10d7a2d991677ee67d1de11` 및 normalized SHA256
+  `a0ff85171fd50566a6aa784a847da89a775ea5da2700e5d89f06667c935c5a10`과 일치했다.
+- BIS watcher의 첫 실행은 parser scope에 명시 `zip_member`를 더해 과거 auto-select baseline과
+  달라 `first_observation`을 반환했다. 이 실행은 exact-scope 증거로 세지 않았다. 프로필을
+  과거와 같이 단일 archive member 자동 선택으로 맞춘 뒤 task
+  `395102cd-94e0-4001-86f8-bba0310ea5b9`로 다시 조회했고 HTTP 200, `unchanged`였다. raw SHA256
+  `aa52afce4e18214831cfa00d3cb5aef76db04c375dc6d3346e99f0568bdd9c1d` 및 normalized SHA256
+  `46dd820ed8838743ae6bbb056e6bc80647dd14957771e9232cb244d9ce445854`가 기준본과 일치했다.
+- 두 요청 전에 Orchestrator task가 SQLite에 저장됐다. 양쪽 모두 성공했으므로 natural provider
+  failure→same-task resume은 발생하지 않았으며 계속 `NOT_RUN`이다. 상세와 후속 수동 watch 방법은
+  [`GATE_C_SOURCE_WATCH.md`](GATE_C_SOURCE_WATCH.md)에 있다.
+- BOJ의 별도 제한 collector task `759540fe-3656-42d6-bbef-3d3f05f4a5f4`는 metadata/data
+  두 stage와 HTTP 200, 30 observations, 11 null을 확인했다. 이는 Gate C revision/recovery 쌍을
+  충족하지 않으며 D-067 제한 판정의 범위를 바꾸지 않는다. 구현은 [`connectors/BOJ.md`](connectors/BOJ.md)에 있다.

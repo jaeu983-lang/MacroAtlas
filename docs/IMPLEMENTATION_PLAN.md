@@ -1,4 +1,4 @@
-# Implementation Plan — 현재 구현 상태와 14회 로드맵
+# Implementation Plan — 현재 구현 상태와 후속 작업
 
 > **이 문서는 현재 상태와 다음 허용 작업의 유일한 기준이다.** `PROJECT_PLAN.md`는 제품이
 > 요구하는 범위, 회차별 보고서는 실제 증거, `DECISION_LOG.md`는 설계 결정의 이력을 담는다.
@@ -6,37 +6,32 @@
 
 ## 현재 상태 — 2026-10-26
 
-최신: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [13회차 보고서](ITERATION_13_REPORT.md),
-[14회차 최종 보고서](ITERATION_14_REPORT.md).
-Gate C는 2026-10-26 결정으로 검증된 경로만 포함하는 **제한 범위 통과**다. 실제 TIC/BIS 원자료
-개정과 자연 발생 provider failure의 live durable resume은 확인하지 않았다. live raw manifest 무결성과
-exact-scope baseline은 유지했다. 실제 TIC raw의 임시 복사본을 통제 변경해 ingestion guard의 안전
-분기를 확인하고, simulated HTTP 503을 Orchestrator에 저장·재개하는 통합 시험을 추가했다. 자연 발생
-live 사건은 계속 `NOT_RUN`으로 분리한다. 판정 범위는 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)를 따른다.
-사용자의 명시적 지시에 따른 순서 예외로 11회차를 구현·검증하고 commit/push했다.
-12회차는 이번 변경으로 Orchestrator와 bounded knowledge index를 연결해 **Gate D 통과**했다.
-같은 BLS/CPI 반복 task에서 사용자가 선택한 institution/dataset-scoped `source_method` feedback만
-사용해 search stage를 생략하고, 선택한 근거를 collect stage에 전달한다. 30회 local fixture 비교에서
-stage 실행은 task당 2→1, p50/p95 latency는 4.207/4.582 ms→3.444/4.537 ms였다. 구현은 explicit
-선택·범위·accepted 상태를 요구하며 inference/충돌/미검토/다른 기관 기록을 막는다. 13회차 read-only
-패턴 분석기와 14회차 Gate E 최종 검수를 완료했다. Gate E는 문서화된 제한 범위 로컬 v1에서 통과했다.
-TIC/BIS 현재 원본·manifest는 보존했고 같은 scope 반복은 모두 `unchanged`였다. BIS flat ZIP은
-이전 503 뒤 현재 200을 반환했으나 parser 검토로 끝났고, 503 당시 저장된 task가 없어 durable
-resume 증거는 아니다. 제한 범위를 넘어 Gate C를 확대하려면 실제 원본 개정과 자연 live
-failure→persist→resume 쌍이 추가로 필요하다.
-기존 artifact를 scope 전체까지 일치시켜 재비교해 TIC package `492bcc8…`와 BIS
-`86a1923…`의 raw/normalized hashes를 검증했고 둘 다 `unchanged`였다.
+14회차 로드맵은 완료됐다. Gate A와 D는 통과, Gate B/C는 제한 범위 통과, Gate E는 제한 범위 로컬
+v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`로 기본 브랜치에 병합됐고,
+병합 checkout에서 592개 테스트, Ruff, `git diff --check`, World Bank live 검증을 다시 통과했다.
+후속 네 갈래는 별도 브랜치의 [15회차 보고서](ITERATION_15_REPORT.md)에 기록한다.
+
+Gate C의 D-067 제한 범위는 바뀌지 않았다. 이번 exact-scope live watch에서 TIC와 BIS 원본은 모두
+`unchanged`였으며 natural provider failure는 발생하지 않았다. 통제 변경과 simulated 503 재개는
+자동 시험으로 확인했지만 natural live revision과 failure→persist→resume은 여전히 `NOT_RUN`이다.
+현재 watcher는 요청·stage를 네트워크 전송 전에 저장한다. 판정 범위와 실제 원본 증거는
+[Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [source watch 기록](GATE_C_SOURCE_WATCH.md)을 따른다.
+
+후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
+(3) bounded structured `macroatlas` CLI 및 같은 task의 status/resume, (4) Linux/Windows CI 검증이다.
+BOJ collector는 실제 metadata/data HTTP 200과 30행·11 null 값을 확인했지만 해당 시리즈·한 달에만
+적용된다. 일반 자연어 또는 기관 전반 지원으로 확대하지 않는다.
 
 | 게이트 | 상태 | 판정 근거 |
 |---|---|---|
 | A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |
-| B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, CLI, 기관 전체 검색은 이 엔진 게이트 범위 밖이며 아직 미구현. [보고서](ITERATION_08_REPORT.md) |
-| C / 10 | **제한 범위 통과** | 실제 BLS/Census·TIC·BIS capture의 제한 증거, manifest/hash 검증, 실제 TIC raw 복사본의 통제 변경 분기, Orchestrator simulated 503→대기→재개 E2E를 확인. 자연 live revision/recovery는 미검증. BOJ manual/API smoke는 확인했지만 observation collector·Orchestrator 연결은 미구현. [재검토](GATE_C_REVIEW_2026_10_26.md) |
+| B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, 기관 전체 검색은 아직 미구현. 현재 fixed-path CLI는 Gate B 범위 확대가 아니다. [보고서](ITERATION_08_REPORT.md) |
+| C / 10 | **제한 범위 통과** | live capture/hash, TIC controlled-copy guard, simulated 503→대기→재개 E2E, exact-scope TIC/BIS live watch를 확인. 자연 revision/recovery는 미검증. BOJ는 후속에서 FM08/FXERD01 한 달만 연결했다. [재검토](GATE_C_REVIEW_2026_10_26.md) |
 | D / 12 | **통과** | 동일 BLS/CPI task 흐름에서 명시 선택한 accepted, exact-scope `source_method`로 search stage를 생략해 반복 stage 실행을 2→1로 줄였다. 다른 기관, broader scope, conflict, inference, unreviewed, stale index는 차단; current instruction 우선. 30회 local E2E 측정은 [12회차 보고서](ITERATION_12_REPORT.md). |
 | E / 14 | **제한 범위 통과** | A–H/X01–X09 matrix, World Bank 대표 live 경로, simulated 복구, 보안 검토, 사용자 안내서/PPT를 검수했다. 미지원·미검증 경로를 별도 공개한다. [보고서](ITERATION_14_REPORT.md) |
 
-Gate C 증거와 11회차 코드는 별도 커밋으로 보존되어 있다. 이번 Gate D 연결 변경은 전체 pytest,
-Ruff, `git diff --check` 검증 후 task branch에 commit/push하며 실행 환경에는 게시하지 않는다.
+후속 15회차는 코드·문서 및 Windows CI를 검증해 별도 review branch로 push한다. 이 작업은 실행 환경에
+publish하지 않는다.
 
 Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 CLI·자연어 UI나 BLS/Census의
 후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. Gate C 제한 범위 통과는 자연 live
@@ -63,19 +58,17 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
+| 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
 
 ## 다음 작업 순서
 
-14회차와 Gate E가 제한 범위 로컬 v1 검토에서 완료됐다. 다음은 이 branch의 사람 검토다. 별도 요청
-없이 main 병합이나 환경 publish를 하지 않는다. 다음 제품 회차는 현재 14회 로드맵 밖이므로 향후
-범위·수용 기준을 정한 뒤 별도 task로 계획한다.
-
-Gate C의 자연 TIC/BIS source revision과 자연 provider failure→durable resume은 여전히 미검증이다.
-BOJ direct API smoke는 reusable collector가 아니다. 이 잔여 범위를 포함한 A–H/X01–X09 판정은
-`docs/REFERENCE_SCENARIOS.md`, Gate C의 판정 근거는 `GATE_C_REVIEW_2026_10_26.md`를 따른다.
+현재는 15회차 네 갈래 후속의 review branch 검토가 다음 단계다. 자연 TIC/BIS 개정과 provider 장애는
+실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다. 이 미관측 항목은 Gate C의
+제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 다음 제품 회차는 별도 범위와 수용
+기준을 새로 정한다. A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
 
 ## 저장소·배포 추적성
 

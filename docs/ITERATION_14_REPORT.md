@@ -76,3 +76,14 @@ Gate E는 문서화된 제한 범위의 로컬 검토로 통과했다. 이 Linux
 기관의 end-to-end 실행, 자연 live revision/recovery는 이번 판정 밖이다. main 병합 전 사람의 검토가
 필요하며 실행 환경 publish는 하지 않았다. 이 회차 변경은 task branch commit으로 보존되고,
 검토 후 되돌릴 때는 해당 task commit을 `git revert`할 수 있다.
+
+## 통합 및 병합 후 재검증 — 2026-10-26
+
+후속 검토 PR [#1](https://github.com/jaeu983-lang/MacroAtlas/pull/1)은 기본 브랜치에 병합됐다.
+merge commit은 `9986472f983a70aacc86209ee54883cca558c5e9`다. 병합된 checkout에서
+`python -m pytest -o addopts='' -q` 592개, `python -m ruff check .`, `git diff --check`가 통과했다.
+
+`python scripts/verify_worldbank.py --live --gate-a`도 다시 완료됐다. HTTP 200과 3 observations,
+quality `passed`, `source_change_status=unchanged`를 확인했다. 이 검증은 기존 Gate A 경로 재실행이며
+TIC/BIS natural revision이나 provider failure→resume을 뜻하지 않는다. 병합 후 검증으로 Gate C의
+제한 범위와 Gate E의 문서화된 제품 범위는 바뀌지 않았다. 실행 환경 publish는 수행하지 않았다.
