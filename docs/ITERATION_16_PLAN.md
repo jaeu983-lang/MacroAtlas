@@ -1,38 +1,60 @@
-# 16회차 기획안 — 검증된 수집 결과의 CSV 전달
+# 16회차 기획안 — 비API 대용량 자료 분류·인계
 
-상태: 기획 완료, 구현 대기. 선행 PR #2 병합 및 HEAD 확인 완료. 자연 Gate C 관측은 별도 일일 감시로 병행한다.
+상태: 요구사항·대상 목록 작성 완료, 실행 기능 구현 대기. 사용자 추가 지시로 CSV 출력보다 우선한다.
 
-## 목표와 사용자 흐름
+## 동작 원칙
 
-고정 World Bank USA GDP 또는 BOJ FM08/FXERD01 수집 task가 완료되면 사용자가 task ID로
-검증된 관측값을 CSV 파일로 받는다. 현재 CLI summary만 보는 흐름을 실제 분석용 파일 전달까지 연결한다.
+비API 파일이 아래 조건 중 하나에 해당하면 현재 엔진은 본문 다운로드·압축 해제·전체 parsing·
+정규화를 진행하지 않고 별도 대용량 엔진 인계 대상으로 영속 등록한다. 발견 가능한 시점부터 중단한다.
+HTTP로 받는 TXT/CSV/ZIP도 비API 파일에 포함한다. API pagination·query chunking은 별도 정책이다.
+이미 받은 원본은 삭제·변형하지 않고 참조로 남긴다. 별도 엔진은 아직 없으므로 등록 후 자동 실행하지 않는다.
 
-## 포함 범위
+## 초기 분류 기준
 
-- 제안 명령: `macroatlas export TASK_ID --format csv --output data/exports/result.csv`.
-- 로컬 저장 결과만 사용하고 네트워크 요청 없이 실행한다.
-- 지원 대상은 완료된 World Bank USA GDP와 BOJ FXERD01 task로 고정한다. 기존 payload 계약을 구현 전에 확인한다.
-- 원본·manifest hash와 task/stage 성공 상태를 검증하고 quality passed인 관측값만 내보낸다.
-- 날짜, 값, 기관, dataset/series, 단위, 주기, 조회 시각, 원본·manifest 참조를 CSV와 별도 provenance manifest에 보존한다.
-- 결측은 빈 값으로 표현하고 그 의미를 manifest에 기록한다. 원본 숫자를 반올림하거나 보간하지 않는다.
-- workspace 내부 출력만 허용하고 기존 파일은 덮어쓰지 않는다. 임시 파일 작성 후 완성된 산출물로 전달한다.
+현재 parser 상한을 기준으로 정한 정책 초안이다. 사용자 표현인 ‘이상’을 적용해 경계값도 인계한다.
+기존 코드는 일부 조건이 초과(>)일 때 차단하므로 이 정책이 런타임에 이미 적용됐다는 뜻은 아니다.
 
-## 제외 범위
+| 측정 항목 | 인계 기준 | 확인 시점 |
+|---|---|---|
+| 다운로드/로컬 원본/선택 ZIP member 크기 | 16 MiB 이상 | Content-Length·stat·ZIP directory, 미상일 때 bounded stream |
+| ZIP 전체 압축 해제량 | 64 MiB 이상 | directory 검사, 실제 해제 시에도 한도 유지 |
+| ZIP member 개수 | 1,000개 이상 | directory |
+| ZIP 압축 해제 비율 | 200배 이상 | member별 크기 정보 |
+| 데이터 행 | 100,000행 이상 | 신뢰할 수 있는 metadata 또는 제한된 탐색 |
+| 열 | 1,000열 이상 | header/worksheet dimensions |
+| 전체 셀(헤더 포함) | 500,000개 이상 | dimensions 또는 제한된 탐색 |
+| 필드 길이 | 1,000,000 문자 이상 | 제한된 탐색 |
 
-임의 기관·자연어 검색, XLSX, TIC/BIS 범용 테이블 export, 수집 범위 확대, 자동 스케줄러 구현,
-새 관측값 생성, source-change review 자동 승인, 환경 배포는 포함하지 않는다.
+metadata가 없거나 부정확하면 전체 로딩으로 크기를 알아내지 않는다. bounded 탐색으로만 판단하고
+판정 불가는 `inspection_required`로 보류한다. ZIP 경로 탈출·암호화·손상·의심스러운 압축 비율은
+security review도 필요하며 대용량 엔진으로 보내도 자동 해제하지 않는다. XLSX 내부 ZIP에도 압축 가드를 적용한다.
 
-## 수용 조건과 검증
+## 영속 인계 목록 계약
 
-1. 두 지원 provider fixture task에서 CSV 관측값·null·식별자와 provenance가 원본과 일치한다.
-2. FAILED/PARTIAL/NEEDS_REVIEW, changed 또는 quality 미통과 task는 새 파일을 만들지 않는다.
-3. raw/manifest 변조·누락, 미지원 provider, 경로 탈출, symlink 및 기존 출력 파일을 차단한다.
-4. export를 반복해도 raw와 기존 산출물이 바뀌지 않고 네트워크 호출이 없다.
-5. CLI 문서·실패 안내를 갱신하고 Linux/Windows CI를 확인한다.
+현재 엔진이 SQLite에 `deferred_non_api` 목록과 append-only 판정 이력을 저장한다.
+기관·dataset/table·credential-free URL·local raw/manifest 참조·task/stage ID·발견 시각·측정값·
+단위·판정 기준 버전·reason code·검사 중단 지점·원본 hash(이미 계산된 경우)·상태를 보존한다.
+미측정값은 null이며 hash를 얻으려고 큰 파일 전체를 읽지 않는다. URL query의 토큰은 저장하지 않는다.
+중복 키는 source identity+request/parser scope+정책 버전이며 새 관측은 이력으로 추가한다.
+상태는 deferred/inspection_required/security_review/handed_off/resolved. 이 상태들은 source change 판정과 분리한다.
+등록은 수집 성공이나 Gate C 통과가 아니다. 원자료 변경 가드를 우회하지 않는다.
 
-## 구현 순서
+## 대상 목록
 
-저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
-CLI 연결 → 정상·실패 수용 검증 → 사용자 안내·회차 보고서 → task branch commit/push 및 PR 검토.
+초기 확인 대상은 `NON_API_DEFERRED_CATALOG.json`에 기록한다. 현재 실제 확인된 것은 BIS GLI flat ZIP 한 건이다.
+다른 기관은 크기 증거 확보 전 대상이라고 추정해 등록하지 않는다. URL 발견 단계에서도 크기가 확인되면
+본문 요청 없이 등록한다. 미래 자동 등록은 아직 미구현이다.
 
-완료 선언은 실제 파일과 검증 결과가 확보된 뒤 한다. 이번 작업은 기획서 작성까지이며 16회차 코드를 구현한 것으로 세지 않는다.
+## 수용 조건
+
+1. 각 기준 직전/정확한 경계/초과에서 실행·인계가 정책과 일치한다.
+2. 큰 Content-Length는 본문 요청/읽기 없이, 큰 로컬 stat은 read_bytes 없이 등록된다.
+3. 미상·허위 크기와 ZIP metadata가 실제 상한을 우회하지 못한다.
+4. 재시작 후 같은 인계 목록·판정 이력이 유지되고 중복 수집·자동 resume가 없다.
+5. 읽기 전용 목록/상세 CLI로 이유·측정값·원본 위치·인계 상태를 확인한다.
+6. 대용량 엔진 실행은 별도 명시적 인계 단계로 남긴다. 작은 정상 파일과 API 수집 경로의 회귀를 검증한다.
+
+구현 순서: 정책·typed reason → preflight/stream 가드 → SQLite 목록·이력 → 엔진/transport 연결 →
+목록 CLI → 경계·무실행·재시작 검증 → 보고서·문서·commit/push.
+
+후속 CSV 계획은 `CSV_EXPORT_FOLLOWUP_PLAN.md`에 보존했다.

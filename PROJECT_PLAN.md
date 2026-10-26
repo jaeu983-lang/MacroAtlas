@@ -540,3 +540,10 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 ---
 
 **구성 문서:** `docs/INSTALLATION.md`, `docs/INSTITUTION_CATALOG.md`, `docs/REFERENCE_SCENARIOS.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISION_LOG.md`.
+
+## 추가 요구: 비API 대용량 분리
+
+비API 파일은 사전 검사 및 제한된 탐색에서 용량·압축 해제량·행·열·셀 수 등의 임계 조건에
+해당하면 현재 엔진에서 추가 처리를 중단한다. 원본을 보존하고 이유·측정값·출처·task 참조를
+영속 인계 목록에 모아 별도 대용량 엔진 대상으로 관리한다. 구체 기준과 경계 수용 조건은
+`docs/ITERATION_16_PLAN.md`를 따른다. 등록 자체를 수집 성공으로 처리하지 않는다.

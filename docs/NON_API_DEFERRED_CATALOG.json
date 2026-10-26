@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "documented_seed_not_runtime_queue",
+  "items": [
+    {
+      "source_agency": "BIS",
+      "dataset_id": "WS_GLI",
+      "source_url": "https://data.bis.org/static/bulk/WS_GLI_csv_flat.zip",
+      "format": "zip",
+      "status": "deferred",
+      "reason": "observed_parser_capacity_limit",
+      "observed_compressed_bytes": 256334,
+      "observed_uncompressed_csv_bytes": 9403437,
+      "observed_rows": null,
+      "observed_cells": null,
+      "task_id": "bea335ad-1819-42cb-8acd-797c6a452255",
+      "evidence": "GATE_C_REVIEW_2026_10_26.md",
+      "note": "既存実測: parser row/cell budget review; precise exceeded dimension not established. Not a 16 MiB file-size violation.",
+      "target_engine": "future_large_non_api_engine",
+      "automatic_execution": false
+    }
+  ]
+}

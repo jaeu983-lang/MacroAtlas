@@ -397,3 +397,10 @@ docs/WORKFLOW_ALIGNMENT_PLAN.md는 01~03회차 최소 보완의 상세 명세다
 다음 회차 선행 조건 충족 여부:
 사람이 결정해야 할 사항:
 ```
+
+## 사용자 추가 요구 — 비API 대용량 인계
+
+16회차 우선순위를 [비API 대용량 분류·인계](ITERATION_16_PLAN.md)로 변경했다. 임계 조건 이상이면
+현재 엔진 처리를 중단하고 영속 목록으로 모은 뒤 별도 엔진에 인계한다. 정책·목록 구현은 대기 상태다.
+확인된 BIS flat ZIP은 [초기 대상 목록](NON_API_DEFERRED_CATALOG.json)에 등록했고, CSV 출력 계획은
+[후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md)으로 보존했다.
