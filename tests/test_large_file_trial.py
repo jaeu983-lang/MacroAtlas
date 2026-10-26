@@ -41,6 +41,11 @@ def test_trial_idempotently_binds_immutable_event(tmp_path):
     first = create_trial(store, settings, record["id"])
     assert create_trial(store, settings, record["id"]) == first
     snapshot = store.get(first)
+    input_data = snapshot["plan"][0]["input_data"]
+    assert input_data["duration_estimate"]["operation"] == "qualification"
+    assert input_data["duration_profile"]["profile_method"] in {
+        "bounded_prefix", "size_only",
+    }
     DeferredNonAPIStore(settings).register(
         {"relative_path": source.relative_to(tmp_path).as_posix(), "format": "csv"},
         record["task_id"],
@@ -292,6 +297,26 @@ def test_cli_failed_candidate_is_not_implicitly_retried(tmp_path):
     assert first["execution_state"] == second["execution_state"] == "NOT_EXECUTED"
     assert first["task_id"] == second["task_id"]
     assert len(store.get(first["task_id"])["attempts"]) == 1
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="resource-limited worker is Linux only")
+def test_cli_announces_saved_estimate_before_running_trial(tmp_path, capsys):
+    from macro_data_platform.cli import build_parser, dispatch
+
+    _settings, store, _runner, record, _source = setup_candidate(tmp_path)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="fixture"\n')
+    args = build_parser().parse_args(
+        ["--project-root", str(tmp_path), "large-check", record["id"]]
+    )
+
+    _code, output = dispatch(args)
+    announcement = capsys.readouterr().err
+
+    assert "qualification 예상" in announcement
+    assert "worker 상한" in announcement
+    assert output["duration_estimate"]["operation"] == "qualification"
+    assert output["actual_stage_seconds"] >= 0
+    assert store.get(output["task_id"])["status"] == "COMPLETED"
 
 
 def test_history_failure_returns_safe_not_executed(tmp_path,monkeypatch,capsys):

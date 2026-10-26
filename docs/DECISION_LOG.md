@@ -705,3 +705,15 @@ null과 0을 구분하고 unknown unit/frequency는 빈 값으로 남긴다. BOJ
 이는 작성자의 desk review라 독립 사용성 evidence가 아니다. Gate C와 제품 지원 범위는 바꾸지 않는다.
 실제 분석가 1–2명의 관찰 세션에서 CLI JSON과 경고 이해도를 확인하기 전 UI/provider/natural-language 작업을
 선정하지 않는다. 상세 기록은 `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`다.
+
+## D-082 — 비API 대용량 실행 전 예상과 실측 보정
+
+사용자는 qualification과 대용량 production을 시작하기 전에 예상 소요 시간을 알아야 한다. 두 실행 경로에 bounded
+read-only profile, stage wall-time forecast, 실행 직전 요약과 무실행 `large-estimate` 명령을 둔다. 최근 성공 task를
+qualification/production별로 나누어 baseline 및 workload 유사 후보의 shadow forecast를 실제 시간과 비교한다. paired
+forecast가 3건 쌓이기 전에도 유사 successful run 3건 이상이면 경험 후보를 쓰며, 이후에는 paired 결과의 중앙 APE가
+낮은 모델을 택한다. 무작위 production A/B 분할은 하지 않는다.
+
+입력에서 최대 256 KiB만 읽고 샘플 값은 저장하지 않는다. 예측은 추정이며 자원 예산, worker 실행 여부, 원본·승인·
+qualification guard를 바꾸지 않는다. 실측 표본 수·신뢰도·범위를 사용자에게 보여주며, Gate C와 API 경로에는 적용하지
+않는다. 구현/검증 결과는 `docs/ITERATION_22_REPORT.md`와 `docs/LARGE_FILE_ENGINE.md`에 남긴다.

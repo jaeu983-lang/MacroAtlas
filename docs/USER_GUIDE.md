@@ -203,6 +203,28 @@ Linux에서 입력 128 MiB 미만·출력 192 MiB 미만·가상 메모리 384 M
 같은 후보·코드·예산은 기존 결과를 반환하고 원본이 바뀌면 재사용하지 않습니다.
 상세 조사·실측·한계는 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 참조하세요.
 
+### 실행 전 예상 시간
+
+`large-check`와 승인된 `large-run`은 task를 저장한 뒤 worker를 시작하기 직전에 예상 시간, 예상 범위, 신뢰도,
+비슷한 성공 실측 수, worker 제한 시간을 stderr로 알립니다. 결과 JSON에는 사용된 예측과 완료된 stage의 실제
+경과 시간(`actual_stage_seconds`)이 포함됩니다. 예상은 대용량 stage 실행 시간이며, 사람 검토와 별도 준비 시간은
+포함하지 않습니다. 실측이 적거나 입력 표본이 불완전하면 신뢰도 `low`와 넓은 범위를 표시합니다.
+범위는 저장된 이력과 표본에서 만든 작업 추정이며, 완료 시간을 보증하는 통계적 신뢰구간은 아닙니다.
+
+작업 없이 미리 확인할 때는 다음 명령을 씁니다.
+
+```text
+macroatlas large-estimate qualification <DEFERRAL_ID> [--event-seq N]
+macroatlas large-estimate production <DEFERRAL_ID> --event-seq <N>
+macroatlas large-estimate resume <PRODUCTION_TASK_ID>
+```
+
+이 명령은 task/event를 만들지 않고 로컬 DB와 입력 파일을 읽기만 합니다. 예상 시간이 worker 상한을 넘을 수 있다고
+표시해도 예산을 늘리거나 자동으로 별도 엔진에 보내지 않습니다. 실제 `large-check` 결과와 production의 동일 raw
+qualification·`--approve-production` 승인 조건을 그대로 따릅니다. 예측 모델은 각 엔진의 성공 task stage 시간으로
+보정하며, baseline과 유사 실측 예측을 모두 저장해 실제 결과와 shadow 비교합니다. 오차가 더 낮은 후보를 충분한
+paired 실측 후 선택하며, 무작위 production A/B 실험은 하지 않습니다.
+
 ### BIS flat 파일의 별도 대용량 실행
 
 현재 별도 production 경로는 BIS GLI flat ZIP 한 건만 지원합니다. 보존 원본의 단일 실행은 child task

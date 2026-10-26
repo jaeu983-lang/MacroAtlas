@@ -56,6 +56,8 @@ flowchart LR
     ROUTE --> SMALL[작은 로컬 파일 엔진]
     ROUTE --> DEFER[대용량 후보 인계]
     DEFER --> LARGE[분리된 대용량 엔진]
+    CTRL --> DURATION[bounded profile + 성공 이력 기반 시간 예측]
+    DURATION -. 실행 전 안내 .-> LARGE
     API --> RAW[불변 raw artifact + manifest]
     SMALL --> RAW
     LARGE --> RAW
@@ -73,7 +75,9 @@ flowchart LR
 
 **제어면**은 요청·task·stage·resume 예산·명시 선택을 관리합니다. 현재 Orchestrator는 순차 stage runner이며,
 일반 분산 queue나 exactly-once 외부 실행기는 아닙니다. **자료면**은 API 응답, 작은 로컬 파일, 대용량 파일을
-작업 특성에 맞는 서로 다른 engine으로 처리합니다. **증거면**은 raw hash·manifest·task attempt·변경 판정·품질
+작업 특성에 맞는 서로 다른 engine으로 처리합니다. 대용량 시간 예측은 최근 성공 stage 시간과 bounded workload profile을
+읽고, 실행 전 예상 범위·신뢰도를 돌려줍니다. 예측기는 worker를 실행하거나 승인·예산을 바꾸지 않습니다. **증거면**은
+raw hash·manifest·task attempt·변경 판정·품질
 결과를 연결해 산출물의 출처를 설명합니다. 현재 exporter는 저장된 성공 task의 원본·manifest·quality를
 재검증해 지원된 World Bank/BOJ CSV와 provenance sidecar를 만듭니다. 범용 파일 변환과 대용량 JSONL export는
 별도 범위입니다.
@@ -84,6 +88,7 @@ flowchart LR
 |---|---|---|---|
 | 요청/선택 | 지표, 기관, 기간, dimensions, 출력 요구 | 사용자가 실제로 선택한 범위를 보존. 알 수 없는 값은 unknown으로 유지 | 범위 모호·미지원 기관/출력·선택 불일치 |
 | Orchestrator | 고정 TaskPlan과 저장소 | 실행 전에 task/stage 기록, 시도·이벤트·resume 관리 | 예산 소진, retry 대기 미충족, 취소, 검토 필요 |
+| 대용량 시간 예측 | 인계 event 또는 saved production task와 제한된 로컬 profile | 실행 전 예상·범위·신뢰도 표시, 성공 task elapsed time으로 후보 모델 보정 | 표본·이력 부족 시 낮은 confidence; 승인·실행 판정은 하지 않음 |
 | API connector | 고정 endpoint/query와 전송 예산 | HTTPS 요청, 제한된 응답, raw 보존, provider별 parsing | 인증/권한·schema drift·redirect·용량 초과·transient 실패 |
 | 작은 파일 엔진 | inbox 아래 명시한 파일과 parser scope | 보안 검사, 용량 preflight, 제한 parser, 변경 guard | 불명확한 표/형식, 용량 상한, 원본 변경 |
 | 대용량 엔진 | 명시적으로 인계된 특정 원본 버전과 정책 | 별도 worker·예산, streaming chunk, checkpoint/resume | 자원 한도, 원본/manifest 불일치, 품질 불확실성 |

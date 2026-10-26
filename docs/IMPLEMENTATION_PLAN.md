@@ -23,6 +23,12 @@ hash와 DB 불변성을 확인했다. PR #9의 merge commit은 `7723afe`이며 U
 표시를 확인했다. 작성자에 의한 오프라인 검토여서 목표 사용자 연구로 계산하지 않는다. 실제 참여자 확인 전
 다음 사용자 인터페이스·provider 범위를 정하지 않는다. [검토 기록](USER_WORKFLOW_DRY_RUN_2026_10_26.md).
 
+22회차에서는 비API qualification과 BIS flat production/resume의 실행 전 시간 예측을 구현했다. 최대 256 KiB의
+bounded profile과 엔진별 성공 task wall-time history로 범위·신뢰도·shadow model을 계산하고, 무실행 preview를
+제공한다. 전체 **675개 테스트**, Ruff, diff 검사가 통과했다. 현지 catalog에서 확인한 qualification 기록은 15건,
+production 기록은 1건이고 새 paired forecast는 0건이므로 초기 보정 상태는 낮은 신뢰도다. 실제 read-only preview와
+한계는 [22회차 보고서](ITERATION_22_REPORT.md)에 둔다. PR #10 review branch로 제출하며 merge 전 사람 검토를 기다린다.
+
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
 후속 검토에서 강제 종료 시 orphan worker·scratch 복구 공백을 확인해 17회차 branch에서 보완했다.

@@ -83,6 +83,14 @@ def build_parser() -> argparse.ArgumentParser:
     large_resume.add_argument("--approve-review", action="store_true",
                               help="acknowledge a NEEDS_REVIEW result before resuming")
 
+    large_estimate = commands.add_parser(
+        "large-estimate", help="estimate a large-file operation without creating or running a task",
+    )
+    large_estimate.add_argument("operation", choices=("qualification", "production", "resume"))
+    large_estimate.add_argument("identifier", help="deferral ID or saved production task ID")
+    large_estimate.add_argument("--event-seq", type=int,
+                                help="immutable deferral event sequence (defaults to latest)")
+
     status = commands.add_parser("status", help="inspect a saved task without network access")
     status.add_argument("task_id")
 
@@ -141,7 +149,7 @@ def _worldbank_task(store: HistoryStore, settings: Settings,
     return service.create_work(doc["task_id"], expected_revision=1)["task_id"]
 
 
-def _summary(doc: dict) -> dict:
+def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
     stages = doc.get("stages", [])
     last = stages[-1] if stages else None
     result = last.get("result") if isinstance(last, dict) else None
@@ -155,6 +163,17 @@ def _summary(doc: dict) -> dict:
             "error_code": (row.get("result") or {}).get("error_code"),
         } for row in stages],
     }
+    plan = doc.get("plan")
+    input_data = plan[0].get("input_data") if isinstance(plan, list) and plan else None
+    if isinstance(input_data, dict) and isinstance(input_data.get("duration_estimate"), dict):
+        summary["duration_estimate"] = input_data["duration_estimate"]
+    elif isinstance(duration_estimate, dict):
+        summary["duration_estimate"] = duration_estimate
+    if doc.get("trial_only") or doc.get("production_handoff"):
+        from macro_data_platform.ingestion.large_file_duration import actual_stage_seconds
+        actual_seconds = actual_stage_seconds(doc)
+        if actual_seconds is not None:
+            summary["actual_stage_seconds"] = actual_seconds
     for key in ("parent_task_id", "deferral_id", "deferral_event_seq", "production_handoff",
                 "source_raw_sha256"):
         if key in doc:
@@ -175,6 +194,164 @@ def _summary(doc: dict) -> dict:
     if isinstance(payload.get("observations"), list):
         summary["observation_count"] = len(payload["observations"])
     return summary
+
+
+def _format_duration(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.1f}초"
+    minutes, remainder = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{int(minutes)}분 {remainder:.0f}초"
+    hours, minutes = divmod(minutes, 60)
+    return f"{int(hours)}시간 {int(minutes)}분"
+
+
+def _announce_duration(estimate: dict, *, operation: str) -> None:
+    lower = estimate["range_seconds"]["lower"]
+    upper = estimate["range_seconds"]["upper"]
+    point = estimate["estimated_seconds"]
+    confidence = {"high": "높음", "medium": "보통", "low": "낮음"}.get(
+        estimate.get("confidence"), "낮음",
+    )
+    samples = estimate.get("similar_sample_count", 0)
+    budget = estimate.get("wall_budget_seconds")
+    limit = f" · worker 상한 {_format_duration(budget)}" if budget else ""
+    budget_warning = " · 상한 도달 가능" if estimate.get("upper_estimate_reaches_wall_budget") else ""
+    print(
+        f"[MacroAtlas] {operation} 예상 {_format_duration(point)} "
+        f"(범위 {_format_duration(lower)}–{_format_duration(upper)}, "
+        f"신뢰도 {confidence}, 유사 실측 {samples}건{limit}{budget_warning})",
+        file=sys.stderr,
+    )
+
+
+def _read_only_task(connection, task_id: str) -> dict | None:
+    if connection is None:
+        return None
+    table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tasks'"
+    ).fetchone()
+    if not table:
+        return None
+    row = connection.execute(
+        "SELECT document FROM tasks WHERE task_id=?", (task_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return json.loads(row[0])
+
+
+def _duration_preview(settings, operation: str, identifier: str, event_seq=None) -> dict:
+    from macro_data_platform.ingestion.large_file_duration import (
+        estimate_duration,
+        history_documents,
+        profile_artifact,
+        read_checkpoint,
+        read_only_connection,
+        remaining_production_profile,
+    )
+
+    with read_only_connection(settings.database_path) as connection:
+        history = history_documents(connection)
+        if operation == "resume":
+            if event_seq is not None:
+                raise ValueError("event_sequence_not_used_for_resume")
+            task = _read_only_task(connection, identifier)
+            if task is None or not task.get("production_handoff"):
+                raise ValueError("unknown_production_task")
+            if _display_status(task.get("status")) == "COMPLETED":
+                raise ValueError("production_task_already_completed")
+            plan = task.get("plan")
+            task_input = plan[0].get("input_data") if isinstance(plan, list) and plan else None
+            if not isinstance(task_input, dict):
+                raise ValueError("production_task_input_missing")
+            profile = task_input.get("duration_profile")
+            if not isinstance(profile, dict):
+                profile = profile_artifact(settings, {
+                    "relative_path": task_input.get("raw_path"),
+                    "format": "zip",
+                    "zip_member": task_input.get("zip_member"),
+                    "delimiter": ",",
+                    "header_row": 1,
+                })
+            checkpoint = read_checkpoint(settings, task_input)
+            remaining = remaining_production_profile(profile, checkpoint)
+            budget = task_input.get("budget") if isinstance(task_input.get("budget"), dict) else {}
+            wall_seconds = budget.get("wall_seconds", 60)
+            return estimate_duration(
+                "production", remaining, history, wall_seconds=wall_seconds,
+            ) | {
+                "operation": "resume",
+                "estimate_only": True,
+                "execution_started": False,
+                "checkpoint_available": checkpoint is not None,
+                "task_status": _display_status(task.get("status")),
+                "execution_eligibility_checked": False,
+                "source_revalidated": False,
+            }
+
+        from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore
+        events = DeferredNonAPIStore(settings, read_only=True).events(identifier)
+        if event_seq is not None:
+            events = [event for event in events if event.get("event_seq") == event_seq]
+        if not events:
+            raise ValueError("unknown_deferred_event")
+        event = events[0]
+        scope = event.get("scope") if isinstance(event.get("scope"), dict) else {}
+        profile = profile_artifact(settings, scope)
+        if operation == "qualification":
+            from macro_data_platform.ingestion.large_file_trial import DEFAULT_BUDGET
+            wall_seconds = DEFAULT_BUDGET.wall_seconds
+        else:
+            from macro_data_platform.ingestion.large_file_production import (
+                DEFAULT_PRODUCTION_BUDGET,
+            )
+            wall_seconds = DEFAULT_PRODUCTION_BUDGET.wall_seconds
+        estimate = estimate_duration(operation, profile, history, wall_seconds=wall_seconds)
+        return estimate | {
+            "estimate_only": True,
+            "execution_started": False,
+            "deferral_id": identifier,
+            "deferral_event_seq": event.get("event_seq"),
+            "execution_requires_explicit_approval": operation == "production",
+            "execution_eligibility_checked": False,
+            "source_revalidated": False,
+        }
+
+
+def _task_duration_estimate(settings, doc: dict, operation: str) -> dict | None:
+    plan = doc.get("plan")
+    task_input = plan[0].get("input_data") if isinstance(plan, list) and plan else None
+    if not isinstance(task_input, dict):
+        return None
+    saved = task_input.get("duration_estimate")
+    if isinstance(saved, dict):
+        return saved
+    from macro_data_platform.ingestion.large_file_duration import (
+        estimate_duration,
+        history_documents,
+        profile_artifact,
+        read_only_connection,
+    )
+    if operation == "qualification":
+        scope = task_input.get("scope") if isinstance(task_input.get("scope"), dict) else {}
+        default_wall = 20
+    else:
+        scope = {
+            "relative_path": task_input.get("raw_path"),
+            "format": "zip",
+            "zip_member": task_input.get("zip_member"),
+            "delimiter": ",",
+            "header_row": 1,
+        }
+        default_wall = 60
+    profile = profile_artifact(settings, scope)
+    budget = task_input.get("budget") if isinstance(task_input.get("budget"), dict) else {}
+    wall_seconds = budget.get("wall_seconds", default_wall)
+    with read_only_connection(settings.database_path) as connection:
+        return estimate_duration(
+            operation, profile, history_documents(connection), wall_seconds=wall_seconds,
+        )
 
 
 def _display_status(value) -> str:
@@ -218,6 +395,10 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             return 0, {"events": DeferredNonAPIStore(settings, read_only=True).events(args.record_id)}
         return 0, {"records": DeferredNonAPIStore(settings, read_only=True).list(args.record_id)}
 
+    if args.command == "large-estimate":
+        estimate = _duration_preview(settings, args.operation, args.identifier, args.event_seq)
+        return 0, estimate
+
     store = HistoryStore(settings)
 
     if args.command == "large-run":
@@ -237,8 +418,12 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                 "reason": reason, "message": f"미실행: {reason}",
             }
         doc = store.get(task_id)
+        estimate = None
         if _display_status(doc["status"]) == "PLANNED":
             try:
+                estimate = _task_duration_estimate(settings, doc, "production")
+                if isinstance(estimate, dict):
+                    _announce_duration(estimate, operation="BIS production")
                 doc = make_large_file_production_orchestrator(store, settings).run(task_id)
             except BlockingIOError:
                 return 1, {"task_id": task_id, "status": "PLANNED",
@@ -246,7 +431,7 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             except (OSError, ValueError):
                 return 1, {"task_id": task_id, "status": "PLANNED",
                            "execution_state": "NOT_EXECUTED", "reason": "production_storage_unavailable"}
-        return _exit_code(doc), _summary(doc)
+        return _exit_code(doc), _summary(doc, duration_estimate=estimate)
 
     if args.command == "large-resume":
         from macro_data_platform.ingestion.large_file_production import (
@@ -255,6 +440,9 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         doc = store.get(args.task_id)
         if not doc.get("production_handoff"):
             raise ValueError("task is not a large-file production handoff")
+        if _display_status(doc["status"]) != "COMPLETED":
+            estimate = _duration_preview(settings, "resume", args.task_id)
+            _announce_duration(estimate, operation="BIS production 재개")
         runner = make_large_file_production_orchestrator(store, settings)
         if _display_status(doc["status"]) == "RUNNING":
             try:
@@ -283,8 +471,12 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             return 1, {"execution_state": "NOT_EXECUTED", "production_execution": "NOT_EXECUTED",
                        "reason": reason, "message": f"미실행: {reason}"}
         doc = store.get(task_id)
+        estimate = None
         if _display_status(doc["status"]) == "PLANNED":
             try:
+                estimate = _task_duration_estimate(settings, doc, "qualification")
+                if isinstance(estimate, dict):
+                    _announce_duration(estimate, operation="격리 qualification")
                 doc = make_trial_orchestrator(store, settings).run(task_id)
             except BlockingIOError:
                 return 1, _trial_not_executed(task_id, "engine_busy", status="PLANNED")
@@ -294,7 +486,7 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                 )
         elif _display_status(doc["status"]) == "RUNNING":
             return 1, _trial_not_executed(task_id, "trial_already_running", status="RUNNING")
-        return _exit_code(doc), _summary(doc)
+        return _exit_code(doc), _summary(doc, duration_estimate=estimate)
 
     if args.command == "status":
         return 0, _summary(store.get(args.task_id))
