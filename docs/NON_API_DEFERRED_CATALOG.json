@@ -15,7 +15,7 @@
       "observed_cells": null,
       "task_id": "bea335ad-1819-42cb-8acd-797c6a452255",
       "evidence": "GATE_C_REVIEW_2026_10_26.md",
-      "note": "既存実測: parser row/cell budget review; precise exceeded dimension not established. Not a 16 MiB file-size violation.",
+      "note": "Prior observed evidence: parser row/cell budget review; precise exceeded dimension not established. Not a 16 MiB file-size violation.",
       "target_engine": "future_large_non_api_engine",
       "automatic_execution": false
     }
