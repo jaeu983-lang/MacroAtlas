@@ -20,6 +20,7 @@ PowerShell:
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\macroatlas.exe --help
 ```
 
 Linux/macOS:
@@ -28,6 +29,7 @@ Linux/macOS:
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/macroatlas --help
 ```
 
 ## 검사
@@ -40,6 +42,7 @@ git diff --check
 
 가상환경을 사용한다면 `python` 대신 해당 가상환경의 Python 경로를 사용합니다. 전체 제품 기능의
 검증을 주장하려면 테스트 결과 외에도 실제 서비스 호출 여부와 대상 경로를 따로 기록합니다.
+GitHub Actions의 저장소 CI는 Linux와 Windows에서 Python 3.11/3.12 테스트·Ruff·CLI 도움말을 실행합니다.
 
 ## API 비밀값
 

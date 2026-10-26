@@ -13,13 +13,14 @@
 
 현재 검수 상태는 Gate A 통과, Gate B/C 제한 범위 통과, Gate D 통과, Gate E 제한 범위 로컬 v1
 검토 통과입니다. 이 판정은 전체 기관 검색이나 모든 기관의 정상·실패 흐름이 제공됨을 뜻하지 않습니다.
-자연 TIC/BIS source revision과 자연 provider failure→durable resume은 미검증이며, BOJ adapter도
-없습니다. 현행 범위는 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), A–H/X01–X09 세부 evidence는
+자연 TIC/BIS source revision과 자연 provider failure→durable resume은 미검증입니다. BOJ는
+FM08/FXERD01 한 달 경로만 연결됐으며 다른 series는 미지원입니다. 현행 범위는
+[`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), A–H/X01–X09 세부 evidence는
 [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)를 확인합니다.
 
-14회차의 현재 Gate 판정과 후속 순서는
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)를 따릅니다. 다음 제품 회차는 14회
-로드맵 밖이므로 별도 범위·수용 기준을 정한 뒤 계획해야 합니다.
+현재 Gate 판정, 네 갈래 후속 작업 및 다음 허용 task는
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)를 따릅니다. 사용자는 `macroatlas --help`로
+지원되는 고정 수집·감시 명령을 볼 수 있습니다.
 
 Git branch/commit 정보는 `git status -sb`, `git log -1 --oneline`,
 `git rev-parse HEAD`로 확인합니다. 원격 branch가 가리키는 commit과 작업 트리 commit이

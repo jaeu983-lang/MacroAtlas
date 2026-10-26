@@ -24,7 +24,7 @@
 | EU-03 | 독일 | Bundesbank | 독일·유로 금융/경제 시계열 | 새 통계포털·SDMX REST, 구 시계열 키 매핑 | 공식 문서 확인 | https://www.bundesbank.de/en/statistics/time-series-and-real-time-data |
 | EU-04 | 영국 | Bank of England | 통화·금융·금리 | Bankstats IADB 검색, 다운로드·코드 기반 탐색 | 공식 문서 확인 | https://www.bankofengland.co.uk/boeapps/database/help.asp |
 | EU-05 | 프랑스 | INSEE | 생산·물가·거시시계열 | SDMX 2.1 웹서비스, idbank 단위 시계열 | 공식 문서 확인 | https://www.insee.fr/en/information/2868055 |
-| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | notice/manual 200; FXERD01/202609 API smoke 200×2, 재사용 observation collector 미구현 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
+| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | FM08/FXERD01 한 달 collector live 200, 30 observations; 그 밖의 series 미지원 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
 | JP-02 | 일본 | Ministry of Finance | 국제수지·직접·증권투자 | 공개 통계표 및 BOJ Time-Series Data Search 연계 | 공식 문서 확인 | https://www.mof.go.jp/english/policy/international_policy/reference/balance_of_payments/index.htm |
 | JP-03 | 일본 | e-Stat | 정부 통계표·코드북 | 표 목록→메타→통계값 API, 등록/Application ID | 공식 문서 확인 | https://www.e-stat.go.jp/api/en/api-info |
 | CN-01 | 중국 | PBOC | 통화량·대출·사회융자 | 공식 홈페이지 통계 섹션의 접근·재사용 경로 추가 실사 | 기관 확인·경로 추가 조사 | https://www.pbc.gov.cn/en/ |
@@ -196,7 +196,14 @@ known_issues: []
   Yen per U.S. Dollar, frequency는 DAILY로 metadata에서 확인했다.
 - 요청 범위 응답은 30일, 숫자 19개와 null 11개다. 반복 실행에서 관측 날짜/값은 같았고 동적 응답
   `DATE`만 달랐다. 결측은 원본 null로 유지했다.
-- 이를 live API 접근·응답 구조의 확인으로만 분류한다. BOJ 재사용 adapter, source mapping catalog,
-  Orchestrator task, natural failure recovery는 미구현/미검증이다. 지원 상태는
-  `collection_not_implemented`로 유지한다. 상세와 hashes는
+- 이 smoke 당시에는 BOJ 재사용 adapter, source mapping catalog, Orchestrator task,
+  natural failure recovery가 미구현/미검증이었다. 상세와 hashes는
   `docs/BOJ_LIVE_RECHECK_2026_10_26.md`에 있다.
+
+## 2026-10-26 BOJ limited collector follow-up
+
+- `macroatlas collect boj-fxer --month 202609 --live`가 공식 metadata와 data를 각각 한 번 요청해
+  동일 Orchestrator task로 저장했다. HTTP/JSON STATUS 200, 30 daily observations, 11 null 값이
+  보존됐고 제한된 structural quality 검사에 통과했다.
+- 이 구현은 FM08/FXERD01 한 달에만 적용된다. 다른 BOJ series나 기관 전반 지원으로 확대하지 않으며,
+  자연 provider failure/resume 증거도 새로 생기지 않았다. 구현 상세는 `docs/connectors/BOJ.md`다.

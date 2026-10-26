@@ -2,9 +2,9 @@
 
 기준 버전: **제한 범위 로컬 v1**, 2026-10-26
 
-MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 현재 일반 자연어 CLI나 MacroAtlas 자체
-채팅 UI는 없습니다. 이 안내서는 확인된 기능만 설명합니다. 기관별 전체 검색, 자동 기관 선택, 모든
-자료의 파일 내보내기, 무인 스케줄링을 제공한다고 가정하지 않습니다.
+MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
+시계열, TIC/BIS 기준 파일 감시를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
+기관 전반 검색, 무인 스케줄링은 제공하지 않습니다.
 
 ## 설치
 
@@ -34,25 +34,42 @@ python -m ruff check .
 git diff --check
 ```
 
-## 검증된 대표 수집 한 번 실행하기
+설치된 명령의 지원 범위는 `macroatlas --help`로 확인할 수 있습니다.
 
-이 저장소는 고정된 World Bank WDI 검증 경로를 제공합니다. 아래 명령은 네트워크 접근을 명시적으로
-요청하고, 미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`, 2020–2022년만 한 번 수집합니다.
-일반 사용자 요청을 임의로 받아 주는 범용 검색 명령은 아닙니다.
+## 구조화 CLI로 지원 경로 실행하기
+
+`macroatlas`는 각 요청을 SQLite에 먼저 저장하고, `--live`가 있을 때만 외부 요청을 보냅니다.
+현재 지원 범위와 문서화된 예시는 다음과 같습니다.
+
+```powershell
+.\.venv\Scripts\macroatlas.exe collect worldbank-gdp --start-year 2020 --end-year 2022 --live
+.\.venv\Scripts\macroatlas.exe collect boj-fxer --month 202609 --live
+.\.venv\Scripts\macroatlas.exe watch tic --live
+.\.venv\Scripts\macroatlas.exe watch bis --live
+.\.venv\Scripts\macroatlas.exe status <TASK_ID>
+.\.venv\Scripts\macroatlas.exe resume <TASK_ID> --live
+```
+
+Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. World Bank 명령은
+미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`만 지원하며 1~10개 연도 범위로 제한됩니다.
+BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지정된 공식 파일 URL과 기존 parser
+범위만 확인합니다. 명령은 URL이나 임의 기관을 입력받지 않습니다.
+
+각 실행은 JSON 요약에 task ID, 상태, stage, 품질 상태, 저장 경로를 표시합니다. `status`는 네트워크를
+사용하지 않고 task를 조회합니다. transient 실패가 생기면 프로세스를 다시 연 뒤 같은 task ID로
+`resume`하세요. 서버가 `Retry-After`를 제공하면 Orchestrator가 대기시간 이전 resume을 차단합니다.
+`NEEDS_REVIEW`는 결과를 검토하고 승인한 뒤 `--approve-review`를 붙여야 재개됩니다. 자동 재시도는
+없습니다.
+
+World Bank 이전 검증 스크립트도 유지됩니다.
 
 ```text
 python scripts/verify_worldbank.py --live --gate-a
 ```
 
-이 경로는 HTTPS, 시스템에 지정된 HTTP(S) 프록시와 CA bundle, TLS 검증, 5초 연결/20초 응답 timeout,
-redirect 차단, 자동 재시도 없음, 1 MiB 응답 상한을 사용합니다. 네트워크가 허용되지 않거나 일시 오류가
-나면 `TRANSIENT`로 종료될 수 있습니다. 프록시를 우회하거나 인증을 우회하지 마세요.
-
-명령은 JSON 한 줄에 task ID, 상태, 보고서 경로, 수집 요약을 출력합니다. 종료 코드가 0이고
-보고서의 `live_path_passed`가 `true`, task 상태가 `COMPLETED`, validation 상태가 `passed`일 때 해당
-검증 경로가 완료된 것입니다. `warnings`와 `not_checked`도 함께 확인하세요. 단위·주기가 원문에서
-확인되지 않으면 `null`/unknown으로 남습니다. `source_change_status=first_observation`은 이전 원본과의
-변경 비교를 수행했다는 뜻이 아닙니다.
+이 경로는 HTTPS, 설정된 HTTP(S) 프록시와 CA bundle, TLS 검증, timeout, redirect 차단, 자동 재시도
+없음, 1 MiB 응답 상한을 사용합니다. 단위·주기, 경제 이상치, 개정 역사, 기관 간 동등성은 이 검증 범위가
+아닙니다. `source_change_status=first_observation`은 과거 원본과의 변경 비교를 뜻하지 않습니다.
 
 ## 결과와 이력 확인
 
@@ -77,8 +94,8 @@ redirect 차단, 자동 재시도 없음, 1 MiB 응답 상한을 사용합니다
 | World Bank WDI | 위에 적힌 미국 GDP 고정 수집 경로 | 키 불필요 |
 | BLS Public Data API v2 | 선택한 series ID의 제한된 Python API 수집; metadata와 통계 의미는 별도 확인 | 일반 series-data 조회는 `BLS_API_KEY` 선택 사항. 일부 catalogue 요청은 등록 키 필요 |
 | Census ACS API | 제한된 ACS query connector | `CENSUS_API_KEY` 필수 |
-| TIC/BIS 파일 | 사용자가 고른 파일의 명시적 로컬 intake; 최신 기관 원본 자동 다운로드 경로가 아님 | API 키 없음 |
-| BOJ JSON API | `getMetadata`와 고정 FXERD01/202609 요청을 직접 smoke 검증; 재사용 collector 미구현 | 해당 smoke 요청에는 키를 보내지 않음 |
+| TIC/BIS 파일 | `macroatlas watch`의 고정 URL live 재수집과 명시적 로컬 intake; 자동 예약은 없음 | API 키 없음 |
+| BOJ JSON API | FM08/FXERD01 한 달 metadata·observations collector와 durable task 연결 | 키를 보내지 않음 |
 | 그 밖의 기관 | 일부 공식 문서/fixture만 존재; 기관별 전체 수집 흐름은 미지원 또는 미검증 | 기관별 공식 안내 전 추정하지 않음 |
 
 필요한 키만 승인된 secret manager 또는 현재 프로세스 환경변수로 제공합니다. 프로젝트는 `.env`를
@@ -96,8 +113,9 @@ redirect 차단, 자동 재시도 없음, 1 MiB 응답 상한을 사용합니다
 - 같은 범위의 원본이 바뀌면 이전·새 raw를 보존하고 검토가 끝날 때까지 새 normalized 출력을 만들지
   않습니다. `null`과 0은 다른 값입니다.
 
-Orchestrator를 사용하는 Python 통합은 task ID를 유지해야 합니다. 실패한 task의 변경된 요청이나
-confirmation은 기존 결과와 섞이지 않도록 막힐 수 있습니다. 자동 resume나 재시도 정책은 없습니다.
+task ID는 외부 수집 전 저장됩니다. 같은 ID로 재개해야 이전 시도와 이력이 이어집니다. 변경된 조건은
+새 task로 시작합니다. `watch`는 수동 실행이며 정기 스케줄을 만들지 않습니다. 자연 원본 변경이나
+provider 장애가 발생하지 않으면 해당 live 증거는 미확인으로 남습니다.
 
 ## 피드백과 개선 제안
 

@@ -1,8 +1,8 @@
 # MacroAtlas
 
 MacroAtlas는 국제금융·거시경제 통계를 공식 출처에서 찾고, 의미와 수집 결과를 근거와 함께
-보존하는 Python 프로젝트입니다. 현재 사용 인터페이스는 Python API이며 자연어 채팅 제품은
-아직 없습니다.
+보존하는 Python 프로젝트입니다. 현재 사용 인터페이스는 Python API와 범위가 고정된 구조화
+CLI이며 자연어 채팅 제품은 아직 없습니다.
 
 ## 현재 상태
 
@@ -12,9 +12,10 @@ Gate E는 **제한 범위 로컬 v1 검토 통과**입니다. Gate C의 자연 �
 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)와
 [`docs/ITERATION_14_REPORT.md`](docs/ITERATION_14_REPORT.md)를 참조하세요.
 
-MacroAtlas에는 일반 자연어 검색 CLI나 자체 채팅 UI가 없습니다. 고정된 World Bank USA GDP live
-검증 경로, 제한 BLS/Census API 부품, 명시 파일 파서, task-linked feedback CLI와 read-only pattern
-CLI를 제공합니다. 게이트의 현행 상태와 다음 허용 작업은
+MacroAtlas는 고정된 World Bank USA GDP 수집, BOJ FM08/FXERD01 월별 수집, TIC/BIS exact-scope
+파일 감시, task status/resume를 위한 `macroatlas` CLI를 제공합니다. 일반 자연어 검색, 자체 채팅 UI,
+기관 전반 자동 검색은 지원하지 않습니다. 제한 BLS/Census API 부품, 명시 파일 파서,
+task-linked feedback CLI와 read-only pattern CLI도 제공합니다. 게이트의 현행 상태와 다음 허용 작업은
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), 시나리오별 증거는
 회차 보고서를 기준으로 합니다.
 
@@ -39,6 +40,7 @@ py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 .\.venv\Scripts\python.exe -m pytest
 .\.venv\Scripts\python.exe -m ruff check src tests
+.\.venv\Scripts\macroatlas.exe --help
 ```
 
 Linux/macOS에서는 가상환경을 만든 뒤 `python -m pip install -e ".[dev]"`,

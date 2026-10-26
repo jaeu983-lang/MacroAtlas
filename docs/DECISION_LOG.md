@@ -623,3 +623,20 @@
 - Gate E is a restricted local-v1 review only. Blocked/partial institutions, Windows installation not run in
   this Linux environment, natural TIC/BIS revision, natural provider durable resume, and absent BOJ collector
   remain explicit. No environment publish or main merge occurred. See `docs/ITERATION_14_REPORT.md`.
+
+## Four-track post-merge follow-up (2026-10-26)
+
+- **D-075 / IMPLEMENTED WITH NATURAL GATE C EVIDENCE STILL OPEN:** After PR #1 merged at
+  `9986472f983a70aacc86209ee54883cca558c5e9`, the user asked to complete the four remaining tracks in order.
+- Added fixed FM08/FXERD01 monthly BOJ metadata/data stages, a persisted TIC/BIS exact-scope watch, and the
+  bounded `macroatlas` CLI for World Bank, BOJ, status/resume, and the two file watches. These paths do not
+  generalize to arbitrary series, URLs, natural language, or institutions.
+- TIC and BIS live source checks returned HTTP 200 and `unchanged` against the validated baseline. No natural
+  provider failure occurred; same-task resume evidence remains fixture-only. Gate C D-067's limited pass is
+  unchanged.
+- Added a Linux/Windows Python 3.11/3.12 CI workflow. Live World Bank and BOJ commands completed on the
+  managed Linux environment. The initial PR run caught a Windows case-insensitive environment-variable
+  assumption in one proxy test; after correcting the test, CI run `40336575209` passed all four OS/Python
+  combinations, including tests, Ruff, and installed CLI help. Details are in `docs/ITERATION_15_REPORT.md`.
+- No environment publish/deploy was performed. Current code, exact scopes, test evidence and remaining natural
+  events are in `docs/ITERATION_15_REPORT.md`, `docs/GATE_C_SOURCE_WATCH.md`, and `docs/connectors/BOJ.md`.
