@@ -22,9 +22,10 @@ retry hint를 저장하고 HistoryStore/Orchestrator를 다시 연 뒤, 지연 �
 `git diff --check` 통과.
 
 적용 범위는 현재 검증된 BLS/Census 제한 API 수집, TIC/BIS 명시 파일 intake와 manifest/hash 확인,
-TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure/resume 경로다. BOJ는
-계속 `BLOCKED`; 일반 기관 전반 의미·변경·복구를 통과 처리하지 않는다. 자연 live source revision과
-자연 provider failure→durable resume은 `NOT_RUN`으로 남는다.
+TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure/resume 경로다. BOJ API
+manual은 후속 재확인에서 HTTP 200으로 접근됐지만 observation collector와 실측 데이터 요청은 없다.
+일반 기관 전반 의미·변경·복구를 통과 처리하지 않는다. 자연 live source revision과 자연 provider
+failure→durable resume은 `NOT_RUN`으로 남는다.
 
 ### 제한 범위 통과 증거
 
@@ -35,11 +36,36 @@ TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure
 | 장애 후 재개 | PASS, simulated | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after`: 503, `Retry-After: 2`, task/store 재개 전 대기 차단, 동일 task의 성공 및 attempt/event 보존 |
 | 자연 발생 source revision | NOT_RUN | TIC/BIS live exact-scope 반복은 모두 unchanged; 실제 변경 쌍 없음 |
 | 자연 발생 provider failure→resume | NOT_RUN | 기존 BIS 503 당시 task가 저장되지 않았음; 이번 503은 fixture |
-| BOJ provider | BLOCKED | 연결된 공식 manual이 403; request parameters 검증되지 않음 |
+| BOJ documentation/provider | Manual available / collector not implemented | 최신 공식 manual HTTP 200, request schema documented; series mapping과 observation API 미검증 (D-071) |
 
 변경 감지 자동 테스트 `test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization`는
 합성 bytes를 사용한다. 위 controlled copy 결과는 별도의 임시 실행으로 실제 TIC raw를 사용했으며,
 실제 새 provider capture를 만들지 않았다.
+
+## BOJ 공식 API 매뉴얼 재확인 — D-071 (2026-10-26)
+
+기존 API notice를 한 번 GET했다. HTTP 200, 36,614 bytes, SHA256
+`1c48b9491cbfc43d7b8100278ef6a432a9fcb4996a34795c06e2f396d7d0db68`이며, 페이지는 같은 공식 API
+manual PDF와 API terms PDF를 링크한다. 연결된 manual PDF도 한 번 GET해 HTTP 200,
+`application/pdf`, 857,117 bytes, SHA256
+`8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`를 확인했다. `pdftotext -layout`
+및 PDF metadata로 본문을 검토했다. 표지 날짜는 2026-02-18, PDF metadata modification date는
+2026-02-17, 총 27 pages다.
+
+매뉴얼은 `/api/v1/getMetadata`, `/getDataLayer`, `/getDataCode` endpoint와 `db`, `code`, `layer`,
+`frequency`, date, output format, `STARTPOSITION` 파라미터를 문서화한다. `/getDataCode` 상한은
+요청당 250 series code와 60,000 data points, `/getDataLayer` 계층 탐색 상한은 1,250 series로
+기재한다. 다만 limit 절 일부의 `/getLayerCode` 표기가 endpoint 구조·예제의 `/getDataLayer`와
+다르다. 이 차이는 observation 요청 전에 공식 endpoint로 확인해야 한다.
+
+이전 검토의 403 응답에는 body나 content hash가 없다. 이번 notice도 `baseline_unavailable`로
+기록됐으므로 manual 내용이 이전 시도 이후 수정됐는지는 증명할 수 없다. 현재 문서가 접근 가능하고
+요청 규격이 문서화됐다는 점은 확인했다. 이번에는 metadata/data API를 호출하지 않았고, series 매핑·
+응답 형식·실제 observation은 검증하지 않았다. 가이드 수집기가 PDF 텍스트를 자동 추출하지 못해
+stage 결과는 `NEEDS_REVIEW/SCHEMA_CHANGED`였지만, 원본 PDF와 manifest는 gitignored
+`data/raw/guides/boj_api_manual/be0d3f61ef264b1cb715bfd8b2ef9336/` 아래에 보존하고 local
+`pdftotext`로 읽었다. collection status는 manual access block에서 `collection_not_implemented`로
+바꿨다. Gate C D-067의 제한 범위는 바뀌지 않는다.
 
 ## 이전 재검토 결과 — D-067 전 상태
 
@@ -127,7 +153,9 @@ BIS raw `aa52afce…bdd9c1d`, normalized `46dd820e…e445854`. repeat의
 1. 같은 URL/요청 범위의 실제 개정 원본 쌍 확보 및 X08 live 변경 감지·양쪽 raw 보존 확인.
    같은 bytes를 재수집한 결과나 합성 수정 bytes를 live revision으로 표시하지 않는다.
 2. 자연 발생한 기관 오류에서 durable resume 쌍 확보 및 X04 잔액/거래액 후보 불일치 증거 보완.
-3. BOJ BLOCKED와 지원 범위를 명시한 재검토. 이 항목들은 제한 범위를 넘어 전체 Gate C를 확장할 때 필요하다.
+3. BOJ observation collector 구현 여부와 지원 범위를 명시한 재검토. 매뉴얼은 현재 접근 가능하지만
+   collector·series mapping·실측 데이터 경로는 미구현/미검증이다. 이는 제한 범위를 넘어 전체 Gate C를
+   확장할 때 필요하다.
 
 관측치·기관 정의·자격증명·게시 설정을 변경하지 않았다. 이번 작업에 코드 동작 변경은 없다.
 

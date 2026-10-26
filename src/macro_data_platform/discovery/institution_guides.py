@@ -155,9 +155,10 @@ STRATEGIES = {
     "boj": InstitutionStrategy(
         "boj", "boj_json_csv_timeseries_api", "official_api_notice_then_series_lookup",
         None, ("boj_api_notice", "boj_api_manual", "boj_api_terms"),
-        "blocked_manual_access", "unknown",
+        "collection_not_implemented", "unknown",
         ("BOJ's 2026 notice announces JSON and CSV access to time-series data.",
-         "The linked API manual returned HTTP 403; no BOJ observation connector exists."),
+         "The official API manual is reachable and documents request parameters and limits.",
+         "No BOJ observation connector or series-specific request has been implemented or tested."),
     ),
     "treasury_tic": InstitutionStrategy(
         "treasury_tic", "treasury_tic_tables", "official_table_and_usage_guidance",

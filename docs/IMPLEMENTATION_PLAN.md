@@ -31,7 +31,7 @@ failure→persist→resume 쌍이 추가로 필요하다.
 |---|---|---|
 | A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |
 | B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, CLI, 기관 전체 검색은 이 엔진 게이트 범위 밖이며 아직 미구현. [보고서](ITERATION_08_REPORT.md) |
-| C / 10 | **제한 범위 통과** | 실제 BLS/Census·TIC·BIS capture의 제한 증거, manifest/hash 검증, 실제 TIC raw 복사본의 통제 변경 분기, Orchestrator simulated 503→대기→재개 E2E를 확인. 자연 live revision/recovery는 미검증, BOJ는 `BLOCKED`. [재검토](GATE_C_REVIEW_2026_10_26.md) |
+| C / 10 | **제한 범위 통과** | 실제 BLS/Census·TIC·BIS capture의 제한 증거, manifest/hash 검증, 실제 TIC raw 복사본의 통제 변경 분기, Orchestrator simulated 503→대기→재개 E2E를 확인. 자연 live revision/recovery는 미검증. BOJ manual은 접근 가능해졌으나 observation collector는 미구현. [재검토](GATE_C_REVIEW_2026_10_26.md) |
 | D / 12 | **통과** | 동일 BLS/CPI task 흐름에서 명시 선택한 accepted, exact-scope `source_method`로 search stage를 생략해 반복 stage 실행을 2→1로 줄였다. 다른 기관, broader scope, conflict, inference, unreviewed, stale index는 차단; current instruction 우선. 30회 local E2E 측정은 [12회차 보고서](ITERATION_12_REPORT.md). |
 | E / 14 | **미실행** | 최종 회귀·릴리스 검토를 시작하지 않음. |
 
@@ -86,7 +86,7 @@ Gate C 증거의 현황과 BIS/TIC 재비교는 `GATE_C_REVIEW_2026_10_26.md`를
    source revision/provider recovery는 `NOT_RUN`이며 제한 통과 범위 밖이다.
 4. BLS/Census 제한 live smoke와 TIC/BIS live file의 원본·normalized hash를 증거로 연결한다.
    단위·빈도·vintage가 unknown이면 경고를 유지하고 키 값은 출력하지 않는다.
-5. Gate C는 검증된 범위만 제한 통과다. 자연 live revision/recovery와 BOJ 제한을 계속 표시한다.
+5. Gate C는 검증된 범위만 제한 통과다. 자연 live revision/recovery 미실증과 BOJ observation collector 미구현을 계속 표시한다.
    11·12회차는 사용자 지시로 순서 예외 진행했고 Gate D는 통과했다. 이번 task에서 13회차는 시작하지 않았다.
 
 Gate C와 D가 통과됐다. 다음 의존 범위는 Gate E(13~14)지만 이번 task에서는 시작하지 않았다.

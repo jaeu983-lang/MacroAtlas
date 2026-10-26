@@ -59,7 +59,7 @@ class GuideTests(unittest.TestCase):
                 self.assertTrue(strategy["operating_notes"])
         with self.assertRaises(ValueError):
             select_strategy("Treasury TIC")
-        self.assertEqual(select_strategy("boj")["collection_status"], "blocked_manual_access")
+        self.assertEqual(select_strategy("boj")["collection_status"], "collection_not_implemented")
 
     def test_bis_bulk_guide_accepts_only_official_archive_candidates(self):
         spec = GUIDES["bis_bulk_download"]

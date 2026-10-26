@@ -566,3 +566,21 @@
   The observed environment's reference budgets are p95 150 ms and 8 MiB Python allocation for bounded runs.
 - This is local synthetic evidence only. It does not establish live recurring errors or root cause, does not
   change Gate C, and does not start iteration 14 / Gate E. See `docs/ITERATION_13_REPORT.md`.
+
+## BOJ official API manual recheck (2026-10-26)
+
+- **D-071 / DOCUMENTATION VERIFIED, COLLECTOR NOT IMPLEMENTED:** Re-fetched the official BOJ notice and
+  its linked API manual once each using the configured proxy and explicit network permission. The notice
+  returned HTTP 200, 36,614 bytes, SHA256
+  `1c48b9491cbfc43d7b8100278ef6a432a9fcb4996a34795c06e2f396d7d0db68`. The manual returned HTTP 200,
+  `application/pdf`, 857,117 bytes, SHA256
+  `8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`; it is dated 2026-02-18 and has
+  27 pages. Both original responses and manifests are preserved under gitignored `data/raw/guides/`.
+- The manual documents `/api/v1/getMetadata`, `/getDataLayer`, `/getDataCode`, request parameters and
+  250-series / 60,000-point per-request limits. One limit paragraph says `/getLayerCode`, unlike the
+  `/getDataLayer` endpoint elsewhere; verify that path before constructing a data request. No BOJ
+  metadata/data API request was sent, so series mapping and observation schema remain unverified.
+- The previous HTTP 403 attempt saved no body/hash and current archive comparison is `baseline_unavailable`;
+  whether the manual itself changed cannot be established. It is now accessible. Update institution support
+  state from `blocked_manual_access` to `collection_not_implemented`, since documentation exists but the
+  BOJ observation adapter is absent. Gate C's D-067 limited pass and its scope are unchanged.

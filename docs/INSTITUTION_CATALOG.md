@@ -24,7 +24,7 @@
 | EU-03 | 독일 | Bundesbank | 독일·유로 금융/경제 시계열 | 새 통계포털·SDMX REST, 구 시계열 키 매핑 | 공식 문서 확인 | https://www.bundesbank.de/en/statistics/time-series-and-real-time-data |
 | EU-04 | 영국 | Bank of England | 통화·금융·금리 | Bankstats IADB 검색, 다운로드·코드 기반 탐색 | 공식 문서 확인 | https://www.bankofengland.co.uk/boeapps/database/help.asp |
 | EU-05 | 프랑스 | INSEE | 생산·물가·거시시계열 | SDMX 2.1 웹서비스, idbank 단위 시계열 | 공식 문서 확인 | https://www.insee.fr/en/information/2868055 |
-| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | API 공지 live 200, 연결 매뉴얼 403, 플랫폼 연결 `BLOCKED` | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
+| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | 공지·매뉴얼 live 200; 요청 규격 확인, observation collector는 미구현 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
 | JP-02 | 일본 | Ministry of Finance | 국제수지·직접·증권투자 | 공개 통계표 및 BOJ Time-Series Data Search 연계 | 공식 문서 확인 | https://www.mof.go.jp/english/policy/international_policy/reference/balance_of_payments/index.htm |
 | JP-03 | 일본 | e-Stat | 정부 통계표·코드북 | 표 목록→메타→통계값 API, 등록/Application ID | 공식 문서 확인 | https://www.e-stat.go.jp/api/en/api-info |
 | CN-01 | 중국 | PBOC | 통화량·대출·사회융자 | 공식 홈페이지 통계 섹션의 접근·재사용 경로 추가 실사 | 기관 확인·경로 추가 조사 | https://www.pbc.gov.cn/en/ |
@@ -167,3 +167,22 @@ known_issues: []
   `BLOCKED`다. 상세 응답 manifest와 한계는 `docs/ITERATION_10_REPORT.md`에 있다.
 - 이 결과는 BIS 한 파일의 intake와 BOJ 공식 안내/접근 상태만 확인한다. BIS SDMX 전체 지원,
   BOJ 데이터 API 연결, source revision 감지 또는 Gate C 통과를 뜻하지 않는다.
+
+## 2026-10-26 BOJ API manual 재확인
+
+- 공식 BOJ 공지는 HTTP 200, 36,614 bytes, SHA256
+  `1c48b9491cbfc43d7b8100278ef6a432a9fcb4996a34795c06e2f396d7d0db68`였다. 현재 notice는 같은 공식
+  `api_manual_en.pdf`와 `api_notice_en.pdf`를 링크한다.
+- 매뉴얼 PDF는 HTTP 200, `application/pdf`, 857,117 bytes, SHA256
+  `8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`, 27 pages다. 표지 날짜는
+  2026-02-18이다. 이전 시도는 HTTP 403만 기록하고 body/hash를 저장하지 않아 이 PDF가 그때보다
+  수정됐는지는 판정할 수 없다.
+- 매뉴얼은 `/api/v1/getMetadata`, `/getDataLayer`, `/getDataCode`, `db`, `code`, `layer`,
+  `frequency`, 기간, 출력 형식 및 `STARTPOSITION`을 설명한다. `/getDataCode`는 요청당 series
+  code 250개·자료점 60,000개 상한, `/getDataLayer`의 탐색 상한은 1,250개로 기재한다.
+- limit 절 일부는 endpoint를 `/getLayerCode`로 부르지만 구조·예제 절은 `/getDataLayer`로 기재한다.
+  이 표기 차이는 실제 endpoint 호출 전에 공식 API로 확인해야 한다. 이번 재검토에서는 observation
+  API 요청을 보내지 않았다. 수집 지원 상태는 매뉴얼 접근 차단에서 `collection_not_implemented`로
+  바뀌었고, series 매핑·collector·실제 데이터 응답은 미검증이다.
+- 원본 PDF와 manifest는 gitignored `data/raw/guides/boj_api_manual/be0d3f61ef264b1cb715bfd8b2ef9336/`
+  아래에 보존했다. 자세한 기록은 `docs/GATE_C_REVIEW_2026_10_26.md`와 D-071에 있다.

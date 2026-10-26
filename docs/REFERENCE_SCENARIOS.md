@@ -161,14 +161,25 @@ run_date: null
   `WS_GLI_csv_col.zip`; ZIP download returned HTTP 200 and passed raw archive → normalized table
   intake (225 rows, 220 columns). The file includes multiple series/units and was not treated as one
   homogeneous series. The flat CSV alternative returned HTTP 503; no retry was sent.
-- Scenario F: **BLOCKED** for BOJ API collection. The official API notice returned HTTP 200 and
-  describes JSON/CSV time-series access, but its linked API manual returned HTTP 403. No BOJ API
-  request was formed because request parameters and series identifiers could not be verified.
+- Scenario F: **BLOCKED for data collection at that time.** The official API notice returned HTTP 200
+  and described JSON/CSV time-series access, but its linked API manual returned HTTP 403. No BOJ API
+  request was formed because the manual was unavailable. See the later D-071 recheck.
 - X01: the live BIS 503 was recorded without retry. A deterministic guide-fetch fixture verifies a
   503 `Retry-After: 17` is persisted as a retry hint and no automatic retry occurs. This does not
   substitute for a real provider recovery/resume cycle.
 - X08 live TIC/BIS source delta and provider-specific recovery remain **NOT_RUN**. Gate C remains
   **not passed at the time of this follow-up**; Gate D and Iteration 11 had not started yet.
+
+## BOJ API manual recheck (2026-10-26)
+
+- The official API notice and linked English manual returned HTTP 200. The manual is dated 2026-02-18;
+  current PDF SHA256 is `8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`.
+- It documents metadata, layer and data endpoints, request parameters and request limits. A limit section
+  uses `/getLayerCode` where the endpoint list and examples use `/getDataLayer`; verify this discrepancy
+  before a data request.
+- The previous 403 response had no content hash, so a change since that attempt cannot be proven. No BOJ
+  metadata or observation request was sent. Documentation access is restored; the BOJ observation collector
+  remains unimplemented. Details and archived manifest path: `docs/GATE_C_REVIEW_2026_10_26.md`.
 
 ## Gate D X05/X06 Orchestrator integration follow-up (2026-10-26)
 
