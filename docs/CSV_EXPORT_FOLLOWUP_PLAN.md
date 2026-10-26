@@ -2,7 +2,8 @@
 
 > 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
 
-상태: 우선순위 backlog이며 다음 제품 개발 항목이다. 전체 실행 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
+상태: **20회차 구현·로컬 검증 완료.** 실제 사용법은 [사용자 안내서](USER_GUIDE.md), 증거는
+[20회차 보고서](ITERATION_20_REPORT.md), 이후 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
 PR #3/#4/#5/#6과 유지보수 QA 경로는 통합됐다. 19회차 BIS flat handoff는 보존 원본 실행까지 완료됐지만,
 그 JSONL artifact는 이 CSV exporter 범위에 포함되지 않는다. 대용량 JSONL을 exporter에 연결하려면 별도의 artifact adapter와
 수용 기준이 필요하다.
@@ -41,10 +42,12 @@ Gate C 자연 이벤트 감시는 별도로 계속한다.
 PR #3/#4/#5/#6 통합 및 기본 branch HEAD 확인 → 저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
 CLI 연결 → 정상·실패 수용 검증 → 사용자 안내·회차 보고서 → task branch commit/push 및 PR 검토.
 
-완료 선언은 실제 파일과 검증 결과가 확보된 뒤 한다. 이번 작업은 기획서 작성까지이며 16회차 코드를 구현한 것으로 세지 않는다.
+20회차에서 이 계약을 구현했다. 두 provider fixture 검사, hash·stage·quality·source-change 거부,
+경로·symlink·덮어쓰기 방지, read-only DB 검증을 통과했다. 보존된 성공 task도 네트워크 없이 export해
+CSV와 sidecar hash 및 raw/manifest 무결성을 확인했다. 결과 수치와 한계는 회차 보고서에 기록했다.
 
 ## 엔진 연결
 
-입력은 ENGINE_CONNECTIONS.md의 검증된 artifact adapter로 받는다. exporter는 네트워크 수집·
-원본 재파싱·대용량 작업 재개를 수행하지 않고, 완료된 지원 task/자식 task의 output manifest와
-quality·hash를 검증해 로컬 파일로 전달한다. 대용량 출력 지원 확대는 별도 수용 기준을 정한 뒤 한다.
+World Bank/BOJ 입력은 완료된 지원 task의 history·audit record·raw·request manifest에서 읽는다.
+exporter는 네트워크 수집·task 이력 쓰기·대용량 작업 재개를 하지 않는다. 지원 원본을 다시 파싱해 stored
+quality/hash와 대조한 뒤 로컬 파일로 전달한다. BIS 대용량 JSONL 출력 지원 확대는 별도 수용 기준을 정한다.

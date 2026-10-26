@@ -1,6 +1,6 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-26**, 19회차 BIS flat 단일 자료의 구조 보존 실행까지 반영. 제품의 현재 지원 범위 안내서.
+기준일: **2026-10-26**, 20회차 World Bank/BOJ CSV 전달까지 반영. 제품의 현재 지원 범위 안내서.
 
 다음 작업 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 제품 가설과 목표 구조는
 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 개발 절차는 별도
@@ -17,7 +17,8 @@ MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 
 3. 실제 외부 요청 명령에는 `--live`를 붙입니다. 요청은 task ID를 먼저 저장하고 실행합니다.
 4. 출력의 상태를 읽습니다. `COMPLETED`는 해당 제한 경로 완료, `NEEDS_REVIEW`는 검토 대기,
    `FAILED_RETRYABLE`은 같은 task 재개 검토, `NOT_EXECUTED`는 본 처리가 시작되지 않았음을 뜻합니다.
-5. 완료 산출물은 현재 JSON 요약·저장 artifact를 확인합니다. 범용 CSV/XLSX exporter는 아직 없습니다.
+5. 완료된 지원 task는 JSON 요약·저장 artifact를 확인하거나, 로컬 CSV export 명령으로 분석 파일을 생성합니다.
+   CSV export는 World Bank/BOJ의 명시 지원 task만 받으며 일반 CSV/XLSX 변환기는 아닙니다.
 
 ## 설치
 
@@ -61,6 +62,7 @@ git diff --check
 .\.venv\Scripts\macroatlas.exe watch bis --live
 .\.venv\Scripts\macroatlas.exe status <TASK_ID>
 .\.venv\Scripts\macroatlas.exe resume <TASK_ID> --live
+.\.venv\Scripts\macroatlas.exe export <TASK_ID> --format csv --output data/exports/result.csv
 ```
 
 Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. World Bank 명령은
@@ -73,6 +75,26 @@ BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지
 `resume`하세요. 서버가 `Retry-After`를 제공하면 Orchestrator가 대기시간 이전 resume을 차단합니다.
 `NEEDS_REVIEW`는 결과를 검토하고 승인한 뒤 `--approve-review`를 붙여야 재개됩니다. 자동 재시도는
 없습니다.
+
+## 검증된 task를 CSV로 저장하기
+
+완료된 World Bank USA GDP 또는 BOJ FM08/FXERD01 task의 ID로 export합니다. 이 명령은 SQLite task 이력,
+품질 기록, raw 응답과 request manifest를 읽어 무결성과 지원 범위를 확인하고, 네트워크 요청 없이 CSV와
+`<파일명>.provenance.json`을 `data/exports/`에 새로 만듭니다. 같은 경로가 이미 있으면 덮어쓰지 않습니다.
+
+```powershell
+.\.venv\Scripts\macroatlas.exe export <TASK_ID> --format csv --output data/exports/result.csv
+```
+
+CSV는 UTF-8이고 날짜·값·결측 상태, 기관·dataset/series, 단위·주기, 조회 시각, source URL, raw와 manifest의
+상대 경로·SHA-256, source 변경 상태를 담습니다. `null`은 빈 값과 `value_status=missing`으로 구분하며 0은
+문자열 `0`으로 남깁니다. 원본 값은 반올림·보간하지 않습니다. 단위나 주기가 원자료에서 확인되지 않으면
+빈 칸으로 둡니다. sidecar에는 검증 품질 요약, task/stage 이력, CSV hash와 source manifest의 검증 수준을
+기록합니다. BOJ request manifest에는 저장 당시 manifest 자체의 digest가 없으므로, export 시 manifest 필드와
+raw hash를 검증했다는 점을 sidecar에 명시합니다.
+
+미완료·미지원 task, 품질 미통과, source가 `changed` 또는 비교 불가인 경우, 손상된 파일·manifest,
+경로 탈출·symlink는 export하지 않습니다. 결과와 sidecar는 로컬 산출물이고 Git에 포함되지 않습니다.
 
 World Bank 이전 검증 스크립트도 유지됩니다.
 
@@ -97,8 +119,9 @@ python scripts/verify_worldbank.py --live --gate-a
 보증하지 않습니다.
 
 표 형식 자료는 `data/inbox/` 아래 명시적으로 선택한 기존 파일을 Python API의
-`TabularFileEngine`으로 처리할 수 있습니다. 자동 파일 탐색, 일반 파일 가져오기 CLI, CSV/XLSX exporter는
-없습니다. 파일 형식·시트·ZIP member가 모호하면 `NEEDS_REVIEW`로 멈춥니다.
+`TabularFileEngine`으로 처리할 수 있습니다. 자동 파일 탐색과 일반 파일 가져오기 CLI는 없습니다. 지원된
+World Bank/BOJ task CSV export 외의 범용 CSV/XLSX 변환기는 제공하지 않습니다. 파일 형식·시트·ZIP member가
+모호하면 `NEEDS_REVIEW`로 멈춥니다.
 
 ## 기관별 연결 및 API 키
 
@@ -197,5 +220,5 @@ macroatlas large-resume <CHILD_TASK_ID>
 Linux에서 입력 128 MiB, 출력 192 MiB, 메모리 384 MiB, CPU 30초, wall 60초 상한의 worker가
 원본 값을 문자열로 보존한 JSONL chunk를 생성합니다. 원본과 요청 manifest는 변경하지 않습니다.
 완료 manifest는 구조·출처·hash만 검증하며 통계 단위·빈도·경제적 의미를 판정하지 않습니다.
-Windows나 미지원 포맷은 실행하지 않습니다. 결과 artifact는 `data/large_artifacts/` 아래에 남고,
-현재 범용 CSV/XLSX export는 제공하지 않습니다.
+Windows나 미지원 포맷은 실행하지 않습니다. 결과 artifact는 `data/large_artifacts/` 아래에 남습니다.
+이 JSONL은 현재 CSV exporter 입력이 아니며, 범용 CSV/XLSX export도 제공하지 않습니다.

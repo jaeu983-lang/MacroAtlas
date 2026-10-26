@@ -86,6 +86,14 @@ def build_parser() -> argparse.ArgumentParser:
     status = commands.add_parser("status", help="inspect a saved task without network access")
     status.add_argument("task_id")
 
+    export = commands.add_parser(
+        "export", help="export one verified completed World Bank or BOJ task as CSV",
+    )
+    export.add_argument("task_id")
+    export.add_argument("--format", choices=("csv",), default="csv")
+    export.add_argument("--output", required=True,
+                        help="new CSV path under data/exports/ (never overwrites)")
+
     resume = commands.add_parser("resume", help="resume one saved task under its persisted plan")
     resume.add_argument("task_id")
     resume.add_argument("--live", action="store_true", required=True,
@@ -198,6 +206,10 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         raise ValueError("project root must contain the MacroAtlas pyproject.toml")
     live = bool(getattr(args, "live", False))
     settings = _settings(root, live=live)
+    if args.command == "export":
+        from macro_data_platform.ingestion.csv_export import export_task
+        result = export_task(settings, args.task_id, args.output, format=args.format)
+        return 0, result
     if args.command == "deferred":
         from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore
         if args.events:

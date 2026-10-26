@@ -62,7 +62,7 @@ flowchart LR
     RAW --> CHECK[변경 감지 · 파싱 · 범위별 품질 검증]
     CHECK -->|확인됨| VERIFIED[검증된 artifact]
     CHECK -->|애매함/변경| HOLD[사람 검토 · 새 산출물 차단]
-    VERIFIED --> EXPORT[CSV exporter · 이후 결정할 형식]
+    VERIFIED --> EXPORT[World Bank/BOJ 검증 task CSV exporter]
     CTRL --> EVID[증거면: task/stage/attempt/event]
     RAW --> EVID
     CHECK --> EVID
@@ -74,8 +74,9 @@ flowchart LR
 **제어면**은 요청·task·stage·resume 예산·명시 선택을 관리합니다. 현재 Orchestrator는 순차 stage runner이며,
 일반 분산 queue나 exactly-once 외부 실행기는 아닙니다. **자료면**은 API 응답, 작은 로컬 파일, 대용량 파일을
 작업 특성에 맞는 서로 다른 engine으로 처리합니다. **증거면**은 raw hash·manifest·task attempt·변경 판정·품질
-결과를 연결해 산출물의 출처를 설명합니다. 현재 구현은 이 경계 일부를 갖고 있고, 정식 대용량 handoff와 exporter는
-후속 작업입니다.
+결과를 연결해 산출물의 출처를 설명합니다. 현재 exporter는 저장된 성공 task의 원본·manifest·quality를
+재검증해 지원된 World Bank/BOJ CSV와 provenance sidecar를 만듭니다. 범용 파일 변환과 대용량 JSONL export는
+별도 범위입니다.
 
 ## 4. 엔진 경계와 계약
 
@@ -86,7 +87,7 @@ flowchart LR
 | API connector | 고정 endpoint/query와 전송 예산 | HTTPS 요청, 제한된 응답, raw 보존, provider별 parsing | 인증/권한·schema drift·redirect·용량 초과·transient 실패 |
 | 작은 파일 엔진 | inbox 아래 명시한 파일과 parser scope | 보안 검사, 용량 preflight, 제한 parser, 변경 guard | 불명확한 표/형식, 용량 상한, 원본 변경 |
 | 대용량 엔진 | 명시적으로 인계된 특정 원본 버전과 정책 | 별도 worker·예산, streaming chunk, checkpoint/resume | 자원 한도, 원본/manifest 불일치, 품질 불확실성 |
-| exporter | 검증된 artifact ID와 출력 요청 | CSV 등 직렬화, 경로·덮어쓰기 안전성, provenance 보존 | upstream 검증 미완료, 출력 범위 불일치, 경로 위험 |
+| exporter | 완료된 World Bank/BOJ task ID와 출력 경로 | provider별 검증, UTF-8 CSV/sidecar, 경로·덮어쓰기 안전성, provenance 보존 | 미완료/미지원 task, 품질·hash 불일치, source 변경/비교 불가, 경로 위험 |
 
 API의 HTTP 오류와 파일 parser 용량 도달은 같은 실패가 아닙니다. 로컬 용량으로 중단된 원본은 이미 저장된
 artifact와 함께 대용량 경로로 명시 인계합니다. 서버가 응답하지 않았으면 로컬 parser로 보내지 않습니다.
