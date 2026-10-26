@@ -70,3 +70,6 @@
 
 22회차는 대용량 qualification·BIS production 전에 예상 시간과 신뢰도를 알리고, 성공 task의 stage 실측으로 예측을
 보정합니다. [구현 보고서](ITERATION_22_REPORT.md)와 [대용량 엔진 안내](LARGE_FILE_ENGINE.md)를 참고하세요.
+
+다음 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. 계획 문서는 참가자
+세션을 수행했다는 증거가 아닙니다.
