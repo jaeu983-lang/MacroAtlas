@@ -717,3 +717,17 @@ forecast가 3건 쌓이기 전에도 유사 successful run 3건 이상이면 경
 입력에서 최대 256 KiB만 읽고 샘플 값은 저장하지 않는다. 예측은 추정이며 자원 예산, worker 실행 여부, 원본·승인·
 qualification guard를 바꾸지 않는다. 실측 표본 수·신뢰도·범위를 사용자에게 보여주며, Gate C와 API 경로에는 적용하지
 않는다. 구현/검증 결과는 `docs/ITERATION_22_REPORT.md`와 `docs/LARGE_FILE_ENGINE.md`에 남긴다.
+
+## D-083 — 제품 엔진과 개발자 유지보수 workflow의 경계
+
+2026-10-26 기준 코드 대조에서 제품 데이터 실행은 `Orchestrator`와 `(engine, version)` registry를 이미 공유한다.
+API connector, 작은 파일 engine, 대용량 worker, exporter는 source·parser·resource 경계가 다르므로 전문 adapter/worker로
+유지하고 공통 실행 계약만 공유한다. 이를 하나의 data super-engine으로 합치지 않는다.
+
+개발자 코드 업데이트는 제품 task path와 별도 control plane으로 둔다. `pattern_cli` 분석, `run_improvement.ps1`,
+`run_maintenance_qa.py`, `run_checks.ps1`의 중복/연결 공백은 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)의
+24–27회차 순서로 다룬다. 자동 수정은 격리 branch/worktree에서 실행하고, 동일 candidate SHA에 QA evidence를 붙인 뒤
+성공한 branch만 commit/push/PR로 제출할 수 있다. merge와 publish는 사람 검토로 남긴다.
+
+현재는 설계 선택만 기록했으며 코드를 바꾸거나 scheduler를 수정하지 않았다. analyzer scope adapter의 허용 source
+field와 updater의 경로 allowlist는 후속 구현 시작 전에 실제 workflow model에 맞춰 확인한다. 미상 concept은 계속 unknown으로 둔다.

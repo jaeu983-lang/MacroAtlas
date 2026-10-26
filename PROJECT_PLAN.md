@@ -178,9 +178,11 @@ docs/WORKFLOW_ALIGNMENT_PLAN.md를 따른다. 이 정책의 기획 반영은 구
 8. **Institution & Concept Knowledge Engine(추가 요구, 미구현):** 기관·경제 개념·분류/포괄범위
    지식의 등록·검증 상태·버전 관리와 관련 지식의 제한 조회. 사용자 설명·공식 근거·추론 가설을
    구분하고, 요청 처리의 조회 경로와 지식 확장 작업을 분리한다. 공유 저장소를 사용한다.
-9. **Improvement Engine:** 반복 사례 집계, 개선 후보 생성, 영향도 평가, 격리 테스트, 승인·되돌리기.
+9. **Developer Maintenance Workflow (기존 명칭: Improvement Engine):** 반복 사례 집계, 근거 기반 개선 후보 생성, 격리된 코드 수정·검사, review package 생성, 승인·되돌리기. 제품 source engine을 실행하는 data plane과 분리한다.
 
 **원칙:** 중앙 제어 + 독립 엔진 + 공통 저장소 + 비동기 개선 제안. 개별 기관 특수 로직은 코어 내부 조건문이 아니라 기관 프로필/전략/어댑터로 수용한다.
+
+**용어 경계:** Improvement Engine은 독립된 source engine이 아니라 개발자 유지보수 workflow의 과거 기획 명칭이다. 현재 목표 경계와 중복 실행기 정리 순서는 [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md)에 둔다.
 
 **데이터 링크 탐색 경로(추가 요구, 미구현):** discovery 아래에 링크 발견·검증 모듈을 두고
 후보/메타데이터 확인과 독립적으로 진행 가능한 공식 링크 조사를 병행한다. 기관별 링크
@@ -511,7 +513,7 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 - **Product Owner(사용자):** 범위, 우선순위, 통계적 정당성, 승인 판단.
 - **Codex 구현 에이전트:** 한 회차 범위 내 코드·테스트·작업 보고.
 - **검증 프로세스(테스트/수동 점검):** 재현성·통계 정의·출처·보안 검증.
-- **Improvement Engine(Phase 5 이후):** 반복 패턴 분석 및 개선 후보 생성(자율 병합 권한 없음).
+- **Developer Maintenance Workflow(Phase 5 이후):** 반복 패턴 분석 및 개선 후보 생성·검증(자율 병합 권한 없음).
 
 ### 13.2 변경 통제
 

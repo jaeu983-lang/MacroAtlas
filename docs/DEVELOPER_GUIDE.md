@@ -96,17 +96,23 @@ Gate가 통과되거나 다른 provider를 지원하게 되지 않습니다. Gat
 기다리며 인위적으로 만들지 않습니다. 판정 근거는 [구현 상태](IMPLEMENTATION_PLAN.md), [시나리오](REFERENCE_SCENARIOS.md),
 해당 Gate 증거 문서를 함께 확인합니다.
 
-## 유지보수 및 QA 엔진
+## 유지보수 분석·업데이트·QA 흐름
 
 현재 `python -m macro_data_platform.pattern_cli --project-root .`는 SQLite 이력을 읽는 제한된 분석기입니다.
-보고서가 0 proposals 또는 insufficient evidence를 보이면 해당 입력 기준의 분석 결과입니다. 이는 코드 수정,
-테스트 수행, 품질 승인 또는 자동 업데이트를 뜻하지 않습니다.
+read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-26의 한 실행은 proposal 0개와 insufficient-evidence
+7개를 반환했고, 표본에서 기관·dataset·concept scope를 알 수 없어 분석기가 반복 개선을 만들 수 없는 공백을 드러냈습니다.
 
-PowerShell 기반 `scripts/run_improvement.ps1`은 `pwsh` 필요 조건과 `main/master` branch 전제가 현재 환경과
-맞지 않아 일반 재현 가능한 runner로 확인되지 않았습니다. 새 유지보수 실행 경로를 만들 때는 깨끗한 격리 worktree,
-commit hash, 환경 fingerprint, 전체 검사 결과, 변경 diff, 수동 검토 지점을 하나의 결과물로 남깁니다.
-실행기가 검사 실패를 숨기거나 자동 merge/publish 하지 않도록 합니다. 우선순위와 완료 조건은
-[로드맵의 QA 계약](ROADMAP_2026_10_26.md#유지보수-엔진의-qa-계약)을 따릅니다.
+현재 개발 자동화는 세 경로로 나뉩니다. `scripts/run_improvement.ps1`은 primary branch에서 task branch를 만들고
+Codex 수정 시도를 실행하지만 `run_maintenance_qa.py`를 호출하지 않습니다. `scripts/run_maintenance_qa.py`는 clean
+commit의 detached worktree만 검사해 아직 수정 candidate를 직접 받지 않습니다. `scripts/run_checks.ps1`도 pytest와
+health 검사를 별도로 수행해 테스트 경로가 중복됩니다. 따라서 자동 업데이트는 현재 수정 시도까지만 수행하며, 변경 candidate의
+격리 QA·조건부 push·PR 생성을 한 번에 보장하는 흐름은 아직 없습니다.
+
+이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
+[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
+완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint, scope-aware 분석, 격리 updater,
+candidate SHA QA를 단계별로 도입합니다. 자동화가 만들 수 있는 최종 결과는 사람 검토용 branch/PR이고 merge/publish가
+아닙니다.
 
 ## 변경 작업과 문서
 
@@ -119,6 +125,6 @@ commit hash, 환경 fingerprint, 전체 검사 결과, 변경 diff, 수동 검�
 
 ## 공통 유지보수 QA 실행기
 
-`python scripts/run_maintenance_qa.py`는 clean commit에서 detached worktree를 만들고 pytest, Ruff, diff, CLI 도움말을 검사합니다. 보고서는 `reports/maintenance_qa_<id>/report.json`과 개별 로그입니다. 실패/timeout/cleanup 실패는 성공으로 처리하지 않습니다. 현재 Python 환경에 pytest·Ruff와 프로젝트 의존성이 설치돼 있어야 합니다. 네트워크 호출이나 코드 수정·병합은 실행하지 않습니다. Windows에서는 Python 실행 경로를 그대로 사용하지만 실제 Windows 실행 증거는 CI에서 별도로 확인합니다.
+현재 `python scripts/run_maintenance_qa.py`는 clean commit에서 detached worktree를 만들고 pytest, Ruff, diff, CLI 도움말을 검사합니다. 보고서는 `reports/maintenance_qa_<id>/report.json`과 개별 로그입니다. 실패/timeout/cleanup 실패는 성공으로 처리하지 않습니다. 현재 Python 환경에 pytest·Ruff와 프로젝트 의존성이 설치돼 있어야 합니다. 네트워크 호출이나 코드 수정·병합은 실행하지 않습니다. Windows에서는 Python 실행 경로를 그대로 사용하지만 실제 Windows 실행 증거는 CI에서 별도로 확인합니다. candidate 검증 연결은 위 개선안의 후속 구현입니다.
 
 수정 흐름은 증거 기반 이슈 → 전용 branch → 수정 및 테스트 → commit → 격리 QA → push → PR 검토입니다. 읽기 전용 분석의 빈 후보는 품질 승인과 구분합니다. TIC/BIS watcher와 BOJ 고정 시리즈의 저장된 기관·dataset을 분석기에 연결했으며, 경제 concept은 추정하지 않아 unknown이면 반복 제안을 계속 차단합니다.

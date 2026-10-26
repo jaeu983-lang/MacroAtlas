@@ -12,7 +12,9 @@ PROJECT_PLAN.md §5.1/5.2/6.5/9.4, IMPLEMENTATION_PLAN.md 11~13회차의 세부 
 새 기관·경제 개념을 모두 미리 구축하지 않고 실제 요청/교정/출처 변경/반복 실패를 계기로
 관련 지식을 축적한다. 공유 저장소에 기록하되 조회·검증 상태/적용 범위·갱신 관리는 이 엔진이 담당한다.
 기관 원문 탐색은 discovery, 메타데이터 추출은 metadata, 기관 간 개념 연결은 mapping,
-실제 다운로드는 connectors/ingestion, 코드 개선은 Improvement Engine에 남긴다.
+실제 다운로드는 connectors/ingestion, repository code 개선은 별도 Developer Maintenance Workflow에서 다룬다.
+반복 개선 후보를 읽기 전용으로 만들고 격리 변경·QA·검토로 잇는 경계는
+[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)을 따른다.
 같은 정보를 여러 엔진이 각각 사실 DB로 복제하지 않는다.
 
 | 지식 종류 | 저장·적용 원칙 |

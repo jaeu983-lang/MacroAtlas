@@ -5,6 +5,10 @@
 사용자 문제와 목표 구조의 맥락은 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md), 다음 구현 순서는
 [로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
+이 문서는 사용자 데이터 제품의 실행 경로를 다룬다. 저장소 코드를 분석·수정·QA하는 개발자 유지보수 흐름은 제품
+Orchestrator 및 source engine과 별도 control plane이다. 현재 중복 실행기와 통합 목표는
+[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)을 따른다.
+
 ```mermaid
 flowchart TD
     CLI[CLI / Python 진입점] --> PLAN[고정 요청 확인 / TaskPlan]
