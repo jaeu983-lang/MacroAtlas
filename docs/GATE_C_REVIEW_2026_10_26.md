@@ -1,19 +1,40 @@
 # Gate C 증거 재검토 — 2026-10-26
 
-11회차는 이후 사용자의 명시적 진행 지시에 따른 예외로 구현·검증했다. 해당 진행은 Gate C
-통과 선언이 아니며, 이번 task에서 Gate C의 미완료 조건은 그대로 기록한다. 11회차 결과는
-[`ITERATION_11_REPORT.md`](ITERATION_11_REPORT.md)를 참조한다.
+## 최신 재검토 결과 — 2026-10-26
+
+판정: **Gate C 미통과**. 기존 TIC/BIS exact-scope baseline과 비교 결과는 `unchanged`이며,
+실제 원자료 개정 쌍의 changed 감지 증거가 없다. BIS flat ZIP은 HTTP 503 뒤 HTTP 200을 반환했지만,
+503 당시 Orchestrator task가 저장되지 않았고 이후 task는 parser 한도에 걸려 `NEEDS_REVIEW`로
+끝났다. 따라서 durable retry/resume 증거도 아니다. 이번 재검토에서 새 source capture는 만들지 않았다.
+
+보존 파일을 읽기 전용으로 다시 확인했다. TIC baseline/repeat(`492bcc8…` / `bf16d2e…`)과 BIS
+baseline/repeat(`86a1923…` / `ffd6ef8…`)는 request scope가 각각 일치했다. 네 package 모두 raw와
+normalized 파일의 SHA256이 manifest와 일치했고, 각 기관의 baseline/repeat raw 및 normalized
+SHA256은 서로 같았다. TIC raw `e5de973b…d1de11`, normalized `a0ff8517…c5c5a10`;
+BIS raw `aa52afce…bdd9c1d`, normalized `46dd820e…e445854`. repeat의
+`source_change_status`는 두 기관 모두 `unchanged`다. 이는 기준본 무결성 증거이지 실제 변경 감지
+증거는 아니다. `reports/gate_c_network_recovery.json`에서도
+`live_revision_comparison`과 `provider_durable_resume`은 모두 `NOT_RUN`이다.
+
+11회차는 Gate C 통과 전에 사용자가 명시적으로 예외 진행을 지시해 구현·검증·push까지 완료했다.
+이미 끝난 회차를 중복 시작하지 않는다. 12회차는 후속 지시로 제한 knowledge lookup을 구현했지만,
+Orchestrator 재시도 연결이 없어 Gate D도 미통과다. 이 순서 예외는 Gate C/D 판정을 승격하지 않는다.
+11회차 결과는 [`ITERATION_11_REPORT.md`](ITERATION_11_REPORT.md), 12회차 상태는
+[`ITERATION_12_REPORT.md`](ITERATION_12_REPORT.md)를 참조한다.
+
+현재 Git 기록에서 11회차 구현 commit `3f9bde9`와 그 후속 evidence commits를 확인했다.
+따라서 “11회차 시작”은 이미 완료된 실행으로 충족되어 있으며, 이 재검토에서 11회차를 중복 실행하지 않았다.
 
 최신 정정: **revision 10에서 실행 네트워크 권한을 지정하자 BIS 실측과 Git push가 성공했다.**
 아래 ProxyError 기록은 당시 기본 실행 권한의 결과이며 프록시 서버 장애로 확정할 수 없다.
 최신 원인·복구 증거는 문서 마지막 절을 따른다. Gate C 자체는 아직 미통과다.
 
-판정: **미통과**. 11회차는 시작하지 않았다. 오류 분기 fixture 통과와 실제 기관의
-변경·복구 검증을 구분하며, 남은 live 검증을 fixture로 대체하지 않는다.
+오류 분기 fixture 통과와 실제 기관의 변경·복구 검증을 구분하며, 남은 live 검증을 fixture로
+대체하지 않는다.
 
-## 실행 기준
+## 최초 현장 검토 기준 — revision 6
 
-- 코드 HEAD: `aabdc59bb53788f73ff1610be4bef5457ab0440f`.
+- 당시 코드 HEAD: `aabdc59bb53788f73ff1610be4bef5457ab0440f`.
 - 작업 브랜치: `codex/gate-c-evidence-review`. 최초 검토 시 commit/push는 수행하지 않았다.
   이후 사용자 지시로 검토 문서와 commit/push 기본 규칙을 커밋·푸시하는 후속 작업을 진행한다.
   publish는 수행하지 않는다.
@@ -86,9 +107,9 @@
 - `python -m pytest -o addopts='' -q`: **558 passed in 4.20s**.
   `python -m ruff check .`와 `git diff --check` 통과.
 - 남은 종료 조건 중 X04의 제한 구조화 fixture 증거만 보완됐다. 실제 개정 원본 쌍과
-  기관별 장애 복구 증거는 여전히 없다. **Gate C 미통과, 11회차 미시작**이다.
-  11회차를 시작하라는 지시는 Gate C 보완·통과 후 진행 순서로 적용하며, 통과를 가정하지 않는다.
-  다음 선행 작업은 지원되는 환경 설정/복구 경로를 통한 실행 프록시 연결 복구다.
+  기관별 장애 복구 증거는 여전히 없다. 이 시점 상태는 **Gate C 미통과, 11회차 미시작**이었다.
+  이후 사용자의 예외 진행 지시로 11회차 구현·검증이 완료됐다. 다음 선행 작업은 지원되는 환경
+  설정/복구 경로를 통한 실행 프록시 연결 복구였다.
 
 ## 원인 확인·접속 복구 — revision 10
 
@@ -163,4 +184,5 @@ durable resume 성공 증거로 승격하지 않는다.
    같은 stage가 성공하고 attempt/event 기록이 유지될 때 완료로 본다. 실패를 인위적으로 만들거나
    반복 요청해 rate limit을 유발하지 않는다.
 
-따라서 현재도 **Gate C 미통과**다. 11회차는 명시적 사용자 예외로 이미 완료했고 12회차는 미시작이다.
+따라서 현재도 **Gate C 미통과**다. 11회차는 명시적 사용자 예외로 이미 완료했고, 12회차는
+제한 구현이 추가됐으나 Gate D 종료 조건은 충족하지 않았다.
