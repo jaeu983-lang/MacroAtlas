@@ -63,6 +63,40 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
 
+## 실패·미충족 항목과 해결 계획 — 2026-10-26
+
+현재 확인된 범위에서 재현 중인 테스트 실패는 없다. 로컬 609개 테스트와 Ruff가 통과했고,
+최종 코드·문서 HEAD `c1a841f`의 CI run
+[40337409105](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40337409105)는
+Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과거 실패, 미관측 증거,
+미지원 기능을 구분한 후속 목록이며 전체 기관의 무결함을 뜻하지 않는다.
+
+| 항목 | 현재 상태·원인 | 다음 행동 | 완료 조건 |
+|---|---|---|---|
+| Windows CI proxy 테스트 | 해결. Windows에서 대소문자만 다른 환경변수를 별개로 설정할 수 있다고 가정한 테스트가 실패 | 수정된 테스트와 네 조합 CI 유지 | 최종 HEAD CI 네 조합 성공으로 충족 |
+| BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
+| World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
+| BIS flat CSV ZIP | 미해결 지원 한계. 압축 해제 CSV가 현재 parser 한도에 걸려 `NEEDS_REVIEW` | 복구 실증에는 검증된 column ZIP 사용. flat 지원은 별도 제한량·streaming 설계 후 구현 | 한도 준수 parsing, 대용량·오류·resume 검증 전에는 지원 선언 금지 |
+| BIS watcher 첫 비교 | 해결. 명시 zip_member 추가로 기존 auto-select baseline과 scope가 달라 first_observation 발생 | 기존 exact scope 유지 | 수정 후 동일 baseline 대비 unchanged 확인. 첫 실행은 증거에서 제외 |
+| BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
+| TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 최신 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
+| 자연 장애 후 durable resume | 미관측(`NOT_RUN`). 과거 BIS 503은 실패 task로 저장되지 않았고 simulated 시험은 live 증거가 아님 | 저장 후 요청하는 watcher에서 자연 retryable 실패 발생 시 Retry-After 준수 후 같은 task를 다시 열어 resume | 같은 task/stage 성공과 실패·재개 attempt/event 이력 보존 |
+| BOJ 다른 series·기간, 범용 검색/자연어, 일반 Windows 사용자 workflow | 미지원·미검증 범위. 현재 고정 CLI 성공으로 전체 지원을 주장할 수 없음 | 다음 제품 회차에서 한 가지 사용자 흐름과 수용 기준을 정해 구현 | 범위별 정상·오류·실사용 검증 및 지원 문서 갱신 |
+
+### 실행 순서와 판정 규칙
+
+1. PR #2를 검토하고 사람 검토 후 병합한다. 현재 작업은 문서 정리이며 병합·배포를 포함하지 않는다.
+2. 병합 뒤 checkout HEAD와 검증 결과를 기록한다. 환경 게시는 별도 작업이다.
+3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
+   남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 자동 예약 작업은 아직 설정하지 않았다.
+4. 자연 이벤트 관측과 병행해 16회차 계획을 작성한다. 목표 사용자 흐름, 고정 입력·출력, 지원 기관·범위,
+   정상/실패 수용 조건을 정한 뒤 한 회차만 구현한다. 이 문서 정리로 16회차 구현을 시작하지 않는다.
+5. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
+   현재 D-067 제한 통과는 유지하고 미관측 항목을 전체 통과로 승격하지 않는다.
+
+근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
+[source watch](GATE_C_SOURCE_WATCH.md), [BOJ 실측](BOJ_LIVE_RECHECK_2026_10_26.md).
+
 ## 다음 작업 순서
 
 현재는 15회차 네 갈래 후속의 review branch 검토가 다음 단계다. 자연 TIC/BIS 개정과 provider 장애는
