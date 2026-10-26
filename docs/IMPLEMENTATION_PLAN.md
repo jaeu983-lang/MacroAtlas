@@ -6,6 +6,12 @@
 
 ## 현재 상태 — 2026-10-26
 
+최신 재검토: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md). HEAD `aabdc59bb53788f73ff1610be4bef5457ab0440f`,
+활성 runtime revision 6에서 전체 556개 테스트/Ruff 통과. BIS 제한 재수집은 첫 요청의
+`ProxyError`로 BLOCKED이며 실제 source revision·기관 복구 증거가 부족해 **Gate C 미통과,
+11회차 미시작**을 유지한다. 아래의 이전 HEAD/revision 5/local diff 서술은 과거 실행 이력이며,
+현재 checkout과 runtime 상태는 위 최신 증거표를 따른다. 게시 설정의 repository ref는 미확인이다.
+
 | 게이트 | 상태 | 판정 근거 |
 |---|---|---|
 | A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |

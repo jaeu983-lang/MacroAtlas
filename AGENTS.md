@@ -41,6 +41,9 @@ Build a reliable international-finance data discovery and ingestion platform for
 - Do not make destructive changes, deploy, publish, or merge to the main branch.
 - Do not run network-dependent actions unless network access has been explicitly configured and the task requires it.
 - Keep automatic changes on a separate Git branch. Human review is required before merging.
+- After repository changes and appropriate checks, commit and push the task branch by default
+  (user preference, 2026-10-26). Report the commit and push outcome. A later explicit instruction
+  to avoid commit/push takes precedence; if blocked, preserve local changes and report the blocker.
 
 ## Testing
 - Add or update tests for every behavior change.

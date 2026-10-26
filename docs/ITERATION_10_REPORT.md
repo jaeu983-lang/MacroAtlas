@@ -1,3 +1,10 @@
+# Latest evidence review — 2026-10-26
+
+See [Gate C evidence review](GATE_C_REVIEW_2026_10_26.md) for the current checkout,
+556 passing tests, and a blocked live BIS recapture (ProxyError before any HTTP response).
+Gate C remains not passed; Iteration 11 remains unstarted. Historical live captures below
+are not new evidence from this run; their raw files are absent from this checkout.
+
 # Iteration 10 report — quality diagnostics, error classes, and recovery
 
 Completed as the next numbered iteration after 09. The implementation's automated checks used
