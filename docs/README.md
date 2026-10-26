@@ -65,4 +65,8 @@
 
 20회차는 저장된 완료 World Bank/BOJ task를 read-only 검증한 뒤 CSV와 provenance sidecar로 전달합니다.
 사용자 절차는 [USER_GUIDE.md](USER_GUIDE.md), 검증 근거는 [ITERATION_20_REPORT.md](ITERATION_20_REPORT.md),
+작성자 내부 dry run은 [USER_WORKFLOW_DRY_RUN_2026_10_26.md](USER_WORKFLOW_DRY_RUN_2026_10_26.md),
 후속 순서는 [ROADMAP_2026_10_26.md](ROADMAP_2026_10_26.md)를 참조하세요.
+
+22회차는 대용량 qualification·BIS production 전에 예상 시간과 신뢰도를 알리고, 성공 task의 stage 실측으로 예측을
+보정합니다. [구현 보고서](ITERATION_22_REPORT.md)와 [대용량 엔진 안내](LARGE_FILE_ENGINE.md)를 참고하세요.

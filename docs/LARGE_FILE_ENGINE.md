@@ -27,7 +27,8 @@ flowchart LR
     A[인계 후보 / 애매한 후보] --> B[명시 large-check]
     B --> C[불변 판정 event + 원본 stat + 코드/예산 고정]
     C --> D[부모 참조를 가진 시험 task 저장]
-    D --> E[동일 저장소 worker 1개 / 격리 프로세스]
+    D --> P[예상 시간·범위·신뢰도 출력]
+    P --> E[동일 저장소 worker 1개 / 격리 프로세스]
     E --> F{시험 결과}
     F -->|통과| G[TRIAL_PASSED / 본 실행 승인 대기]
     F -->|예산·형식·환경 실패| H[NOT_EXECUTED / 미실행 사유]
@@ -77,6 +78,7 @@ flowchart LR
 macroatlas deferred
 macroatlas large-check <DEFERRAL_ID>
 macroatlas large-check <DEFERRAL_ID> --event-seq <SEQ>
+macroatlas large-estimate qualification <DEFERRAL_ID> [--event-seq <SEQ>]
 macroatlas status <TRIAL_TASK_ID>
 macroatlas resume <TRIAL_TASK_ID> --live
 python scripts/benchmark_large_file_trials.py
@@ -89,6 +91,26 @@ large-check는 네트워크 요청을 하지 않는다. 응답의 parent_task_id
 benchmark가 생성한 합성 입력·시험 chunk만 정리하고 보고서/이력은 보존한다.
 결과는 `reports/large_file_qualification.json`, 검토용 사본은 LARGE_FILE_QUALIFICATION_RESULTS.json에 둔다.
 
+## 실행 시간 예측과 실측 보정
+
+`large-check`는 task를 저장한 뒤 worker 실행 직전에 예상 stage wall time, 범위, 신뢰도, 유사 실측 수와 wall 상한을
+stderr로 표시한다. `large-estimate qualification ID [--event-seq N]`는 작업 생성·실행 없이 같은 유형의 예상만
+반환한다. 이 명령은 SQLite read-only 연결을 쓰며 입력 파일에서 최대 256 KiB 구조 표본만 읽는다. 표본 값은
+task·로그·출력에 저장하지 않는다. ZIP은 입력 경로, 멤버, 압축비율과 sample byte limit를 확인한다.
+
+새 task plan에는 구조 프로필, baseline forecast, 성공한 유사 workload 후보, 선택된 예상과 오차 이력이 저장된다.
+실제 시간은 stage `started_at`/`finished_at` 차이이며 task JSON 요약에 `actual_stage_seconds`로 제공된다.
+qualification과 production은 모델 이력을 공유하지 않는다. 각 엔진의 최근 완료 성공 task 최대 500개에서 셀·출력량·
+파일 크기·형식이 가까운 사례를 비교한다. 두 후보는 같은 결과에 대해 shadow A/B로 오차를 계산한다. paired 실측
+3건 전에는 유사 successful run 3개 이상일 때 경험 모델을 사용하고, 그렇지 않으면 warm-up baseline을 쓴다.
+paired forecast 3개가 쌓인 뒤에는 중앙 absolute percentage error가 낮은 모델을 고른다.
+
+이 비교는 production traffic을 나누는 randomized A/B 실험이 아니다. 실행 빈도, `--approve-production`, worker 예산,
+지원 파일 범위를 바꾸지 않는다. 예측 대상은 로컬 엔진 stage wall time이며 다운로드·수동 대기·검토 시간은 포함하지
+않는다. 파일 표본이나 유사 이력이 부족하면 신뢰도를 낮추고 범위를 넓힌다. resume는 checkpoint 완료 행에 따라 남은
+행·셀·출력량을 줄여 예측하고, checkpoint를 읽지 못하면 전체 작업으로 보수적으로 예상한다.
+표시 범위는 표본 기반 운영 추정이며, 통계적 완료 보증 구간은 아니다.
+
 ## 19회차 제한 production 경로
 
 17회차 시험 결과는 계속 `trial_only`이며 자동 승격되지 않는다. 19회차는 별도 approval과 같은 event/hash의
@@ -99,6 +121,8 @@ macroatlas deferred <ID> --events
 macroatlas large-run <ID> --event-seq <SEQ> --approve-production
 macroatlas status <CHILD_TASK_ID>
 macroatlas large-resume <CHILD_TASK_ID>
+macroatlas large-estimate production <ID> --event-seq <SEQ>
+macroatlas large-estimate resume <CHILD_TASK_ID>
 ```
 
 지원 범위는 `https://data.bis.org/static/bulk/WS_GLI_csv_flat.zip`의 이미 보존된 raw 한 건,

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
+from macro_data_platform.cli import build_parser, dispatch
 from macro_data_platform.config import Settings
 from macro_data_platform.contracts import StageStatus, TaskStatus
 from macro_data_platform.ingestion.large_file_production import (
@@ -96,6 +97,9 @@ def test_handoff_is_idempotent_and_source_change_after_binding_stops(tmp_path):
             store, settings, record["id"], event_seq=event_seq, approved=True,
         ) == task_id
     assert store.get(task_id)["parent_task_id"] == record["task_id"]
+    task_input = store.get(task_id)["plan"][0]["input_data"]
+    assert task_input["duration_estimate"]["operation"] == "production"
+    assert task_input["duration_profile"]["profile_method"] == "bounded_prefix"
     latest = DeferredNonAPIStore(settings, read_only=True).events(record["id"])[0]
     assert latest["status"] == "handed_off"
     Path(settings.project_root / package["raw_path"]).write_bytes(raw + b"changed")
@@ -105,6 +109,27 @@ def test_handoff_is_idempotent_and_source_change_after_binding_stops(tmp_path):
     assert result["reason"] == "source_changed_since_binding"
     assert not (tmp_path / doc["plan"][0]["input_data"]["artifact_root"]
                 / "output_manifest.json").exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="resource-limited production worker is Linux only")
+def test_cli_announces_production_estimate_before_worker(tmp_path, capsys):
+    settings, _store, record, event_seq, _package, _raw = setup_handoff(tmp_path)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="fixture"\n')
+    args = build_parser().parse_args([
+        "--project-root", str(tmp_path), "large-run", record["id"],
+        "--event-seq", str(event_seq), "--approve-production",
+    ])
+
+    with patch("macro_data_platform.ingestion.large_file_production._qualification_passed",
+               return_value=True):
+        code, output = dispatch(args)
+    announcement = capsys.readouterr().err
+
+    assert code == 0
+    assert "BIS production 예상" in announcement
+    assert output["duration_estimate"]["operation"] == "production"
+    assert output["actual_stage_seconds"] >= 0
+    assert HistoryStore(settings).get(output["task_id"])["status"] == TaskStatus.COMPLETED
 
 
 def test_unsupported_platform_never_falls_back_to_unbounded_processing(tmp_path):

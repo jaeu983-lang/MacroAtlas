@@ -15,6 +15,11 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus, TaskStatus
+from macro_data_platform.ingestion.large_file_duration import (
+    estimate_duration,
+    history_documents,
+    profile_artifact,
+)
 from macro_data_platform.ingestion.large_file_trial import _trial_root, worker_slot
 from macro_data_platform.orchestration import Orchestrator, StageSpec, TaskPlan
 from macro_data_platform.storage.history import HistoryStore
@@ -304,6 +309,17 @@ def create_production_handoff(store, settings, record_id, *, event_seq=None, app
         task_id = str(uuid4())
         inputs["task_id"] = task_id
         inputs["artifact_root"] = f"{settings.data_dir}/{ARTIFACT_DIR}/{task_id}"
+        inputs["duration_profile"] = profile_artifact(settings, {
+            "relative_path": raw_relative,
+            "format": "zip",
+            "zip_member": member,
+            "delimiter": ",",
+            "header_row": 1,
+        })
+        inputs["duration_estimate"] = estimate_duration(
+            "production", inputs["duration_profile"], history_documents(connection),
+            wall_seconds=budget.wall_seconds,
+        )
         doc = HistoryStore.document(
             f"Explicit BIS flat production handoff from {record_id} event {seq}",
             datetime.now(UTC).isoformat(),

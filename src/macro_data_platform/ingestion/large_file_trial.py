@@ -14,6 +14,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.ingestion.large_file_duration import (
+    estimate_duration,
+    history_documents,
+    profile_artifact,
+)
 from macro_data_platform.orchestration import Orchestrator, StageSpec, TaskPlan
 from macro_data_platform.storage.history import HistoryStore
 
@@ -289,6 +294,11 @@ def create_trial(store, settings, record_id, *, event_seq=None, budget=DEFAULT_B
             inputs["source_stat"] = source_stat(settings._inside(relative)) if relative else None
         except (OSError, ValueError):
             inputs["source_stat"] = None
+        inputs["duration_profile"] = profile_artifact(settings, inputs["scope"])
+        inputs["duration_estimate"] = estimate_duration(
+            "qualification", inputs["duration_profile"], history_documents(db),
+            wall_seconds=budget.wall_seconds,
+        )
         doc = HistoryStore.document(
             "Explicit local non-API qualification trial", datetime.now(UTC).isoformat()
         )

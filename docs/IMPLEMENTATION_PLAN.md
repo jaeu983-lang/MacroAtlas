@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 20회차 기준 갱신: PR #3~#8 통합 후 기준 HEAD는 `09594871`이었다. World Bank/BOJ 검증 task CSV exporter를 구현한 commit `cb7fdcd`는 PR #9에서 666개 test와 Ruff, diff check, Ubuntu/Windows × Python 3.11/3.12 CI를 통과했다. 보존 task 2건의 export evidence는 [20회차 보고서](ITERATION_20_REPORT.md)에 기록한다.
+> 2026-10-26 갱신: PR #9가 병합돼 통합 HEAD는 `7723afe95d6c5edb6a28bcf52bd08518ad5ca381`이다. CSV exporter와 CI 증거는 [20회차 보고서](ITERATION_20_REPORT.md), 내부 사용 경로 dry run은 [사용 흐름 검토](USER_WORKFLOW_DRY_RUN_2026_10_26.md)에 기록한다. 실제 목표 사용자 검증과 Gate C 자연 증거는 아직 대기 중이다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -16,7 +16,18 @@
 20회차에서는 완료·quality-passed인 World Bank USA GDP와 BOJ FM08/FXERD01 task만 CSV로 전달하는 read-only
 exporter를 구현했다. 저장 raw/manifest를 검증하고 재파싱하며, UTF-8 CSV와 provenance sidecar를 새 경로에
 생성한다. 보존된 task 0f968a54… (World Bank, 3 rows)와 96f82a80… (BOJ, 30 rows·11 null)을 local export해
-hash와 DB 불변성을 확인했다. 전체 666 tests, Ruff, diff check가 통과했다. [20회차 보고서](ITERATION_20_REPORT.md)를 따른다.
+hash와 DB 불변성을 확인했다. PR #9의 merge commit은 `7723afe`이며 Ubuntu/Windows × Python 3.11/3.12 CI가
+통과했다. 전체 666 tests, Ruff, diff check도 통과했다. [20회차 보고서](ITERATION_20_REPORT.md)를 따른다.
+
+후속 내부 dry run은 같은 보존 task로 status→CSV export 경로를 다시 따라가 산출물 hash 일치와 상태 경고
+표시를 확인했다. 작성자에 의한 오프라인 검토여서 목표 사용자 연구로 계산하지 않는다. 실제 참여자 확인 전
+다음 사용자 인터페이스·provider 범위를 정하지 않는다. [검토 기록](USER_WORKFLOW_DRY_RUN_2026_10_26.md).
+
+22회차에서는 비API qualification과 BIS flat production/resume의 실행 전 시간 예측을 구현했다. 최대 256 KiB의
+bounded profile과 엔진별 성공 task wall-time history로 범위·신뢰도·shadow model을 계산하고, 무실행 preview를
+제공한다. 전체 **675개 테스트**, Ruff, diff 검사가 통과했다. 현지 catalog에서 확인한 qualification 기록은 15건,
+production 기록은 1건이고 새 paired forecast는 0건이므로 초기 보정 상태는 낮은 신뢰도다. 실제 read-only preview와
+한계는 [22회차 보고서](ITERATION_22_REPORT.md)에 둔다. PR #10 review branch로 제출하며 merge 전 사람 검토를 기다린다.
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
@@ -90,7 +101,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험; 후속 보완에서 worker lock 상속·중단 결과 UNKNOWN 복구 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 자연 revision/recovery; 일반 CSV 전달은 후속 exporter 범위 |
 | 19 (완료) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회; PR #6 통합·4조합 CI·보존 원본 production run 완료 | 다른 provider/format, Windows resource worker, semantic normalization, World Bank/BOJ CSV export |
-| 20 | 완료·품질 통과 World Bank/BOJ task의 UTF-8 CSV/provenance 전달, read-only revalidation, no-overwrite/path guard; fixture 및 보존 task 검증 | XLSX, BIS flat JSONL export, arbitrary provider, user workflow usability evidence |
+| 20 | 완료·품질 통과 World Bank/BOJ task의 UTF-8 CSV/provenance 전달, read-only revalidation, no-overwrite/path guard; PR #9 merge 및 4조합 CI 완료 | XLSX, BIS flat JSONL export, arbitrary provider, 독립 사용자 검증 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
@@ -101,7 +112,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
 
 20회차 구현 commit `cb7fdcd`에서 666개 테스트, Ruff, diff 검사 및 보존된 World Bank·BOJ task export hash와
-SQLite 불변성을 확인했다. PR #9 CI는 네 OS/Python 조합에서 통과했다. 19회차 구현 HEAD에서는 로컬 656개 테스트, Ruff, diff 검사가 통과했고 PR #6 CI run
+SQLite 불변성을 확인했다. PR #9는 `7723afe`로 통합됐고 CI 네 OS/Python 조합이 통과했다. 19회차 구현 HEAD에서는 로컬 656개 테스트, Ruff, diff 검사가 통과했고 PR #6 CI run
 [`40369653182`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40369653182) 및
 [`40369693950`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40369693950)이 Ubuntu/Windows ×
 Python 3.11/3.12 네 조합에서 모두 통과했다. 이전 회차의 검사 근거는 다음과 같다. 수정 전 PR #4 HEAD의 CI run
@@ -127,12 +138,14 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ### 실행 순서와 판정 규칙
 
-1. 완료: PR #1~#6의 검토·병합. PR #6 merge commit `dfdfa307`, CI 네 조합 성공.
+1. 완료: PR #1~#9의 검토·병합. PR #9 merge commit `7723afe`, CI 네 조합 성공.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
-4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff.
-5. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
+4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff, 20회차 CSV 전달.
+5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 실제 목표 사용자
+   관찰과 다음 제품 범위 결정은 참여자 확보 후 수행한다.
+6. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
    현재 D-067 제한 통과는 유지하고 미관측 항목을 전체 통과로 승격하지 않는다.
 
 근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
@@ -140,9 +153,9 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #3~#8과
-유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·로컬/PR CI 검증을 마쳤다. 다음 제품 순서는
-한 가지 사용자 업무의 사용성 검증이다. 이 문서와 로드맵이 달라 보이면
+현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #3~#9와
+유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
+완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 
 자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.

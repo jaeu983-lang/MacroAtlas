@@ -22,11 +22,14 @@ flowchart TD
     VALID --> RESULT[StageResult / 파일 참조 / task 이력]
     DEFER --> STOP[NEEDS_REVIEW로 원래 task 중단]
     DEFER --> TRIAL[명시 large-check / 불변 event 결합]
-    TRIAL --> QUAL[격리 시험 task / 예산 제한]
+    TRIAL --> PROFILE[대상 표본 + 성공 task 이력으로 예상 저장]
+    PROFILE --> QUAL[예상 출력 후 격리 시험 worker / 예산 제한]
     QUAL --> PROOF[시험 통과 또는 미실행 / 본 실행 승인 아님]
     DEFER --> HANDOFF[명시 승인·불변 event 검증]
     HANDOFF --> CHILD[부모 연결 child TaskPlan]
-    CHILD --> LARGE[Linux 제한 stream / chunk + checkpoint]
+    CHILD --> LARGEPROFILE[예상 출력 + production 실측 이력]
+    LARGEPROFILE --> LARGE[Linux 제한 stream / chunk + checkpoint]
+    DEFER -. read-only preview .-> PREVIEW[large-estimate / task 생성 없음]
     LARGE --> ARTIFACT[JSONL chunks + output manifest]
     RESULT --> EXPORT[검증된 완료 World Bank/BOJ task CSV export]
 ```
@@ -48,11 +51,12 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | BLS/Census | Python API에서 BLSEngine/CensusEngine을 runner에 명시 등록 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI dispatch 대상에는 없음 |
 | `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. World Bank/BOJ/watch는 저장된 계획을 재개하고, 대용량 시험 task는 중단 worker의 종료를 확인해 미확정 결과를 기록 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
-| `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산 결합 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음 |
+| `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산과 duration profile/forecast 결합 → worker 직전 예상 표시 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음. 완료 요약에 actual stage seconds 포함 |
+| `large-estimate qualification/production ID [--event-seq N]` | SQLite와 로컬 표본의 read-only 조회 → 선택 엔진 이력으로 예측 | task/event/worker 실행 없이 시간 범위·신뢰도·표본 수만 반환 |
 | `deferred [ID]` | DeferredNonAPIStore의 read-only 조회 | 대상 목록 / 최근 이력 조회. 조회가 대용량 엔진 실행을 유발하지 않음 |
 | `deferred ID --events` | read-only append-only event 조회 | 불변 event sequence를 포함해 정확한 handoff 대상을 지정 |
-| `large-run ID --event-seq N --approve-production` | 성공한 동일 event/hash qualification 확인 → 보존 raw/request manifest binding → atomic child task와 `handed_off` event → resource-limited worker | BIS GLI flat ZIP 1개만 Linux에서 처리. JSONL string chunks/checkpoint/output manifest, 완료 시 `resolved` event. 새 네트워크 요청 없음 |
-| `large-resume CHILD_TASK_ID` | 같은 child plan과 artifact checkpoint를 재검증해 이어 처리 | 원본·manifest 변경 시 중단. Worker 중단 시 lock 해제 후 같은 child를 재개. 임의 source/engine 변경 불가 |
+| `large-run ID --event-seq N --approve-production` | 성공한 동일 event/hash qualification 확인 → 보존 raw/request manifest binding 및 duration forecast를 child에 저장 → worker 직전 예상 표시 → resource-limited worker | BIS GLI flat ZIP 1개만 Linux에서 처리. JSONL string chunks/checkpoint/output manifest, 완료 시 `resolved` event. 새 네트워크 요청 없음 |
+| `large-resume CHILD_TASK_ID` | 같은 child plan과 artifact checkpoint 재검증 → 남은 작업 예상 표시 → 같은 task 재개 | 원본·manifest 변경 시 중단. Worker 중단 시 lock 해제 후 같은 child를 재개. 임의 source/engine 변경 불가 |
 
 검색은 `discovery/series_search.py`의 근거 후보 생성과 명시 선택으로 분리돼 있다. 현재 고정 CLI는
 범용 검색 전체를 호출하지 않는다. `acquisition_planning.py`는 API chunk 계획만 반환하며 실행 queue가 아니다.
@@ -72,6 +76,10 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
   `NOT_EXECUTED`를 기록하며, 같은 qualification을 다시 실행하지 않는다.
 - 용량 인계/권한/보안/schema/의미 검토는 NEEDS_REVIEW로 멈춘다. 현재 capacity도 SCHEMA_CHANGED 코드를 사용하므로
   구체 원인은 `non_api_deferral.reason/status`로 판단한다. task 상태·전송 오류·데이터 판정을 하나로 합치지 않는다.
+- 예측기는 최근 최대 500개의 성공 task stage wall time을 qualification/production별로 분리해 사용한다. bounded input
+  profiling은 원문 값을 저장하지 않는다. paired forecast 3개 전에는 유사 성공 실측 3건 이상이면 경험 후보를 쓰고,
+  그보다 적으면 warm-up baseline을 사용한다. 이후 paired shadow forecast에서 MAPE가 낮은 후보를 고른다. 예측은 worker
+  상한·approval·미실행 조건을 바꾸지 않으며 시간의 범위와 신뢰도로만 안내한다.
 - 큰 원본·정규화 본문은 파일로 둔다. 후속 대용량 stage 간 payload는 `artifact_id, relative_path, manifest_ref,
   sha256(확인된 경우), schema/version, counts/quality` 참조로 제한한다. 현재 작은 API payload 전체를 즉시 재작성하지 않는다.
 

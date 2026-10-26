@@ -568,5 +568,13 @@ HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔
 명시적으로 격리 시험한다. 자원·형식·환경 문제로 처리할 수 없으면 본 실행을 포기하고 미실행 사유를 반환한다.
 시험 scratch만 정리하고 원본과 이력은 보존한다. 시험 통과가 본 실행 승인을 대신하지 않는다.
 17회차의 범위·실측 예산은 `docs/LARGE_FILE_ENGINE.md`와 `docs/ITERATION_17_REPORT.md`를 따른다.
+
+## 추가 요구: 비API 대용량 실행 시간 예측
+
+qualification과 승인형 production/resume는 worker를 시작하기 전에 예상 stage 시간·범위·신뢰도·유사 실측 수·worker 상한을
+보여준다. 사용자는 실행 없이 read-only preview도 조회할 수 있다. 입력 분석은 bounded 표본을 쓰고 원문 값은 보존하지
+않는다. 실제 완료 stage 시간으로 baseline과 workload 유사 모델을 shadow 비교해 예측을 보정한다. 예측은 승인·자원 상한·
+실행 가능 판정을 바꾸지 않는다. 상세 계약과 검수 결과는 `docs/ITERATION_22_PLAN.md`, `docs/ITERATION_22_REPORT.md`,
+`docs/LARGE_FILE_ENGINE.md`를 따른다.
 시험 parent와 child는 task 실행 시작부터 workspace lock을 공유한다. 강제 종료로 결과가 저장되지 않으면,
 worker 종료를 확인한 뒤 `resume`으로 unknown trial과 `NOT_EXECUTED`를 남기며 시험을 같은 task에서 반복하지 않는다.
