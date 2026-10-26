@@ -6,7 +6,8 @@ Python 프로젝트입니다. 모든 기관을 자동 검색하는 챗봇보다,
 
 현재 진입점은 고정 범위 구조화 CLI와 Python API입니다. 자연어 채팅 UI, 기관 전체 검색, 정식 대용량
 정규화, CSV/XLSX exporter는 완료된 제품 기능이 아닙니다. 비API 대용량 후보는 격리 qualification을 할 수
-있지만, 시험 통과는 production 실행 승인이 아닙니다.
+있지만 시험 통과는 production 실행 승인이 아닙니다. 별도로 명시 승인·같은 raw qualification을 요구하는
+BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며, 의미 정규화나 일반 CSV 전달을 제공하지 않습니다.
 
 ## 지금 시작하기
 
@@ -23,6 +24,7 @@ Python 프로젝트입니다. 모든 기관을 자동 검색하는 챗봇보다,
 - World Bank WDI: 미국 GDP `NY.GDP.MKTP.CD`, source 2, 1~10개 연도.
 - BOJ: FM08/FXERD01 한 달.
 - TIC/BIS: 지정한 공식 파일의 exact-scope watch.
+- BIS GLI flat ZIP: 같은 원본 qualification과 별도 승인을 통과한 보존 파일 한 건을 구조 보존 JSONL로 처리.
 - 제한된 BLS/Census connector는 Python API 경로이며 고정 `macroatlas` CLI 수집 명령은 아닙니다.
 - task 상태 확인·같은 task 재개와 비API 파일 인계 목록·제한 격리 시험을 제공합니다.
 
