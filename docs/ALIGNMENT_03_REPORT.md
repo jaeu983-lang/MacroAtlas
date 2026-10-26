@@ -1,5 +1,7 @@
 # 보완 03 구현 보고서
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 기준일: 2026-10-24. 브랜치: `codex/workflow-alignment-03`.
 최신 PROJECT_PLAN/IMPLEMENTATION_PLAN/WORKFLOW_ALIGNMENT_PLAN의 **보완 03만** 구현했다.
 04회차·Gate A 구현 및 최종 사용자 설명서/PPT 제작은 진행하지 않았다.
@@ -114,12 +116,12 @@ build_worldbank_plan은 v1 JSON에 새 전달 의미를 덧씌우지 않는 명�
 | 네트워크 허용 실행 | **COMPLETED / HTTP 200 / live_api**, 원본 724 bytes, 2020~2022년 관측치 3개 |
 
 - 실패 task_id: `7c216098-777e-436a-abc4-f62fd95af771`.
-  [실패 보고서](../reports/alignment_03_live_cba90eaec4f143afa54b36bc8a7fc326.json)
+  로컬 실행 보고서: `reports/alignment_03_live_cba90eaec4f143afa54b36bc8a7fc326.json`
 - 성공 task_id: `cdc0799c-6cf6-4a7b-85fc-3c72a615fe08`.
-  [성공 보고서](../reports/alignment_03_live_2d3cb7c2f92a4b949ef5544d2f9fd02c.json)
+  로컬 실행 보고서: `reports/alignment_03_live_2d3cb7c2f92a4b949ef5544d2f9fd02c.json`
 - 수집 시각: `2026-10-24T03:38:31.222275+00:00`.
-- [실제 원본](../data/raw/worldbank/296888ff1dce4887b99c47b54276a815/response.json)
-  및 [manifest](../data/raw/worldbank/296888ff1dce4887b99c47b54276a815/request.json).
+- 실제 원본 및 manifest(저장소에서 제외된 로컬 실행 artifact):
+  `data/raw/worldbank/296888ff1dce4887b99c47b54276a815/response.json` 및 `request.json`.
 - source_last_updated=`2026-10-08`. 원본 행의 빈 unit/obs_status를 보존했고
   정규화 frequency/unit/source_version은 None이다. 갱신일을 불변 vintage로 바꾸지 않았다.
 - 저장한 새 실제 raw를 parse_gdp로 다시 로컬 해석해 보고서의 3개 관측치와 동일함,

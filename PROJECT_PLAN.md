@@ -2,17 +2,24 @@
 
 > 문서 ID: MDP-PLAN-001 | 버전: 1.0 | 기준일: 2026-10-24 | 상태: 구현 착수용 High-Level 기준안<br>
 > 프로젝트 대상: Windows + Python + Git + Codex 기반, 공공 국제금융·거시경제 통계 데이터
-> **우선순위:** 본 문서(제품 요구사항) → `docs/IMPLEMENTATION_PLAN.md`(회차별 범위) → `GUIDELINES.md`(데이터 처리 세부 원칙) 및 `AGENTS.md`(에이전트 실행 규칙). 보안·접근권한 관련 규칙은 항상 더 엄격한 정책 우선.
+> **문서 역할:** 본 문서는 장기 제품 요구사항 원장이다. 현재 지원 범위는 `docs/USER_GUIDE.md`, 구현·Gate 증거는
+> `docs/IMPLEMENTATION_PLAN.md`, 우선순위는 `docs/ROADMAP_2026_10_26.md`, 자료 처리 원칙은 `GUIDELINES.md`,
+> 작업 규칙은 `AGENTS.md`를 따른다. 보안·접근권한 규칙은 항상 더 엄격한 정책이 우선한다.
 
 ## 0. 이 문서를 읽는 순서 및 구현 전제
 
-- 신규 참여자와 Codex는 **이 문서 전체 → 기관 조사대장 → 대표 시나리오 → 14회 구현계획 → 기존 코드·테스트** 순서로 읽는다.
+- 신규 참여자는 **사용자/개발자 안내서 → 제품 로드맵 → 이 요구사항 원장 → 관련 증거·코드·테스트** 순서로 읽는다.
 - `PROJECT_PLAN.md`는 **무엇을 만들지**에 관한 기준이며, 그 자체로 코드나 자동화가 실행되는 것은 아니다.
-- 저장소는 시작 템플릿에서 출발했다. 현재 구현·검증 현황은 `docs/IMPLEMENTATION_PLAN.md`와 회차별 보고서를 기준으로 확인한다. Gate A 통과는 제품 전체 엔진 구현을 뜻하지 않는다.
+- 현재 구현·검증 현황은 `docs/IMPLEMENTATION_PLAN.md`와 연결된 회차별 보고서에서 확인한다. Gate 통과는 해당 경로 범위에만 적용하며 제품 전체 구현을 뜻하지 않는다.
 - 한 번의 Codex High 작업은 가급적 **한 회차만** 실행한다. 회차 시작 전 저장소 상태와 테스트를 점검한다.
 - 본 문서의 기관 정보는 **공식 문서 기반 사전 조사**이며, 실제 API 호출·수집 성공을 보증하지 않는다.
 
 ## 1. 제품 개요와 비전
+
+이 문서는 장기 요구사항을 넓게 기록한다. 그 목록 전체를 초기 제품 약속으로 삼지 않는다. 2026-10-26의
+실행 전략은 모든 기관을 다루는 에이전트보다, 검증할 수 있는 좁은 공식 데이터 업무를 원본·이력·검증과 함께
+완성하는 것이다. 사용자 가설, 엔진 경계와 확장 기준은 [`docs/PRODUCT_ARCHITECTURE.md`](docs/PRODUCT_ARCHITECTURE.md),
+실행 우선순위는 [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md)를 참고한다.
 
 ### 1.1 문제 정의
 
@@ -491,8 +498,9 @@ Orchestrator task를 저장·재개해 같은 task가 성공하는 통합 시험
 통제된 fixture를 live event로 보고하거나 일반 기관 전반으로 확대 해석하지 않는다. 범위와 잔여
 live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 
-현재 구현 상태·게이트·다음 허용 작업은 `docs/IMPLEMENTATION_PLAN.md`만 기준으로 한다.
-이 문서는 제품 목표와 요구사항을 정의하며 현재 구현률을 반복 기록하지 않는다. 과거 구현의
+현재 구현 상태와 Gate 증거는 `docs/IMPLEMENTATION_PLAN.md`, 다음 작업 순서는
+`docs/ROADMAP_2026_10_26.md`를 기준으로 한다. 이 문서는 제품 목표와 요구사항을 정의하며 현재 구현률을
+반복 기록하지 않는다. 과거 구현의
 증거는 회차별 보고서, 변경 이유는 `docs/DECISION_LOG.md`를 따른다. 요구사항 추가는 구현 완료나
 다음 작업 자동 실행을 뜻하지 않는다.
 
@@ -553,3 +561,12 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 현재 호출 경로와 후속 연결은 `docs/ENGINE_CONNECTIONS.md`를 따른다. 공통 Orchestrator·StageResult·
 HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔다. 대용량 인계는 불변 판정 event와
 원본 snapshot을 선택해 명시적인 자식 task로 연결한다. 큰 본문 대신 검증된 파일·manifest 참조를 전달한다.
+
+## 추가 요구: 대용량 시험 기반 실행 정책
+
+공식 streaming/out-of-core 사례와 실제 용량 시험에 근거해 범위를 정한다. 애매한 자료는 후보로 보존해
+명시적으로 격리 시험한다. 자원·형식·환경 문제로 처리할 수 없으면 본 실행을 포기하고 미실행 사유를 반환한다.
+시험 scratch만 정리하고 원본과 이력은 보존한다. 시험 통과가 본 실행 승인을 대신하지 않는다.
+17회차의 범위·실측 예산은 `docs/LARGE_FILE_ENGINE.md`와 `docs/ITERATION_17_REPORT.md`를 따른다.
+시험 parent와 child는 task 실행 시작부터 workspace lock을 공유한다. 강제 종료로 결과가 저장되지 않으면,
+worker 종료를 확인한 뒤 `resume`으로 unknown trial과 `NOT_EXECUTED`를 남기며 시험을 같은 task에서 반복하지 않는다.

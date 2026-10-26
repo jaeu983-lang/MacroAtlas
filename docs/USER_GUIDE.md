@@ -1,13 +1,23 @@
 # MacroAtlas 사용자 안내서
 
-기준 버전: **16회차 반영 제한 범위 로컬 v1**, 2026-10-26
+기준일: **2026-10-26**, 17회차 격리 대용량 qualification까지 반영. 제품의 현재 지원 범위 안내서.
 
-현재 지원·실측·미관측 상태는 [16회차 이후 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)을 참조합니다.
-14회차 보고서는 당시 검수 기록이며 현재 미해결 목록으로 읽지 않습니다.
+다음 작업 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 제품 가설과 목표 구조는
+[제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 개발 절차는 별도
+[개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 날짜가 붙은 회차 보고서는 당시 결과를 보존한 증거입니다.
 
 MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
 시계열, TIC/BIS 기준 파일 감시를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
 기관 전반 검색과 제품 자체 무인 스케줄링은 제공하지 않습니다. Codex의 별도 일일 감시는 제품 기능과 구분합니다.
+
+처음 사용하는 경우 아래 순서로 진행하세요.
+
+1. `macroatlas --help`로 현재 설치본이 제공하는 명령을 확인합니다.
+2. 지원하는 기관·지표·기간인지 확인한 뒤 예시의 범위만 바꿉니다.
+3. 실제 외부 요청 명령에는 `--live`를 붙입니다. 요청은 task ID를 먼저 저장하고 실행합니다.
+4. 출력의 상태를 읽습니다. `COMPLETED`는 해당 제한 경로 완료, `NEEDS_REVIEW`는 검토 대기,
+   `FAILED_RETRYABLE`은 같은 task 재개 검토, `NOT_EXECUTED`는 본 처리가 시작되지 않았음을 뜻합니다.
+5. 완료 산출물은 현재 JSON 요약·저장 artifact를 확인합니다. 범용 CSV/XLSX exporter는 아직 없습니다.
 
 ## 설치
 
@@ -76,9 +86,9 @@ python scripts/verify_worldbank.py --live --gate-a
 
 ## 결과와 이력 확인
 
-- 원본 응답과 요청 manifest: `data/raw/worldbank/<package-id>/response.json` 및 `request.json`
-- task history와 Gate A 검증 기록: `data/catalog.sqlite`
-- 실행 요약: `reports/iteration_04_live_<id>.json`
+- 원본·요청 manifest: source별 `data/raw/` 하위. 정확한 저장 경로는 각 실행의 JSON 요약에 표시됩니다.
+- task, stage, attempt/event 이력: `data/catalog.sqlite`
+- Gate A legacy 검증 스크립트를 직접 실행한 경우에만 별도 `reports/iteration_04_live_<id>.json`이 생성됩니다.
 
 `data/`, `reports/`의 실행 산출물은 Git에 포함되지 않습니다. 원본 응답은 정규화된 관측치와 별도이며,
 원본 hash와 manifest를 확인한 뒤 SQLite 검증 기록의 `status`, `issues`, `warnings`, 요청·관측 기간을
@@ -158,3 +168,14 @@ Codex 데스크톱에서 이 저장소 작업을 요청할 수 있지만, MacroA
 파일 크기·행·셀·압축 한도에 도달하면 NEEDS_REVIEW로 중단하고 SQLite 인계 목록에 남깁니다.
 `macroatlas deferred`로 최대 100건, `macroatlas deferred ID`로 해당 대상의 최근 판정 이력을 조회합니다.
 API 수집은 이 분류 대상이 아닙니다. 인계 목록 등록 후 별도 대용량 엔진은 자동 실행되지 않습니다.
+
+## 대용량 후보의 격리 시험
+
+`macroatlas large-check <DEFERRAL_ID> [--event-seq N]`으로 저장된 후보를 명시적으로 시험합니다.
+Linux에서 입력 128 MiB 미만·출력 192 MiB 미만·가상 메모리 384 MiB·CPU 15초·wall 20초로 제한합니다.
+지원 파일은 UTF-8 CSV/TSV/TXT·ZIP 단일 표이며, 애매한 TXT 구분자는 시험 시 추정 여부를 표시합니다.
+실패·예산 초과·격리 미지원 환경은 `NOT_EXECUTED`와 `미실행: <이유>`를 반환합니다.
+시험이 중간에 멈춘 경우 trial_attempted=true로 표시합니다. 원본을 삭제하지 않고 시험 scratch만 정리합니다.
+`TRIAL_PASSED`도 본 실행 승인이 아니며 production_execution=NOT_EXECUTED입니다.
+같은 후보·코드·예산은 기존 결과를 반환하고 원본이 바뀌면 재사용하지 않습니다.
+상세 조사·실측·한계는 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 참조하세요.

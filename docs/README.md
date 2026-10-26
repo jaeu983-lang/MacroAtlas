@@ -1,0 +1,60 @@
+# Documentation map
+
+기준일: 2026-10-26. 이 페이지는 문서의 역할과 우선순위를 정리합니다. 오래된 회차 기록을
+현재 제품 상태로 오해하지 않도록, 실행 전에는 아래의 현행 문서를 먼저 확인하세요.
+
+## 현행 기준 문서
+
+| 알고 싶은 내용 | 기준 문서 | 역할 |
+|---|---|---|
+| 지금 사용자가 실행할 수 있는 일 | [사용자 안내서](USER_GUIDE.md) | 설치, 지원 명령, 결과·오류 확인 |
+| 사용자에게 빠르게 설명할 슬라이드 | [사용자 안내 PPT](MacroAtlas_User_Guide.pptx) | 현재 지원 경로·한계의 10장 요약 |
+| 개발 환경과 기여 절차 | [개발자 안내서](DEVELOPER_GUIDE.md) | 구조, 개발·검수·자료 보호 |
+| 제품을 어떤 순서로 만들지 | [제품 로드맵](ROADMAP_2026_10_26.md) | 우선순위, 선행 조건, 완료 기준 |
+| 사용자·개발자 관점의 목표 아키텍처 | [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md) | 제품 가설, 시스템 경계, 성장 단계 |
+| 현재 구현·게이트·실측 상태 | [구현 상태와 게이트](IMPLEMENTATION_PLAN.md) | 현재 증거의 요약 |
+| 현재 남은 문제와 원인 분류 | [미해결 항목](UNRESOLVED_ITEMS.md) | 데이터 처리, 접속, 미구현, 증거 대기 분리 |
+| 코드의 실제 호출과 저장 경로 | [엔진 연결 설계](ENGINE_CONNECTIONS.md) | 현재 구현과 아직 없는 연결의 구분 |
+| 제품 요구사항과 범위 정책 | [프로젝트 계획](../PROJECT_PLAN.md) | 장기 요구사항 목록; 구현 완료 선언이 아님 |
+
+제품 요구사항은 `PROJECT_PLAN.md`, 현재 실행 가능 범위는 `USER_GUIDE.md`, 현재 증거는
+`IMPLEMENTATION_PLAN.md`와 연결된 보고서, 앞으로의 순서는 `ROADMAP_2026_10_26.md`를 따릅니다.
+설계 결정의 이유는 [결정 기록](DECISION_LOG.md)을 참고합니다. 문서 간 충돌을 발견하면 조용히
+추정해 적용하지 말고 코드·테스트·실측을 확인해 기준 문서를 갱신합니다.
+
+## 문서 분류
+
+### 제품·운영
+
+- [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md): 어떤 문제를 먼저 풀고 엔진을 어디에 둘지에 대한 목표 설계.
+- [사용자 안내 PPT](MacroAtlas_User_Guide.pptx): 사용자 안내서와 같은 기준일의 시각 요약.
+- [대용량 엔진](LARGE_FILE_ENGINE.md): 비API 대용량 자료의 조사, 용량 시험, 미실행 규칙.
+- [엔진 연결](ENGINE_CONNECTIONS.md): 현재 호출 경로와 대용량 엔진으로 넘어가는 계약.
+- [기관 카탈로그](INSTITUTION_CATALOG.md), [`connectors/`](connectors/): 조사한 공식 자료와 connector별 확인 범위.
+- [출력·변형 정책](OUTPUT_AND_VARIANT_POLICY.md), [시나리오](REFERENCE_SCENARIOS.md): 사용자 선택과 수용 사례.
+
+### 계획·작업 추적
+
+- [제품 로드맵](ROADMAP_2026_10_26.md): 다음 순서의 유일한 계획 기준.
+- [미해결 항목](UNRESOLVED_ITEMS.md): 남은 코드·접속·관측 증거를 분류.
+- [결정 기록](DECISION_LOG.md): 변경된 설계 선택을 날짜와 함께 보존.
+- `ITERATION_*_PLAN.md`, `CSV_EXPORT_FOLLOWUP_PLAN.md`, `KNOWLEDGE_ENGINE_PLAN.md`,
+  `WORKFLOW_ALIGNMENT_PLAN.md`: 당시 정한 범위의 계획 기록. 현재 실행 순서는 로드맵을 따릅니다.
+
+### 검수·증거 기록
+
+- `ITERATION_*_REPORT.md`, `ALIGNMENT_*_REPORT.md`: 해당 구현 당시의 변경·검사 기록.
+- `GATE_*`, `BOJ_LIVE_*`, `PLAN_IMPLEMENTATION_AUDIT.md`, `USER_WORKFLOW_REVIEW.md`,
+  `MAINTENANCE_QA_*.md`: 특정 날짜와 환경의 실측 또는 검토 기록.
+- `LARGE_FILE_QUALIFICATION_RESULTS.json`과 `NON_API_DEFERRED_CATALOG.json`: trial 측정치와
+  비API 인계 정책/목록의 기계 판독 자료. 범용 제품 지원 선언으로 읽지 않습니다.
+- [사용자 안내 PPT](MacroAtlas_User_Guide.pptx): `USER_GUIDE.md`를 요약한 10장 시각 안내.
+- 이 기록은 원래 결과를 보존합니다. 이후 상태가 바뀌면 과거 결과를 고쳐 쓰지 않고 현행 요약과
+  새 날짜가 붙은 증거를 추가합니다.
+
+## 지금 기억할 상태
+
+2026-10-26 기준 제품은 고정된 구조화 CLI와 Python API 중심입니다. 전체 기관 탐색·대화형 UI,
+정식 대용량 정규화·exporter, 자연 TIC/BIS 개정 및 자연 provider 장애 후 durable resume은
+완료된 제품 기능이나 증거로 표시하지 않습니다. 변경될 때 `USER_GUIDE.md`, `IMPLEMENTATION_PLAN.md`,
+로드맵의 상태를 함께 갱신합니다.

@@ -1,5 +1,7 @@
 # Iteration 09 report — bounded file parsing and acquisition planning
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 Completed after Iteration 08, in the requested order. Work in this iteration uses local files and
 deterministic fixtures; it made no external API requests. The runtime network policy and secret
 readiness were `unknown`, so no live BLS, Census, or other source validation was attempted.

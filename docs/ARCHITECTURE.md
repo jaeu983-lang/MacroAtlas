@@ -3,6 +3,8 @@
 > 이 문서는 회차별 구현 구조와 역사적 선택을 설명한다. **현재 구현 현황·게이트·다음 작업의
 > 기준은 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)**이며, 05~10회차 상세는 해당 회차
 > 보고서를 따른다. 여기 적힌 “당시 미구현”은 별도 현재 상태 표기가 없는 한 그 회차 시점의 기록이다.
+> 사용자 문제에서 출발한 목표 구조와 향후 엔진 경계는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md),
+> 다음 실행 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
 기준: PROJECT_PLAN.md §5–8, docs/IMPLEMENTATION_PLAN.md 01.
 

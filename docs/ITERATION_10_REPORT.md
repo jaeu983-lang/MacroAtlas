@@ -1,5 +1,7 @@
 # Latest evidence review — 2026-10-26
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 See [Gate C evidence review](GATE_C_REVIEW_2026_10_26.md) for the current limited-scope pass and the
 natural live evidence that remains outside it. The user later explicitly authorized Iteration 11
 before Gate C passed; its implementation and verification are in [Iteration 11 report](ITERATION_11_REPORT.md).
