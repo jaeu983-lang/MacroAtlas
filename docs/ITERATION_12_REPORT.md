@@ -61,4 +61,5 @@ limit 모두에 걸렸다. `decide_reuse()`는 부분 목록에서 재사용 후
   증거가 부족해 계속 미통과다.
 
 검증: 전체 pytest **574 passed in 4.18s**, Ruff 전체 검사 통과, `git diff --check` 통과.
-12회차 commit/push checkpoint는 task branch에 저장 후 갱신한다.
+구현·테스트·보고서는 commit `aab3c67`로 `origin/codex/gate-c-evidence-review`에 push했다.
+실행 환경 publish는 하지 않았다.
