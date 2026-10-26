@@ -71,6 +71,22 @@ def test_read_only_cli_creates_no_storage(tmp_path):
     assert not (tmp_path / 'data').exists()
 
 
+def test_deferred_event_cli_includes_immutable_sequence_number(tmp_path):
+    (tmp_path / 'pyproject.toml').write_text('[project]\nname="fixture"\n')
+    settings = Settings(tmp_path)
+    record = capacity.DeferredNonAPIStore(settings).register(
+        {'relative_path': 'data/inbox/a.csv'}, 'origin-task', 'inspect',
+        capacity.decision('cells', 500001, 500000),
+    )
+    args = build_parser().parse_args([
+        '--project-root', str(tmp_path), 'deferred', record['id'], '--events',
+    ])
+    status, result = dispatch(args)
+    assert status == 0
+    assert result['events'][0]['event_seq'] == 1
+    assert result['events'][0]['id'] == record['id']
+
+
 def test_store_rejects_secret_url_and_returns_latest_first(tmp_path):
     store = capacity.DeferredNonAPIStore(Settings(tmp_path))
     with pytest.raises(ValueError):
@@ -81,6 +97,7 @@ def test_store_rejects_secret_url_and_returns_latest_first(tmp_path):
     store.register({'relative_path': 'a'}, '3', 's', capacity.decision('rows'))
     assert store.list()[0]['id'] == first['id']
     assert len(store.list(first['id'])) == 2
+    assert store.events(first['id'])[0]['event_seq'] > store.events(first['id'])[-1]['event_seq']
 
 
 @pytest.mark.parametrize('header', [None, '8', '1'])

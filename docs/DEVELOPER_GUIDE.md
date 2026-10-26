@@ -62,6 +62,10 @@ py -3 -m venv .venv
 - API 전송 오류는 parser 오류와 분리합니다. 로컬 용량 한도는 서버 연결 실패가 아닙니다.
 - 용량 제한은 상향해 우회하지 않습니다. 작은 parser에서 멈춘 비API 파일은 별도 인계 경로로 갑니다.
 - `TRIAL_PASSED`는 qualification 결과이며 production 승인·정규화 완료가 아닙니다.
+- `large-run`은 성공한 동일 event/hash qualification, 고정된 BIS flat source scope, 명시 승인 이후에만 child task를 실행합니다.
+  현재 이 경로는 Linux에서 BIS GLI flat ZIP 한 건의 문자열 JSONL 출력까지 지원하며 경제 의미를 추론하지 않습니다.
+- 대용량 worker는 입력 128 MiB, 출력 192 MiB, 메모리 384 MiB, CPU 30초, wall 60초 예산을 적용하고,
+  원본 hash·request manifest·chunk checkpoint를 resume 전에 검증합니다. Windows에서 무제한 fallback을 하지 않습니다.
 - 자연 live evidence, fixture, synthetic benchmark, simulated failure는 서로 다른 종류로 기록합니다.
 
 ## 로컬 검증

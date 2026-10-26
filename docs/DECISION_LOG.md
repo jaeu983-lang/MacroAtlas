@@ -664,3 +664,16 @@ Linux resource limit·timeout·출력 예산·동시 실행 제한으로 시험�
 child process에 상속한다. 새 `resume`은 같은 lock을 얻어 실제 worker 종료를 확인한 뒤 표시된 scratch만 정리한다.
 저장된 결과가 없으면 `trial_state=UNKNOWN`, `execution_state=NOT_EXECUTED`, `NEEDS_REVIEW`로 기록하고
 같은 task의 qualification을 자동 재실행하지 않는다. 원본과 부모 task는 그대로 둔다.
+
+## D-079 — BIS flat 제한 production handoff
+
+19회차에서 기존 16회차 deferral event·origin task·보존 raw/request manifest와 같은 hash의 성공 trial을
+검증하는 별도 child task를 연결한다. 명시 `--approve-production` 전에는 실행하지 않으며 같은 immutable event와
+artifact 조합은 같은 child를 반환한다. child 생성과 `handed_off` event, 완료 시 `resolved` event는 각각
+task history와 같은 SQLite transaction에서 기록한다.
+
+현재 지원은 BIS GLI flat ZIP 내부 단일 UTF-8 CSV 한 건이다. Linux worker는 10,000행 chunk,
+hash-verified checkpoint, 128 MiB input/192 MiB output/384 MiB memory/30초 CPU/60초 wall 예산을 사용한다.
+다른 OS·파일은 제한 없는 fallback 없이 미실행 처리한다. output은 문자열 JSONL이며 구조·출처 검증만 포함한다.
+단위·빈도·경제 의미를 채우지 않고, Gate C natural source change/recovery와도 분리한다.
+구현·실측 결과와 알려진 제한은 `docs/ITERATION_19_REPORT.md`에 기록한다.

@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 18회차 통합 갱신: PR #3/#4는 병합 완료(기본 branch `25f3c87`). 다음 유지보수 QA·범위 adapter·수정/검토 흐름은 [18회차 보고서](ITERATION_18_REPORT.md)를 따른다. 아래 과거 PR 미통합 문구는 이 갱신으로 대체한다.
+> 19회차 기준 갱신: PR #3/#4/#5는 `codex/iteration-04-gate-a`에 통합됐고 HEAD는 `1cd9590`이다. 18회차 QA·범위 adapter·수정/검토 흐름은 [18회차 보고서](ITERATION_18_REPORT.md)를 따른다. 현재 19회차 구현은 task branch에서 review/CI 대기이며 merge 후 BIS flat production 실행을 계획한다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -8,6 +8,11 @@
 > 기본 규칙은 한 task에 한 회차이며, 실패하거나 관측되지 않은 증거를 통과로 취급하지 않는다.
 
 ## 현재 상태 — 2026-10-26
+
+19회차 task branch는 BIS flat 대용량 production handoff 코드를 추가한다. 로컬 전체 테스트 656개와 Ruff,
+diff 검사가 통과했으나 이 기록 시점에는 PR 통합과 보존 원본 production 실행을 아직 하지 않았다.
+현재 base 지원 범위로 표시하거나 Gate C natural evidence로 해석하지 않는다. 구현 계약은
+[19회차 기획안](ITERATION_19_PLAN.md), 통합 후 결과는 회차 보고서에 기록한다.
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
@@ -80,6 +85,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
 | 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험; 후속 보완에서 worker lock 상속·중단 결과 UNKNOWN 복구 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 별도 대용량 엔진 실행·CSV 출력, 자연 revision/recovery |
+| 19 (review pending) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회 | base integration과 보존 raw production run, cross-platform CI. 다른 provider/format, semantic normalization, CSV export |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
@@ -103,7 +109,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | Windows CI proxy 테스트 | 해결. Windows에서 대소문자만 다른 환경변수를 별개로 설정할 수 있다고 가정한 테스트가 실패 | 수정된 테스트와 네 조합 CI 유지 | 최종 HEAD CI 네 조합 성공으로 충족 |
 | BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
 | World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
-| BIS flat CSV ZIP | 현행 재처리: cells=500010에서 정상 deferred·영속 등록, 새 normalized 없음 | 별도 대용량 엔진 인계 대기. 현재 엔진 수집 오류로 취급하지 않음 | 인계 동작 검증 충족. 실제 flat 정규화는 별도 엔진 범위 |
+| BIS flat CSV ZIP | base에서 cells=500010으로 정상 deferred. 19회차 branch에 승인 child·chunk/checkpoint production 경로가 있으나 현재 기록 시점에는 미통합·미실행 | PR/CI 통합 후 보존된 같은 event/raw를 처리하고 hash·manifest·task 이력 확인 | production output과 동일 raw/event provenance 확인. Gate C 자연 변경/복구와 분리 |
 | BIS watcher 첫 비교 | 해결. 명시 zip_member 추가로 기존 auto-select baseline과 scope가 달라 first_observation 발생 | 기존 exact scope 유지 | 수정 후 동일 baseline 대비 unchanged 확인. 첫 실행은 증거에서 제외 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
 | TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 최신 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
@@ -112,11 +118,11 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ### 실행 순서와 판정 규칙
 
-1. 완료: 사용자 지시로 PR #2 검토·병합. merge commit `82a018e`, 최신 PR CI 네 조합 성공.
-2. 완료: 병합 checkout과 원격 HEAD `82a018e` 일치 및 clean 상태 확인. 환경 게시는 별도 작업이다.
+1. 완료: PR #1~#5의 검토·병합. 최신 통합 HEAD `1cd9590`, PR #5 CI 네 조합 성공.
+2. 완료: 병합 checkout과 원격 HEAD `1cd9590` 일치 및 clean 상태 확인. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
-4. 완료: 16회차 비API 분류·인계 목록 구현과 현행 재검증. 후속 대용량 실행은 엔진 연결 설계의 인계 계약부터 구현한다.
+4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로. 19회차 구현·통합과 보존 raw production 처리가 남아 있다.
 5. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
    현재 D-067 제한 통과는 유지하고 미관측 항목을 전체 통과로 승격하지 않는다.
 
@@ -125,9 +131,9 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 먼저 기록된
-PR #3/#4 통합 순서를 실제 원격 상태에서 재확인하고, 그 뒤 재현 가능한 유지보수 QA 경로, BIS GLI flat
-정식 대용량 handoff, 검증된 World Bank/BOJ CSV 전달 순으로 진행합니다. 이 문서와 로드맵이 달라 보이면
+현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #3/#4/#5와
+유지보수 QA 경로는 통합 완료됐다. 현재 순서는 BIS GLI flat 대용량 handoff를 검토·통합하고 보존 원본을
+처리한 뒤 검증된 World Bank/BOJ CSV 전달을 구현하는 것이다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 
 자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.

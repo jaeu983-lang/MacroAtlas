@@ -88,9 +88,37 @@ large-check는 네트워크 요청을 하지 않는다. 응답의 parent_task_id
 benchmark가 생성한 합성 입력·시험 chunk만 정리하고 보고서/이력은 보존한다.
 결과는 `reports/large_file_qualification.json`, 검토용 사본은 LARGE_FILE_QUALIFICATION_RESULTS.json에 둔다.
 
-## 정식 실행 전 남은 연결
+## 19회차 제한 production 경로
 
-이 단계는 용량·형식 시험이다. 경제 의미·단위·개정 비교·normalized 품질·출력 승인까지 수행하는 정식 엔진은 아니다.
-정식 대용량 엔진은 검증된 schema와 resource profile, immutable artifact manifest, checkpoint/resume,
-source-change guard와 품질 검증을 추가한 뒤 연결한다. 시험 통과 파일의 임시 chunk를 그대로 export하지 않는다.
+17회차 시험 결과는 계속 `trial_only`이며 자동 승격되지 않는다. 19회차는 별도 approval과 같은 event/hash의
+성공 trial을 요구하는 BIS GLI flat ZIP production child task를 추가했다. flow는 다음과 같다.
+
+```text
+macroatlas deferred <ID> --events
+macroatlas large-run <ID> --event-seq <SEQ> --approve-production
+macroatlas status <CHILD_TASK_ID>
+macroatlas large-resume <CHILD_TASK_ID>
+```
+
+지원 범위는 `https://data.bis.org/static/bulk/WS_GLI_csv_flat.zip`의 이미 보존된 raw 한 건,
+ZIP 내부 단일 UTF-8 CSV로 한정한다. 새 네트워크 요청은 보내지 않는다. `large-run`은 불변 deferral event,
+origin task, inbox/raw SHA-256, 기존 request manifest/hash, 일치하는 `TRIAL_PASSED` task를 검증한 뒤
+child task와 `handed_off` event를 같은 SQLite transaction에서 저장한다. 중복 호출은 같은 child를 돌려준다.
+
+Linux에서 입력 128 MiB, 출력 192 MiB, RLIMIT_AS 384 MiB, CPU 30초, wall 60초를 제한한다.
+최대 2,000,000 data rows / 20,000,000 cells를 처리하며 10,000행마다 JSONL chunk와 SHA-256 checkpoint를
+원자적으로 기록한다. Worker는 SQLite cancel flag를 확인한다. resume는 source, request manifest, checkpoint,
+완료 chunk를 다시 검증하고 같은 task에서 이어간다. parent 종료 후에는 worker가 물려받은 lock이 풀린 뒤
+`large-resume`으로 중단 task를 복구한다. 다른 OS에서는 제한 없는 fallback 없이 `NOT_EXECUTED`다.
+
+완료 output manifest는 source URL·기관·capture metadata·raw/request hash·zip member·headers·counts·chunk hashes를
+기록한다. null/empty와 `0` 표현을 그대로 보존하며 모든 원본 필드를 문자열로 둔다. 검증 범위는 CSV 구조와 파일
+무결성뿐이다. 단위·빈도·경제 의미를 정규화하지 않고 Gate C natural revision/recovery 증거로 사용하지 않는다.
+시험 chunk와 production artifact는 별도 경로다. 범용 대용량 export, 다른 provider/format, GB/TB, Windows
+resource worker는 미지원이다.
+
+## 한계와 다음 연결
+
 특정 크기의 합성 CSV 통과를 동일 크기의 모든 ZIP/XLSX 또는 GB/TB 파일 지원으로 확대하지 않는다.
+이 child output을 검증된 World Bank/BOJ observation CSV exporter에 연결하지 않는다. provider task exporter는
+[CSV 후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md)의 별도 artifact/provenance 계약을 따른다.
