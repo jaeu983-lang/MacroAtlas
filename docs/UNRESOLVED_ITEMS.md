@@ -1,6 +1,6 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 20회차 기준 갱신: PR #3~#8 통합 후 base HEAD는 `09594871`이었다. 20회차에서 World Bank/BOJ task CSV export를 구현·로컬 검증했고, PR 통합 상태는 [20회차 보고서](ITERATION_20_REPORT.md)에 기록한다. 18·19회차의 당대 결과는 각 [18회차 보고서](ITERATION_18_REPORT.md), [19회차 보고서](ITERATION_19_REPORT.md)를 따른다.
+> 2026-10-26 갱신: PR #9 merge HEAD는 `7723afe95d6c5edb6a28bcf52bd08518ad5ca381`이다. CSV 전달은 통합·검증됐고, 내부 status→export dry run도 실행했다. 실제 목표 사용자 관찰과 Gate C 자연 증거는 미완료다. 세부 증거는 [20회차 보고서](ITERATION_20_REPORT.md)와 [사용 흐름 검토](USER_WORKFLOW_DRY_RUN_2026_10_26.md)를 따른다.
 
 기준일: 2026-10-26. 근거는 17회차 시험, 현재 저장소 상태, 과거 네 provider live 결과와
 최신 TIC/BIS exact-scope 감시다. TIC task `2733c6a3-abb8-4201-9735-b3354fd32bd9`와
@@ -69,11 +69,12 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#6 통합과 18회차 QA 경로. PR #6 merge commit `dfdfa307`의 CI 네 조합이 통과했다.
+1. **완료:** PR #1~#9 통합과 18회차 QA 경로. PR #9 merge commit `7723afe`의 CI 네 조합이 통과했다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
-4. **다음 제품 작업:** 한 가지 사용자 업무 흐름의 사용성 검증 후 다음 provider·UI·자연어 범위를 정한다. 다른 export format/provider, Windows 대용량 worker, 경제 이상치·개정 의미 검증은 별도 요구와 수용 기준을 기다린다.
-5. **병행 증거 대기:** TIC/BIS 감시는 유지하되 unchanged는 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
+4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
+5. **다음 제품 작업:** 분석가 1–2명의 실제 관찰 세션 후 다음 provider·UI·자연어 범위를 정한다. 다른 export format/provider, Windows 대용량 worker, 경제 이상치·개정 의미 검증은 별도 요구와 수용 기준을 기다린다.
+6. **병행 증거 대기:** TIC/BIS 감시는 유지하되 unchanged는 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
 
 남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 더 넓은 provider/format은 미구현 기능이고, 자연 개정/장애는 아직 관측되지 않은 Gate C 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 

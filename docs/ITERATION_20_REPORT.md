@@ -47,3 +47,9 @@
 Python 3.11/3.12 CI를 통과했다. 실행 `40383805569`와 push 이벤트의 중복 실행 `40383791920`에서 네 조합이
 모두 성공했다. 최초 Windows CI는 test의 SQLite connection이 닫히지 않아 임시 폴더 cleanup이 실패했으며,
 test helper가 연결을 명시적으로 닫도록 수정한 commit `cb7fdcd`에서 재검증했다.
+
+## 통합 확인 후속 — 2026-10-26
+
+PR #9가 `codex/iteration-04-gate-a`에 squash merge됐고 통합 HEAD는
+`7723afe95d6c5edb6a28bcf52bd08518ad5ca381`이다. Ubuntu/Windows × Python 3.11/3.12 네 CI 조합은
+최종 PR HEAD에서 모두 통과했다. checkout branch는 통합 HEAD와 일치했고 작업 트리는 깨끗했다.

@@ -694,3 +694,14 @@ null과 0을 구분하고 unknown unit/frequency는 빈 값으로 남긴다. BOJ
 `NEEDS_REVIEW`, changed/unknown source status, 미완료 task, 변조 원본, 경로 traversal/symlink와 기존 출력은
 거부한다. BIS flat JSONL, XLSX, 임의 provider는 미지원이다. 로컬 증거는 [20회차 보고서](ITERATION_20_REPORT.md)에
 있으며 자연 Gate C revision/recovery 증거와 무관하다.
+
+## D-081 — CSV 전달 사용자 흐름 내부 dry run
+
+저장된 World Bank·BOJ 성공 task를 다시 조회하고 각각 새 파일명으로 CSV export했다. CLI help, task 상태,
+품질 경고, row/null 수와 CSV hash가 사용자 문서의 제한 범위와 일치했다. 요청은 모두 로컬 SQLite/raw에서
+읽었고 외부 네트워크는 사용하지 않았다. task 산출물은 기존 경로를 덮지 않고 Git-ignored `data/exports/`에
+기록했다.
+
+이는 작성자의 desk review라 독립 사용성 evidence가 아니다. Gate C와 제품 지원 범위는 바꾸지 않는다.
+실제 분석가 1–2명의 관찰 세션에서 CLI JSON과 경고 이해도를 확인하기 전 UI/provider/natural-language 작업을
+선정하지 않는다. 상세 기록은 `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`다.
