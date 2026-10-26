@@ -25,7 +25,13 @@ POLICY_VERSION = 'non_api_v1'
 
 def decision(reason, value=None, threshold=None, status='deferred'):
     return {'reason': reason, 'observed': value, 'threshold': threshold, 'status': status,
-            'policy_version': POLICY_VERSION}
+            'policy_version': POLICY_VERSION,
+            'unit': {'input_bytes': 'bytes', 'member_bytes': 'bytes',
+                     'download_bytes': 'bytes', 'zip_uncompressed_bytes': 'bytes',
+                     'zip_entries': 'entries', 'zip_ratio': 'ratio', 'rows': 'rows',
+                     'columns': 'columns', 'cells': 'cells', 'field_chars': 'characters'
+                     }.get(reason),
+            'inspection_point': 'bounded_preflight'}
 
 
 def inspect_file(path, format_name, options):
@@ -59,7 +65,9 @@ def inspect_bytes(raw, format_name, options):
                     if ratio >= MAX_ZIP_RATIO:
                         return decision('zip_ratio', ratio, MAX_ZIP_RATIO, 'security_review')
                 if format_name == 'zip':
-                    members = [item for item in entries if not item.is_dir()]
+                    members = [item for item in entries if not item.is_dir()
+                               and PurePosixPath(item.filename).suffix.lower() in {
+                                   '.csv', '.tsv', '.txt', '.html', '.htm', '.xls', '.xlsx'}]
                     selected = options.get('zip_member')
                     if selected:
                         members = [item for item in members if item.filename == selected]
@@ -73,6 +81,7 @@ def inspect_bytes(raw, format_name, options):
                     if len(body) >= MAX_INPUT_BYTES:
                         return decision('member_bytes', len(body), MAX_INPUT_BYTES)
                     extension = PurePosixPath(item.filename).suffix.lstrip('.').lower()
+                    extension = 'html' if extension == 'htm' else extension
                     if extension == 'zip':
                         return decision('nested_archive', status='inspection_required')
                     return inspect_bytes(body, extension, options)
@@ -109,10 +118,13 @@ def inspect_bytes(raw, format_name, options):
         try:
             if format_name == 'xlsx':
                 import openpyxl
-                book = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=False)
+                book = openpyxl.load_workbook(io.BytesIO(raw), read_only=True,
+                                               data_only=False, keep_links=False)
                 try:
                     name = options.get('sheet_name')
-                    sheet = book[name] if name else book.active
+                    if name is None and len(book.sheetnames) != 1:
+                        return decision('worksheet_selection', status='inspection_required')
+                    sheet = book[name] if name else book[book.sheetnames[0]]
                     rows, columns = sheet.max_row, sheet.max_column
                 finally:
                     book.close()
@@ -121,6 +133,8 @@ def inspect_bytes(raw, format_name, options):
                 book = xlrd.open_workbook(file_contents=raw, on_demand=True)
                 try:
                     name = options.get('sheet_name')
+                    if name is None and book.nsheets != 1:
+                        return decision('worksheet_selection', status='inspection_required')
                     sheet = book.sheet_by_name(name) if name else book.sheet_by_index(0)
                     rows, columns = sheet.nrows, sheet.ncols
                 finally:
@@ -133,14 +147,17 @@ def inspect_bytes(raw, format_name, options):
             ):
                 if value >= threshold:
                     return decision(reason, value, threshold)
-        except (ValueError, KeyError, TypeError, OSError):
+        except Exception:  # noqa: BLE001 - parser diagnostics must not escape into task output
             return decision('worksheet_inspection_incomplete', status='inspection_required')
     return None
 
 
 class DeferredNonAPIStore:
-    def __init__(self, settings):
+    def __init__(self, settings, *, read_only=False):
         self.settings = settings
+        self.read_only = read_only
+        if read_only:
+            return
         settings.database_path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS deferred_non_api '
@@ -150,7 +167,8 @@ class DeferredNonAPIStore:
 
     @contextmanager
     def connect(self):
-        db = sqlite3.connect(self.settings.database_path)
+        db = (sqlite3.connect(self.settings.database_path.as_uri() + "?mode=ro", uri=True)
+              if self.read_only else sqlite3.connect(self.settings.database_path))
         try:
             with db:
                 yield db
@@ -158,11 +176,20 @@ class DeferredNonAPIStore:
             db.close()
 
     def register(self, scope, task_id, stage_id, result):
+        if self.read_only:
+            raise ValueError("deferral store is read-only")
         safe_scope = {key: scope[key] for key in (
             'relative_path', 'source_url', 'source_agency', 'source_table_name', 'format',
             'delimiter', 'header_row', 'zip_member', 'sheet_name', 'table_index',
         ) if key in scope}
-        # Download source URLs must already have passed the engine's credential-free validator.
+        from urllib.parse import urlsplit
+        url = safe_scope.get('source_url')
+        if url:
+            parsed = urlsplit(url)
+            if (parsed.scheme != 'https' or not parsed.hostname or parsed.username
+                    or parsed.password or parsed.query or parsed.fragment
+                    or len(url) > 512 or any(char.isspace() for char in url)):
+                raise ValueError('deferral URL must be credential-free HTTPS')
         identity = {key: value for key, value in safe_scope.items()
                     if key != 'relative_path' or not safe_scope.get('source_url')}
         key = hashlib.sha256(json.dumps([identity, POLICY_VERSION], sort_keys=True).encode()).hexdigest()
@@ -176,10 +203,17 @@ class DeferredNonAPIStore:
         return document
 
     def list(self, record_id=None):
+        if not self.settings.database_path.exists():
+            return []
         with self.connect() as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
+                              "AND name='deferred_non_api'").fetchone():
+                return []
             if record_id:
                 rows = db.execute('SELECT document FROM deferred_non_api_events WHERE id=? '
                                   'ORDER BY seq DESC LIMIT 100', (record_id,)).fetchall()
             else:
-                rows = db.execute('SELECT document FROM deferred_non_api ORDER BY id LIMIT 100').fetchall()
+                rows = db.execute('SELECT document FROM deferred_non_api ORDER BY '
+                                  '(SELECT MAX(seq) FROM deferred_non_api_events e '
+                                  'WHERE e.id=deferred_non_api.id) DESC LIMIT 100').fetchall()
         return [json.loads(row[0]) for row in rows]

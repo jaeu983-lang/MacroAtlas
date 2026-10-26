@@ -1,10 +1,13 @@
 # MacroAtlas 사용자 안내서
 
-기준 버전: **제한 범위 로컬 v1**, 2026-10-26
+기준 버전: **16회차 반영 제한 범위 로컬 v1**, 2026-10-26
+
+현재 지원·실측·미관측 상태는 [16회차 이후 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)을 참조합니다.
+14회차 보고서는 당시 검수 기록이며 현재 미해결 목록으로 읽지 않습니다.
 
 MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
 시계열, TIC/BIS 기준 파일 감시를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
-기관 전반 검색, 무인 스케줄링은 제공하지 않습니다.
+기관 전반 검색과 제품 자체 무인 스케줄링은 제공하지 않습니다. Codex의 별도 일일 감시는 제품 기능과 구분합니다.
 
 ## 설치
 
@@ -94,9 +97,9 @@ python scripts/verify_worldbank.py --live --gate-a
 | World Bank WDI | 위에 적힌 미국 GDP 고정 수집 경로 | 키 불필요 |
 | BLS Public Data API v2 | 선택한 series ID의 제한된 Python API 수집; metadata와 통계 의미는 별도 확인 | 일반 series-data 조회는 `BLS_API_KEY` 선택 사항. 일부 catalogue 요청은 등록 키 필요 |
 | Census ACS API | 제한된 ACS query connector | `CENSUS_API_KEY` 필수 |
-| TIC/BIS 파일 | `macroatlas watch`의 고정 URL live 재수집과 명시적 로컬 intake; 자동 예약은 없음 | API 키 없음 |
+| TIC/BIS 파일 | 고정 URL live 재수집·로컬 intake·대용량 인계 목록. BIS flat은 현재 정책에 따라 deferred | API 키 없음 |
 | BOJ JSON API | FM08/FXERD01 한 달 metadata·observations collector와 durable task 연결 | 키를 보내지 않음 |
-| 그 밖의 기관 | 일부 공식 문서/fixture만 존재; 기관별 전체 수집 흐름은 미지원 또는 미검증 | 기관별 공식 안내 전 추정하지 않음 |
+| IMF·BEA·ECB/Eurostat·중국 기관 등의 전체 수집 | 현행 connectors/CLI에 해당 observation 경로가 미구현. 현재 서버 접근 차단 판정이 아님 | 문서·키 설정만으로 수집 성공을 주장하지 않음 |
 
 필요한 키만 승인된 secret manager 또는 현재 프로세스 환경변수로 제공합니다. 프로젝트는 `.env`를
 자동 로드하지 않습니다. 키 값은 저장소, 코드, 테스트, URL, 채팅, 문서 예시에 넣지 마세요. 실제 인증

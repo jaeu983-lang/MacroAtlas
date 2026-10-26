@@ -17,7 +17,16 @@
       "evidence": "GATE_C_REVIEW_2026_10_26.md",
       "note": "Prior observed evidence: parser row/cell budget review; precise exceeded dimension not established. Not a 16 MiB file-size violation.",
       "target_engine": "future_large_non_api_engine",
-      "automatic_execution": false
+      "automatic_execution": false,
+      "current_reaudit": {
+        "task_id": "2797e6d0-a8ac-40e5-aca4-066991a7c2e1",
+        "kind": "archived_raw_replay",
+        "reason": "cells",
+        "observed": 500010,
+        "threshold": 500000,
+        "runtime_record_id": "e65971b7b561a0774c786938334a86e59d49a3e0d2c6432148d58a9a3ee27824",
+        "result": "deferred_as_designed"
+      }
     }
   ]
 }

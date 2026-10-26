@@ -4,6 +4,9 @@
 판정: **Gate E 통과 — 제한 범위 로컬 v1 검토**. 이 판정은 현재 문서화한 지원 범위와 실행 환경에 한정한다.
 일반 기관 지원, 서비스 publish, main 병합 또는 배포 승인을 뜻하지 않는다.
 
+> 이 보고서는 14회차 당시 검수 기록입니다. 이후 BOJ collector·Windows CI·비API 인계 기능이 추가됐습니다.
+> 현행 판정은 [16회차 이후 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)을 따릅니다.
+
 ## 실행 및 수정
 
 `python scripts/verify_worldbank.py --live --gate-a`로 사용자 안내의 대표 절차를 재현했다. 첫 시도

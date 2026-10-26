@@ -16,3 +16,8 @@ SQLite deferred_non_api와 append-only event 목록은 scope/policy로 중복을
 정상 소형 파일, SQLite 재시작 후 중복 제거·이력 보존을 검증했다. Windows CI 결과는 이 로컬 검증에 포함하지 않는다.
 
 향후: 제한된 목록 pagination·상태 변경 및 별도 엔진의 명시적 인계 계약을 별도 회차에서 구현한다.
+
+## 현행 재검증 후속
+
+[Gate 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)에서 새 경로의 결함을 보완하고 626개 테스트와 네 provider live 실행을 확인했다.
+BIS flat 보존 원본은 cells=500010에서 정상 인계됐다. 초기 612개 검증만으로 완료했던 범위를 이 후속 증거로 보완한다.

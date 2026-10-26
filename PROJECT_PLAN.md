@@ -385,7 +385,7 @@ search는 후보/근거와 필요한 확인 항목을, collect는 확정 조건�
 ### 10.3 최종 사용자 설명서 및 PPT
 
 **작성 시점:** 14회차 최종 통합·검증 단계에서 실제 완성된 기능과 실행 결과를
-기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/ITERATION_14_REPORT.md`를 따른다.
+기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/GATE_REAUDIT_AFTER_ITERATION_16.md`를 따른다.
 
 **최종 산출물:** `docs/USER_GUIDE.md` 사용자 설명서와
 `docs/MacroAtlas_User_Guide.pptx` 사용자 안내 PPT. 설명서는 재현 가능한 상세 절차를,

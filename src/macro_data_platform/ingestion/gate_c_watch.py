@@ -7,6 +7,7 @@ from uuid import uuid4
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.official_files import (
     PROFILES,
+    FileCapacityFailure,
     OfficialFileDownload,
     OfficialFileTransport,
 )
@@ -75,12 +76,12 @@ class GateCFileEngine:
             return StageResult(result.status, payload, result.evidence_refs, result.warnings,
                                result.error_code, result.retry_hint, result.retry_after_seconds)
         except SourceFailure as failure:
-            if "sixteen MiB limit" in str(failure):
+            if isinstance(failure, FileCapacityFailure):
                 from macro_data_platform.ingestion.non_api_capacity import (
                     DeferredNonAPIStore,
                     decision,
                 )
-                details = getattr(failure, 'capacity', {})
+                details = failure.capacity
                 record = DeferredNonAPIStore(self.settings).register(
                     {"source_url": profile["url"], "format": profile["format"],
                      "source_agency": profile["source_agency"]},

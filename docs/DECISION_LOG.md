@@ -640,3 +640,11 @@
   combinations, including tests, Ruff, and installed CLI help. Details are in `docs/ITERATION_15_REPORT.md`.
 - No environment publish/deploy was performed. Current code, exact scopes, test evidence and remaining natural
   events are in `docs/ITERATION_15_REPORT.md`, `docs/GATE_C_SOURCE_WATCH.md`, and `docs/connectors/BOJ.md`.
+
+## D-076 — 16회차 이후 현행 Gate 재검증
+
+과거 BLOCKED/PARTIAL 표기를 그대로 사용하지 않고 현재 코드·회귀·지원 경로 live 응답으로 재검증했다.
+BIS flat 보존 원본의 cells=500010 인계 성공은 정책에 따른 정상 중단이다. 정상화 지원 완료로 확대하지 않는다.
+현재 관측에서 발생하지 않은 자연 revision/자연 transient resume는 미관측으로 유지한다.
+재검증 중 ZIP 선택·read-only 조회·HTTP 용량 타입·CLI 사유 누락·workbook 예외 처리를 수정했다.
+근거는 GATE_REAUDIT_AFTER_ITERATION_16.md에 있다.

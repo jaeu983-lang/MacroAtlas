@@ -9,6 +9,7 @@ import zipfile
 from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, time
 from html.parser import HTMLParser
+from itertools import chain
 from pathlib import PurePosixPath
 from typing import Any
 
@@ -79,7 +80,7 @@ def _table(format_name: str, header_values: list[Any], row_values: list[list[Any
            header_row: int, sheet_name: str | None = None,
            table_index: int | None = None, zip_member: str | None = None,
            warnings: tuple[str, ...] = ()) -> ParsedTable:
-    if any(len(str(value)) >= MAX_FIELD_CHARS for row in [header_values, *row_values]
+    if any(len(str(value)) >= MAX_FIELD_CHARS for row in chain((header_values,), row_values)
            for value in row if value is not None):
         raise ValueError("table field exceeds the field character limit")
     headers = _validate_headers(header_values)

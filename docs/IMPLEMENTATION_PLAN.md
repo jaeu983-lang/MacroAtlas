@@ -6,6 +6,10 @@
 
 ## 현재 상태 — 2026-10-26
 
+16회차 이후 현재 코드·실측으로 Gate A–E를 [재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)했다.
+BIS flat은 현재 셀 상한에 따라 정상 인계되어 parser 결함 목록에서 제외한다.
+과거 회차의 실패 상태를 현행 판정에 그대로 적용하지 않는다.
+
 14회차 로드맵은 완료됐다. Gate A와 D는 통과, Gate B/C는 제한 범위 통과, Gate E는 제한 범위 로컬
 v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`로 기본 브랜치에 병합됐고,
 병합 checkout에서 592개 테스트, Ruff, `git diff --check`, World Bank live 검증을 다시 통과했다.
@@ -53,7 +57,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 05~07 | BLS/Census 제한 API·metadata, 공식 안내 저장, 일부 metadata 정규화 | 모든 기관 검색, live SDMX, 광범위한 분류 의미 모델 |
 | 08 | 로컬 hash-verified metadata와 WDI seed의 lexical ranking, 명시 선택 기록, World Bank fixture E2E | 자연어 parser/CLI, 전체 기관 검색, 미확인 BLS/Census 후보의 자동 승격 |
 | 09 | CSV/TSV/TXT/HTML/ZIP/XLS/XLSX 제한 parser, 수집량 planning helper | PDF/fixed-width, output exporter, queue형 chunk 실행·resume |
-| 10 | BLS/Census/World Bank 제한 API, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개; Gate C 제한 범위 통과 | 자연 live revision/recovery, Japan BOJ observation connector, automatic backoff/rate limiter, 기관 전반 검증 |
+| 10 | BLS/Census/World Bank 제한 API, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개; Gate C 제한 범위 통과 | 자연 live revision/recovery, 다른 BOJ series, automatic backoff/rate limiter, 기관 전반 검증 |
 | 11 | 명시적 feedback store·CLI·revision history | 사용자 지식 자동 재사용·전체 문서 대화 동기화 |
 | 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
@@ -76,7 +80,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | Windows CI proxy 테스트 | 해결. Windows에서 대소문자만 다른 환경변수를 별개로 설정할 수 있다고 가정한 테스트가 실패 | 수정된 테스트와 네 조합 CI 유지 | 최종 HEAD CI 네 조합 성공으로 충족 |
 | BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
 | World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
-| BIS flat CSV ZIP | 미해결 지원 한계. 압축 해제 CSV가 현재 parser 한도에 걸려 `NEEDS_REVIEW` | 복구 실증에는 검증된 column ZIP 사용. flat 지원은 별도 제한량·streaming 설계 후 구현 | 한도 준수 parsing, 대용량·오류·resume 검증 전에는 지원 선언 금지 |
+| BIS flat CSV ZIP | 현행 재처리: cells=500010에서 정상 deferred·영속 등록, 새 normalized 없음 | 별도 대용량 엔진 인계 대기. 현재 엔진 수집 오류로 취급하지 않음 | 인계 동작 검증 충족. 실제 flat 정규화는 별도 엔진 범위 |
 | BIS watcher 첫 비교 | 해결. 명시 zip_member 추가로 기존 auto-select baseline과 scope가 달라 first_observation 발생 | 기존 exact scope 유지 | 수정 후 동일 baseline 대비 unchanged 확인. 첫 실행은 증거에서 제외 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
 | TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 최신 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |

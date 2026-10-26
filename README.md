@@ -8,9 +8,9 @@ CLI이며 자연어 채팅 제품은 아직 없습니다.
 
 2026-10-26 기준, Gate A 통과, Gate B/C는 **제한 범위 통과**, Gate D 통과,
 Gate E는 **제한 범위 로컬 v1 검토 통과**입니다. Gate C의 자연 원자료 개정 및 실제 provider 장애 후
-재개는 검증하지 않았습니다. 현재 확인된 사용자 경로와 기관별 `PARTIAL`/`BLOCKED` 한계는
+재개는 검증하지 않았습니다. 현재 확인된 사용자 경로와 구현·인계·미관측 범위는
 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)와
-[`docs/ITERATION_14_REPORT.md`](docs/ITERATION_14_REPORT.md)를 참조하세요.
+[`docs/GATE_REAUDIT_AFTER_ITERATION_16.md`](docs/GATE_REAUDIT_AFTER_ITERATION_16.md)를 참조하세요.
 
 MacroAtlas는 고정된 World Bank USA GDP 수집, BOJ FM08/FXERD01 월별 수집, TIC/BIS exact-scope
 파일 감시, task status/resume를 위한 `macroatlas` CLI를 제공합니다. 일반 자연어 검색, 자체 채팅 UI,

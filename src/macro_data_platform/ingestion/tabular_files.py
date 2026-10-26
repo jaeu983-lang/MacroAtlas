@@ -86,6 +86,9 @@ class TabularFileEngine:
             return _invalid("Expected a repository-local inbox path and an explicit supported format.")
         try:
             relative = data["relative_path"]
+            original = self.settings.project_root / relative
+            if any(part.is_symlink() for part in (original, *original.parents)):
+                return _invalid("Tabular input must not traverse a symbolic link.")
             source_path = self.settings._inside(relative)
             inbox = self.settings._inside(f"{self.settings.data_dir}/inbox")
             if not source_path.is_relative_to(inbox) or not source_path.is_file():
@@ -101,7 +104,16 @@ class TabularFileEngine:
             size = source_path.stat().st_size
             if size <= 0 or size > MAX_INPUT_BYTES:
                 return _invalid("Tabular input must be between one byte and sixteen MiB.")
-            raw = source_path.read_bytes()
+            with source_path.open("rb") as stream:
+                raw = stream.read(MAX_INPUT_BYTES)
+            if len(raw) >= MAX_INPUT_BYTES:
+                from macro_data_platform.ingestion.non_api_capacity import decision
+                record = DeferredNonAPIStore(self.settings).register(
+                    data, request.task_id, request.stage_id,
+                    decision("input_bytes", len(raw), MAX_INPUT_BYTES))
+                return StageResult(StageStatus.NEEDS_REVIEW, {"non_api_deferral": record},
+                                   warnings=("Input grew beyond the bounded file budget.",),
+                                   error_code=ErrorCode.SCHEMA_CHANGED)
             context = {key: data.get(key) for key in (
                 "delimiter", "header_row", "sheet_name", "table_index", "zip_member",
             ) if key in data}

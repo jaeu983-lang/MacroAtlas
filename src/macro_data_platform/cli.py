@@ -126,7 +126,7 @@ def _summary(doc: dict) -> dict:
         } for row in stages],
     }
     for key in ("raw_path", "manifest_path", "normalized_path", "request_manifest_path",
-                "source_change_status", "watch_source_id", "quality", "http_status"):
+                "source_change_status", "watch_source_id", "quality", "http_status", "non_api_deferral"):
         if key in payload:
             summary[key] = payload[key]
     if isinstance(payload.get("observations"), list):
@@ -149,11 +149,11 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         raise ValueError("project root must contain the MacroAtlas pyproject.toml")
     live = bool(getattr(args, "live", False))
     settings = _settings(root, live=live)
-    store = HistoryStore(settings)
-
     if args.command == "deferred":
         from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore
-        return 0, {"records": DeferredNonAPIStore(settings).list(args.record_id)}
+        return 0, {"records": DeferredNonAPIStore(settings, read_only=True).list(args.record_id)}
+
+    store = HistoryStore(settings)
 
     if args.command == "status":
         return 0, _summary(store.get(args.task_id))
