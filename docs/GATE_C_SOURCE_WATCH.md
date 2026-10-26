@@ -1,5 +1,7 @@
 # TIC/BIS live source watch
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 The CLI provides one manual live GET for each previously checked official file. Each task and stage
 are persisted before the request, so a natural retryable provider failure has a task ID and attempt
 history ready for later resume.

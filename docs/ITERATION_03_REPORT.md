@@ -1,5 +1,7 @@
 # 03회차 결과 — World Bank 공개 GDP 한 경로 수집
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 기준일: 2026-10-24. PROJECT_PLAN.md와 IMPLEMENTATION_PLAN.md 03 범위만 구현했다.
 04회차는 진행하지 않았다. 작업 브랜치는 `codex/iteration-03`이다.
 

@@ -1,8 +1,8 @@
 # Decision Log — 설계 변경·미해결 판단
 
 > 이 문서는 날짜가 붙은 결정 이력이다. 현재 실행 상태와 다음 허용 작업은
-> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)만 기준으로 삼는다. 오래된 회차 기록은 당시
-> 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)는 현재 구현·Gate 증거, [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)는
+> 다음 순서의 기준이다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
 
 ## 05회차 제한 구현 (2026-10-26)
 

@@ -1,5 +1,7 @@
 # 16회차 — 비API 대용량 분류·인계
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 구현: 원본 stat/제한 읽기, ZIP directory 및 member 크기·비율·개수, CSV 행·열·셀·필드,
 스프레드시트 dimensions 사전 검사를 추가했다. HTML/기타 parser 한도는 bounded parser가 멈춘 시점에
 inspection_required로 영속 등록한다. 모든 검사가 metadata만으로 완료되는 것은 아니다.

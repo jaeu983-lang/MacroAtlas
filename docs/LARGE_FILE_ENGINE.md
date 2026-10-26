@@ -1,6 +1,8 @@
 # 대용량 엔진 설정·시험·미실행 정책
 
 2026-10-26. 범위: **비API 로컬 파일의 용량·형식 qualification**. 정식 대용량 수집/정규화 승인은 후속이다.
+이 문서는 현재 qualification 정책이다. BIS production handoff의 개발 순서와 완료 조건은
+[제품 로드맵](ROADMAP_2026_10_26.md), 목표 경계는 [제품 아키텍처](PRODUCT_ARCHITECTURE.md)를 따른다.
 
 ## 공식 사례 조사와 선택
 

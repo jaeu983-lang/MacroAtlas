@@ -1,17 +1,19 @@
-# Implementation Plan — 현재 구현 상태와 후속 작업
+# MacroAtlas 현재 구현 상태와 Gate 증거
 
-> **이 문서는 현재 상태와 다음 허용 작업의 유일한 기준이다.** `PROJECT_PLAN.md`는 제품이
-> 요구하는 범위, 회차별 보고서는 실제 증거, `DECISION_LOG.md`는 설계 결정의 이력을 담는다.
-> 기본 규칙은 한 task에 한 회차이며, 실패 게이트를 통과한 것으로 취급하지 않는다.
+> **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
+> [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
+> 역사 보고서는 당시의 증거, [`DECISION_LOG.md`](DECISION_LOG.md)는 설계 선택의 이력을 담는다.
+> 기본 규칙은 한 task에 한 회차이며, 실패하거나 관측되지 않은 증거를 통과로 취급하지 않는다.
 
 ## 현재 상태 — 2026-10-26
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
 후속 검토에서 강제 종료 시 orphan worker·scratch 복구 공백을 확인해 17회차 branch에서 보완했다.
-후속 전체 645개 테스트, Ruff, diff 검사가 통과했고 새 HEAD CI run
+코드 commit `e2e72a5`에서 전체 645개 테스트, Ruff, diff 검사가 통과했고 해당 HEAD CI run
 [`40359478210`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40359478210)에서 Ubuntu/Windows × Python 3.11/3.12 네 조합이 모두 성공했다.
-PR #3은 열려 있고 PR #4는 #3을 base로 하는 stacked PR이라 아직 기본 branch에 통합되지 않았다.
+이 검증은 해당 코드 HEAD에 대한 증거다. 이후 문서 전용 commit을 포함한 현재 branch HEAD의 CI 상태와
+열린 PR의 base/head는 작업 시 원격에서 다시 확인한다.
 
 엔진의 실제 진입점·전달 계약·대용량 후속 연결은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 따른다.
 
@@ -121,18 +123,14 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-PR #2는 `82a018ed56f4cbe51015e92ecc2f693cf9355794`로 병합됐다. 지금 PR #3은 16회차 코드이며,
-PR #4는 17회차 코드와 강제 종료 복구 보완을 포함하도록 갱신할 예정이다. 두 PR 모두 미통합이고 #4는
-#3을 base로 한다. 따라서 우선 #3을 검토·통합하고, 이어 #4의 새 HEAD·CI를 검증해 통합한다.
+현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 먼저 기록된
+PR #3/#4 통합 순서를 실제 원격 상태에서 재확인하고, 그 뒤 재현 가능한 유지보수 QA 경로, BIS GLI flat
+정식 대용량 handoff, 검증된 World Bank/BOJ CSV 전달 순으로 진행합니다. 이 문서와 로드맵이 달라 보이면
+현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 
-통합 후 다음 제품 구현은 BIS GLI flat ZIP을 대상으로 한 명시적 production handoff다. 기존 시험 task는
-실행 승인으로 승격하지 않는다. 새 parent/child task·상태 전이·segmented artifact manifest·checkpoint/resume·
-원본 무결성·검증 출력 계약이 확보돼야 정상화 실행을 시작한다. 이후 저장된 검증 artifact를 이용한 World Bank/BOJ
-CSV 전달을 구현한다. provider 확대와 경제 의미 검증은 별도 수용 범위를 정한 뒤 진행한다.
-
-자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다.
-이 미관측 항목은 Gate C 제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 일일 감시는 병행한다.
-A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
+자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.
+이 미관측 항목은 Gate C 제한 범위를 전체 통과로 올리거나 고정 CLI·BOJ 검증을 막지 않습니다. 자연 감시는
+작업 순서와 별도로 계속합니다. A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
 
 ## 저장소·배포 추적성
 
@@ -142,11 +140,11 @@ A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
 
 ## 문서 사용 순서
 
-1. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 목표와 비범위.
-2. 이 문서: 현재 게이트와 다음 허용 task.
-3. 해당 회차 보고서와 `REFERENCE_SCENARIOS.md`: 테스트 입력과 근거.
-4. `DECISION_LOG.md`: 요구사항 충돌이 있을 때 확정된 결정.
-5. `AGENTS.md`와 `GUIDELINES.md`: 작업·보안·자료 보존 규칙.
+1. [`USER_GUIDE.md`](USER_GUIDE.md) / [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md): 사용자·개발자 안내.
+2. [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md): 다음 작업 순서.
+3. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 제품 장기 요구사항.
+4. 이 문서와 링크된 회차 보고서: 현재 게이트 및 당시 증거.
+5. [`DECISION_LOG.md`](DECISION_LOG.md), `AGENTS.md`, `GUIDELINES.md`: 결정·작업·보안 규칙.
 
 아래 01~14 절은 회차의 상세 범위 및 이력이다. 위 현재 상태 표와 충돌해 보이면 보고서와
 Git 증거를 확인하고 이 상단 상태를 업데이트한다. 종료 선언은 게이트 표와 보고서 모두를

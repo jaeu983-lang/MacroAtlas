@@ -63,14 +63,16 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 
 ## 다음 작업 우선순위
 
-현재 확인한 제품의 활성 transport 장애는 없다. 가장 가까운 완료 작업은 코드 통합이고, 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
+현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
+대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
 1. **완료:** 17회차 trial의 강제 종료 복구를 구현했다. 코드 HEAD `e2e72a5`에서 645개 테스트, Ruff, diff 검사와 4조합 CI가 통과했다.
 2. **통합:** PR #3은 열려 있고 PR #4는 PR #3 branch를 base로 하는 stacked PR이다. #3 검토·통합 후 #4를 기본 branch 기준으로 다시 확인해야 한다. 아직 통합 전이므로 제품 기본 경로에 반영된 것으로 표시하지 않는다.
-3. **다음 구현:** 통합 뒤 BIS GLI flat ZIP 하나를 대상으로 정식 대용량 handoff를 만든다. 불변 event와 parent/child task, 명시적 handed_off/resolved 상태, 원본 hash·manifest, chunk/checkpoint/resume, output validation을 수용 조건으로 둔다. 단위·경제 의미는 문자열 값에서 추론하지 않는다. 실패·미지원 입력은 본 실행을 중단하고 원인을 `NOT_EXECUTED`로 남긴다.
-4. **그다음:** 완료·검증된 artifact 계약에 연결되는 World Bank/BOJ CSV exporter를 구현한다. 기존 raw·manifest 확인, null 처리, provenance, 경로·덮어쓰기 방지가 선행 조건이다. XLSX는 별도 결정이다.
-5. **후속 범위:** provider 확대, Windows resource-limited worker, 일반 자연어/다국가 탐색, 경제적 outlier·개정 의미 검증은 아직 미구현이다. 각각 공식 자료·명시적 수용 범위가 정해질 때 별도 작업으로 시작한다.
-6. **병행 증거 대기:** 매일 TIC/BIS 감시는 계속하되 unchanged는 알림이나 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
+3. **유지보수 QA 경로:** pattern analyzer는 read-only이며 PowerShell launcher는 현재 환경에서 재현되지 않았다. cross-platform runner, isolated worktree, 실행 fingerprint·전체 검사 결과, no-auto-merge를 수용 조건으로 둔다.
+4. **다음 제품 구현:** 유지보수 QA 바탕을 정리한 뒤 BIS GLI flat ZIP 하나를 대상으로 정식 대용량 handoff를 만든다. 불변 event와 parent/child task, 명시적 `handed_off/resolved` 상태, 원본 hash·manifest, chunk/checkpoint/resume, output validation을 수용 조건으로 둔다. 단위·경제 의미는 문자열 값에서 추론하지 않는다. 실패·미지원 입력은 본 실행을 중단하고 원인을 `NOT_EXECUTED`로 남긴다.
+5. **그다음:** 완료·검증된 artifact 계약에 연결되는 World Bank/BOJ CSV exporter를 구현한다. 기존 raw·manifest 확인, null 처리, provenance, 경로·덮어쓰기 방지가 선행 조건이다. XLSX는 별도 결정이다.
+6. **후속 범위:** provider 확대, Windows resource-limited worker, 일반 자연어/다국가 탐색, 경제적 outlier·개정 의미 검증은 아직 미구현이다. 각각 공식 자료·명시적 수용 범위가 정해질 때 별도 작업으로 시작한다.
+7. **병행 증거 대기:** TIC/BIS 감시는 유지하되 unchanged는 알림이나 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
 
 이번 계획에서 넘어가지 않은 것은 모두 같은 종류의 “실패”가 아니다. PR #3/#4는 통합 대기, BIS 정규화·CSV 전달·provider 확대는 미구현 기능, 자연 개정/장애는 아직 관측되지 않은 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 

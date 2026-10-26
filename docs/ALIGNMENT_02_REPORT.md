@@ -1,5 +1,7 @@
 # 보완 02 구현 보고서
 
+> 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
+
 기준일: 2026-10-24. 범위: 최신 PROJECT_PLAN/IMPLEMENTATION_PLAN/WORKFLOW_ALIGNMENT_PLAN의
 **보완 02만**. 브랜치: `codex/workflow-alignment-02`. 보완 03·04회차 미착수.
 

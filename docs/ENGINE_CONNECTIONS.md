@@ -2,6 +2,8 @@
 
 기준: 2026-10-26 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 실행 제어는 하나의 Orchestrator를 사용한다. transport·parser·capacity 검사·storage는 엔진의 내부 부품이다.
+사용자 문제와 목표 구조의 맥락은 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md), 다음 구현 순서는
+[로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
 ```mermaid
 flowchart TD

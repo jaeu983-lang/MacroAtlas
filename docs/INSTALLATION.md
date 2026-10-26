@@ -1,7 +1,9 @@
 # 개발 환경 설치와 검사
 
-이 문서는 현재 MacroAtlas 소스 체크아웃을 설치하고 로컬 테스트하는 절차다. 제품 상태와 다음
-구현 회차는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 제품 요구사항은
+이 문서는 개발 체크아웃을 설치하고 검사하는 절차다. 사용자는 먼저
+[`USER_GUIDE.md`](USER_GUIDE.md)를, 개발 흐름은 [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)를
+참조한다. 현재 증거와 구현 상태는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 다음
+순서는 [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md), 장기 요구사항은
 [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md)를 기준으로 한다.
 
 ## 필요한 도구
