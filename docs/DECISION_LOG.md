@@ -420,3 +420,14 @@
   매트릭스를 채울 때까지 미통과다.
 - 이는 기존 `ITERATION_08_REPORT.md`의 당시 판정을 삭제하지 않고 후속 재판정으로 추가한다.
   상세 적용은 PROJECT_PLAN의 현행 요구사항과 IMPLEMENTATION_PLAN의 상태 표를 따른다.
+
+## 로컬 source checkpoint와 clean checkout 검증 (2026-10-26)
+
+- **D-061 / IMPLEMENTED, remote publication pending:** 05~10회차 코드·테스트·계획을 local branch
+  `codex/institution-discovery-05`의 commit
+  `7a2bb031d61061abc894ac206c45a95d8e45f5fd`로 고정했다. detached clean checkout에서 pytest 524개,
+  Ruff 및 `git diff --check`가 통과했다. API 키와 `data/raw` 원본은 커밋하지 않았다.
+- 읽기 전용 `git ls-remote`에서 `origin/codex/iteration-04-gate-a`는 기존 기준 commit
+  `2c4e11fa0534bae6458154abfa14a03d3617a15b`이며, 새 local branch/commit은 origin에 없다.
+  기존의 게시 금지 지시에 따라 push, 환경 draft 변경 또는 publish를 수행하지 않았다. 따라서 clean
+  remote checkout과 실행 환경 배포 추적성은 아직 미해결이다.

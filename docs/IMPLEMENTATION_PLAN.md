@@ -15,7 +15,8 @@
 | E / 14 | **미실행** | 최종 회귀·릴리스 검토를 시작하지 않음. |
 
 Plan/code audit 전체 검증: **pytest 524 passed**, Ruff 통과, `git diff --check` 통과.
-clean-checkout 재검증 결과와 commit 식별자는 저장소·배포 추적 섹션에 추가한다.
+validated source checkpoint `7a2bb031d61061abc894ac206c45a95d8e45f5fd`를 detached clean checkout해
+같은 524개 테스트, Ruff, diff check를 다시 통과했다.
 
 Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 CLI·자연어 UI나 BLS/Census의
 후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. Gate C를 통과하기 전에는 11회차에
@@ -61,12 +62,13 @@ Gate C 이후에는 Gate D(11~12), Gate E(13~14)를 한 task당 한 회차로 �
 
 ## 저장소·배포 추적성
 
-작업 시작/종료 때 branch, `HEAD`, 원격 ref와 dirty status를 기록한다. 이 체크아웃은
-`codex/institution-discovery-05` branch에서 열렸고, 당시 `origin/codex/iteration-04-gate-a`는
-`2c4e11fa0534bae6458154abfa14a03d3617a15b`를 가리켰다. 05~10회차 소스/테스트와 이 task의
-수정은 새 local commit으로 고정하고 clean checkout에서 검증한다. 원격 push와 환경 draft/publish는
-수행하지 않으므로 원격 branch는 새 commit을 포함하지 않는다. 실제 환경 배포 가능성은 push와
-명시적으로 승인된 설정 갱신 후 별도 확인해야 한다.
+작업 시작/종료 때 branch, `HEAD`, 원격 ref와 dirty status를 기록한다. 이 checkout의 branch는
+`codex/institution-discovery-05`이며 source checkpoint는
+`7a2bb031d61061abc894ac206c45a95d8e45f5fd`다. detached clean checkout에서 pytest 524개, Ruff,
+`git diff --check`를 통과했다. 확인된 `origin/codex/iteration-04-gate-a`는 이전
+`2c4e11fa0534bae6458154abfa14a03d3617a15b`를 가리킨다. 이 task는 원격 push와 환경 draft/publish를
+하지 않았으므로 새 원격 checkout 및 실행 환경에는 위 source checkpoint가 아직 전달되지 않았다.
+실제 배포 추적성을 닫으려면 해당 원격 branch/ref 갱신과 환경 설정 변경·게시가 필요하다.
 
 ## 문서 사용 순서
 

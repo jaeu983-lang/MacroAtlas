@@ -13,7 +13,9 @@ BLS/Census API 수집, 기관 메타데이터 조회, 제한 파일 파서는 �
 
 앞서 실행한 BLS와 Census live smoke는 현재 작업 트리의 API 호출·파싱·저장을 확인했습니다.
 그 당시 원격 `codex/iteration-04-gate-a`는 Gate A 기준 커밋을 가리켰고, 05~10회차 코드는
-그 이후 로컬 변경분이었습니다. current gate status와 다음 작업은
+그 이후 로컬 변경분이었습니다. 해당 코드는 local source checkpoint
+`7a2bb031d61061abc894ac206c45a95d8e45f5fd`에 고정해 clean checkout에서 재검증했습니다.
+그 checkpoint는 아직 원격에 push되지 않았습니다. current gate status와 다음 작업은
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), 증거는 회차별 보고서에 기록합니다.
 
 ## 어디서 무엇을 볼까

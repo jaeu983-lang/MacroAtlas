@@ -44,10 +44,11 @@ backoff 재시도를 요구했지만, 실제 Orchestrator는 명시적 resume �
 현재 workspace 코드에서 BLS `CUUR0000SA0` 2024 요청과 Census ACS 2022 California
 `B01001_001E` 요청이 각각 HTTP 200으로 완료됐고, 원본·manifest 해시 및 크기를 확인했다.
 이 테스트는 당시 작업 트리의 동작만 증명한다. `origin/codex/iteration-04-gate-a`는
-`2c4e11fa0534bae6458154abfa14a03d3617a15b`로 확인됐고, 05~10 코드 작업 트리는 별도 local
-branch `codex/institution-discovery-05`의 미커밋/untracked 변경이었다. 이번 후속 작업은 이를
-local commit으로 고정하고 clean checkout에서 검증한다. 원격 push와 환경 draft/publish는 수행하지
-않으므로 그 원격 ref를 새 코드의 배포 근거로 보지 않는다.
+`2c4e11fa0534bae6458154abfa14a03d3617a15b`로 확인됐다. 05~10 코드 작업 트리는 별도 local
+branch `codex/institution-discovery-05`의 미커밋/untracked 변경이었고, 이를
+`7a2bb031d61061abc894ac206c45a95d8e45f5fd` local commit으로 고정했다. detached clean checkout에서
+pytest 524개, Ruff, `git diff --check`를 통과했다. 원격 push와 환경 draft/publish는 하지 않았으므로
+원격 ref는 새 코드의 배포 근거가 아니다.
 
 이전 raw manifest에는 비교용 hash가 없어 source change status는 `unknown_history_integrity`로
 남았다. BLS 응답의 volatile `responseTime`만 제외하는 canonical comparison은 구현했지만,
@@ -60,6 +61,6 @@ local commit으로 고정하고 clean checkout에서 검증한다. 원격 push�
 
 이번 task는 Gate B/C 상태와 배포 추적성을 분리한다. Gate B는 D-060에 따라 엔진/API 제한
 범위에서 통과했고, Gate C는 기관별 파일/API 및 변경·복구 시나리오 부족으로 미통과다.
-local commit과 clean checkout 검증은 이 코드 snapshot을 재현 가능하게 하지만, push/publish가
-없으므로 실행 환경의 원격 checkout까지 해결하지 않는다. 자동 기관 지원 완료나 출시 준비로
-표현하지 않는다.
+local commit `7a2bb031`과 clean checkout 검증은 이 코드 snapshot을 재현 가능하게 하지만,
+push/publish가 없으므로 실행 환경의 원격 checkout까지 해결하지 않는다. 자동 기관 지원 완료나
+출시 준비로 표현하지 않는다.
