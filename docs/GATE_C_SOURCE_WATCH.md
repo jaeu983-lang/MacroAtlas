@@ -35,3 +35,15 @@ clears and any `Retry-After` delay elapses. Keep the task ID unchanged.
 
 This watch is manual and does not create a recurring job. Natural source changes and natural
 failure-to-resume remain outside the current limited Gate C pass until observed.
+
+## Post-merge monitoring — 2026-10-26
+
+PR #2 merged at `82a018e`; local and remote base HEAD matched. A daily condition-watch automation
+was created and enabled. Each future run must first verify access to this workspace, SQLite history
+and preserved baselines; scheduling success does not prove future workspace availability. Missing
+storage is a blocker, not permission to create a replacement baseline. Unchanged results stay quiet.
+
+Immediate recheck: TIC task `bb269b6e-adac-451b-b6a5-ad85b3bc5aa7` and BIS task
+`2b795b28-a742-4821-bbfe-8887e37b5099` both completed with `unchanged`. No natural failure occurred.
+Gate C D-067 limited pass remains; actual revision and natural durable recovery remain NOT_RUN.
+The automation reassesses evidence when observed and reports actionable changes only.
