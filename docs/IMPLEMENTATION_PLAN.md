@@ -63,6 +63,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
 | 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
+| 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 별도 대용량 엔진 실행·CSV 출력, 자연 revision/recovery |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
@@ -104,7 +105,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 ## 다음 작업 순서
 
 PR #2는 `82a018ed56f4cbe51015e92ecc2f693cf9355794`로 병합됐고 로컬/원격 기준 HEAD 일치를 확인했다.
-다음 제품 작업은 [16회차 기획안](ITERATION_16_PLAN.md)의 구현이다. 자연 TIC/BIS 개정과 provider 장애는
+16회차 구현과 현행 Gate 재검증을 완료했다. 다음 통합 단계는 PR #3 검토이며, 별도 대용량 엔진과 CSV 출력은 후속 범위다. 자연 TIC/BIS 개정과 provider 장애는
 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다. 이 미관측 항목은 Gate C의
 제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 다음 제품 회차는 별도 범위와 수용
 기준을 새로 정한다. A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.

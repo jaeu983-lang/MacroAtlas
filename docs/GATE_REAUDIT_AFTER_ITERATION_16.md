@@ -54,3 +54,9 @@ BIS flat은 이번 네트워크 수집이 아니라 SHA256
   따라서 기관 서버가 여전히 차단했다고 주장하지 않고 현재 제품의 미구현 범위로 표시한다.
 - BOJ는 이번 성공한 series/month로 지원한다. MOF/e-Stat·다른 BOJ series로 확대할 근거는 없다.
 - 별도 대용량 엔진·CSV export는 현재 구현 목록에 없다. 이 항목들은 새 scope의 개발 작업이다.
+
+## 통합 검증 추적
+
+[PR #3](https://github.com/jaeu983-lang/MacroAtlas/pull/3)의 최신 커밋 CI에서
+Ubuntu/Windows × Python 3.11/3.12의 full suite·Ruff·CLI 검증 결과를 추적한다.
+기존 코드 검증 run은 [40341744954](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40341744954)에 있다.
