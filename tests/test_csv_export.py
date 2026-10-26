@@ -7,6 +7,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -141,6 +142,20 @@ class CSVExportTests(unittest.TestCase):
         )
         return dispatch(args)
 
+    def _update_task_document(self, task_id, update):
+        with closing(sqlite3.connect(self.settings.database_path)) as connection:
+            raw = connection.execute(
+                "SELECT document FROM tasks WHERE task_id=?",
+                (task_id,),
+            ).fetchone()[0]
+            document = json.loads(raw)
+            update(document)
+            connection.execute(
+                "UPDATE tasks SET document=? WHERE task_id=?",
+                (json.dumps(document), task_id),
+            )
+            connection.commit()
+
     def test_worldbank_csv_preserves_null_zero_and_audited_provenance_read_only(self):
         task_id = self._collect("worldbank")
         database = self.settings.database_path
@@ -206,47 +221,32 @@ class CSVExportTests(unittest.TestCase):
 
     def test_non_successful_stage_and_changed_source_are_refused(self):
         task_id = self._collect("boj")
-        with sqlite3.connect(self.settings.database_path) as connection:
-            raw = connection.execute(
-                "SELECT document FROM tasks WHERE task_id=?",
-                (task_id,),
-            ).fetchone()[0]
-            document = json.loads(raw)
+
+        def fail_stage(document):
             document["stages"][-1]["status"] = "NEEDS_REVIEW"
-            connection.execute(
-                "UPDATE tasks SET document=? WHERE task_id=?", (json.dumps(document), task_id)
-            )
+
+        self._update_task_document(task_id, fail_stage)
         with self.assertRaisesRegex(ValueError, "task_stage_not_successful"):
             export_task(self.settings, task_id, "data/exports/stage.csv")
 
     def test_changed_source_status_is_refused_even_when_task_status_was_forged(self):
         task_id = self._collect("boj")
-        with sqlite3.connect(self.settings.database_path) as connection:
-            raw = connection.execute(
-                "SELECT document FROM tasks WHERE task_id=?",
-                (task_id,),
-            ).fetchone()[0]
-            document = json.loads(raw)
+
+        def change_source_status(document):
             document["stages"][-1]["result"]["payload"]["source_change_status"] = "changed"
-            connection.execute(
-                "UPDATE tasks SET document=? WHERE task_id=?", (json.dumps(document), task_id)
-            )
+
+        self._update_task_document(task_id, change_source_status)
         with self.assertRaisesRegex(ValueError, "source_change_requires_review"):
             export_task(self.settings, task_id, "data/exports/changed.csv")
         self.assertFalse((self.root / "data/exports/changed.csv").exists())
 
     def test_quality_record_drift_is_refused(self):
         task_id = self._collect("boj")
-        with sqlite3.connect(self.settings.database_path) as connection:
-            raw = connection.execute(
-                "SELECT document FROM tasks WHERE task_id=?",
-                (task_id,),
-            ).fetchone()[0]
-            document = json.loads(raw)
+
+        def fail_quality(document):
             document["stages"][-1]["result"]["payload"]["quality"]["status"] = "failed"
-            connection.execute(
-                "UPDATE tasks SET document=? WHERE task_id=?", (json.dumps(document), task_id)
-            )
+
+        self._update_task_document(task_id, fail_quality)
         with self.assertRaisesRegex(ValueError, "boj_stored_result_mismatch"):
             export_task(self.settings, task_id, "data/exports/quality.csv")
 
