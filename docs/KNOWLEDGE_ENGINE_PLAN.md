@@ -1,6 +1,7 @@
 # 기관·개념 지식 엔진 — 의미 보존과 조회 비용 통제
 
-2026-10-24 / **기획 반영, 미구현**. 저장 용량보다 지연·메모리·연산 효율을 우선한다.
+2026-10-24 / 계획 기준. 2026-10-26 iteration 12에서 **제한 lookup storage API 부분 구현**.
+저장 용량보다 지연·메모리·연산 효율을 우선한다.
 PROJECT_PLAN.md §5.1/5.2/6.5/9.4, IMPLEMENTATION_PLAN.md 11~13회차의 세부 요구다.
 현재 보완 01 값 계약·보완 02/03·04회차 코드를 확장하는 작업은 아니다.
 
@@ -57,6 +58,26 @@ CP/TIC 등에 관한 앞선 사용자 예시는 문제 유형의 설명이며 �
 매 요청 전체 로딩 대상으로 쓰지 않는다. 11~12회차에서 별도 조회용 색인/투영을 설계하되
 기존 작업 이력·JSON/hash의 호환과 원본 추적을 유지해야 한다.
 
+## 12회차 구현 기록 — 2026-10-26
+
+`storage.knowledge.KnowledgeStore`는 `feedback_current`의 SQLite projection과 feedback 변경
+queue/trigger를 제공한다. Query 경로는 task JSON 및 append-only revision history를 읽지 않고,
+같은 SQLite snapshot에서 pending refresh·index revision·후보를 확인한다. Refresh는 명시 호출만
+가능하고 호출당 최대 500개 queue 변경을 적용한다. 조회는 기관과 정확히 요청된 자료/개념/분류
+축/버전 또는 그보다 넓은 null scope만 허용한다. 요청 차원이 빠졌는데 특정 자료에만 해당하는
+기록은 결과에 섞지 않는다. 조회 입력/결과·캐시는 각각 행 500개(+truncation sentinel), 결과 50개,
+LRU 64개 및 직렬화 기준 1 MB로 제한한다. 불완전 조회는 partial로 보고하고 조건부 재사용을 막는다.
+
+기본 조회는 accepted user instruction과 official evidence만 반환한다. 공식 근거는 참조로만
+표시하고, inference는 명시 opt-in이어도 `review_required`/`not_promoted`로 남긴다. 동일한
+kind/category/정확 범위의 상충 지시는 review-required로 표시한다. 과거 사용자 지시는 자동
+적용되지 않는다. 새 output preference가 없으면 선택을 묻고, 기존 선호는 충돌이 없더라도
+확인을 요청한다. 현재 task의 명시 지시는 과거 지식보다 우선한다.
+
+이 구현은 Python storage API이며 Orchestrator의 실제 반복 task·재시도 계획에 연결하지 않았다.
+따라서 iteration 12의 코드·성능 검증 일부를 제공하지만 Gate D의 end-to-end 재시도 효율 조건을
+충족하지 않는다. 상세 결과와 benchmark 한계는 [12회차 보고서](ITERATION_12_REPORT.md)에 둔다.
+
 ## 성능 및 정확성 검수
 
 구현 시 기준 PC/환경, 자료 크기/구성, 입력 부하와 허용 예산을 정하고 설정·보고서에 남긴다.
@@ -80,6 +101,6 @@ CP/TIC 등에 관한 앞선 사용자 예시는 문제 유형의 설명이며 �
 매 사용자 요청마다 기술 예산을 다시 물을 필요 없이 검증된 기본 설정을 재사용한다.
 부족한 자원 때문에 의미 확인이 생략되면 안 되며, 추가 조사가 필요하면 비용과 범위를 설명한다.
 
-이번에는 기획 문서만 수정했다. 코드·DB·원본·API 키·실행 정책·자동화 변경 없음.
-테스트/Ruff·실제 API·성능 benchmark는 실행하지 않았다. 직전 318개 테스트/Ruff 통과는
-과거 값 계약 확장 검증이며 이 엔진의 검증 결과가 아니다. 보완 02·03과 04회차도 미착수다.
+초기 2026-10-24 계획 작성 당시에는 기획 문서만 바뀌었으며 코드·DB·원본·API 키·실행 정책·자동화
+변경, 테스트/Ruff·API·성능 benchmark 실행이 없었다. 직전 318개 테스트 결과는 당시 이 엔진의
+검증이 아니었다. 2026-10-26 iteration 12의 구현·검증 결과는 위 추가 기록과 별도 보고서를 따른다.

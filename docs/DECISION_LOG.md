@@ -480,3 +480,19 @@
   Live source-change comparison and provider recovery evidence remain incomplete, so Gate C is not
   passed. These code/document changes are local, uncommitted and unpushed; no environment publish was
   performed.
+
+## Iteration 12 bounded knowledge lookup (2026-10-26)
+
+- **D-066 / IMPLEMENTED, Gate D not passed:** Following the user's explicit next-stage instruction,
+  continue with the bounded portion of iteration 12 while Gate C remains failed. Keep the feature in
+  SQLite as a current projection over the append-only feedback store. Feedback writes enqueue changes;
+  only an explicit refresh applies at most 500 queue entries. Requests never rebuild the projection or
+  load task histories. Institution and supplied scope dimensions are indexed; unspecified request
+  dimensions only match null-scope records, while requested dimensions may also match broader null scope.
+- Return only accepted instructions/evidence by default. Inference remains opt-in and review-required;
+  official evidence is reference-only. Prior output preferences always require user confirmation,
+  conflicts require review, and a current explicit instruction takes precedence. Bound candidate reads,
+  result count, and cache bytes/entries; incomplete candidate scans cannot supply reuse decisions.
+- Gate D remains **not passed** because no Orchestrator repeat-task/retry path consumes the lookup and
+  same-institution end-to-end efficiency has not been measured. Synthetic microbenchmark measurements
+  cover only the SQLite lookup layer. See `docs/ITERATION_12_REPORT.md`.
