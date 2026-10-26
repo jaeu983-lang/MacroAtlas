@@ -1,8 +1,8 @@
 # Latest evidence review — 2026-10-26
 
-See [Gate C evidence review](GATE_C_REVIEW_2026_10_26.md) for the latest live BIS capture and
-remaining Gate C evidence gaps. The user later explicitly authorized Iteration 11 before Gate C
-passed; its implementation and verification are in [Iteration 11 report](ITERATION_11_REPORT.md).
+See [Gate C evidence review](GATE_C_REVIEW_2026_10_26.md) for the current limited-scope pass and the
+natural live evidence that remains outside it. The user later explicitly authorized Iteration 11
+before Gate C passed; its implementation and verification are in [Iteration 11 report](ITERATION_11_REPORT.md).
 
 # Iteration 10 report — quality diagnostics, error classes, and recovery
 
@@ -182,6 +182,25 @@ data API request was formed. BOJ collection is explicitly `BLOCKED`, not passed 
 The guide fetcher now preserves `Retry-After` seconds on retryable failures and does not retry
 automatically; a fixture verifies a 503 with `Retry-After: 17`. This is simulated error-path evidence.
 Live changed-source comparison for TIC/BIS and a provider recovery/resume cycle remain unverified.
-The suite now has **556 pytest passed**; `ruff check .` and `git diff --check` passed. Gate C remains
-not passed, and Iteration 11 is not started. Code and documentation changes remain uncommitted and
-unpushed on `codex/institution-discovery-05` at base HEAD `781827593924e35dadbc1188f09c7ea40a7b7c76`.
+At the time of this follow-up, the suite had **556 pytest passed**; `ruff check .` and
+`git diff --check` passed. Gate C was not passed and Iteration 11 had not started yet. This status
+predates D-067 and the later Iteration 11 completion. Code and documentation changes were then
+uncommitted and unpushed on `codex/institution-discovery-05` at base HEAD
+`781827593924e35dadbc1188f09c7ea40a7b7c76`.
+
+## Follow-up — Gate C limited-scope reconsideration (2026-10-26)
+
+Decision D-067 narrows Gate C acceptance to explicitly verified paths. A temporary copy of the
+preserved TIC Table 5 raw file was modified from Japan `1068.3` to `1068.4` and passed through the
+existing `TabularFileEngine`. The changed copy returned `NEEDS_REVIEW` with `source_change_status`
+`changed`; both raw captures were preserved, no normalized table was created for the changed copy,
+and the original archived capture remained byte-for-byte unchanged. The changed copy hash was
+`fae2ef66e684208fa2de60b71f0056bc5b04e94168349267880170b4a2425f93`.
+
+An Orchestrator integration test injects a simulated HTTP 503 with `Retry-After: 2`, verifies that the
+failed attempt and retry delay persist, reopens the HistoryStore, rejects a premature resume, then
+resumes the same task after the delay and succeeds on the fixture response. This proves the controlled
+durable path only; no natural provider outage/recovery was observed. No external source request was
+made for this follow-up. Gate C is **passed for the limited paths listed in the evidence review**;
+natural TIC/BIS revisions and natural provider failure/resume remain `NOT_RUN`, BOJ remains `BLOCKED`,
+and Gate D remains not passed. Iteration 11 had already been completed and is not restarted.

@@ -304,7 +304,8 @@ def test_source_provenance_rejects_invalid_capture_metadata(tmp_path, extra):
     assert result.status is StageStatus.FAILED_TERMINAL
 
 
-def test_live_source_change_is_preserved_and_requires_review_before_normalization(tmp_path):
+def test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization(
+        tmp_path):
     settings = Settings(tmp_path)
     url = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt"
     before = b"Country\t2026-07\nJapan\t1234.5\n"

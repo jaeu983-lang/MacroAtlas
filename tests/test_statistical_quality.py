@@ -68,6 +68,36 @@ class SequenceTransport:
         return result
 
 
+class FakeHttpResponse:
+    def __init__(self, body):
+        self.body = body
+        self.status = 200
+        self.headers = {"Content-Length": str(len(body)), "Content-Type": "application/json"}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self, size):
+        chunk, self.body = self.body[:size], self.body[size:]
+        return chunk
+
+
+class SequenceOpener:
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.requests = []
+
+    def open(self, request, *, timeout):
+        self.requests.append((request, timeout))
+        response = self.responses.pop(0)
+        if isinstance(response, BaseException):
+            raise response
+        return response
+
+
 def stage_input(engine, payload):
     return StageInput("quality-task", "quality test", engine, payload, None, ())
 
@@ -163,6 +193,58 @@ def test_429_failure_remains_retryable_across_process_restart(
     assert final["status"] == "COMPLETED"
     assert transport.calls == 2
     assert final["stages"][-1]["result"]["payload"]["quality"]["status"] == "passed"
+
+
+def test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after(
+        tmp_path):
+    body = json.dumps(bls_body(bls_row())).encode()
+    opener = SequenceOpener(
+        HTTPError(BLS_URL, 503, "fixture outage", {"Retry-After": "2"}, BytesIO(b"")),
+        FakeHttpResponse(body),
+    )
+
+    class Clock:
+        value = NOW
+
+        def __call__(self):
+            return self.value
+
+    clock = Clock()
+    settings = Settings(tmp_path, network_enabled=True)
+    engines = {("bls", "1"): BLSEngine(settings)}
+    first_runner = Orchestrator(HistoryStore(settings), engines, clock=clock)
+    task = first_runner.create("persist provider retry through Orchestrator")
+    first_runner.plan(task.task_id, TaskPlan((StageSpec("bls", "bls", BLS_INPUT),)))
+
+    with patch("macro_data_platform.connectors.statistical_http.urllib.request.build_opener",
+               return_value=opener):
+        failed = first_runner.run(task.task_id)
+        restarted = Orchestrator(HistoryStore(settings), engines, clock=clock)
+        with pytest.raises(ValueError, match="Retry-After delay has not elapsed"):
+            restarted.resume(task.task_id)
+        assert len(opener.requests) == 1
+        clock.value += timedelta(seconds=2)
+        completed = restarted.resume(task.task_id)
+
+    assert failed["status"] == "FAILED"
+    assert failed["stages"][-1]["status"] == StageStatus.FAILED_RETRYABLE
+    assert failed["stages"][-1]["result"]["payload"]["http_status"] == 503
+    assert failed["stages"][-1]["result"]["retry_after_seconds"] == 2
+    assert completed["task_id"] == task.task_id
+    assert completed["status"] == "COMPLETED"
+    assert [row["status"] for row in completed["attempts"]] == ["FAILED", "COMPLETED"]
+    assert [row["status"] for row in completed["stages"]] == [
+        StageStatus.FAILED_RETRYABLE, StageStatus.SUCCEEDED,
+    ]
+    assert completed["stages"][-1]["result"]["payload"]["quality"]["status"] == "passed"
+    assert len(opener.requests) == 2
+    assert all(request.full_url == BLS_URL and request.method == "POST"
+               for request, _timeout in opener.requests)
+    reopened = HistoryStore(settings)
+    assert reopened.get(task.task_id) == completed
+    event_kinds = [event["kind"] for event in reopened.events(task.task_id)]
+    assert "TASK_RESUMED" in event_kinds
+    assert event_kinds.count("STAGE_FINISHED") == 2
 
 
 @pytest.mark.parametrize(("source", "engine_cls", "input_data"), [

@@ -1,11 +1,53 @@
 # Gate C 증거 재검토 — 2026-10-26
 
-## 최신 재검토 결과 — 2026-10-26
+## 현행 판정 — 제한 범위 통과 (2026-10-26)
 
-판정: **Gate C 미통과**. 기존 TIC/BIS exact-scope baseline과 비교 결과는 `unchanged`이며,
-실제 원자료 개정 쌍의 changed 감지 증거가 없다. BIS flat ZIP은 HTTP 503 뒤 HTTP 200을 반환했지만,
+판정: **Gate C 제한 범위 통과** (D-067). 이 판정은 보존된 live baseline의 무결성, 실제 TIC raw
+복사본을 이용한 통제 변경 감지, Orchestrator의 simulated 503 저장·재개 경로까지로 범위를 제한한다.
+자연 발생한 source revision 또는 live provider failure→resume를 확인한 것으로 보지 않는다.
+
+보존된 TIC/BIS exact-scope baseline과 같은 범위 반복은 모두 `unchanged`였다. 이를 기준본 무결성으로
+사용해 TIC raw 복사본의 값 하나를 임시 작업공간에서만 바꿔 실제 `TabularFileEngine`에 다시 넣었다.
+첫 수집은 `SUCCEEDED`, 바뀐 복사본은 `changed`/`NEEDS_REVIEW`였고 두 raw가 모두 보존됐다. 바뀐
+복사본의 normalized 출력은 생성되지 않았으며 원래 capture SHA256도 그대로였다. 원본 개정 실측이
+아니라 **실제 live raw를 seed로 한 controlled copy mutation**이다.
+
+Orchestrator 통합 시험에서 BLS HTTP 경로에 503과 `Retry-After: 2`를 모의 주입했다. 실패 attempt와
+retry hint를 저장하고 HistoryStore/Orchestrator를 다시 연 뒤, 지연 전 resume 차단을 확인했다. 가상
+시계를 2초 전진한 뒤 **같은 task ID**를 재개해 다음 fixture 응답에서 성공했고, 두 attempt 및 stage
+이력이 유지됐다. 이는 **simulated provider failure** 증거이지 자연 발생한 BIS/BLS 장애가 아니다.
+이번 task에서는 외부 원자료 요청을 하지 않았다.
+
+이번 변경 검증: `pytest -q -o addopts=''` **575 passed**, `ruff check .` 통과,
+`git diff --check` 통과.
+
+적용 범위는 현재 검증된 BLS/Census 제한 API 수집, TIC/BIS 명시 파일 intake와 manifest/hash 확인,
+TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure/resume 경로다. BOJ는
+계속 `BLOCKED`; 일반 기관 전반 의미·변경·복구를 통과 처리하지 않는다. 자연 live source revision과
+자연 provider failure→durable resume은 `NOT_RUN`으로 남는다.
+
+### 제한 범위 통과 증거
+
+| 조건 | 결과 | 증거와 한계 |
+|---|---|---|
+| Live baseline 보존 | PASS, 선택 범위 | TIC/BIS exact-scope baseline/repeat의 raw·normalized·manifest hash 일치; 반복은 `unchanged` |
+| 변경 감지 | PASS, controlled copy | TIC package `492bcc8a6a0e4892ac9c6a9377815aef`의 raw hash `e5de973b…d1de11`을 임시 디렉터리에서 복사. Japan `1068.3`→`1068.4`, 변경 hash `fae2ef66…2425f93`; `changed`/`NEEDS_REVIEW`, 양쪽 raw 보존, 변경 normalized 출력 없음, 원본 불변 |
+| 장애 후 재개 | PASS, simulated | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after`: 503, `Retry-After: 2`, task/store 재개 전 대기 차단, 동일 task의 성공 및 attempt/event 보존 |
+| 자연 발생 source revision | NOT_RUN | TIC/BIS live exact-scope 반복은 모두 unchanged; 실제 변경 쌍 없음 |
+| 자연 발생 provider failure→resume | NOT_RUN | 기존 BIS 503 당시 task가 저장되지 않았음; 이번 503은 fixture |
+| BOJ provider | BLOCKED | 연결된 공식 manual이 403; request parameters 검증되지 않음 |
+
+변경 감지 자동 테스트 `test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization`는
+합성 bytes를 사용한다. 위 controlled copy 결과는 별도의 임시 실행으로 실제 TIC raw를 사용했으며,
+실제 새 provider capture를 만들지 않았다.
+
+## 이전 재검토 결과 — D-067 전 상태
+
+당시 판정: **Gate C 미통과**. 기존 TIC/BIS exact-scope baseline과 비교 결과는 `unchanged`였고,
+실제 원자료 개정 쌍의 changed 감지 증거가 없었다. BIS flat ZIP은 HTTP 503 뒤 HTTP 200을 반환했지만,
 503 당시 Orchestrator task가 저장되지 않았고 이후 task는 parser 한도에 걸려 `NEEDS_REVIEW`로
-끝났다. 따라서 durable retry/resume 증거도 아니다. 이번 재검토에서 새 source capture는 만들지 않았다.
+끝났다. 따라서 당시 durable retry/resume 증거도 아니었다. 이 상태를 D-067에 따라 제한 범위로
+재정의했으며, 자연 live 사건이 입증됐다고 소급 변경하지 않는다.
 
 보존 파일을 읽기 전용으로 다시 확인했다. TIC baseline/repeat(`492bcc8…` / `bf16d2e…`)과 BIS
 baseline/repeat(`86a1923…` / `ffd6ef8…`)는 request scope가 각각 일치했다. 네 package 모두 raw와
@@ -27,7 +69,7 @@ Orchestrator 재시도 연결이 없어 Gate D도 미통과다. 이 순서 예�
 
 최신 정정: **revision 10에서 실행 네트워크 권한을 지정하자 BIS 실측과 Git push가 성공했다.**
 아래 ProxyError 기록은 당시 기본 실행 권한의 결과이며 프록시 서버 장애로 확정할 수 없다.
-최신 원인·복구 증거는 문서 마지막 절을 따른다. Gate C 자체는 아직 미통과다.
+최신 원인·복구 증거는 문서 마지막 절을 따른다. 이 문단은 당시 환경 장애 설명의 정정 이력이다.
 
 오류 분기 fixture 통과와 실제 기관의 변경·복구 검증을 구분하며, 남은 live 검증을 fixture로
 대체하지 않는다.
@@ -56,8 +98,8 @@ Orchestrator 재시도 연결이 없어 Gate D도 미통과다. 이 순서 예�
 | X02 403 | fixture PASS | `test_403_requires_review_and_never_becomes_retryable`; 인증 우회·자동 재시도 없음 |
 | X03 schema drift | fixture PASS | `test_schema_drift_retains_new_raw_response_for_diagnosis`; 새 raw 보존 |
 | X04 의미 불일치 | PARTIAL | 후보의 기관/국가 불일치 차단과 unknown 단위·빈도·vintage 경고 통과. 잔액/거래액의 일반 의미 판별 완료를 뜻하지 않음 |
-| X07 durable resume | fixture PASS | `test_429_failure_remains_retryable_across_process_restart`, `test_resume_reuses_valid_prefix_and_only_retries_failed_stage_after_restart`; 실제 기관 장애 후 복구는 NOT_RUN |
-| X08 source revision | fixture PASS / live NOT_RUN | `test_live_source_change_is_preserved_and_requires_review_before_normalization`는 이름과 달리 합성 bytes를 사용하는 fixture. 양쪽 raw 보존·정규화 중단은 검증했으나 실제 개정 관측 없음 |
+| X07 durable resume | simulated integration PASS / natural live NOT_RUN | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after`; 실제 기관 장애 후 복구는 미관측 |
+| X08 source revision | controlled copy PASS / natural live NOT_RUN | 실제 TIC raw 복사본의 통제 변경에서 양쪽 raw 보존·정규화 중단 확인. 자동 회귀 `test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization`는 합성 bytes를 사용 |
 | B BIS ZIP | live PASS, limited | raw/manifest/normalized hash 검증 완료. exact-scope 반복은 unchanged |
 | C TIC 파일 | live PASS, limited | 기존 package `492bcc8a6a0e4892ac9c6a9377815aef`의 raw가 workspace에 존재하며 exact-scope hash 비교 완료 |
 | F BOJ | BLOCKED 유지 | 이전 manual 403 기록. 이번 작업에서 문서·API를 재요청하지 않음 |
@@ -79,13 +121,12 @@ Orchestrator 재시도 연결이 없어 Gate D도 미통과다. 이 순서 예�
 이 문서에도 판정에 필요한 관측을 남겨 로컬 보고서 부재 시 성공으로 오인하지 않도록 한다.
 새 raw/normalized 데이터는 생성되지 않았다.
 
-## 남은 종료 조건
+## 제한 판정 밖의 live 증거 — 향후 확대 시 필요
 
-1. 지원되는 실행 경로에서 프록시 연결 문제를 해결한 뒤 공식 TIC/BIS 원본·manifest·정규화 hash 재검증.
-2. 같은 URL/요청 범위의 실제 개정 원본 쌍 확보 및 X08 변경 감지·양쪽 raw 보존 확인.
+1. 같은 URL/요청 범위의 실제 개정 원본 쌍 확보 및 X08 live 변경 감지·양쪽 raw 보존 확인.
    같은 bytes를 재수집한 결과나 합성 수정 bytes를 live revision으로 표시하지 않는다.
-3. 기관별 실패 후 durable resume 증거와 X04 잔액/거래액 후보 불일치 증거 보완.
-4. BOJ BLOCKED와 지원 범위를 명시한 최종 Gate C 검토. 종료 조건 충족 전 11회차 보류.
+2. 자연 발생한 기관 오류에서 durable resume 쌍 확보 및 X04 잔액/거래액 후보 불일치 증거 보완.
+3. BOJ BLOCKED와 지원 범위를 명시한 재검토. 이 항목들은 제한 범위를 넘어 전체 Gate C를 확장할 때 필요하다.
 
 관측치·기관 정의·자격증명·게시 설정을 변경하지 않았다. 이번 작업에 코드 동작 변경은 없다.
 
@@ -184,5 +225,7 @@ durable resume 성공 증거로 승격하지 않는다.
    같은 stage가 성공하고 attempt/event 기록이 유지될 때 완료로 본다. 실패를 인위적으로 만들거나
    반복 요청해 rate limit을 유발하지 않는다.
 
-따라서 현재도 **Gate C 미통과**다. 11회차는 명시적 사용자 예외로 이미 완료했고, 12회차는
-제한 구현이 추가됐으나 Gate D 종료 조건은 충족하지 않았다.
+이 마지막 문단까지의 기존 판정은 **D-067 전 당시 Gate C 미통과**였다. 현행 Gate C는 이 문서
+첫머리에 기록한 제한 범위에서 통과했으며, 위 natural-live 항목은 이를 취소하지 않고 더 넓은
+검증 범위의 미해결 증거로 남긴다. 11회차는 사용자 예외 지시로 이미 완료됐다. 12회차의 Gate D는
+Orchestrator 연결 및 end-to-end 효율 증거가 없어 계속 미통과다.

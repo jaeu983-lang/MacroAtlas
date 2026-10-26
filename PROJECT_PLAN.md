@@ -471,6 +471,20 @@ docs/ALIGNMENT_01_EXTENSION_REPORT.md를 따르며 기존 241개 테스트 기�
 
 각 회차의 상세 선행조건·변경 범위·입출력·검수는 `docs/IMPLEMENTATION_PLAN.md` 참조. 기본적으로 앞 회차의 게이트가 실패하면 다음 의존 작업으로 넘어가지 않는다. 사용자가 명시적으로 순서 진행을 지시한 예외 작업은 진행할 수 있지만, 실패 게이트는 계속 미통과로 기록하고 게이트 의존 기능·출시 판정을 보류한다. 14회는 초기 통합 v1 계획이지 모든 기관의 자동 지원을 보장하는 작업 횟수는 아니다.
 
+### Gate C 제한 범위 판정 정책 (2026-10-26)
+
+Gate C는 실제로 연결·검증된 provider 경로의 **제한 범위 통과**를 허용한다. 판정 증거는
+(1) 선택된 공식 live capture의 원본·manifest 무결성 및 정확한 요청 범위, (2) 그 live raw의 복사본에
+통제된 변경을 가해 실제 ingestion guard가 `changed`/`NEEDS_REVIEW`, 원본 양쪽 보존, 새 normalized
+출력 차단을 보이는 결정적 시험, (3) provider HTTP 경로를 통제된 503 fixture로 한 번 실패시킨 뒤
+Orchestrator task를 저장·재개해 같은 task가 성공하는 통합 시험이다. 두 fixture 결과는 각각
+`controlled source mutation`, `simulated provider failure`로 표시한다.
+
+이 제한 판정은 자연 발생한 live source revision 또는 실제 provider 장애·복구를 입증하지 않는다.
+검증한 기관·경로만 통과 범위에 넣고 BOJ처럼 막힌 경로와 그 밖의 기관은 미지원/미검증으로 남긴다.
+통제된 fixture를 live event로 보고하거나 일반 기관 전반으로 확대 해석하지 않는다. 범위와 잔여
+live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
+
 현재 구현 상태·게이트·다음 허용 작업은 `docs/IMPLEMENTATION_PLAN.md`만 기준으로 한다.
 이 문서는 제품 목표와 요구사항을 정의하며 현재 구현률을 반복 기록하지 않는다. 과거 구현의
 증거는 회차별 보고서, 변경 이유는 `docs/DECISION_LOG.md`를 따른다. 요구사항 추가는 구현 완료나

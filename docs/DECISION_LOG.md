@@ -484,7 +484,7 @@
 ## Iteration 12 bounded knowledge lookup (2026-10-26)
 
 - **D-066 / IMPLEMENTED, Gate D not passed:** Following the user's explicit next-stage instruction,
-  continue with the bounded portion of iteration 12 while Gate C remains failed. Keep the feature in
+  continue with the bounded portion of iteration 12 while Gate C was still failed. Keep the feature in
   SQLite as a current projection over the append-only feedback store. Feedback writes enqueue changes;
   only an explicit refresh applies at most 500 queue entries. Requests never rebuild the projection or
   load task histories. Institution and supplied scope dimensions are indexed; unspecified request
@@ -496,3 +496,21 @@
 - Gate D remains **not passed** because no Orchestrator repeat-task/retry path consumes the lookup and
   same-institution end-to-end efficiency has not been measured. Synthetic microbenchmark measurements
   cover only the SQLite lookup layer. See `docs/ITERATION_12_REPORT.md`.
+
+## Gate C limited-scope acceptance (2026-10-26)
+
+- **D-067 / ACCEPTED AND IMPLEMENTED:** At the user's direction to change the way Gate C can proceed,
+  allow a limited pass for only the verified paths: selected live capture and manifest integrity,
+  deterministic changed-source handling using a controlled copy of an actual captured TIC raw file,
+  and Orchestrator persistence/resume through a simulated retryable provider response.
+- The TIC raw capture remains unchanged. Its temporary copy was altered from Japan `1068.3` to
+  `1068.4`; the ingestion engine returned `changed`/`NEEDS_REVIEW`, retained both raw copies, and
+  emitted no normalized table for the changed copy. The test suite separately includes an Orchestrator
+  integration test that persists HTTP 503 with `Retry-After: 2`, reopens the task store, blocks an early
+  resume, then succeeds on the same task after the delay using a fixture response.
+- This decision does **not** assert a natural live source revision or natural provider outage/recovery.
+  Both remain `NOT_RUN`; BOJ remains `BLOCKED`, semantic dimension checks remain partial, and untested
+  institutions and paths remain outside the passed scope. Detailed evidence and hashes are in
+  `docs/GATE_C_REVIEW_2026_10_26.md`. Gate D remains not passed.
+- This is a formal narrowing of the Gate C acceptance scope, not a backdated claim that the original
+  full-live evidence requirements were observed. No environment publish was performed.
