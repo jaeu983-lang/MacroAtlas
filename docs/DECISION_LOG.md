@@ -533,3 +533,18 @@
 - This proves the supported explicit planning path only. It does not provide UI consent collection,
   automatic knowledge selection, live-provider efficiency claims, or cross-institution common-rule
   promotion. See `docs/ITERATION_12_REPORT.md`; no 13th iteration or environment publish was performed.
+
+## Iteration 13 planning criteria (2026-10-26)
+
+- **D-069 / PLANNED, not implemented:** After Gate D passed, make iteration 13 measurable before
+  starting it. Treat a pattern as recurring only when the same bounded fingerprint appears in at least
+  three distinct task IDs; retries inside one task do not count as independent cases. Keep institution,
+  engine/version, stage, error/category, and known dataset/concept scope in the fingerprint. Unknown or
+  different dimensions do not merge.
+- Bound one analysis to 500 tasks / 2,500 stage or feedback records, at most 20 proposals and 10 evidence
+  references per proposal. Report truncation as incomplete. Use only persisted outcome metadata and
+  accepted explicit feedback; exclude raw provider payloads, secrets, unreviewed feedback, and inference
+  from evidence. Every result remains a `draft` with evidence IDs, impact, risk, counterexamples, and a
+  regression-test proposal. No feedback status changes, fact promotion, or code edits occur in iteration 13.
+- X09 and the 100/1,000/5,000-record benchmark are the planned verification. These are initial planning
+  caps to measure and refine during iteration 13. Gate E / iteration 14 remains unstarted.

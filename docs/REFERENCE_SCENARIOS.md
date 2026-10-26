@@ -71,6 +71,7 @@
 | X06 | 여러 기관에서 같은 파서 오류 반복 | 공통 개선 제안, 검증·승인 이전 코드 변경 금지 |
 | X07 | 중간 수집 실패 후 resume | 승인된 유효 산출물 재사용, 실패 지점부터 재개 |
 | X08 | 데이터 소급 수정 | 이전 raw/vintage 보존, 변경점 보고 |
+| X09 | 반복된 오류·사용자 교정에서 개선 후보 생성 | 서로 다른 3개 task 이상을 요구하고 scope별로 분리. 같은 task retry만으로 recurrence를 만들지 않으며 evidence와 regression test가 포함된 `draft` proposal만 생성 |
 
 ## 시나리오 공통 기록 포맷
 

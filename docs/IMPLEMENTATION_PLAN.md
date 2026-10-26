@@ -315,10 +315,27 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
 ### Phase 5 — 공통 개선 엔진 (13~14)
 
 #### 13 | 반복 패턴 집계·개선안 생성
-- 구현: 오류·사용자 교정 패턴 군집/빈도·심각도·재현성 추출, 변화 예상 영향과 테스트 계획 초안.
-- 완료: 반복 오류에서 근거 있는 개선안 생성, 단발성 오류와 구조적 문제 구분, 우선순위 기록.
-- 개념/분류 관계의 추론·일반화는 별도 후보로 생성하고 전제·근거·반례·범위·검토 상태를 남긴다.
-  요청의 즉시 응답 경로에서 무제한 추론/자료 재조사를 수행하거나 사실 저장소를 자동 변경하지 않는다.
+- 입력: Orchestrator의 완료/실패 task·stage 결과와 상태가 accepted인 명시 사용자 feedback만 읽는다.
+  raw provider payload, 비밀값, 미검토 추론은 pattern source로 사용하지 않는다.
+- 반복 판정: 같은 fingerprint가 서로 다른 **3개 이상 task ID**에 있어야 recurring candidate가 된다.
+  한 task의 retry 횟수는 독립 사례로 세지 않는다. fingerprint는 알려진 institution, engine/version,
+  stage, error code/category, dataset/concept scope를 포함한다. 값이 다르거나 미상인 차원은
+  서로 합치지 않고 별도/insufficient evidence로 남긴다.
+- 입력 한도: 실행당 최대 500 task와 2,500 stage/feedback records를 읽고, 최대 20개 proposal과
+  proposal당 evidence reference 10개를 반환한다. 상한에 닿으면 partial/incomplete를 명시하고
+  "반복 없음"으로 판정하지 않는다. 세부 시간·메모리 예산은 규모 benchmark 후 확정한다.
+- 산출물: fingerprint와 scope, 서로 다른 task 수, 관측 시점, 대표 evidence IDs, 심각도 근거,
+  예상 영향, counterexample/불확실성, 검증할 regression test, 위험, priority, `draft` review status.
+  동일 task 안의 재시도, 1~2개 task의 반복, 충돌은 recurrence와 구분해 별도 보고한다.
+- 완료: 반복 오류/교정에서 traceable proposal을 만들고 one-off, insufficient, recurring을 구분한다.
+  기관·dataset scope가 다르면 후보도 분리하고, inference는 `not_promoted`, proposal은 승인 전
+  `draft`로 유지한다. 조회 상한 및 불완전 입력을 숨기지 않는다.
+- 승인 경계: task/feedback/source data를 수정하거나 지식을 accepted로 올리지 않고 코드를 고치지
+  않는다. 변경 구현은 14회차의 격리 branch·회귀·인간 승인 절차에서만 다룬다.
+- 검수: X09에서 같은 오류를 서로 다른 3개 task로 만들어 draft가 생기는 경우, 동일 task retry만
+  늘려도 recurring이 되지 않는 경우, 기관/dataset/engine 차원의 분리, withdrawn/unreviewed/inference
+  제외, 충돌·부분 입력·500/2,500·20/10 상한과 evidence trace를 검증한다. 100/1,000/5,000 records
+  에서 p50/p95, 최대 Python allocation, 읽은 행/논리 바이트, candidate 수와 scope relevance를 잰다.
 
 #### 14 | 격리 수정·검증·인간 승인·릴리스
 - 구현: 격리된 Git 브랜치에서 코드 변경 후보와 회귀 테스트; diff, 결과, 롤백 경로, 승인 게이트. 승인 전 main 병합/배포 금지.
