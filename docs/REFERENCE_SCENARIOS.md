@@ -203,18 +203,21 @@ run_date: null
 
 ## Gate E supported-scope final matrix (2026-10-26)
 
+현행 재검증은 [16회차 이후 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)에 기록한다.
+BIS flat의 보존 원본은 현재 capacity 인계에 성공했다. 아래 기관 미구현은 현재 서버 접근 거부의 증거가 아니다.
+
 This matrix supersedes only the current-status reading of earlier historical notes. `PARTIAL` means that
 one bounded supported path was exercised; it does not mean the full scenario request is available.
 
 | Scenario | Normal path | Failure/change path | Current result and boundary |
 |---|---|---|---|
-| A — IMF | Generic SDMX structure XML fixture parsing is tested. | Malformed/conflicting metadata fixtures are tested. | **BLOCKED end-to-end**: no IMF live dataflow discovery or observation connector. Fixture component evidence is not IMF support. |
+| A — IMF | Generic SDMX structure XML fixture parsing is tested. | Malformed/conflicting metadata fixtures are tested. | **UNIMPLEMENTED end-to-end**: no IMF live dataflow discovery or observation connector. Fixture component evidence is not IMF support. |
 | B — BIS | Official `WS_GLI_csv_col.zip` exact-scope live watcher completed and parsed 225 rows × 220 columns. | Controlled mutation and simulated 503 same-task resume are tested; this live recheck had no provider error. | **PARTIAL**: fixed bulk-file path only; no general BIS concept search or series-level API workflow. Live source remained `unchanged`. |
 | C — Treasury TIC | Official Table 5 exact-scope live watcher completed and parsed 36 rows × 14 columns. | Controlled mutation of a copy of live raw returned `changed`/`NEEDS_REVIEW`; schema-drift fixtures preserve raw. | **PARTIAL**: fixed file intake and change guard; live source remained `unchanged`, so a natural revision is not observed. |
-| D — BEA | No BEA collection path exercised. | No BEA-specific failure path exercised. | **BLOCKED**: no BEA connector or end-to-end parameter discovery. A configured key alone does not imply support. |
-| E — ECB/Eurostat | Generic SDMX structure parsing is fixture-tested. | Generic metadata conflict/schema cases are fixture-tested. | **BLOCKED end-to-end**: no ECB/Eurostat live data discovery or observation connector. |
+| D — BEA | No BEA collection path exercised. | No BEA-specific failure path exercised. | **UNIMPLEMENTED**: no BEA connector or end-to-end parameter discovery. A configured key alone does not imply support. |
+| E — ECB/Eurostat | Generic SDMX structure parsing is fixture-tested. | Generic metadata conflict/schema cases are fixture-tested. | **UNIMPLEMENTED end-to-end**: no ECB/Eurostat live data discovery or observation connector. |
 | F — Japan MOF/BOJ/e-Stat | BOJ FM08/FXERD01/202609 collector completed metadata and observation stages, preserving 30 rows and 11 nulls. | No natural provider failure/resume or full Japan workflow was run. | **PARTIAL**: one BOJ series/month only; no MOF/e-Stat path or broader BOJ support. Direct smoke evidence is in `docs/BOJ_LIVE_RECHECK_2026_10_26.md`; collector details are in `docs/connectors/BOJ.md`. |
-| G — PBOC/SAFE/NBS | No live or end-to-end source path exercised. | No source-specific failure path exercised. | **BLOCKED**: unsupported; institution roles and language-specific series are not inferred. |
+| G — PBOC/SAFE/NBS | No live or end-to-end source path exercised. | No source-specific failure path exercised. | **UNIMPLEMENTED**: no observation connector in current code; institution roles and language-specific series are not inferred. |
 | H — OECD/World Bank | Fixed World Bank USA WDI GDP source 2 path was live-collected and quality-validated for 2020–2022 (3 rows). | World Bank HTTP/schema/quality/resume branches are fixture-tested. | **PARTIAL**: fixed World Bank GDP path only; no OECD comparison, multi-country search, or cross-source equivalence claim. |
 
 | Shared case | Evidence | Result and boundary |
@@ -228,7 +231,7 @@ one bounded supported path was exercised; it does not mean the full scenario req
 | X08 source change | Gate C review D-067 and `tests/test_gate_a.py` | **PASS, controlled/fixture**; preserve old/new raw and block new normalized output on change. Natural live revision remains `NOT_RUN`. |
 | X09 recurring improvement | `docs/ITERATION_13_REPORT.md`; `tests/test_patterns.py` | **PASS, synthetic**; 3 distinct tasks required; proposals remain read-only drafts. |
 
-Gate E release boundary is a restricted local v1 for the paths above. The blocked and partial scenarios are
+Gate E release boundary is a restricted local v1 for the paths above. The unimplemented and partial scenarios are
 not advertised as completed agency workflows. The fixed World Bank live guide procedure was reproduced in
 the current execution environment after the connector began honoring its configured proxy and CA bundle;
 the report and verification details are in `docs/ITERATION_14_REPORT.md`.

@@ -6,6 +6,12 @@
 
 ## 현재 상태 — 2026-10-26
 
+엔진의 실제 진입점·전달 계약·대용량 후속 연결은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 따른다.
+
+16회차 이후 현재 코드·실측으로 Gate A–E를 [재검증](GATE_REAUDIT_AFTER_ITERATION_16.md)했다.
+BIS flat은 현재 셀 상한에 따라 정상 인계되어 parser 결함 목록에서 제외한다.
+과거 회차의 실패 상태를 현행 판정에 그대로 적용하지 않는다.
+
 14회차 로드맵은 완료됐다. Gate A와 D는 통과, Gate B/C는 제한 범위 통과, Gate E는 제한 범위 로컬
 v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`로 기본 브랜치에 병합됐고,
 병합 checkout에서 592개 테스트, Ruff, `git diff --check`, World Bank live 검증을 다시 통과했다.
@@ -53,21 +59,25 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 05~07 | BLS/Census 제한 API·metadata, 공식 안내 저장, 일부 metadata 정규화 | 모든 기관 검색, live SDMX, 광범위한 분류 의미 모델 |
 | 08 | 로컬 hash-verified metadata와 WDI seed의 lexical ranking, 명시 선택 기록, World Bank fixture E2E | 자연어 parser/CLI, 전체 기관 검색, 미확인 BLS/Census 후보의 자동 승격 |
 | 09 | CSV/TSV/TXT/HTML/ZIP/XLS/XLSX 제한 parser, 수집량 planning helper | PDF/fixed-width, output exporter, queue형 chunk 실행·resume |
-| 10 | BLS/Census/World Bank 제한 API, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개; Gate C 제한 범위 통과 | 자연 live revision/recovery, Japan BOJ observation connector, automatic backoff/rate limiter, 기관 전반 검증 |
+| 10 | BLS/Census/World Bank 제한 API, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개; Gate C 제한 범위 통과 | 자연 live revision/recovery, 다른 BOJ series, automatic backoff/rate limiter, 기관 전반 검증 |
 | 11 | 명시적 feedback store·CLI·revision history | 사용자 지식 자동 재사용·전체 문서 대화 동기화 |
 | 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
 | 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
+| 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 별도 대용량 엔진 실행·CSV 출력, 자연 revision/recovery |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
 
 ## 실패·미충족 항목과 해결 계획 — 2026-10-26
 
-현재 확인된 범위에서 재현 중인 테스트 실패는 없다. 로컬 609개 테스트와 Ruff가 통과했고,
-최종 코드·문서 HEAD `c1a841f`의 CI run
-[40337409105](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40337409105)는
+현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
+아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
+
+현재 재검증 범위에서 재현 중인 테스트 실패는 없다. 로컬 626개 테스트와 Ruff가 통과했고,
+재검증 HEAD `526bc7f`의 CI run
+[40342296370](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40342296370)는
 Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과거 실패, 미관측 증거,
 미지원 기능을 구분한 후속 목록이며 전체 기관의 무결함을 뜻하지 않는다.
 
@@ -76,7 +86,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | Windows CI proxy 테스트 | 해결. Windows에서 대소문자만 다른 환경변수를 별개로 설정할 수 있다고 가정한 테스트가 실패 | 수정된 테스트와 네 조합 CI 유지 | 최종 HEAD CI 네 조합 성공으로 충족 |
 | BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
 | World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
-| BIS flat CSV ZIP | 미해결 지원 한계. 압축 해제 CSV가 현재 parser 한도에 걸려 `NEEDS_REVIEW` | 복구 실증에는 검증된 column ZIP 사용. flat 지원은 별도 제한량·streaming 설계 후 구현 | 한도 준수 parsing, 대용량·오류·resume 검증 전에는 지원 선언 금지 |
+| BIS flat CSV ZIP | 현행 재처리: cells=500010에서 정상 deferred·영속 등록, 새 normalized 없음 | 별도 대용량 엔진 인계 대기. 현재 엔진 수집 오류로 취급하지 않음 | 인계 동작 검증 충족. 실제 flat 정규화는 별도 엔진 범위 |
 | BIS watcher 첫 비교 | 해결. 명시 zip_member 추가로 기존 auto-select baseline과 scope가 달라 first_observation 발생 | 기존 exact scope 유지 | 수정 후 동일 baseline 대비 unchanged 확인. 첫 실행은 증거에서 제외 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
 | TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 최신 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
@@ -85,12 +95,11 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ### 실행 순서와 판정 규칙
 
-1. PR #2를 검토하고 사람 검토 후 병합한다. 현재 작업은 문서 정리이며 병합·배포를 포함하지 않는다.
-2. 병합 뒤 checkout HEAD와 검증 결과를 기록한다. 환경 게시는 별도 작업이다.
+1. 완료: 사용자 지시로 PR #2 검토·병합. merge commit `82a018e`, 최신 PR CI 네 조합 성공.
+2. 완료: 병합 checkout과 원격 HEAD `82a018e` 일치 및 clean 상태 확인. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
-   남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 자동 예약 작업은 아직 설정하지 않았다.
-4. 자연 이벤트 관측과 병행해 16회차 계획을 작성한다. 목표 사용자 흐름, 고정 입력·출력, 지원 기관·범위,
-   정상/실패 수용 조건을 정한 뒤 한 회차만 구현한다. 이 문서 정리로 16회차 구현을 시작하지 않는다.
+   남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
+4. 완료: 16회차 비API 분류·인계 목록 구현과 현행 재검증. 후속 대용량 실행은 엔진 연결 설계의 인계 계약부터 구현한다.
 5. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
    현재 D-067 제한 통과는 유지하고 미관측 항목을 전체 통과로 승격하지 않는다.
 
@@ -99,7 +108,8 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현재는 15회차 네 갈래 후속의 review branch 검토가 다음 단계다. 자연 TIC/BIS 개정과 provider 장애는
+PR #2는 `82a018ed56f4cbe51015e92ecc2f693cf9355794`로 병합됐고 로컬/원격 기준 HEAD 일치를 확인했다.
+16회차 구현과 현행 Gate 재검증을 완료했다. 다음 통합 단계는 PR #3 검토이며, 별도 대용량 엔진과 CSV 출력은 후속 범위다. 자연 TIC/BIS 개정과 provider 장애는
 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다. 이 미관측 항목은 Gate C의
 제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 다음 제품 회차는 별도 범위와 수용
 기준을 새로 정한다. A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
@@ -396,3 +406,15 @@ docs/WORKFLOW_ALIGNMENT_PLAN.md는 01~03회차 최소 보완의 상세 명세다
 다음 회차 선행 조건 충족 여부:
 사람이 결정해야 할 사항:
 ```
+
+## 사용자 추가 요구 — 비API 대용량 인계
+
+16회차 우선순위를 [비API 대용량 분류·인계](ITERATION_16_PLAN.md)로 변경했다. 임계 조건 이상이면
+현재 엔진 처리를 중단하고 영속 목록으로 모은 뒤 별도 엔진에 인계한다. 정책·목록 구현은 완료했고 별도 대용량 엔진 실행 연결은 대기 상태다.
+확인된 BIS flat ZIP은 [초기 대상 목록](NON_API_DEFERRED_CATALOG.json)에 등록했고, CSV 출력 계획은
+[후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md)으로 보존했다.
+
+## 16회차 구현 결과
+
+비API 대용량 사전 검사·bounded parser 중단·SQLite 인계 목록/이력·CLI 조회를 구현했다.
+[16회차 보고서](ITERATION_16_REPORT.md)의 범위와 한계를 따른다. 별도 엔진 실행은 향후 작업이다.

@@ -57,6 +57,13 @@ def _configured_proxy() -> dict[str, str]:
     return proxies
 
 
+class FileCapacityFailure(SourceFailure):
+    def __init__(self, observed: int, point: str):
+        super().__init__(StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
+                         "Official file reached the sixteen MiB limit.")
+        self.capacity = {"observed": observed, "point": point}
+
+
 class OfficialFileTransport:
     """GET one allowlisted public file; no redirect, credential, or retry behavior."""
 
@@ -92,9 +99,8 @@ class OfficialFileTransport:
                         raise SourceFailure(StageStatus.FAILED_TERMINAL, ErrorCode.SITE_CHANGED,
                                             "Official source returned an unexpected HTTP status.", status)
                     length = response.headers.get("Content-Length")
-                    if length and length.isdecimal() and int(length) > MAX_FILE_BYTES:
-                        raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
-                                            "Official file exceeded the sixteen MiB limit.")
+                    if length and length.isdecimal() and int(length) >= MAX_FILE_BYTES:
+                        raise FileCapacityFailure(int(length), "content_length")
                     chunks = []
                     size = 0
                     for chunk in response.iter_content(chunk_size=65536):
@@ -102,9 +108,8 @@ class OfficialFileTransport:
                             raise SourceFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                                                 "Official file exceeded the time limit.")
                         size += len(chunk)
-                        if size > MAX_FILE_BYTES:
-                            raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
-                                                "Official file exceeded the sixteen MiB limit.")
+                        if size >= MAX_FILE_BYTES:
+                            raise FileCapacityFailure(size, "bounded_stream")
                         chunks.append(chunk)
                     body = b"".join(chunks)
                     if not body:

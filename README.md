@@ -8,9 +8,9 @@ CLI이며 자연어 채팅 제품은 아직 없습니다.
 
 2026-10-26 기준, Gate A 통과, Gate B/C는 **제한 범위 통과**, Gate D 통과,
 Gate E는 **제한 범위 로컬 v1 검토 통과**입니다. Gate C의 자연 원자료 개정 및 실제 provider 장애 후
-재개는 검증하지 않았습니다. 현재 확인된 사용자 경로와 기관별 `PARTIAL`/`BLOCKED` 한계는
+재개는 검증하지 않았습니다. 현재 확인된 사용자 경로와 구현·인계·미관측 범위는
 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)와
-[`docs/ITERATION_14_REPORT.md`](docs/ITERATION_14_REPORT.md)를 참조하세요.
+[`docs/GATE_REAUDIT_AFTER_ITERATION_16.md`](docs/GATE_REAUDIT_AFTER_ITERATION_16.md)를 참조하세요.
 
 MacroAtlas는 고정된 World Bank USA GDP 수집, BOJ FM08/FXERD01 월별 수집, TIC/BIS exact-scope
 파일 감시, task status/resume를 위한 `macroatlas` CLI를 제공합니다. 일반 자연어 검색, 자체 채팅 UI,
@@ -23,6 +23,8 @@ task-linked feedback CLI와 read-only pattern CLI도 제공합니다. 게이트�
 
 - [`START_HERE.md`](START_HERE.md): 현재 저장소에서 작업을 시작하는 순서
 - [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 제품 범위와 정책 요구사항
+- [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md): 실제 엔진 호출 흐름·전달 계약·대용량 후속 연결
+- [`docs/UNRESOLVED_ITEMS.md`](docs/UNRESOLVED_ITEMS.md): 현재 미해결 항목의 데이터 처리·접속·미구현·증거 대기 분류
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md): 완료 상태, 게이트, 다음 허용 작업의 단일 기준
 - [`docs/INSTITUTION_CATALOG.md`](docs/INSTITUTION_CATALOG.md): 공식 기관 자료와 확인 한계
 - [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md): 제품 수용 시나리오

@@ -385,7 +385,7 @@ search는 후보/근거와 필요한 확인 항목을, collect는 확정 조건�
 ### 10.3 최종 사용자 설명서 및 PPT
 
 **작성 시점:** 14회차 최종 통합·검증 단계에서 실제 완성된 기능과 실행 결과를
-기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/ITERATION_14_REPORT.md`를 따른다.
+기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/GATE_REAUDIT_AFTER_ITERATION_16.md`를 따른다.
 
 **최종 산출물:** `docs/USER_GUIDE.md` 사용자 설명서와
 `docs/MacroAtlas_User_Guide.pptx` 사용자 안내 PPT. 설명서는 재현 가능한 상세 절차를,
@@ -540,3 +540,16 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 ---
 
 **구성 문서:** `docs/INSTALLATION.md`, `docs/INSTITUTION_CATALOG.md`, `docs/REFERENCE_SCENARIOS.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISION_LOG.md`.
+
+## 추가 요구: 비API 대용량 분리
+
+비API 파일은 사전 검사 및 제한된 탐색에서 용량·압축 해제량·행·열·셀 수 등의 임계 조건에
+해당하면 현재 엔진에서 추가 처리를 중단한다. 원본을 보존하고 이유·측정값·출처·task 참조를
+영속 인계 목록에 모아 별도 대용량 엔진 대상으로 관리한다. 구체 기준과 경계 수용 조건은
+`docs/ITERATION_16_PLAN.md`를 따른다. 등록 자체를 수집 성공으로 처리하지 않는다.
+
+## 엔진 연결 기준
+
+현재 호출 경로와 후속 연결은 `docs/ENGINE_CONNECTIONS.md`를 따른다. 공통 Orchestrator·StageResult·
+HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔다. 대용량 인계는 불변 판정 event와
+원본 snapshot을 선택해 명시적인 자식 task로 연결한다. 큰 본문 대신 검증된 파일·manifest 참조를 전달한다.
