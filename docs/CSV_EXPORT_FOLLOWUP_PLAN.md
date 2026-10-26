@@ -1,6 +1,6 @@
 # 후속 기획안 — 검증된 수집 결과의 CSV 전달
 
-상태: 비API 대용량 분류·인계 기능 이후로 보류. 선행 PR #2 병합 및 HEAD 확인 완료. 자연 Gate C 관측은 별도 일일 감시로 병행한다.
+상태: 계획 승인 대기 기능이 아니라 우선순위 backlog다. PR #3/#4 통합과 대용량 handoff 계약을 먼저 확정한 뒤 구현한다. Gate C 자연 이벤트 감시는 별도로 계속한다.
 
 ## 목표와 사용자 흐름
 
@@ -30,9 +30,9 @@
 4. export를 반복해도 raw와 기존 산출물이 바뀌지 않고 네트워크 호출이 없다.
 5. CLI 문서·실패 안내를 갱신하고 Linux/Windows CI를 확인한다.
 
-## 구현 순서
+## 구현 순서와 선행 조건
 
-저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
+PR #3/#4 통합 및 기본 branch HEAD 확인 → 저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
 CLI 연결 → 정상·실패 수용 검증 → 사용자 안내·회차 보고서 → task branch commit/push 및 PR 검토.
 
 완료 선언은 실제 파일과 검증 결과가 확보된 뒤 한다. 이번 작업은 기획서 작성까지이며 16회차 코드를 구현한 것으로 세지 않는다.

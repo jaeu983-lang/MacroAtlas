@@ -1,16 +1,19 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-기준일: 2026-10-26. 근거는 16회차 이후 재검증의 현재 코드·네 경로 live 응답·626개 회귀 검증과
-이번 SQLite 읽기 전용 조회다. 과거 FAILED/BLOCKED 라벨만으로 현재 장애를 판정하지 않는다.
-최신 실측 이후 서버가 계속 정상이라는 보장은 아니며, 다른 기관 접속 상태는 이 결과에 포함되지 않는다.
+기준일: 2026-10-26. 근거는 17회차 시험, 현재 저장소 상태, 과거 네 provider live 결과와
+최신 TIC/BIS exact-scope 감시다. TIC task `2733c6a3-abb8-4201-9735-b3354fd32bd9`와
+BIS task `30786cba-1024-4d8b-a599-51942bd91c63`는 모두 완료·unchanged였다. 이 감시에서 자연 개정이나
+provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로 현재 장애를 판정하지 않는다.
+다른 기관 접속 상태나 다음 게시 주기까지의 상태는 이 결과에 포함되지 않는다.
 
 ## 1. 데이터 처리·전달에 남은 작업
 
 | 항목 | 현재 확인된 상태 | 남은 작업 | 접속 문제 여부 |
 |---|---|---|---|
-| BIS GLI flat ZIP 실제 정규화 | 보존된 공식 원본 재처리에서 500,010개 셀을 확인하고 500,000개 상한으로 정상 deferred. 원본·task·목록 보존 | 17회차 streaming 용량 시험에서 24,378행·21열을 확인. 정식 source-change/품질 검증 및 정규화는 후속 | 이번 검증은 로컬 원본 재처리. 현재 서버 접속 실패라는 근거가 아님 |
+| BIS GLI flat ZIP 실제 정규화 | 보존된 공식 원본 재처리에서 500,010개 셀을 확인하고 500,000개 상한으로 정상 deferred. 격리 시험은 24,378행·21열을 읽음 | 정식 handoff, 변경 가능한 상태 lifecycle, segmented artifact manifest, checkpoint/resume, 의미·품질 검증과 normalized output이 아직 없음 | 로컬 처리 기능. 접속 오류가 아님 |
 | 정규화 결과 CSV/XLSX 전달 | 현재 구조화 CLI는 저장 경로·상태를 제공하며 범용 exporter가 없음 | CSV 출력 후속 계획의 provenance·무결성·덮어쓰기 방지 구현. XLSX는 별도 범위 | 로컬 결과 처리 기능 |
 | 통계 의미·품질 범위 확대 | World Bank 고정 실측은 quality passed이지만 normalized unit/frequency unknown 경고가 있음. 경제 이상치·개정 역사·기관 간 동등성은 검사 범위 밖 | 공식 metadata로 단위·빈도·정의 확인 및 범위별 품질 검증 설계 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
+| 시험 worker 강제 종료 복구 | 17회차 구현에서 RUNNING task와 orphan scratch 복구가 빠져 있었음. 이번 보완에서 lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 645개 로컬 테스트/Ruff가 통과 | branch push 뒤 현재 HEAD의 PR CI 확인 대기 | 제품 내부 복구 결함. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | 현재 엔진의 중단·영속 목록·조회와 17회차 불변 event 결합 격리 시험 성공 | 정식 정규화 실행 계약, 명시적 인계·완료 상태 변경, 목록 pagination 등 후속 구현 | 제품 내부 처리·운영 기능 |
 
 BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. flat 자료의 실제 정규화는 아직 별도 엔진 대기다.
@@ -60,13 +63,19 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 
 ## 다음 작업 우선순위
 
-1. PR #3의 16회차 구현·재검증 결과를 검토해 통합한다.
-2. 데이터 처리: [엔진 연결 설계](ENGINE_CONNECTIONS.md)의 불변 event·원본 snapshot·중복 방지 bridge를 먼저 연결하고 BIS flat 인계 건부터 별도 엔진으로 처리한다.
-3. 데이터 전달: 보류된 CSV 출력 계획을 별도 회차에서 구현한다.
-4. 기관 확대: 필요한 기관·자료 하나를 골라 공식 metadata/요청 매핑 후 connector와 접속을 함께 검증한다.
-5. 자연 이벤트 감시는 병행하고 실제 증거가 들어올 때 Gate C 확대 범위를 재판정한다.
+현재 확인한 제품의 활성 transport 장애는 없다. 가장 가까운 완료 작업은 코드 통합이고, 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
+
+1. **현재 보완:** 17회차 trial의 강제 종료 복구를 구현했다. 테스트·정적 검사·PR CI가 새 HEAD에서 통과해야 완료로 친다.
+2. **통합:** PR #3은 열려 있고 PR #4는 PR #3 branch를 base로 하는 stacked PR이다. #3 검토·통합 후 #4를 기본 branch 기준으로 다시 확인해야 한다. 아직 통합 전이므로 제품 기본 경로에 반영된 것으로 표시하지 않는다.
+3. **다음 구현:** 통합 뒤 BIS GLI flat ZIP 하나를 대상으로 정식 대용량 handoff를 만든다. 불변 event와 parent/child task, 명시적 handed_off/resolved 상태, 원본 hash·manifest, chunk/checkpoint/resume, output validation을 수용 조건으로 둔다. 단위·경제 의미는 문자열 값에서 추론하지 않는다. 실패·미지원 입력은 본 실행을 중단하고 원인을 `NOT_EXECUTED`로 남긴다.
+4. **그다음:** 완료·검증된 artifact 계약에 연결되는 World Bank/BOJ CSV exporter를 구현한다. 기존 raw·manifest 확인, null 처리, provenance, 경로·덮어쓰기 방지가 선행 조건이다. XLSX는 별도 결정이다.
+5. **후속 범위:** provider 확대, Windows resource-limited worker, 일반 자연어/다국가 탐색, 경제적 outlier·개정 의미 검증은 아직 미구현이다. 각각 공식 자료·명시적 수용 범위가 정해질 때 별도 작업으로 시작한다.
+6. **병행 증거 대기:** 매일 TIC/BIS 감시는 계속하되 unchanged는 알림이나 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
+
+이번 계획에서 넘어가지 않은 것은 모두 같은 종류의 “실패”가 아니다. PR #3/#4는 통합 대기, BIS 정규화·CSV 전달·provider 확대는 미구현 기능, 자연 개정/장애는 아직 관측되지 않은 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 
 근거: [현행 Gate 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md), [인계 목록](NON_API_DEFERRED_CATALOG.json),
-[대용량 인계 계획](ITERATION_16_PLAN.md), [CSV 후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md).
+[엔진 연결 설계](ENGINE_CONNECTIONS.md), [17회차 시험 계획](ITERATION_17_PLAN.md),
+[CSV 후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md).
 
 17회차의 합성 용량·BIS 원본 시험은 [보고서](ITERATION_17_REPORT.md)를 따른다. 시험 통과와 정식 처리 완료를 구분한다.

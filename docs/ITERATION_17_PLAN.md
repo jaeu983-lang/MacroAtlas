@@ -4,7 +4,8 @@
 애매한 인계 후보도 명시적으로 시험하고 실패·불확실·자원 초과는 미실행으로 응답한다.
 
 범위: large-check CLI, 불변 event에 결합한 부모/자식 시험 task, Linux 격리 streaming CSV/ZIP worker,
-자원 예산·동시 실행 제한·원본 변경 검사·실패 scratch 정리·실측 보고서. 기존 16회차 cap은 유지한다.
+자원 예산·동시 실행 제한·원본 변경 검사·실패 scratch 정리·실측 보고서. 강제 종료 복구에서도
+실행 중 worker가 끝나기 전에 재개·scratch 삭제를 막는다. 기존 16회차 cap은 유지한다.
 
 수용 조건:
 1. 지정한 후보/event·코드·예산이 저장되고 같은 요청은 중복 실행되지 않는다.
@@ -12,6 +13,8 @@
 3. 애매한 구분자 후보가 시험 결과와 불확실성을 남기며 자동 승인되지 않는다.
 4. 원본·zero/empty 표현은 보존하고 실패한 시험의 부분 산출물을 공개하지 않는다.
 5. 1/16/64/96/127 MiB·폭넓은 표·ZIP 및 예산 실패 실험을 근거와 함께 보고한다.
+6. 부모 프로세스를 잃어도 child worker가 workspace lock을 유지한다. 잠금 해제 전 resume/정리를 막고,
+   이후 resume는 표시된 orphan scratch만 제거한 뒤 결과 미확정·본 실행 미실행을 task/event에 기록한다.
 
 정식 대용량 normalized 생성·원격 다운로드·자동 production 승인·GB/TB 일반화는 후속 범위다.
 설계·공식 근거·실험 재현은 LARGE_FILE_ENGINE.md를 따른다.

@@ -560,3 +560,5 @@ HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔
 명시적으로 격리 시험한다. 자원·형식·환경 문제로 처리할 수 없으면 본 실행을 포기하고 미실행 사유를 반환한다.
 시험 scratch만 정리하고 원본과 이력은 보존한다. 시험 통과가 본 실행 승인을 대신하지 않는다.
 17회차의 범위·실측 예산은 `docs/LARGE_FILE_ENGINE.md`와 `docs/ITERATION_17_REPORT.md`를 따른다.
+시험 parent와 child는 task 실행 시작부터 workspace lock을 공유한다. 강제 종료로 결과가 저장되지 않으면,
+worker 종료를 확인한 뒤 `resume`으로 unknown trial과 `NOT_EXECUTED`를 남기며 시험을 같은 task에서 반복하지 않는다.

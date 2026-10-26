@@ -8,6 +8,9 @@
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
+후속 검토에서 강제 종료 시 orphan worker·scratch 복구 공백을 확인해 17회차 branch에서 보완했다.
+후속 전체 645개 테스트, Ruff, diff 검사가 통과했고 현재 HEAD의 PR CI는 push 후 확인한다.
+PR #3은 열려 있고 PR #4는 #3을 base로 하는 stacked PR이라 아직 기본 branch에 통합되지 않았다.
 
 엔진의 실제 진입점·전달 계약·대용량 후속 연결은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 따른다.
 
@@ -25,6 +28,8 @@ Gate C의 D-067 제한 범위는 바뀌지 않았다. 이번 exact-scope live wa
 자동 시험으로 확인했지만 natural live revision과 failure→persist→resume은 여전히 `NOT_RUN`이다.
 현재 watcher는 요청·stage를 네트워크 전송 전에 저장한다. 판정 범위와 실제 원본 증거는
 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [source watch 기록](GATE_C_SOURCE_WATCH.md)을 따른다.
+최신 반복 감시 task `2733c6a3-abb8-4201-9735-b3354fd32bd9` (TIC)와
+`30786cba-1024-4d8b-a599-51942bd91c63` (BIS)도 모두 unchanged여서 Gate C 판정 변화가 없다.
 
 후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
 (3) bounded structured `macroatlas` CLI 및 같은 task의 status/resume, (4) Linux/Windows CI 검증이다.
@@ -68,7 +73,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
 | 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
-| 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
+| 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험; 후속 보완에서 worker lock 상속·중단 결과 UNKNOWN 복구 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 별도 대용량 엔진 실행·CSV 출력, 자연 revision/recovery |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
@@ -79,8 +84,10 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
 아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
 
-현재 재검증 범위에서 재현 중인 테스트 실패는 없다. 로컬 626개 테스트와 Ruff가 통과했고,
-재검증 HEAD `526bc7f`의 CI run
+현재 코드의 로컬 회귀 검증은 645개 테스트와 Ruff가 통과했다. 이전 PR #4 HEAD의 CI run
+[40347830649](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40347830649)은
+수정 전 640개 테스트 기준으로 네 조합 모두 성공했다. 현재 HEAD CI는 새 push 뒤 확인한다.
+16회차 재검증 HEAD `526bc7f`의 CI run
 [40342296370](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40342296370)는
 Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과거 실패, 미관측 증거,
 미지원 기능을 구분한 후속 목록이며 전체 기관의 무결함을 뜻하지 않는다.
@@ -112,11 +119,18 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-PR #2는 `82a018ed56f4cbe51015e92ecc2f693cf9355794`로 병합됐고 로컬/원격 기준 HEAD 일치를 확인했다.
-16회차 구현과 현행 Gate 재검증을 완료했다. 다음 통합 단계는 PR #3의 16회차와 그 위의 17회차 시험 경로 검토다. 정식 대용량 정규화와 CSV 출력은 후속 범위다. 자연 TIC/BIS 개정과 provider 장애는
-실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다. 이 미관측 항목은 Gate C의
-제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 다음 제품 회차는 별도 범위와 수용
-기준을 새로 정한다. A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
+PR #2는 `82a018ed56f4cbe51015e92ecc2f693cf9355794`로 병합됐다. 지금 PR #3은 16회차 코드이며,
+PR #4는 17회차 코드와 강제 종료 복구 보완을 포함하도록 갱신할 예정이다. 두 PR 모두 미통합이고 #4는
+#3을 base로 한다. 따라서 우선 #3을 검토·통합하고, 이어 #4의 새 HEAD·CI를 검증해 통합한다.
+
+통합 후 다음 제품 구현은 BIS GLI flat ZIP을 대상으로 한 명시적 production handoff다. 기존 시험 task는
+실행 승인으로 승격하지 않는다. 새 parent/child task·상태 전이·segmented artifact manifest·checkpoint/resume·
+원본 무결성·검증 출력 계약이 확보돼야 정상화 실행을 시작한다. 이후 저장된 검증 artifact를 이용한 World Bank/BOJ
+CSV 전달을 구현한다. provider 확대와 경제 의미 검증은 별도 수용 범위를 정한 뒤 진행한다.
+
+자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않는다.
+이 미관측 항목은 Gate C 제한 범위 통과를 취소하거나 고정 CLI·BOJ 검증을 막지 않는다. 일일 감시는 병행한다.
+A–H/X01–X09 세부 판정은 `docs/REFERENCE_SCENARIOS.md`를 따른다.
 
 ## 저장소·배포 추적성
 

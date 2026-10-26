@@ -61,9 +61,11 @@ flowchart LR
 | 원본 교체·변경 / 실행 코드 변경 | NOT_EXECUTED: source_changed_since_binding / engine_version_changed |
 | SQLite 이력 저장소 사용 불가 | NOT_EXECUTED: trial_storage_unavailable. trial_state=UNKNOWN으로 시험 여부를 단정하지 않음 |
 | 같은 후보·코드·예산 재요청 | 저장된 결과 반환. 실패한 시험을 몰래 다시 실행하지 않음 |
+| 부모 프로세스 강제 종료 | worker가 상속한 workspace lock이 child 종료까지 유지됨. lock 사용 중 resume은 worker_still_active로 멈춤. lock 해제 뒤 `resume`은 marked scratch를 정리하고 `NEEDS_REVIEW`, `execution_state=NOT_EXECUTED`, `trial_state=UNKNOWN`을 저장하며 worker를 다시 실행하지 않음 |
 
-사용자 표시 예: `미실행: wall_time_budget`. trial_attempted=true이면 시험 중 중단된 것이며,
-본 수집/정규화가 실행 완료됐다는 뜻이 아니다. “버림”은 시험 scratch의 폐기와 본 실행 포기를 뜻한다.
+사용자 표시 예: `미실행: wall_time_budget`. `trial_attempted=true`이면 예산 제한 아래 시험이 시작됐다는
+뜻이며, 본 수집/정규화가 실행 완료됐다는 뜻이 아니다. 강제 종료로 worker 결과가 task에 저장되지 않은 경우
+`trial_attempted=null`, `trial_state=UNKNOWN`을 사용한다. “버림”은 시험 scratch의 폐기와 본 실행 포기를 뜻한다.
 원본과 판정 이력·부모 task를 삭제하지 않는다. 검증된 실행 범위 확대에는 별도 명시적 검토와 새 증거가 필요하다.
 
 ## 사용과 재현
@@ -73,10 +75,13 @@ macroatlas deferred
 macroatlas large-check <DEFERRAL_ID>
 macroatlas large-check <DEFERRAL_ID> --event-seq <SEQ>
 macroatlas status <TRIAL_TASK_ID>
+macroatlas resume <TRIAL_TASK_ID> --live
 python scripts/benchmark_large_file_trials.py
 ```
 
 large-check는 네트워크 요청을 하지 않는다. 응답의 parent_task_id/deferral_event_seq로 인계 원인을 추적한다.
+시험 task의 resume는 일반 workflow 재시도와 다르다. `RUNNING` 상태에서 시작하면 worker lock을 확인하고
+중단 결과를 미확정으로 기록한다. 성공 결과가 저장되지 않은 qualification을 같은 task에서 다시 실행하지 않는다.
 합성 benchmark는 별도 `data/qualification_benchmark/` 저장소를 쓰며 실제 기관 인계 목록과 분리한다.
 benchmark가 생성한 합성 입력·시험 chunk만 정리하고 보고서/이력은 보존한다.
 결과는 `reports/large_file_qualification.json`, 검토용 사본은 LARGE_FILE_QUALIFICATION_RESULTS.json에 둔다.

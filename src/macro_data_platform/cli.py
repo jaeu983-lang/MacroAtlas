@@ -136,6 +136,7 @@ def _summary(doc: dict) -> dict:
     for key in ("raw_path", "manifest_path", "normalized_path", "request_manifest_path",
                 "source_change_status", "watch_source_id", "quality", "http_status", "non_api_deferral",
                 "execution_state", "production_execution", "reason", "message", "trial_state",
+                "trial_attempted", "trial_outputs_published", "orphan_scratch_removed",
                 "rows", "columns", "elapsed_seconds", "peak_rss_bytes", "raw_sha256"):
         if key in payload:
             summary[key] = payload[key]
@@ -146,6 +147,20 @@ def _summary(doc: dict) -> dict:
 
 def _display_status(value) -> str:
     return value.value if hasattr(value, "value") else str(value)
+
+
+def _trial_not_executed(task_id: str, reason: str, *, status: str) -> dict:
+    return {
+        "task_id": task_id,
+        "status": status,
+        "trial_only": True,
+        "execution_state": "NOT_EXECUTED",
+        "production_execution": "NOT_EXECUTED",
+        "trial_state": "UNKNOWN",
+        "trial_attempted": None,
+        "reason": reason,
+        "message": f"미실행: {reason}",
+    }
 
 
 def _settings(root: Path, *, live: bool) -> Settings:
@@ -179,7 +194,16 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                        "reason": reason, "message": f"미실행: {reason}"}
         doc = store.get(task_id)
         if _display_status(doc["status"]) == "PLANNED":
-            doc = make_trial_orchestrator(store, settings).run(task_id)
+            try:
+                doc = make_trial_orchestrator(store, settings).run(task_id)
+            except BlockingIOError:
+                return 1, _trial_not_executed(task_id, "engine_busy", status="PLANNED")
+            except (OSError, ValueError):
+                return 1, _trial_not_executed(
+                    task_id, "trial_storage_unavailable", status="PLANNED",
+                )
+        elif _display_status(doc["status"]) == "RUNNING":
+            return 1, _trial_not_executed(task_id, "trial_already_running", status="RUNNING")
         return _exit_code(doc), _summary(doc)
 
     if args.command == "status":
@@ -216,11 +240,32 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             resumed = dispatcher.resume(args.task_id, approved=args.approve_review)
         else:
             engines = {spec["engine"] for spec in doc.get("plan", [])}
-            if engines <= {"boj_metadata", "boj_observations"}:
+            if doc.get("trial_only"):
+                from macro_data_platform.ingestion.large_file_trial import (
+                    interrupted_trial_result,
+                    make_trial_orchestrator,
+                )
+                runner = make_trial_orchestrator(store, settings)
+                if _display_status(doc["status"]) == "RUNNING":
+                    try:
+                        recovered = runner.recover_interrupted(
+                            args.task_id,
+                            recovery_result=interrupted_trial_result(),
+                        )
+                    except BlockingIOError:
+                        return 1, _trial_not_executed(
+                            args.task_id, "worker_still_active", status="RUNNING",
+                        )
+                    except (OSError, ValueError):
+                        return 1, _trial_not_executed(
+                            args.task_id, "trial_recovery_unavailable", status="RUNNING",
+                        )
+                    return _exit_code(recovered), _summary(recovered)
+            elif engines <= {"boj_metadata", "boj_observations"}:
                 runner = make_boj_orchestrator(store, settings, boj_transport)
             elif engines == {"gate_c_file_watch"}:
                 runner = make_gate_c_watch_orchestrator(store, settings, file_transport)
-            else:
+            elif not doc.get("trial_only"):
                 raise ValueError("task plan is not supported by this CLI")
             resumed = runner.resume(args.task_id, approved=args.approve_review)
         return _exit_code(resumed), _summary(resumed)

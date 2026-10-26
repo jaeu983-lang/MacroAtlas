@@ -272,23 +272,32 @@ class Orchestrator:
         self.store.save(connection, doc)
         self._event(connection, doc, "TASK_FINISHED")
 
-    def recover_interrupted(self, task_id: str) -> None:
+    def recover_interrupted(self, task_id: str, *, recovery_result: StageResult | None = None) -> None:
         """Explicit operator action, only after the previous worker has stopped."""
+        if recovery_result is not None and recovery_result.status not in OUTCOMES:
+            raise ValueError("interruption recovery requires a terminal stage result")
         with self.store.transaction() as connection:
             doc = self.store.load(connection, task_id)
             if doc["active_token"] is None:
                 raise ValueError("task has no interrupted active attempt")
             if doc["stages"] and doc["stages"][-1]["status"] == StageStatus.RUNNING:
                 stage = doc["stages"][-1]
-                stage.update(
-                    status=StageStatus.FAILED_RETRYABLE, finished_at=self._now(),
-                    result=asdict(StageResult(
-                        StageStatus.FAILED_RETRYABLE, error_code=ErrorCode.INTERNAL_BUG,
-                        warnings=("Interrupted worker; external side effects require checking.",),
-                    )),
+                interrupted = recovery_result or StageResult(
+                    StageStatus.FAILED_RETRYABLE, error_code=ErrorCode.INTERNAL_BUG,
+                    warnings=("Interrupted worker; external side effects require checking.",),
                 )
-                self._event(connection, doc, "STAGE_INTERRUPTED", stage_id=stage["stage_id"])
-            status = TaskStatus.CANCELLED if doc["cancel_requested"] else TaskStatus.FAILED
+                serialized = json_snapshot(asdict(interrupted))
+                stage.update(status=serialized["status"], finished_at=self._now(),
+                             validated_at=self._now(), result=serialized)
+                self._event(connection, doc, "STAGE_INTERRUPTED", stage_id=stage["stage_id"],
+                            stage_status=serialized["status"],
+                            error_code=serialized["error_code"])
+            if doc["cancel_requested"]:
+                status = TaskStatus.CANCELLED
+            elif recovery_result is not None and recovery_result.status == StageStatus.NEEDS_REVIEW:
+                status = TaskStatus.NEEDS_REVIEW
+            else:
+                status = TaskStatus.FAILED
             self._finish(connection, doc, status)
 
     @staticmethod

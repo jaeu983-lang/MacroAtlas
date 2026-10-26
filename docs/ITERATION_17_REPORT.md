@@ -53,3 +53,22 @@ raw SHA256 `0ff64677d00c4c1a880816e401d0ea0802cb5924cab24b4987373320b95b0bb5` �
 quality/export 연결을 별도 수용 기준으로 구현한 뒤 승인한다. 이번 시험 임시 chunk는 정식 출력으로 승격하지 않는다.
 
 조사 원문·설정·CLI: [대용량 엔진 설정](LARGE_FILE_ENGINE.md). 상세 수치: [실험 JSON](LARGE_FILE_QUALIFICATION_RESULTS.json).
+
+## 후속 보완 — 강제 종료·resume 안전성
+
+후속 코드 검토에서 parent process가 강제 종료되면 child worker가 계속 실행되는 동안 기존 lock은 먼저
+풀릴 수 있고, 시험 task의 `RUNNING` 상태를 복구하는 CLI 경로도 없다는 점을 확인했다. 이를 같은 17회차
+범위에서 보완했다.
+
+- Orchestrator가 trial task를 claim하기 전 workspace lock을 얻고 worker child에 descriptor를 상속한다.
+  child가 살아 있으면 다른 시험 또는 recovery는 `engine_busy`/`worker_still_active`로 멈춘다.
+- lock이 풀린 뒤 `macroatlas resume <TRIAL_TASK_ID> --live`를 실행하면 marked orphan scratch만 정리하고
+  중단 결과를 `NEEDS_REVIEW`, `trial_state=UNKNOWN`, `execution_state=NOT_EXECUTED`로 남긴다. 원본은 다시
+  처리하지 않고 같은 task를 자동 재실행하지 않는다.
+- 표시 파일이 없는 디렉터리와 symlink된 scratch root는 청소하지 않고 접근을 미실행 처리한다.
+- 추가 회귀 검증: parent descriptor close 뒤 child의 lock 유지, 표시된 orphan만 청소, active lock 중 recovery
+  차단, 중단 결과 기록, symlink root 거부.
+
+후속 전체 pytest **645개 통과**, Ruff와 `git diff --check` 통과. 이 수정은 현재 task branch에 있으며
+remote PR CI 결과는 push 이후 별도 확인 대상이다. 정식 대용량 정규화·checkpoint/resume·CSV 전달은
+여전히 후속 구현이다.

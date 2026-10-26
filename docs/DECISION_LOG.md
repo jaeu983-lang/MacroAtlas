@@ -657,3 +657,10 @@ BIS flat 보존 원본의 cells=500010 인계 성공은 정책에 따른 정상 
 Linux resource limit·timeout·출력 예산·동시 실행 제한으로 시험한다. 실패는 미실행, 애매한 구분자 추정은
 불확실성을 남기며 자동 승인하지 않는다. 합성 19개 사례와 BIS 보존 원본을 실측했다.
 정식 대용량 normalized·원격 download·Windows resource worker는 이 구현에 포함되지 않는다.
+
+## D-078 — 대용량 시험 process 중단 복구
+
+시험 worker가 parent process 종료 뒤에도 살아 있을 수 있으므로, workspace lock을 task claim 전에 잡고
+child process에 상속한다. 새 `resume`은 같은 lock을 얻어 실제 worker 종료를 확인한 뒤 표시된 scratch만 정리한다.
+저장된 결과가 없으면 `trial_state=UNKNOWN`, `execution_state=NOT_EXECUTED`, `NEEDS_REVIEW`로 기록하고
+같은 task의 qualification을 자동 재실행하지 않는다. 원본과 부모 task는 그대로 둔다.

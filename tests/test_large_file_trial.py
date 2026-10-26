@@ -144,6 +144,134 @@ def test_busy_worker_is_not_run(tmp_path):
     assert result["trial_attempted"] is False
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="POSIX resource isolation")
+def test_worker_inherited_lock_survives_parent_descriptor_close(tmp_path):
+    import subprocess
+    import time
+
+    from macro_data_platform.ingestion.large_file_trial import worker_slot
+
+    root = tmp_path / "large_trials"
+    root.mkdir()
+    ready = tmp_path / "ready"
+    release = tmp_path / "release"
+    child_code = (
+        "import pathlib,sys,time; "
+        "pathlib.Path(sys.argv[1]).write_text('ready'); "
+        "release=pathlib.Path(sys.argv[2]); "
+        "exec(\"while not release.exists(): time.sleep(0.01)\")"
+    )
+    child = None
+    try:
+        with worker_slot(root) as descriptor:
+            child = subprocess.Popen(
+                [sys.executable, "-c", child_code, str(ready), str(release)],
+                pass_fds=(descriptor,),
+            )
+            for _ in range(500):
+                if ready.exists():
+                    break
+                child.poll()
+                time.sleep(0.01)
+            assert ready.exists()
+        with pytest.raises(BlockingIOError), worker_slot(root):
+            pass
+    finally:
+        release.touch()
+        if child is not None:
+            child.wait(timeout=5)
+    with worker_slot(root):
+        pass
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="POSIX resource isolation")
+def test_next_trial_removes_only_marked_orphan_scratch(tmp_path):
+    from macro_data_platform.ingestion.large_file_trial import SCRATCH_MARKER
+
+    settings, store, runner, record, _source = setup_candidate(tmp_path)
+    root = tmp_path / "data/large_trials"
+    root.mkdir()
+    abandoned = root / "trial-abandoned"
+    abandoned.mkdir()
+    (abandoned / SCRATCH_MARKER).write_text("MacroAtlas trial scratch\n")
+    unmarked = root / "trial-unmarked"
+    unmarked.mkdir()
+    doc = runner.run(create_trial(store, settings, record["id"]))
+    payload = doc["stages"][-1]["result"]["payload"]
+    assert payload["orphan_scratch_removed"] == 1
+    assert not abandoned.exists()
+    assert unmarked.is_dir()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="POSIX resource isolation")
+def test_trial_refuses_symlinked_scratch_root(tmp_path):
+    from macro_data_platform.cli import build_parser, dispatch
+
+    _settings, _store, _runner, record, _source = setup_candidate(tmp_path)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="fixture"\n')
+    (tmp_path / "data/large_trials").symlink_to(
+        tmp_path / "data/raw", target_is_directory=True,
+    )
+    args = build_parser().parse_args(
+        ["--project-root", str(tmp_path), "large-check", record["id"]]
+    )
+    code, output = dispatch(args)
+    assert code == 1
+    assert output["execution_state"] == "NOT_EXECUTED"
+    assert output["reason"] == "trial_storage_unavailable"
+    assert not (tmp_path / "data/raw").exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="POSIX resource isolation")
+def test_resume_recovers_interrupted_trial_as_not_executed_and_cleans_scratch(tmp_path):
+    from macro_data_platform.cli import build_parser, dispatch
+    from macro_data_platform.ingestion.large_file_trial import SCRATCH_MARKER
+
+    settings, store, runner, record, _source = setup_candidate(tmp_path)
+    task_id = create_trial(store, settings, record["id"])
+    with (patch.object(runner.trial_engine, "run", side_effect=KeyboardInterrupt),
+          pytest.raises(KeyboardInterrupt)):
+        runner.run(task_id)
+    scratch = tmp_path / "data/large_trials/trial-interrupted"
+    scratch.mkdir()
+    (scratch / SCRATCH_MARKER).write_text("MacroAtlas trial scratch\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="fixture"\n')
+    args = build_parser().parse_args(
+        ["--project-root", str(tmp_path), "resume", task_id, "--live"]
+    )
+    code, output = dispatch(args)
+    recovered = store.get(task_id)
+    payload = recovered["stages"][-1]["result"]["payload"]
+    assert code == 1
+    assert output["execution_state"] == "NOT_EXECUTED"
+    assert output["trial_state"] == "UNKNOWN"
+    assert output["reason"] == "interrupted_result_unavailable"
+    assert recovered["status"] == "NEEDS_REVIEW"
+    assert payload["orphan_scratch_removed"] == 1
+    assert not scratch.exists()
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="POSIX resource isolation")
+def test_resume_does_not_recover_while_trial_lock_is_held(tmp_path):
+    from macro_data_platform.cli import build_parser, dispatch
+    from macro_data_platform.ingestion.large_file_trial import worker_slot
+
+    settings, store, runner, record, _source = setup_candidate(tmp_path)
+    task_id = create_trial(store, settings, record["id"])
+    with (patch.object(runner.trial_engine, "run", side_effect=KeyboardInterrupt),
+          pytest.raises(KeyboardInterrupt)):
+        runner.run(task_id)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="fixture"\n')
+    args = build_parser().parse_args(
+        ["--project-root", str(tmp_path), "resume", task_id, "--live"]
+    )
+    with worker_slot(tmp_path / "data/large_trials"):
+        code, output = dispatch(args)
+    assert code == 1
+    assert output["reason"] == "worker_still_active"
+    assert store.get(task_id)["status"] == "RUNNING"
+
+
 def test_existing_trial_cannot_be_reused_after_source_replacement(tmp_path):
     settings, store, _runner, record, source = setup_candidate(tmp_path)
     create_trial(store, settings, record["id"])
