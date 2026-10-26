@@ -106,3 +106,9 @@ commit hash, 환경 fingerprint, 전체 검사 결과, 변경 diff, 수동 검�
 - 실제 제품 범위가 바뀌면 사용자 안내서·구현 상태·로드맵·아키텍처를 일치시킵니다. 역사 보고서의 결과를 현재 값으로 덮어쓰지 않습니다.
 - 검사 결과와 제한은 날짜·commit에 묶어 기록합니다. branch push는 main 병합·환경 publish가 아닙니다.
 - 이 저장소의 작업 관행상 task branch에 commit/push는 기록할 수 있지만, merge와 deploy/publish는 별도 유지관리 검토입니다.
+
+## 공통 유지보수 QA 실행기
+
+`python scripts/run_maintenance_qa.py`는 clean commit에서 detached worktree를 만들고 pytest, Ruff, diff, CLI 도움말을 검사합니다. 보고서는 `reports/maintenance_qa_<id>/report.json`과 개별 로그입니다. 실패/timeout/cleanup 실패는 성공으로 처리하지 않습니다. 현재 Python 환경에 pytest·Ruff와 프로젝트 의존성이 설치돼 있어야 합니다. 네트워크 호출이나 코드 수정·병합은 실행하지 않습니다. Windows에서는 Python 실행 경로를 그대로 사용하지만 실제 Windows 실행 증거는 CI에서 별도로 확인합니다.
+
+수정 흐름은 증거 기반 이슈 → 전용 branch → 수정 및 테스트 → commit → 격리 QA → push → PR 검토입니다. 읽기 전용 분석의 빈 후보는 품질 승인과 구분합니다. TIC/BIS watcher와 BOJ 고정 시리즈의 저장된 기관·dataset을 분석기에 연결했으며, 경제 concept은 추정하지 않아 unknown이면 반복 제안을 계속 차단합니다.

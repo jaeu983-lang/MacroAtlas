@@ -84,10 +84,30 @@ def _stage_scope_sql(plan_field, knowledge_field, candidate_field, workflow_path
                json_extract(t.document, '$.workflow_context.confirmation.offer.candidate_id')
          LIMIT 1)"""
     )
+    # Fixed, persisted source identities only. Never infer an economic concept.
+    adapter = "NULL"
+    engine = "json_extract(p.value, '$.engine')"
+    source = "json_extract(p.value, '$.input_data.source_id')"
+    if plan_field == "institution_id":
+        adapter = f"""CASE
+            WHEN {engine} = 'gate_c_file_watch' AND {source} IN ('tic', 'bis') THEN {source}
+            WHEN {engine} IN ('boj_metadata', 'boj_observations')
+             AND json_extract(p.value, '$.input_data.database') = 'FM08'
+             AND json_extract(p.value, '$.input_data.series_code') = 'FXERD01' THEN 'boj'
+            END"""
+    elif plan_field == "dataset_id":
+        adapter = f"""CASE
+            WHEN {engine} = 'gate_c_file_watch' AND {source} = 'tic' THEN 'TIC_TABLE5'
+            WHEN {engine} = 'gate_c_file_watch' AND {source} = 'bis' THEN 'WS_GLI_csv_col'
+            WHEN {engine} IN ('boj_metadata', 'boj_observations')
+             AND json_extract(p.value, '$.input_data.database') = 'FM08'
+             AND json_extract(p.value, '$.input_data.series_code') = 'FXERD01' THEN 'FM08'
+            END"""
     return f"""COALESCE(
         json_extract(p.value, '$.input_data.{plan_field}'),
         json_extract(t.document, '$.knowledge_context.{knowledge_field}'),
-        {workflow_value}
+        {workflow_value},
+        {adapter}
     )"""
 
 
