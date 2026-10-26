@@ -2,9 +2,10 @@
 
 > 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
 
-상태: 우선순위 backlog다. 전체 실행 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다. PR #3/#4/#5와
-유지보수 QA 경로는 통합됐다. BIS flat handoff는 19회차 review/CI 및 보존 원본 실행 후 별도 exporter adapter와
-통합해야 한다. 대용량 JSONL artifact는 이 CSV exporter 범위에 포함되지 않는다.
+상태: 우선순위 backlog이며 다음 제품 개발 항목이다. 전체 실행 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
+PR #3/#4/#5/#6과 유지보수 QA 경로는 통합됐다. 19회차 BIS flat handoff는 보존 원본 실행까지 완료됐지만,
+그 JSONL artifact는 이 CSV exporter 범위에 포함되지 않는다. 대용량 JSONL을 exporter에 연결하려면 별도의 artifact adapter와
+수용 기준이 필요하다.
 Gate C 자연 이벤트 감시는 별도로 계속한다.
 
 ## 목표와 사용자 흐름
@@ -37,7 +38,7 @@ Gate C 자연 이벤트 감시는 별도로 계속한다.
 
 ## 구현 순서와 선행 조건
 
-PR #3/#4/#5 통합 및 기본 branch HEAD 확인 → 저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
+PR #3/#4/#5/#6 통합 및 기본 branch HEAD 확인 → 저장 payload와 provenance 계약 확인 → provider별 명시적 export adapter → 파일 보존·경로 가드 →
 CLI 연결 → 정상·실패 수용 검증 → 사용자 안내·회차 보고서 → task branch commit/push 및 PR 검토.
 
 완료 선언은 실제 파일과 검증 결과가 확보된 뒤 한다. 이번 작업은 기획서 작성까지이며 16회차 코드를 구현한 것으로 세지 않는다.

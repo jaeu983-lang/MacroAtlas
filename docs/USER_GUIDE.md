@@ -1,6 +1,6 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-26**, 17회차 격리 대용량 qualification까지 반영. 제품의 현재 지원 범위 안내서.
+기준일: **2026-10-26**, 19회차 BIS flat 단일 자료의 구조 보존 실행까지 반영. 제품의 현재 지원 범위 안내서.
 
 다음 작업 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 제품 가설과 목표 구조는
 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 개발 절차는 별도
@@ -182,7 +182,9 @@ Linux에서 입력 128 MiB 미만·출력 192 MiB 미만·가상 메모리 384 M
 
 ### BIS flat 파일의 별도 대용량 실행
 
-현재 별도 production 경로는 BIS GLI flat ZIP 한 건만 지원합니다. 실행 전 불변 event 순번을 확인하고,
+현재 별도 production 경로는 BIS GLI flat ZIP 한 건만 지원합니다. 보존 원본의 단일 실행은 child task
+`c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 성공했고, 24,378행·21열의 구조 보존 JSONL을 만들었습니다.
+실행 전 불변 event 순번을 확인하고,
 일치하는 raw/hash qualification이 있어야 합니다. `--approve-production`은 별도 실행 승인을 뜻합니다.
 
 ```text
