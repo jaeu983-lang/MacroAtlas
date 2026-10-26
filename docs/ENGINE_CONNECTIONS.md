@@ -19,6 +19,9 @@ flowchart TD
     SMALL -->|parser 한도 도달| DEFER
     VALID --> RESULT[StageResult / 파일 참조 / task 이력]
     DEFER --> STOP[NEEDS_REVIEW로 원래 task 중단]
+    DEFER --> TRIAL[명시 large-check / 불변 event 결합]
+    TRIAL --> QUAL[격리 시험 task / 예산 제한]
+    QUAL --> PROOF[시험 통과 또는 미실행 / 본 실행 승인 아님]
     DEFER -.-> HANDOFF[명시 인계 서비스: 대상 버전 고정]
     HANDOFF -.-> CHILD[별도 TaskPlan / 대용량 stage]
     CHILD -.-> LARGE[stream / chunk + checkpoint]
@@ -42,6 +45,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
 | BLS/Census | Python API에서 BLSEngine/CensusEngine을 runner에 명시 등록 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI dispatch 대상에는 없음 |
 | `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. 현재 CLI는 World Bank/BOJ/watch plan만 재개 지원 |
+| `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산 결합 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음 |
 | `deferred [ID]` | DeferredNonAPIStore의 read-only 조회 | 대상 목록 / 최근 이력 조회. 조회가 대용량 엔진 실행을 유발하지 않음 |
 
 검색은 `discovery/series_search.py`의 근거 후보 생성과 명시 선택으로 분리돼 있다. 현재 고정 CLI는
@@ -83,16 +87,18 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 
 | 현재 공백 | 연결 전에 필요한 보완 |
 |---|---|
-| 인계 목록은 최신 record + append-only event를 저장하지만 event seq를 조회 payload로 내보내지 않음 | 불변 event 식별자·원본 snapshot을 handoff 계약으로 노출 |
+| 17회차 시험 task가 event seq·원본 stat·worker 코드에 결합됨. 일반 인계 목록 조회는 seq를 직접 표시하지 않음 | 정식 handoff는 검증된 immutable artifact/hash와 승인 상태를 추가 |
 | stage 실행 ID는 runner 내부에 있고 현재 StageInput에는 없음 | 인계 bridge가 origin stage_run/attempt를 신뢰 가능하게 연결하도록 최소 계약 확장 |
 | 인계 저장과 stage 결과 저장은 현재 별도 transaction | 중단 후 record만 남거나 event가 중복될 경우를 대비한 stage-run idempotency·복구 reconciliation |
 | capacity 상수는 parser 모듈에 있고 parser 한도 분류 일부는 오류 문자열에 의존 | 작은 공통 policy/reason 모듈로 정리. transport/parser/engine이 같은 typed capacity reason 사용 |
 | 보안/데이터/용량에 모두 NEEDS_REVIEW가 사용됨 | 상태를 늘려 라우팅하지 말고 고정된 reason·result kind로 분기. 범용 resume가 자동 handoff하지 않음 |
 | 작은 파일 저장도 용량 상한을 갖고 있음 | 작은 parser/storage 재호출 없이 대용량 전용 budget·segmented artifact manifest로 보존 |
-| 대용량 실행·artifact 공통 adapter·exporter 연결은 없음 | 위 계약 → handoff bridge → 대용량 stage → 검증 artifact adapter → exporter 순서로 구현 |
+| 격리 용량 시험은 구현. 정식 대용량 정규화·artifact 공통 adapter·exporter 연결은 없음 | 시험 증거 → 정식 handoff 승인/원본 artifact → 대용량 stage → 검증 artifact adapter → exporter 순서로 구현 |
 
 확인 소스: [CLI](../src/macro_data_platform/cli.py), [runner](../src/macro_data_platform/orchestration/runner.py),
 [공통 입력](../src/macro_data_platform/orchestration/models.py), [StageResult](../src/macro_data_platform/contracts.py),
 [World Bank dispatch](../src/macro_data_platform/ingestion/worldbank_request.py), [BOJ](../src/macro_data_platform/ingestion/boj.py),
 [파일 watcher](../src/macro_data_platform/ingestion/gate_c_watch.py), [파일 intake](../src/macro_data_platform/ingestion/tabular_files.py),
 [capacity/목록](../src/macro_data_platform/ingestion/non_api_capacity.py).
+
+17회차 시험 경로·실측 예산·미실행 응답은 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 따른다.

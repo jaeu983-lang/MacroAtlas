@@ -648,3 +648,12 @@ BIS flat 보존 원본의 cells=500010 인계 성공은 정책에 따른 정상 
 현재 관측에서 발생하지 않은 자연 revision/자연 transient resume는 미관측으로 유지한다.
 재검증 중 ZIP 선택·read-only 조회·HTTP 용량 타입·CLI 사유 누락·workbook 예외 처리를 수정했다.
 근거는 GATE_REAUDIT_AFTER_ITERATION_16.md에 있다.
+
+## D-077 — 경험적 대용량 qualification과 미실행 응답
+
+사용자 지시에 따라 DuckDB/Arrow/Polars 공식 streaming·메모리 제한 사례를 조사했다.
+추가 외부 엔진 의존성 대신 제한된 표준 CSV worker로 qualification 경로를 먼저 구현했다.
+명시 large-check가 불변 인계 event·원본 stat·코드/예산에 결합한 child task를 저장하고
+Linux resource limit·timeout·출력 예산·동시 실행 제한으로 시험한다. 실패는 미실행, 애매한 구분자 추정은
+불확실성을 남기며 자동 승인하지 않는다. 합성 19개 사례와 BIS 보존 원본을 실측했다.
+정식 대용량 normalized·원격 download·Windows resource worker는 이 구현에 포함되지 않는다.

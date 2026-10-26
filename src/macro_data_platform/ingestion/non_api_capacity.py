@@ -88,6 +88,8 @@ def inspect_bytes(raw, format_name, options):
         except (OSError, ValueError, zipfile.BadZipFile, RuntimeError):
             return decision('invalid_archive', status='security_review')
     if format_name in {'csv', 'tsv', 'txt'}:
+        if format_name == 'txt' and options.get('delimiter') is None:
+            return decision('delimiter_unknown', status='inspection_required')
         try:
             encoding = 'utf-16' if raw.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig'
             delimiter = options.get('delimiter', '\t' if format_name == 'tsv' else ',')

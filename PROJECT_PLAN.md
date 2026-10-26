@@ -553,3 +553,10 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 현재 호출 경로와 후속 연결은 `docs/ENGINE_CONNECTIONS.md`를 따른다. 공통 Orchestrator·StageResult·
 HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔다. 대용량 인계는 불변 판정 event와
 원본 snapshot을 선택해 명시적인 자식 task로 연결한다. 큰 본문 대신 검증된 파일·manifest 참조를 전달한다.
+
+## 추가 요구: 대용량 시험 기반 실행 정책
+
+공식 streaming/out-of-core 사례와 실제 용량 시험에 근거해 범위를 정한다. 애매한 자료는 후보로 보존해
+명시적으로 격리 시험한다. 자원·형식·환경 문제로 처리할 수 없으면 본 실행을 포기하고 미실행 사유를 반환한다.
+시험 scratch만 정리하고 원본과 이력은 보존한다. 시험 통과가 본 실행 승인을 대신하지 않는다.
+17회차의 범위·실측 예산은 `docs/LARGE_FILE_ENGINE.md`와 `docs/ITERATION_17_REPORT.md`를 따른다.

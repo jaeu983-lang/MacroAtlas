@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import sqlite3
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -60,6 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     deferred = commands.add_parser("deferred", help="list deferred non-API files or record history")
     deferred.add_argument("record_id", nargs="?")
+
+    trial = commands.add_parser("large-check", help="run one bounded local qualification trial")
+    trial.add_argument("deferral_id")
+    trial.add_argument("--event-seq", type=int)
 
     status = commands.add_parser("status", help="inspect a saved task without network access")
     status.add_argument("task_id")
@@ -125,8 +130,13 @@ def _summary(doc: dict) -> dict:
             "error_code": (row.get("result") or {}).get("error_code"),
         } for row in stages],
     }
+    if doc.get("trial_only"):
+        summary.update({"trial_only": True, "parent_task_id": doc.get("parent_task_id"),
+                        "deferral_event_seq": doc.get("deferral_event_seq")})
     for key in ("raw_path", "manifest_path", "normalized_path", "request_manifest_path",
-                "source_change_status", "watch_source_id", "quality", "http_status", "non_api_deferral"):
+                "source_change_status", "watch_source_id", "quality", "http_status", "non_api_deferral",
+                "execution_state", "production_execution", "reason", "message", "trial_state",
+                "rows", "columns", "elapsed_seconds", "peak_rss_bytes", "raw_sha256"):
         if key in payload:
             summary[key] = payload[key]
     if isinstance(payload.get("observations"), list):
@@ -154,6 +164,23 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         return 0, {"records": DeferredNonAPIStore(settings, read_only=True).list(args.record_id)}
 
     store = HistoryStore(settings)
+
+    if args.command == "large-check":
+        from macro_data_platform.ingestion.large_file_trial import (
+            create_trial,
+            make_trial_orchestrator,
+        )
+        try:
+            task_id = create_trial(store, settings, args.deferral_id, event_seq=args.event_seq)
+        except ValueError as failure:
+            reason = ("source_changed_since_binding" if str(failure) == "source_changed_since_binding"
+                      else "unknown_candidate")
+            return 1, {"execution_state": "NOT_EXECUTED", "production_execution": "NOT_EXECUTED",
+                       "reason": reason, "message": f"미실행: {reason}"}
+        doc = store.get(task_id)
+        if _display_status(doc["status"]) == "PLANNED":
+            doc = make_trial_orchestrator(store, settings).run(task_id)
+        return _exit_code(doc), _summary(doc)
 
     if args.command == "status":
         return 0, _summary(store.get(args.task_id))
@@ -210,6 +237,17 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         status, output = dispatch(args)
+    except sqlite3.Error:
+        if args.command == "large-check":
+            print(json.dumps({"execution_state": "NOT_EXECUTED",
+                              "production_execution": "NOT_EXECUTED",
+                              "reason": "trial_storage_unavailable", "trial_state": "UNKNOWN",
+                              "message": "미실행: 시험 이력 저장소를 사용할 수 없습니다."},
+                             ensure_ascii=False))
+            return 1
+        print(json.dumps({"status": "ERROR", "message": "Local history storage is unavailable."}),
+              file=sys.stderr)
+        return 2
     except (OSError, TypeError, ValueError) as error:
         print(json.dumps({"status": "ERROR", "message": str(error)}, ensure_ascii=False),
               file=sys.stderr)

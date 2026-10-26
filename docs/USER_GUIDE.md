@@ -158,3 +158,14 @@ Codex 데스크톱에서 이 저장소 작업을 요청할 수 있지만, MacroA
 파일 크기·행·셀·압축 한도에 도달하면 NEEDS_REVIEW로 중단하고 SQLite 인계 목록에 남깁니다.
 `macroatlas deferred`로 최대 100건, `macroatlas deferred ID`로 해당 대상의 최근 판정 이력을 조회합니다.
 API 수집은 이 분류 대상이 아닙니다. 인계 목록 등록 후 별도 대용량 엔진은 자동 실행되지 않습니다.
+
+## 대용량 후보의 격리 시험
+
+`macroatlas large-check <DEFERRAL_ID> [--event-seq N]`으로 저장된 후보를 명시적으로 시험합니다.
+Linux에서 입력 128 MiB 미만·출력 192 MiB 미만·가상 메모리 384 MiB·CPU 15초·wall 20초로 제한합니다.
+지원 파일은 UTF-8 CSV/TSV/TXT·ZIP 단일 표이며, 애매한 TXT 구분자는 시험 시 추정 여부를 표시합니다.
+실패·예산 초과·격리 미지원 환경은 `NOT_EXECUTED`와 `미실행: <이유>`를 반환합니다.
+시험이 중간에 멈춘 경우 trial_attempted=true로 표시합니다. 원본을 삭제하지 않고 시험 scratch만 정리합니다.
+`TRIAL_PASSED`도 본 실행 승인이 아니며 production_execution=NOT_EXECUTED입니다.
+같은 후보·코드·예산은 기존 결과를 반환하고 원본이 바뀌면 재사용하지 않습니다.
+상세 조사·실측·한계는 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 참조하세요.

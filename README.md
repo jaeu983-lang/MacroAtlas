@@ -2,7 +2,8 @@
 
 MacroAtlas는 국제금융·거시경제 통계를 공식 출처에서 찾고, 의미와 수집 결과를 근거와 함께
 보존하는 Python 프로젝트입니다. 현재 사용 인터페이스는 Python API와 범위가 고정된 구조화
-CLI이며 자연어 채팅 제품은 아직 없습니다.
+CLI이며 자연어 채팅 제품은 아직 없습니다. 비API 대용량 후보는 `large-check`로 제한된 격리 시험을 수행하고,
+실패·예산 초과는 미실행으로 응답합니다. 시험 통과도 정식 정규화 승인으로 자동 승격하지 않습니다.
 
 ## 현재 상태
 
@@ -23,6 +24,7 @@ task-linked feedback CLI와 read-only pattern CLI도 제공합니다. 게이트�
 
 - [`START_HERE.md`](START_HERE.md): 현재 저장소에서 작업을 시작하는 순서
 - [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 제품 범위와 정책 요구사항
+- [`docs/LARGE_FILE_ENGINE.md`](docs/LARGE_FILE_ENGINE.md): 공식 사례 조사·경험적 용량 설정·미실행 정책
 - [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md): 실제 엔진 호출 흐름·전달 계약·대용량 후속 연결
 - [`docs/UNRESOLVED_ITEMS.md`](docs/UNRESOLVED_ITEMS.md): 현재 미해결 항목의 데이터 처리·접속·미구현·증거 대기 분류
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md): 완료 상태, 게이트, 다음 허용 작업의 단일 기준
