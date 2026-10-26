@@ -384,7 +384,7 @@ search는 후보/근거와 필요한 확인 항목을, collect는 확정 조건�
 ### 10.3 최종 사용자 설명서 및 PPT
 
 **작성 시점:** 14회차 최종 통합·검증 단계에서 실제 완성된 기능과 실행 결과를
-기준으로 작성한다. 현재 구현 단계에서는 제작하지 않는다.
+기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/ITERATION_14_REPORT.md`를 따른다.
 
 **최종 산출물:** `docs/USER_GUIDE.md` 사용자 설명서와
 `docs/MacroAtlas_User_Guide.pptx` 사용자 안내 PPT. 설명서는 재현 가능한 상세 절차를,
@@ -471,7 +471,9 @@ docs/ALIGNMENT_01_EXTENSION_REPORT.md를 따르며 기존 241개 테스트 기�
 
 각 회차의 상세 선행조건·변경 범위·입출력·검수는 `docs/IMPLEMENTATION_PLAN.md` 참조. 기본적으로 앞 회차의 게이트가 실패하면 다음 의존 작업으로 넘어가지 않는다. 사용자가 명시적으로 순서 진행을 지시한 예외 작업은 진행할 수 있지만, 실패 게이트는 계속 미통과로 기록하고 게이트 의존 기능·출시 판정을 보류한다. 14회는 초기 통합 v1 계획이지 모든 기관의 자동 지원을 보장하는 작업 횟수는 아니다.
 
-현재 상태(2026-10-26): 13회차 구현 및 로컬 검증 완료 (`docs/ITERATION_13_REPORT.md`). Gate C는 D-067의 제한된 검증 경로에서 통과했다. 자연 원자료 개정과 자연 장애 후 재개는 확대 검증의 `NOT_RUN` 조건이며, 14회차/Gate E는 미시작이다.
+현재 상태(2026-10-26): 13회차 구현·로컬 검증 완료 (`docs/ITERATION_13_REPORT.md`). 14회차 Gate E는
+문서화된 제한 범위 로컬 v1 검토에서 통과했다 (`docs/ITERATION_14_REPORT.md`). 자연 TIC/BIS 원자료 개정과
+자연 provider 장애 후 재개는 확대 검증에서 `NOT_RUN`이며, 이 결과는 일반 기관 지원이나 배포 승인이 아니다.
 
 ### Gate C 제한 범위 판정 정책 (2026-10-26)
 
@@ -483,7 +485,8 @@ Orchestrator task를 저장·재개해 같은 task가 성공하는 통합 시험
 `controlled source mutation`, `simulated provider failure`로 표시한다.
 
 이 제한 판정은 자연 발생한 live source revision 또는 실제 provider 장애·복구를 입증하지 않는다.
-검증한 기관·경로만 통과 범위에 넣고 BOJ처럼 막힌 경로와 그 밖의 기관은 미지원/미검증으로 남긴다.
+검증한 기관·경로만 통과 범위에 넣는다. BOJ는 직접 API smoke에서 응답이 확인됐지만 재사용 collector가
+없어 수집 통합은 미지원/미검증으로 남긴다. 그 밖의 기관도 개별 근거 없이 지원을 확대하지 않는다.
 통제된 fixture를 live event로 보고하거나 일반 기관 전반으로 확대 해석하지 않는다. 범위와 잔여
 live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 

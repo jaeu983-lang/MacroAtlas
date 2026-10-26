@@ -37,8 +37,9 @@ World Bank Indicators API를 BIS bulk 대신 선정했다. 공식 문서에 키 
   다른 기관의 키도 읽지 않는다. .env·TXT·브라우저·.netrc를 조회하지 않는다.
 - 네트워크는 Settings.network_enabled가 명시적 True일 때만 실행한다.
   기본값은 False이며 fixture transport 주입은 네트워크 없이 별도로 시험할 수 있다.
-- 세션 trust_env=False로 암묵적 인증/프록시 설정을 읽지 않고 기본 TLS 검증을 유지한다.
-  조직 프록시/사설 CA가 필요한 환경은 별도의 명시적 설정을 추후 검토해야 한다.
+- 세션 trust_env=False로 `.netrc`/암묵 credential discovery를 끈다. 실행 환경의
+  `HTTP_PROXY`/`HTTPS_PROXY`와 소문자 fallback, `REQUESTS_CA_BUNDLE`/`CURL_CA_BUNDLE`만 요청에
+  명시적으로 전달하며, CA bundle이 없으면 Requests 기본 TLS 검증을 사용한다.
 
 ## 전송 예산과 오류
 

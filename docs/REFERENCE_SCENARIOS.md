@@ -197,5 +197,38 @@ run_date: null
   knowledge lookup read 1 SQLite candidate row (178 logical bytes); cached lookups read 0 rows/bytes.
   Maximum Python allocation was 32,304 bytes baseline and 39,301 bytes with knowledge context.
 - This is local SQLite plus fixture-engine evidence, not live-provider latency. Gate D passed for the
-  explicit scoped planning path. UI consent and automatic selection remain unimplemented; iteration 13
-  was not started. Full details are in `docs/ITERATION_12_REPORT.md`.
+  explicit scoped planning path. UI consent and automatic selection remain unimplemented. Iteration 13
+  was not started when this historical follow-up was written; it was completed later as recorded in
+  `docs/ITERATION_13_REPORT.md`. Full Gate D details are in `docs/ITERATION_12_REPORT.md`.
+
+## Gate E supported-scope final matrix (2026-10-26)
+
+This matrix supersedes only the current-status reading of earlier historical notes. `PARTIAL` means that
+one bounded supported path was exercised; it does not mean the full scenario request is available.
+
+| Scenario | Normal path | Failure/change path | Current result and boundary |
+|---|---|---|---|
+| A — IMF | Generic SDMX structure XML fixture parsing is tested. | Malformed/conflicting metadata fixtures are tested. | **BLOCKED end-to-end**: no IMF live dataflow discovery or observation connector. Fixture component evidence is not IMF support. |
+| B — BIS | Official `WS_GLI_csv_col.zip` was captured and locally ingested (225 rows × 220 columns). | Official flat ZIP returned HTTP 503; no retry was sent. Malformed/unsafe ZIP cases are fixture-tested. | **PARTIAL**: explicit bulk-file intake only; no general BIS concept search or series-level API workflow. |
+| C — Treasury TIC | Official Table 5 text was preserved and ingested; source describes end-period holdings in billions of dollars. | Controlled mutation of a copy of live raw returned `changed`/`NEEDS_REVIEW`; schema-drift fixtures preserve raw. | **PARTIAL**: explicit file intake and controlled change guard; next natural live source revision is not observed. |
+| D — BEA | No BEA collection path exercised. | No BEA-specific failure path exercised. | **BLOCKED**: no BEA connector or end-to-end parameter discovery. A configured key alone does not imply support. |
+| E — ECB/Eurostat | Generic SDMX structure parsing is fixture-tested. | Generic metadata conflict/schema cases are fixture-tested. | **BLOCKED end-to-end**: no ECB/Eurostat live data discovery or observation connector. |
+| F — Japan MOF/BOJ/e-Stat | BOJ official metadata and fixed FM08/FXERD01/202609 request returned HTTP 200 twice; response shape and nulls were checked. | No provider failure/resume or full Japan workflow was run. | **PARTIAL**: direct BOJ API smoke only; no reusable collector, Orchestrator integration, MOF or e-Stat path. D-072/D-073 evidence is in `docs/BOJ_LIVE_RECHECK_2026_10_26.md`. |
+| G — PBOC/SAFE/NBS | No live or end-to-end source path exercised. | No source-specific failure path exercised. | **BLOCKED**: unsupported; institution roles and language-specific series are not inferred. |
+| H — OECD/World Bank | Fixed World Bank USA WDI GDP source 2 path was live-collected and quality-validated for 2020–2022 (3 rows). | World Bank HTTP/schema/quality/resume branches are fixture-tested. | **PARTIAL**: fixed World Bank GDP path only; no OECD comparison, multi-country search, or cross-source equivalence claim. |
+
+| Shared case | Evidence | Result and boundary |
+|---|---|---|
+| X01 transient failure/resume | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after` | **PASS, simulated**; same persisted task resumes only after `Retry-After`. No natural provider failure/resume claim. |
+| X02 auth/permission | `test_403_requires_review_and_never_becomes_retryable`; connector auth fixtures | **PASS, fixture**; no authentication bypass. |
+| X03 schema drift | `test_schema_drift_retains_new_raw_response_for_diagnosis`; tabular parser fixtures | **PASS, fixture**; review state preserves source evidence. |
+| X04 stock/flow mismatch | `test_holdings_request_cannot_confirm_transaction_or_unknown_measure` | **PASS, fixture**; holdings and transaction concepts are not conflated. |
+| X05/X06 scoped feedback | `docs/ITERATION_12_REPORT.md`; `tests/test_knowledge_orchestration.py` | **PASS, local fixture**; explicit accepted scoped feedback only, conflicting/inferred/out-of-scope reuse blocked. |
+| X07 safe resume | `test_resume_reuses_valid_prefix_and_only_retries_failed_stage_after_restart`; `test_valid_collection_reused_after_retryable_validation_interruption` | **PASS, fixture**; verified prefix is reused and the failed stage is retried. |
+| X08 source change | Gate C review D-067 and `tests/test_gate_a.py` | **PASS, controlled/fixture**; preserve old/new raw and block new normalized output on change. Natural live revision remains `NOT_RUN`. |
+| X09 recurring improvement | `docs/ITERATION_13_REPORT.md`; `tests/test_patterns.py` | **PASS, synthetic**; 3 distinct tasks required; proposals remain read-only drafts. |
+
+Gate E release boundary is a restricted local v1 for the paths above. The blocked and partial scenarios are
+not advertised as completed agency workflows. The fixed World Bank live guide procedure was reproduced in
+the current execution environment after the connector began honoring its configured proxy and CA bundle;
+the report and verification details are in `docs/ITERATION_14_REPORT.md`.

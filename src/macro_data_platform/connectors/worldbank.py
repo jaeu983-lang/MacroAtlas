@@ -1,6 +1,7 @@
 """One documented WDI GDP endpoint; no discovery, credentials or bulk queries."""
 import json
 import math
+import os
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -82,13 +83,23 @@ class WorldBankTransport:
             raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                                    "Network access is not enabled for this collection.")
         deadline = time.monotonic() + 30
+        proxies = {}
+        for scheme in ("http", "https"):
+            value = (os.environ.get(f"{scheme.upper()}_PROXY")
+                     or os.environ.get(f"{scheme}_proxy"))
+            if value:
+                proxies[scheme] = value
+        verify = (os.environ.get("REQUESTS_CA_BUNDLE")
+                  or os.environ.get("CURL_CA_BUNDLE") or True)
         try:
             with requests.Session() as session:
-                # Do not consult .netrc, credential stores or implicit proxy settings.
+                # Keep .netrc/credential discovery disabled while explicitly honoring the
+                # configured egress proxy and custom TLS trust bundle.
                 session.trust_env = False
                 with session.get(
                     query.url, timeout=(5, 20), stream=True, allow_redirects=False,
                     headers={"Accept": "application/json", "User-Agent": "MacroAtlas/0.1"},
+                    proxies=proxies, verify=verify,
                 ) as response:
                     length = response.headers.get("Content-Length")
                     if length is not None and length.isdecimal() and int(length) > MAX_BYTES:

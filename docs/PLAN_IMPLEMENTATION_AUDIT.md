@@ -109,3 +109,11 @@ URL 분기 테스트가 추가됐다. 그 시점에 **551 pytest**, Ruff, `git d
   실제 source revision comparison과 기관별 복구/resume는 미완료라 Gate C 미통과, Gate D/11 미실행.
 - 현재 branch `codex/institution-discovery-05`의 base HEAD는
   `781827593924e35dadbc1188f09c7ea40a7b7c76`; 후속 수정은 미커밋·미푸시다.
+
+## 후속 상태 정정 (2026-10-26)
+
+위 마지막 문단은 당시의 branch·gate 상태를 기록한 역사 자료다. 이후 D-067에서 Gate C를 검증된
+범위로 제한 통과 처리했고, Gate D와 11~14회차 작업이 완료됐다. 현행 Gate C/D/E 상태, commit/push,
+제한 범위와 미해결 자연 live 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md),
+[`GATE_C_REVIEW_2026_10_26.md`](GATE_C_REVIEW_2026_10_26.md),
+[`ITERATION_14_REPORT.md`](ITERATION_14_REPORT.md)를 따른다.

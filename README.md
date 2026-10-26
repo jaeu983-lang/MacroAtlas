@@ -6,17 +6,17 @@ MacroAtlas는 국제금융·거시경제 통계를 공식 출처에서 찾고, �
 
 ## 현재 상태
 
-2026-10-26 기준, Gate A 통과, Gate B는 **engine/API 제한 범위 통과**, Gate C 미통과,
-Gate D/E 미실행입니다. Gate B는 구조화 후보 선택→World Bank fixture 수집만 확인합니다.
-BLS/Census API 수집, 기관 메타데이터 조회, 제한 파일 파서는 구현됐지만 넓은 기관 범위와
-후보 검색 연결은 검증되지 않았습니다. CLI와 자연어 대화 UI도 아직 없습니다.
+2026-10-26 기준, Gate A 통과, Gate B/C는 **제한 범위 통과**, Gate D 통과,
+Gate E는 **제한 범위 로컬 v1 검토 통과**입니다. Gate C의 자연 원자료 개정 및 실제 provider 장애 후
+재개는 검증하지 않았습니다. 현재 확인된 사용자 경로와 기관별 `PARTIAL`/`BLOCKED` 한계는
+[`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)와
+[`docs/ITERATION_14_REPORT.md`](docs/ITERATION_14_REPORT.md)를 참조하세요.
 
-앞서 실행한 BLS와 Census live smoke는 현재 작업 트리의 API 호출·파싱·저장을 확인했습니다.
-그 당시 원격 `codex/iteration-04-gate-a`는 Gate A 기준 커밋을 가리켰고, 05~10회차 코드는
-그 이후 로컬 변경분이었습니다. 해당 코드는 local source checkpoint
-`7a2bb031d61061abc894ac206c45a95d8e45f5fd`에 고정해 clean checkout에서 재검증했습니다.
-그 checkpoint는 아직 원격에 push되지 않았습니다. current gate status와 다음 작업은
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), 증거는 회차별 보고서에 기록합니다.
+MacroAtlas에는 일반 자연어 검색 CLI나 자체 채팅 UI가 없습니다. 고정된 World Bank USA GDP live
+검증 경로, 제한 BLS/Census API 부품, 명시 파일 파서, task-linked feedback CLI와 read-only pattern
+CLI를 제공합니다. 게이트의 현행 상태와 다음 허용 작업은
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), 시나리오별 증거는
+회차 보고서를 기준으로 합니다.
 
 ## 어디서 무엇을 볼까
 
@@ -27,6 +27,8 @@ BLS/Census API 수집, 기관 메타데이터 조회, 제한 파일 파서는 �
 - [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md): 제품 수용 시나리오
 - [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md): 변경 선택의 이력
 - [`docs/PLAN_IMPLEMENTATION_AUDIT.md`](docs/PLAN_IMPLEMENTATION_AUDIT.md): 2026-10-26 계획 정합성 점검 기록
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md): 설치와 현재 지원 경로 안내
+- [`docs/MacroAtlas_User_Guide.pptx`](docs/MacroAtlas_User_Guide.pptx): 사용자 안내 요약
 
 ## 설치와 검사
 

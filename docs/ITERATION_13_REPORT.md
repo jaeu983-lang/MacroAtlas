@@ -5,7 +5,8 @@
 13회차 로컬 구현·검증을 완료했다. Gate D 이후의 반복 오류·명시 피드백을 읽기 전용으로 분석해
 범위별 `draft` 제안을 만든다. Gate C의 D-067 제한 범위 통과 판정은 변경하지 않았다. 실제 원자료
 개정 및 자연 provider failure→resume 증거는 더 넓은 검증 범위에서 계속 `NOT_RUN`이다.
-14회차/Gate E는 시작하지 않았다.
+이 보고서 작성 시점에는 14회차/Gate E가 시작되지 않았다. 이후 Gate E 제한 범위 검수는
+[`ITERATION_14_REPORT.md`](ITERATION_14_REPORT.md)에 기록했다.
 
 `PatternAnalyzer`는 완료·실패·부분 완료·검토 필요 상태의 task에서 stage 상태, 오류 코드, 기관·엔진·
 stage와 명시된 dataset/concept 범위만 읽는다. 조회는 SQLite read-only 연결이며, raw provider payload,

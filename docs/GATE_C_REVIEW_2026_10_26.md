@@ -175,9 +175,10 @@ BIS raw `aa52afce…bdd9c1d`, normalized `46dd820e…e445854`. repeat의
 1. 같은 URL/요청 범위의 실제 개정 원본 쌍 확보 및 X08 live 변경 감지·양쪽 raw 보존 확인.
    같은 bytes를 재수집한 결과나 합성 수정 bytes를 live revision으로 표시하지 않는다.
 2. 자연 발생한 기관 오류에서 durable resume 쌍 확보 및 X04 잔액/거래액 후보 불일치 증거 보완.
-3. BOJ observation collector 구현 여부와 지원 범위를 명시한 재검토. 매뉴얼은 현재 접근 가능하지만
-   collector·series mapping·실측 데이터 경로는 미구현/미검증이다. 이는 제한 범위를 넘어 전체 Gate C를
-   확장할 때 필요하다.
+3. BOJ observation collector 구현 여부와 지원 범위를 명시한 재검토. 후속 D-072/D-073에서
+   FXERD01 한 series의 metadata mapping과 direct data response는 확인했다. reusable collector,
+   다른 BOJ series 및 Orchestrator 연결은 미구현/미검증이다. 이는 Gate C의 제한 범위를 넘어
+   BOJ 수집 지원을 추가할 때 필요하다.
 
 관측치·기관 정의·자격증명·게시 설정을 변경하지 않았다. 이번 작업에 코드 동작 변경은 없다.
 

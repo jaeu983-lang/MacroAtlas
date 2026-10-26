@@ -24,7 +24,7 @@
 | EU-03 | 독일 | Bundesbank | 독일·유로 금융/경제 시계열 | 새 통계포털·SDMX REST, 구 시계열 키 매핑 | 공식 문서 확인 | https://www.bundesbank.de/en/statistics/time-series-and-real-time-data |
 | EU-04 | 영국 | Bank of England | 통화·금융·금리 | Bankstats IADB 검색, 다운로드·코드 기반 탐색 | 공식 문서 확인 | https://www.bankofengland.co.uk/boeapps/database/help.asp |
 | EU-05 | 프랑스 | INSEE | 생산·물가·거시시계열 | SDMX 2.1 웹서비스, idbank 단위 시계열 | 공식 문서 확인 | https://www.insee.fr/en/information/2868055 |
-| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | 공지·매뉴얼 live 200; 요청 규격 확인, observation collector는 미구현 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
+| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | notice/manual 200; FXERD01/202609 API smoke 200×2, 재사용 observation collector 미구현 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
 | JP-02 | 일본 | Ministry of Finance | 국제수지·직접·증권투자 | 공개 통계표 및 BOJ Time-Series Data Search 연계 | 공식 문서 확인 | https://www.mof.go.jp/english/policy/international_policy/reference/balance_of_payments/index.htm |
 | JP-03 | 일본 | e-Stat | 정부 통계표·코드북 | 표 목록→메타→통계값 API, 등록/Application ID | 공식 문서 확인 | https://www.e-stat.go.jp/api/en/api-info |
 | CN-01 | 중국 | PBOC | 통화량·대출·사회융자 | 공식 홈페이지 통계 섹션의 접근·재사용 경로 추가 실사 | 기관 확인·경로 추가 조사 | https://www.pbc.gov.cn/en/ |
@@ -186,3 +186,17 @@ known_issues: []
   바뀌었고, series 매핑·collector·실제 데이터 응답은 미검증이다.
 - 원본 PDF와 manifest는 gitignored `data/raw/guides/boj_api_manual/be0d3f61ef264b1cb715bfd8b2ef9336/`
   아래에 보존했다. 자세한 기록은 `docs/GATE_C_REVIEW_2026_10_26.md`와 D-071에 있다.
+
+## 2026-10-26 BOJ metadata/data endpoint smoke — D-072/D-073
+
+이 항목은 위 manual 재확인 뒤 수행한 제한 API 실측이며, collector 지원 상태를 바꾸지 않는다.
+
+- 공식 `getMetadata`의 FM08 응답과 `getDataCode`의 FXERD01/202609 응답은 각각 두 번 요청해 모두
+  HTTP/JSON STATUS 200이었다. FXERD01은 Tokyo Market 09:00 JST 달러/엔 현물 시계열이며 unit은
+  Yen per U.S. Dollar, frequency는 DAILY로 metadata에서 확인했다.
+- 요청 범위 응답은 30일, 숫자 19개와 null 11개다. 반복 실행에서 관측 날짜/값은 같았고 동적 응답
+  `DATE`만 달랐다. 결측은 원본 null로 유지했다.
+- 이를 live API 접근·응답 구조의 확인으로만 분류한다. BOJ 재사용 adapter, source mapping catalog,
+  Orchestrator task, natural failure recovery는 미구현/미검증이다. 지원 상태는
+  `collection_not_implemented`로 유지한다. 상세와 hashes는
+  `docs/BOJ_LIVE_RECHECK_2026_10_26.md`에 있다.

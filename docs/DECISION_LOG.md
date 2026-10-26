@@ -607,3 +607,19 @@
   This is repeat API-access/response-shape evidence only. It does not demonstrate a source revision,
   provider durable resume, collector integration, or a broader Gate C pass. See
   `docs/BOJ_LIVE_RECHECK_2026_10_26.md`.
+
+## Iteration 14 Gate E and explicit proxy support (2026-10-26)
+
+- **D-074 / IMPLEMENTED, GATE E PASSED FOR RESTRICTED LOCAL V1:** Reproducing the documented World Bank
+  live path exposed a transport issue: `trust_env=False` prevented use of the configured sidecar proxy.
+  Keep implicit `.netrc`/credential lookup disabled, but pass the configured HTTP(S) proxy and Requests/Curl
+  CA bundle explicitly to the request. TLS verification, redirect refusal, bounds, timeout, and no automatic
+  retry remain in force. Mocked tests verify both the default and configured-proxy cases without network use.
+- The first live task ended as `TRANSIENT` before a complete response; the same fixed request succeeded after
+  the change (`HTTP 200`, three validated observations, `live_path_passed=true`). Raw SHA256
+  `219e79f17e08a93d64f747f3cdb7376d09349e5c8525d24f316532b86cccd6b1` matches the prior Gate A capture,
+  so this is not a source revision. `592` tests and Ruff passed. The A–H/X01–X09 status matrix, supported-scope
+  user guide, and 10-slide PPTX were produced and checked.
+- Gate E is a restricted local-v1 review only. Blocked/partial institutions, Windows installation not run in
+  this Linux environment, natural TIC/BIS revision, natural provider durable resume, and absent BOJ collector
+  remain explicit. No environment publish or main merge occurred. See `docs/ITERATION_14_REPORT.md`.

@@ -57,7 +57,8 @@ git diff --check
 
 `git status -sb`, `git rev-parse HEAD`, `git ls-remote --heads origin`으로 작업 트리와 원격
 branch가 같은 commit을 가리키는지 확인합니다. local commit만으로 원격 checkout이나 실행 환경에
-코드가 전달되지는 않습니다. 원격 push, 환경 draft 변경, 환경 publish는 별도 승인 절차입니다.
+코드가 전달되지는 않습니다. 검토용 task branch push는 작업 기록의 일부이며, main 병합과 실행 환경
+publish는 별도 사람 검토·승인 대상입니다.
 
 API 키와 실제 수집 원본은 저장소에 올리지 않습니다. 이 저장소는 현재 Python API 중심이며,
 자연어 채팅 UI와 무인 예약 개선 실행은 완료된 제품 기능이 아닙니다.
