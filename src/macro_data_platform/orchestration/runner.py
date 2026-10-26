@@ -3,7 +3,7 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -151,8 +151,7 @@ class Orchestrator:
             self._event(connection, doc, "TASK_RESUMED" if resume else "TASK_STARTED")
             return token
 
-    @staticmethod
-    def _check_resume(doc: dict, *, approved: bool) -> None:
+    def _check_resume(self, doc: dict, *, approved: bool) -> None:
         if doc["status"] not in {
             TaskStatus.FAILED, TaskStatus.PARTIAL, TaskStatus.NEEDS_REVIEW, TaskStatus.CANCELLED,
         }:
@@ -166,6 +165,21 @@ class Orchestrator:
                 raise ValueError("terminal failure requires a new task")
             if latest["status"] == StageStatus.NEEDS_REVIEW and not approved:
                 raise ValueError("review acknowledgement required before resume")
+            result = latest.get("result") or {}
+            delay = result.get("retry_after_seconds")
+            if delay is not None and (type(delay) is not int or delay < 0):
+                raise ValueError("saved server retry delay is invalid; resume is blocked")
+            if latest["status"] == StageStatus.FAILED_RETRYABLE and delay is not None and delay > 0:
+                finished_at = latest.get("finished_at")
+                if not finished_at:
+                    raise ValueError("cannot verify the server retry delay; resume is blocked")
+                retry_at = datetime.fromisoformat(finished_at)
+                if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+                    raise ValueError("cannot verify the server retry timestamp; resume is blocked")
+                now = self.clock()
+                utc(now)
+                if now.astimezone(UTC) < retry_at.astimezone(UTC) + timedelta(seconds=delay):
+                    raise ValueError("server Retry-After delay has not elapsed; resume is blocked")
 
     @staticmethod
     def _owned(doc: dict, token: str) -> None:
@@ -295,6 +309,7 @@ class Orchestrator:
                     result = StageResult(
                         StageStatus.NEEDS_REVIEW, result.payload, result.evidence_refs,
                         result.warnings, result.error_code, result.retry_hint,
+                        result.retry_after_seconds,
                     )
                 serialized = json_snapshot(asdict(result))
             except Exception:  # noqa: BLE001 - isolate injected engines without logging secrets

@@ -1,5 +1,9 @@
 # 01회차: 공통 모델과 경계
 
+> 이 문서는 회차별 구현 구조와 역사적 선택을 설명한다. **현재 구현 현황·게이트·다음 작업의
+> 기준은 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)**이며, 05~10회차 상세는 해당 회차
+> 보고서를 따른다. 여기 적힌 “당시 미구현”은 별도 현재 상태 표기가 없는 한 그 회차 시점의 기록이다.
+
 기준: PROJECT_PLAN.md §5–8, docs/IMPLEMENTATION_PLAN.md 01.
 
 기존 구현은 health.py의 레이아웃 점검과 pytest 테스트 2개뿐이었다.
@@ -18,7 +22,9 @@
 | orchestration | 02회차에서 순차 실행·재개·취소·이력 구현(아래 참조) |
 
 엔진은 `Engine[Input, Payload].run(input) -> StageResult[Payload]` 계약을 사용한다.
-반환 필드는 status, payload, evidence_refs, warnings, error_code, retry_hint다.
+반환 필드는 status, payload, evidence_refs, warnings, error_code, retry_hint,
+retry_after_seconds다. 마지막 필드는 서버가 Retry-After를 준 retryable 오류에서만 사용하며,
+실패 이력에 저장하고 최소 대기시간 전에 resume하지 못하게 한다.
 01회차에는 패키지 경계와 상태 어휘만 준비했다. 02회차의 실행·재개 구현은 아래와 같다.
 02회차 종료까지 동작하는 기관 탐색·실제 수집 엔진은 없었다. 03회차의 제한 수집은 아래 참조.
 
@@ -79,7 +85,8 @@ events = store.events(task.task_id)
 evidence_refs를 StageInput.upstream/input_refs로 받으며 원본은 변경하지 않는다.
 계획 입력과 저장·조회 결과는 JSON 스냅샷이다. NaN/비 JSON 결과는 성공 저장을 거부한다.
 각 단계 시도에는 입력 fingerprint, engine/version, 입력 근거와 이전 stage_run_id,
-결과의 payload/출력 근거/warnings/error_code/retry_hint, UTC 시작·종료 시각을 남긴다.
+결과의 payload/출력 근거/warnings/error_code/retry_hint/retry_after_seconds,
+UTC 시작·종료 시각을 남긴다.
 
 저장소는 설정의 database_path(기본 data/catalog.sqlite)에 tasks와 task_events를
 생성한다. tasks의 JSON에 고정 계획·작업 시도·단계 시도를 보존하고 이벤트는 추가만 한다.
@@ -99,7 +106,9 @@ JSON 전체 갱신 방식은 대규모 이력에 최적화하지 않았으며 �
   FAILED_TERMINAL은 취소나 승인으로도 재시도하지 않는다. 조건 수정은 새 작업으로 기록한다.
 - max_attempts는 단계당 전체 엔진 호출 상한(기본 3, 허용 1~10)이다. 재사용은 호출로
   세지 않는다. 상한 초과 시 NEEDS_REVIEW, approved=True로도 상한을 초기화하지 않는다.
-  이번 회차는 수동 resume이며 자동 sleep/backoff·HTTP 재시도는 후속 회차 범위다.
+  02회차 당시 수동 resume만 구현했다. 현재도 한 stage invocation은 HTTP 요청을 자동 재전송하지
+  않는다. Retry-After가 있으면 Orchestrator가 명시적 resume를 최소 대기시간까지 막는다.
+  자동 sleep/backoff와 공용 rate limiter는 미구현이다. 세부 정책은 PROJECT_PLAN.md §8.2다.
 
 ### 재사용·취소·복구
 

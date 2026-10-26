@@ -11,8 +11,10 @@ reports/*
 !reports/.gitkeep
 data/raw/*
 data/processed/*
+data/inbox/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/inbox/.gitkeep
 *.sqlite
 *.db
 *.sqlite-*

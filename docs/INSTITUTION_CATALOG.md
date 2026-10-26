@@ -1,6 +1,9 @@
 # Institution Catalog — 국제금융 통계기관 사전 조사대장
 
-> 확인 기준일 2026-10-24. **상태 구분:** `공식 문서 확인` = 공식 제공 방식 확인 / `기관 확인·경로 추가 조사` = 공식 기관 존재 및 통계 주제 확인, 접근 방법·구체 엔드포인트 미검증. 어느 상태도 Python 수집 성공을 뜻하지 않는다. 링크·접근 조건은 구현 시 재검증한다.
+> 조사대장 기준일 2026-10-24, 이후의 제한 live 근거는 날짜가 붙은 추가 섹션에 기록한다.
+> **상태 구분:** `공식 문서 확인`은 안내 문서 검토, `제한 live 확인`은 이름이 붙은 API/요청의
+> 한정 실측, `기관 확인·경로 추가 조사`는 기관·주제만 확인한 상태다. 어느 상태도 기관 전체
+> 지원이나 Gate 통과를 뜻하지 않는다.
 
 ## 초기 기관·서비스 21개
 
@@ -14,8 +17,8 @@
 | US-02 | 미국 | St. Louis Fed FRED/ALFRED | 다양한 미 거시시계열·vintage | REST API, release/source/series 검색, 인증 | 공식 문서 확인 | https://fred.stlouisfed.org/docs/api/fred/overview.html |
 | US-03 | 미국 | Treasury TIC | 미국 증권의 외국인 보유·거래 | 공식 웹표·CSV/TXT/HTML/PDF·아카이브; TIC 사용안내 | 공식 문서 확인 | https://home.treasury.gov/data/treasury-international-capital-tic-system ; https://home.treasury.gov/data/treasury-international-capital-tic-system/contact-tic-using-tic |
 | US-04 | 미국 | BEA | GDP, BOP, IIP, 직접·증권투자 | API 키·dataset/parameter 목록 선탐색·JSON/XML | 공식 문서 확인 | https://apps.bea.gov/API/swagger/index.htm |
-| US-05 | 미국 | BLS | CPI, PPI, 고용 | 시계열 API, 코드 식별, JSON | 공식 문서 확인 | https://www.bls.gov/audience/developers.htm |
-| US-06 | 미국 | Census Bureau | 무역·산업·인구 | 공식 통계·API 계열 확인 필요 | 기관 확인·경로 추가 조사 | https://www.census.gov/data.html |
+| US-05 | 미국 | BLS | CPI, PPI, 고용 | Public Data API v2, JSON; 일반 시계열은 등록 키 선택, `catalog=true` 등 선택 parameter는 등록 키 필요 | 공식 문서 확인 + 제한 live 확인 | https://www.bls.gov/audience/developers.htm |
+| US-06 | 미국 | Census Bureau | 무역·산업·인구 | Data API; 확인된 안내에 data query 키 필수, ACS variable endpoint 일부 실측 | 공식 문서 확인 + 제한 live 확인 | https://www.census.gov/data/developers/guidance/api-user-guide.html |
 | EU-01 | 유로존 | ECB | 금리·환율·은행·신용 | SDMX REST, metadata-driven data discovery | 공식 문서 확인 | https://data.ecb.europa.eu/help/api/overview |
 | EU-02 | EU | Eurostat | GDP·HICP·무역·국가별 통계 | CATALOGUE API 별도, SDMX 2.1/3.0·JSON-stat | 공식 문서 확인 | https://ec.europa.eu/eurostat/en/web/user-guides/data-browser/api-data-access/api-introduction |
 | EU-03 | 독일 | Bundesbank | 독일·유로 금융/경제 시계열 | 새 통계포털·SDMX REST, 구 시계열 키 매핑 | 공식 문서 확인 | https://www.bundesbank.de/en/statistics/time-series-and-real-time-data |
@@ -95,3 +98,44 @@ known_issues: []
 - 전체 433개 pytest와 Ruff가 통과했다. 이 테스트는 결정적 로컬 검증이며 Gate A fixture가 실제 HTTP를 사용하지 않는다.
 - Gate A는 World Bank의 이 고정 경로에 한정한다. 기관대장의 다른 프로필은 이전 조사 상태를 유지한다. 단위/주기는 미상으로 남았고, 데이터셋별 이용 조건·재배포 가능성은 별도 확인 대상이다.
 - 상세 기록: `docs/ITERATION_04_REPORT.md`.
+
+## 2026-10-26 BLS·Census 제한 live 수집 추가 확인
+
+- BLS: `https://api.bls.gov/publicAPI/v2/timeseries/data/`, CPI series `CUUR0000SA0`,
+  2024년. 등록 키를 포함한 API v2 요청에서 `REQUEST_SUCCEEDED`, 12개 월 관측치 수신.
+- Census: `https://api.census.gov/data/2022/acs/acs1`, 변수 `NAME`, `B01001_001E`,
+  geography `state:06`. 등록 키를 포함한 요청에서 HTTP 200과 한 행 수신. API 응답이
+  덧붙이는 `state` 열을 원본 observation dimension에 보존한다.
+- 근거: `docs/ITERATION_05_REPORT.md`와 `data/raw/{bls,census}/...` manifest/response.
+  이 실측은 선택한 각 API 호출의 연결·응답 파싱을 확인한다. 시리즈/변수 정의와 단위,
+  전체 카탈로그·호출한도·재배포 조건을 검증하지 않았으며 기관 전체 준비 완료를 뜻하지 않는다.
+
+## 2026-10-26 기관별 안내와 전략 근거 추가
+
+- BLS API v2 공식 안내(HTTP 200)에서 단일 series의 3년 요청, 등록된 multi-series 3년 요청의
+  최대 50개 ID, 20년 확장 요청과 optional fields의 key 조건을 확인했다. 현재 커넥터는
+  최대 20개 ID로 더 보수적으로 제한한다.
+- Census Data API User Guide·API key·Query Limits·Core Concepts·Terms 페이지(HTTP 200)를
+  보존했다. 2026 가이드는 data query마다 API key가 필요하고 query당 최대 50개 변수를
+  허용한다고 적는다. dataset별 필수 변수와 지리 코드는 별도 확인한다.
+- IMF API 페이지(HTTP 200)는 SDMX 2.1 및 3.0 API를 안내하고 Swagger 사용에 beta portal
+  로그인을 요구한다. 이 저장소에는 IMF 수집기가 없다.
+- Treasury TIC 포털과 사용 안내(HTTP 200)는 대부분 TXT/tab-delimited TXT/CSV/HTML/PDF를
+  안내하고 Excel은 제공하지 않는다고 설명하며, 연간 securities 일부 MHT 예외를 명시한다.
+  TIC 수집기는 아직 없다.
+- 원본 HTML·추출 텍스트·manifest는 `data/raw/guides/<guide_id>/...`에 쓰고 덮어쓰지 않는다.
+  근거와 한계는 `docs/ITERATION_06_REPORT.md`에 정리했다.
+
+## 2026-10-26 BLS·Census variable metadata live 확인
+
+- BLS Public Data API v2 `catalog=true`: series `CUUR0000SA0`, 2024 요청 범위, HTTP 200,
+  1 catalogue record. API 응답에서 이름, 지리 범위, 계절조정, 항목 및 조사 식별정보를
+  받았다. 정의·단위·주기·시간 범위는 미상으로 유지했다.
+- Census ACS 2022 1-year `B01001_001E` variable endpoint: HTTP 200, 1 metadata record.
+  label, concept, predicate type 등 원문 속성을 보존했다. 이 응답만으로 정의·단위·주기·
+  지리 범위를 확정하지 않았다.
+- raw JSON·credential-free request/manifest는 `data/raw/metadata/{bls,census}/<package>/`,
+  별도 normalized JSON은 `data/processed/metadata/{bls,census}/<package>/`에 저장했다.
+  저장된 raw·normalized SHA256은 각 manifest와 일치하고 API key 문자열은 해당 파일들에 없다.
+- 이 확인은 선택한 두 metadata record의 live 경로다. 전체 API catalogue 검색, 다른 BLS/Census
+  변수 정의나 license/reuse 조건 검증은 아니다. 보고서: `docs/ITERATION_07_REPORT.md`.
