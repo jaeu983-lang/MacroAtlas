@@ -16,16 +16,19 @@ Orchestrator 통합 시험에서 BLS HTTP 경로에 503과 `Retry-After: 2`를 �
 retry hint를 저장하고 HistoryStore/Orchestrator를 다시 연 뒤, 지연 전 resume 차단을 확인했다. 가상
 시계를 2초 전진한 뒤 **같은 task ID**를 재개해 다음 fixture 응답에서 성공했고, 두 attempt 및 stage
 이력이 유지됐다. 이는 **simulated provider failure** 증거이지 자연 발생한 BIS/BLS 장애가 아니다.
-이번 task에서는 외부 원자료 요청을 하지 않았다.
+이 D-067 판정 실행에서는 외부 원자료 요청을 하지 않았다. 이후 BOJ live 요청은 아래 D-072와 D-073에
+별도 기록했다.
 
 이번 변경 검증: `pytest -q -o addopts=''` **575 passed**, `ruff check .` 통과,
 `git diff --check` 통과.
 
 적용 범위는 현재 검증된 BLS/Census 제한 API 수집, TIC/BIS 명시 파일 intake와 manifest/hash 확인,
-TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure/resume 경로다. BOJ API
-manual은 후속 재확인에서 HTTP 200으로 접근됐지만 observation collector와 실측 데이터 요청은 없다.
+TIC의 controlled-copy source guard, Orchestrator의 simulated transient failure/resume 경로다. D-067 당시
+BOJ observation collector와 live 요청은 없었고, 후속 직접 API 요청은 D-072/D-073의 제한 실측으로
+기록했다.
 일반 기관 전반 의미·변경·복구를 통과 처리하지 않는다. 자연 live source revision과 자연 provider
-failure→durable resume은 `NOT_RUN`으로 남는다.
+failure→durable resume은 `NOT_RUN`으로 남는다. BOJ 요청 실측은 API 경로의 접근·응답 확인으로만
+기록하며, 이 Gate C 판정의 source revision 또는 장애 복구 증거로 계산하지 않는다.
 
 ### 제한 범위 통과 증거
 
@@ -36,7 +39,7 @@ failure→durable resume은 `NOT_RUN`으로 남는다.
 | 장애 후 재개 | PASS, simulated | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after`: 503, `Retry-After: 2`, task/store 재개 전 대기 차단, 동일 task의 성공 및 attempt/event 보존 |
 | 자연 발생 source revision | NOT_RUN | TIC/BIS live exact-scope 반복은 모두 unchanged; 실제 변경 쌍 없음 |
 | 자연 발생 provider failure→resume | NOT_RUN | 기존 BIS 503 당시 task가 저장되지 않았음; 이번 503은 fixture |
-| BOJ documentation/provider | Manual available / collector not implemented | 최신 공식 manual HTTP 200, request schema documented; series mapping과 observation API 미검증 (D-071) |
+| BOJ API smoke | PASS, scoped live requests | D-072/D-073에서 metadata와 같은 FXERD01/202609 범위가 HTTP 200, 날짜·값 구조 검증; 두 데이터 응답의 요청 범위 값은 동일. collector·Orchestrator 통합은 미구현이며 source revision/장애 복구 증거가 아님 |
 
 변경 감지 자동 테스트 `test_controlled_source_copy_change_is_preserved_and_requires_review_before_normalization`는
 합성 bytes를 사용한다. 위 controlled copy 결과는 별도의 임시 실행으로 실제 TIC raw를 사용했으며,
@@ -49,6 +52,17 @@ failure→durable resume은 `NOT_RUN`으로 남는다.
 확인했다. BOJ API 자체의 접근 차단은 현재 재현되지 않는다. 재사용 collector는 미구현이다.
 아래 D-071의 API 미호출 기록은 당시 이력이며, 최신 증거는
 `docs/BOJ_LIVE_RECHECK_2026_10_26.md`를 따른다. Gate C 제한 범위는 확대하지 않는다.
+
+## BOJ 동일 범위 재시험 — D-073
+
+같은 공식 metadata와 FM08/FXERD01/202609 요청을 각각 한 번 더 보냈다. HTTP/JSON STATUS는 모두 200이다.
+데이터 JSON은 995 bytes, SHA256 `9633b5794015ffa16494228f84746152fdf02c7dc08f044d5bdb9f115a4264b2`이며,
+`RESULTSET[0].VALUES` 안에 날짜·값이 각각 30개(숫자 19, null 11) 들어 있다. 직전 실행과 요청 범위의
+값이 일치하고, 응답 envelope의 `DATE`만 달랐다. 첫 로컬 validator가 배열 경로를 잘못 가정했으나,
+보존한 동일 원문에서 실제 응답 schema에 맞춰 검사해 완료했다. 재시험 상세와 canonical hash는
+`docs/BOJ_LIVE_RECHECK_2026_10_26.md` 및 gitignored repeat archive에 있다. 이는 API 응답 재현 확인이고
+Gate C 제한 통과 조건을 넓히지 않으며, 실제 원자료 개정·durable provider resume·재사용 collector를
+증명하지 않는다.
 
 ## BOJ 공식 API 매뉴얼 재확인 — D-071 (2026-10-26)
 

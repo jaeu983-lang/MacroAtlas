@@ -593,3 +593,17 @@
   values and 11 nulls. No reusable collector or orchestration integration was implemented.
   Details and hashes: `docs/BOJ_LIVE_RECHECK_2026_10_26.md`. This supersedes D-071
   only regarding the later live requests, without expanding Gate C acceptance.
+
+## BOJ same-scope live retest (2026-10-26)
+
+- **D-073 / REPEAT VERIFIED, SCOPE UNCHANGED:** Repeated the official FM08 metadata request and the
+  fixed FXERD01/202609 `getDataCode` request once each. Both returned HTTP/JSON STATUS 200. Metadata
+  body hash matched the first request. The data response was 995 bytes, SHA256
+  `9633b5794015ffa16494228f84746152fdf02c7dc08f044d5bdb9f115a4264b2`; the documented nested
+  `RESULTSET[0].VALUES` schema contains 30 dates, 19 numeric values, and 11 nulls. The canonical
+  requested-scope data hash matched the first capture; only the response `DATE` envelope field
+  differed. A local validator initially assumed arrays were at the wrong JSON path; the already
+  archived body was revalidated against its actual nested schema without another network request.
+  This is repeat API-access/response-shape evidence only. It does not demonstrate a source revision,
+  provider durable resume, collector integration, or a broader Gate C pass. See
+  `docs/BOJ_LIVE_RECHECK_2026_10_26.md`.

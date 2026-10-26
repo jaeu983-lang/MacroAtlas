@@ -21,3 +21,24 @@ HTTP 200, JSON STATUS 200, 995 bytes, SHA256
 `data/raw/boj_recheck/`에 보존했다. 이는 직접 HTTP 실측이며 플랫폼 collector/정규화/Orchestrator
 연결 완료를 뜻하지 않는다. `/getDataLayer`는 호출하지 않았고 자연 장애 복구나 원자료 개정도
 실증하지 않았다. Gate C 제한 통과 범위는 확대하지 않는다.
+
+## 동일 범위 재시험 — D-073 (2026-10-26)
+
+2026-10-26 12:52 UTC에 같은 metadata 요청과 같은 FM08/FXERD01/202609 요청을 각각 한 번 더
+실행했다. 둘 다 HTTP 200 및 JSON STATUS 200이었다. Metadata 응답은 25,555 bytes로 기존과 같은
+SHA256 `101f4822f48ef210f611a5940ebff604f197b45371ec35db171d3b1d48897466`였고, FXERD01의
+명칭, 단위, DAILY 주기, 시작·종료일을 확인했다.
+
+데이터 응답은 995 bytes, SHA256
+`9633b5794015ffa16494228f84746152fdf02c7dc08f044d5bdb9f115a4264b2`였다. 응답 구조는
+`RESULTSET[0].VALUES.SURVEY_DATES`와 `RESULTSET[0].VALUES.VALUES`이며 각 배열은 30개,
+숫자 19개와 null 11개다. 직전 응답과 비교해 달라진 것은 동적 `DATE` 필드뿐이고 요청 범위의
+날짜·값은 동일했다. 정규화된 범위 해시는 두 실행 모두
+`7785e82d3512b4670dbd39fd176f5fad58377f25bfc5b336854636cf10ba42ab`다.
+
+재시험 중 첫 로컬 검사기는 배열을 `RESULTSET[0]` 바로 아래에서 찾으려 해 구조 검증에 실패했다.
+추가 HTTP 요청은 하지 않았고, 보존한 응답 원문을 확인해 매뉴얼/API의 중첩 구조에 맞게 검사기를
+수정한 뒤 동일 응답으로 검증을 완료했다. 이번에도 collector·Orchestrator 연결은 만들지 않았으며
+새 원자료 변경도 관측되지 않았다. 반복 manifest와 응답은 gitignored
+`data/raw/boj_recheck_20261026_repeat/`에 보존했다. 이 결과는 API 접근·응답 형식의 재현 확인이며
+Gate C 판정 범위를 확대하지 않는다.
