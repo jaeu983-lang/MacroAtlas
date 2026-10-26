@@ -1,41 +1,99 @@
-# Implementation Plan — Codex High 14회 작업 명세
+# Implementation Plan — 현재 구현 상태와 14회 로드맵
 
-> `PROJECT_PLAN.md`에 종속. 단일 회차 완료 → 테스트/보고 → Product Owner 검토 → 다음 회차. 회차를 묶어 실행하지 않는다.
+> **이 문서는 현재 상태와 다음 허용 작업의 유일한 기준이다.** `PROJECT_PLAN.md`는 제품이
+> 요구하는 범위, 회차별 보고서는 실제 증거, `DECISION_LOG.md`는 설계 결정의 이력을 담는다.
+> 기본 규칙은 한 task에 한 회차이며, 실패 게이트를 통과한 것으로 취급하지 않는다.
 
-## 현재 기준과 실행 재정렬 — 2026-10-25
+## 현재 상태 — 2026-10-26
 
-기획을 처음부터 다시 쓰거나 기존 구현을 폐기하지 않는다. 최신 제품 요구사항은
-PROJECT_PLAN에, **지금 무엇을 구현할지와 통과 조건은 이 문서에** 모은다.
-WORKFLOW_ALIGNMENT_PLAN은 01~03 보완의 상세 계약/호환 명세,
-OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 정책이다.
-별도 기획 문서가 생겼다고 즉시 새 보완 구현을 시작하지 않는다.
+최신: [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [13회차 보고서](ITERATION_13_REPORT.md),
+[14회차 최종 보고서](ITERATION_14_REPORT.md).
+Gate C는 2026-10-26 결정으로 검증된 경로만 포함하는 **제한 범위 통과**다. 실제 TIC/BIS 원자료
+개정과 자연 발생 provider failure의 live durable resume은 확인하지 않았다. live raw manifest 무결성과
+exact-scope baseline은 유지했다. 실제 TIC raw의 임시 복사본을 통제 변경해 ingestion guard의 안전
+분기를 확인하고, simulated HTTP 503을 Orchestrator에 저장·재개하는 통합 시험을 추가했다. 자연 발생
+live 사건은 계속 `NOT_RUN`으로 분리한다. 판정 범위는 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)를 따른다.
+사용자의 명시적 지시에 따른 순서 예외로 11회차를 구현·검증하고 commit/push했다.
+12회차는 이번 변경으로 Orchestrator와 bounded knowledge index를 연결해 **Gate D 통과**했다.
+같은 BLS/CPI 반복 task에서 사용자가 선택한 institution/dataset-scoped `source_method` feedback만
+사용해 search stage를 생략하고, 선택한 근거를 collect stage에 전달한다. 30회 local fixture 비교에서
+stage 실행은 task당 2→1, p50/p95 latency는 4.207/4.582 ms→3.444/4.537 ms였다. 구현은 explicit
+선택·범위·accepted 상태를 요구하며 inference/충돌/미검토/다른 기관 기록을 막는다. 13회차 read-only
+패턴 분석기와 14회차 Gate E 최종 검수를 완료했다. Gate E는 문서화된 제한 범위 로컬 v1에서 통과했다.
+TIC/BIS 현재 원본·manifest는 보존했고 같은 scope 반복은 모두 `unchanged`였다. BIS flat ZIP은
+이전 503 뒤 현재 200을 반환했으나 parser 검토로 끝났고, 503 당시 저장된 task가 없어 durable
+resume 증거는 아니다. 제한 범위를 넘어 Gate C를 확대하려면 실제 원본 개정과 자연 live
+failure→persist→resume 쌍이 추가로 필요하다.
+기존 artifact를 scope 전체까지 일치시켜 재비교해 TIC package `492bcc8…`와 BIS
+`86a1923…`의 raw/normalized hashes를 검증했고 둘 다 `unchanged`였다.
 
-### 실제 완료와 계획을 구분
-
-| 현재 자산 | 확인된 상태 | 아직 의미하지 않는 것 |
+| 게이트 | 상태 | 판정 근거 |
 |---|---|---|
-| 01 공통 모델, 보완 01 기본/확장 | 값·JSON·선택/전달·그룹/변형 검증 구현 | 실제 질문·그룹 생성·링크 조사는 아님 |
-| 02 Orchestrator/SQLite + 보완 02 | 순차 실행·이력, 구조화 질문/확인·새 작업 연결 구현 | 자연어 UI는 없음 |
-| 03 World Bank 한 경로 + 보완 03 | USA/GDP file/link/both 연결, file 실제 API HTTP 200/원본·최소 파싱 재검증 | 일반 기관 탐색·Excel 생성·Gate A 품질 검증은 아님 |
-| 04 Gate A | 고정 World Bank file 경로의 live 원본·manifest 무결성, SQLite 관측치·검증·피드백 이력 | 자동 탐색, 전체 경제 품질·개정·기관 간 등가성은 아님 |
-| 테스트 | 전체 433개 pytest와 Ruff 통과 | 실제 링크 발견·전체 사용자 여정·지식 엔진 검수는 아님 |
-| 분류·포괄범위/지식 엔진 | 기획 반영 | 일반 범주 관계 해석·지식 조회/갱신 실행은 미구현 |
+| A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |
+| B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, CLI, 기관 전체 검색은 이 엔진 게이트 범위 밖이며 아직 미구현. [보고서](ITERATION_08_REPORT.md) |
+| C / 10 | **제한 범위 통과** | 실제 BLS/Census·TIC·BIS capture의 제한 증거, manifest/hash 검증, 실제 TIC raw 복사본의 통제 변경 분기, Orchestrator simulated 503→대기→재개 E2E를 확인. 자연 live revision/recovery는 미검증. BOJ manual/API smoke는 확인했지만 observation collector·Orchestrator 연결은 미구현. [재검토](GATE_C_REVIEW_2026_10_26.md) |
+| D / 12 | **통과** | 동일 BLS/CPI task 흐름에서 명시 선택한 accepted, exact-scope `source_method`로 search stage를 생략해 반복 stage 실행을 2→1로 줄였다. 다른 기관, broader scope, conflict, inference, unreviewed, stale index는 차단; current instruction 우선. 30회 local E2E 측정은 [12회차 보고서](ITERATION_12_REPORT.md). |
+| E / 14 | **제한 범위 통과** | A–H/X01–X09 matrix, World Bank 대표 live 경로, simulated 복구, 보안 검토, 사용자 안내서/PPT를 검수했다. 미지원·미검증 경로를 별도 공개한다. [보고서](ITERATION_14_REPORT.md) |
 
-### 다음 구현의 단일 실행 순서
+Gate C 증거와 11회차 코드는 별도 커밋으로 보존되어 있다. 이번 Gate D 연결 변경은 전체 pytest,
+Ruff, `git diff --check` 검증 후 task branch에 commit/push하며 실행 환경에는 게시하지 않는다.
 
-아래 묶음은 사용자 결과를 설명하는 이정표이며, 한 작업에 여러 회차를 구현하라는 뜻이 아니다.
-**보완 01~03과 04회차 Gate A의 구현·검증이 완료됐다.** 04회차 실측과 한계는
-`docs/ITERATION_04_REPORT.md`에 기록했다. Gate A는 통과했으며, 이 결과가 뒤 회차를 자동 시작하지는 않는다.
+Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 CLI·자연어 UI나 BLS/Census의
+후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. Gate C 제한 범위 통과는 자연 live
+revision/recovery나 BOJ collector/Orchestrator 통합을 포함하지 않는다. 11회차는 사용자의 명시적 순서 예외 지시에 따라
+구현했다. 12회차 역시 당시 사용자의 후속 실행 지시로 예외 진행했으며, 초기 storage-only report는
+D 통과로 보지 않았다. 이번 후속 Orchestrator integration과 Gate D 증거는 D-068 및 12회차 보고서에
+기록했다. 사용자가 이전에 지시한 08→09 진행은 당시
+넓게 잡힌 gate 조건을 넘긴 별도 역사적 예외였으며, 현재 scope clarification으로 그 이력을 덮어쓰지 않는다. Gate 상태는
+코드가 존재하거나 한 번의 live 요청이 성공했다는 이유만으로 승격하지 않는다.
 
-| 순서/기존 회차 | 이번에 연결할 기능 | 사용자가 확인할 산출물/완료 기준 |
+**배포 추적성은 별도 상태다.** Gate 판정과 혼합하지 않는다. 이번 task는 코드·문서 checkpoint를
+task branch에 기록하지만 실행 환경에 publish하지 않는다.
+
+### 구현 자산과 한계
+
+| 회차/기능 | 구현·검증된 범위 | 아직 제공하지 않는 것 |
 |---|---|---|
-| 보완 02 — 기존 02 범위 | 제공된 후보/근거 + 요청/전달 조건 → 부족한 항목 또는 확정 기록 → 새 작업 연결 | 출력 미지시는 구조화 질문, 명시 조건은 재질문 없음. 확인 대기/확정/작업 연결이 재시작 후 보존되고 중복 실행/승인 우회 없음 |
-| 보완 03 — 기존 03 범위 | 확정 요청 → 기존 World Bank 경로의 file/link/both 분기 | 지원 범위 file/both는 기존 raw 결과, link는 제공된 검증 근거의 URL만 전달하고 다운로드 0회. 미지원 Excel/변환/국가 등은 실행 전 알림 |
-| 04 — Gate A | 원본 hash·정규화/최소 검증·실패/피드백 기록의 한 작업 E2E | **통과:** 고정 World Bank 실측·원본/manifest/SQLite 무결성, fixture 실패 안전성, pytest 433개와 Ruff. 상세 보고서 참조 |
-| 05→06→07→08 — 각각 별도 작업, Gate B | 공식 기관/링크·이용 안내·메타데이터/분류 의미·후보 탐색을 기존 실행 흐름에 연결 | 기관 미지정/지정 요청에서 근거 있는 후보→중요한 차이 질문→조건/전달 확정→지원 경로 결과. 선언된 fixture와 실제 발견/검증을 구분 |
-| 09→10 — 각각 별도 작업, Gate C | 실제 출력 형식·다중 형식·큰 작업 분할/예산·오류/변경 복구 | Excel/CSV 등 지원 형식 명시, 소규모 샘플과 대량 실행 구별, 부분 성공·자원 상한·안전 재개 검증 |
-| 11→12 — 각각 별도 작업, Gate D | 범위 있는 사용자 설명/교정 기록 → 기관·개념 지식의 제한 조회/재사용·별도 갱신 | 관련 지식 재사용, 잘못된 기관 전파/추론 승격 방지, 저장량 증가 시 지연·메모리 예산과 정합성 검수 |
-| 13→14 — 각각 별도 작업, Gate E | 격리된 추론/개선 후보 → 회귀·인간 승인·최종 통합/안내 | 가설과 사실 분리, 자동 병합 없음, 실제 지원 기능을 기준으로 최종 검수/사용 안내 |
+| 01~04 | 공통 계약, SQLite Orchestrator, World Bank 제한 경로, Gate A 기록 | 범용 기관 자동 검색 및 완전한 통계 의미 검증 |
+| 05~07 | BLS/Census 제한 API·metadata, 공식 안내 저장, 일부 metadata 정규화 | 모든 기관 검색, live SDMX, 광범위한 분류 의미 모델 |
+| 08 | 로컬 hash-verified metadata와 WDI seed의 lexical ranking, 명시 선택 기록, World Bank fixture E2E | 자연어 parser/CLI, 전체 기관 검색, 미확인 BLS/Census 후보의 자동 승격 |
+| 09 | CSV/TSV/TXT/HTML/ZIP/XLS/XLSX 제한 parser, 수집량 planning helper | PDF/fixed-width, output exporter, queue형 chunk 실행·resume |
+| 10 | BLS/Census/World Bank 제한 API, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개; Gate C 제한 범위 통과 | 자연 live revision/recovery, Japan BOJ observation connector, automatic backoff/rate limiter, 기관 전반 검증 |
+| 11 | 명시적 feedback store·CLI·revision history | 사용자 지식 자동 재사용·전체 문서 대화 동기화 |
+| 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
+| 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
+| 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
+
+세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
+검증 결과 섹션만 갱신한다.
+
+## 다음 작업 순서
+
+14회차와 Gate E가 제한 범위 로컬 v1 검토에서 완료됐다. 다음은 이 branch의 사람 검토다. 별도 요청
+없이 main 병합이나 환경 publish를 하지 않는다. 다음 제품 회차는 현재 14회 로드맵 밖이므로 향후
+범위·수용 기준을 정한 뒤 별도 task로 계획한다.
+
+Gate C의 자연 TIC/BIS source revision과 자연 provider failure→durable resume은 여전히 미검증이다.
+BOJ direct API smoke는 reusable collector가 아니다. 이 잔여 범위를 포함한 A–H/X01–X09 판정은
+`docs/REFERENCE_SCENARIOS.md`, Gate C의 판정 근거는 `GATE_C_REVIEW_2026_10_26.md`를 따른다.
+
+## 저장소·배포 추적성
+
+현재 branch와 HEAD, clean 상태, task commit/push 결과는 task report와 Git 기록에 적는다. GitHub branch
+업데이트는 실행 환경 publish를 뜻하지 않는다. Gate E live 재현은 고정 World Bank 경로를 시도했고,
+첫 직접 연결 실패와 설정 프록시를 사용한 성공 재실행을 `docs/ITERATION_14_REPORT.md`에 기록했다.
+
+## 문서 사용 순서
+
+1. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 목표와 비범위.
+2. 이 문서: 현재 게이트와 다음 허용 task.
+3. 해당 회차 보고서와 `REFERENCE_SCENARIOS.md`: 테스트 입력과 근거.
+4. `DECISION_LOG.md`: 요구사항 충돌이 있을 때 확정된 결정.
+5. `AGENTS.md`와 `GUIDELINES.md`: 작업·보안·자료 보존 규칙.
+
+아래 01~14 절은 회차의 상세 범위 및 이력이다. 위 현재 상태 표와 충돌해 보이면 보고서와
+Git 증거를 확인하고 이 상단 상태를 업데이트한다. 종료 선언은 게이트 표와 보고서 모두를
+갱신해야 한다.
 
 ### 반복 보완을 줄이는 실행 규칙
 
@@ -53,12 +111,15 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
   의미 해석/검토 분기에 배치한다. 기존 값 계약의 동의/그룹만으로 통계 의미가 해결됐다고 하지 않는다.
 - 지식 엔진 전에는 제공된 공식 근거/프로필을 명시적으로 사용한다. 11/12 기능을 가정한
   빈 호출이나 전체 이력 읽기를 먼저 만들지 않는다. 조회 비용은 초기에 제한하고 확장 시 실측한다.
-- 기존 318개 기준과 그 뒤 추가된 전체 테스트를 유지한다. 한 회차가 미완료이면 그 회차를
-  보수하고 다음 회차/게이트로 넘어가지 않는다. 현재 모든 파일이 untracked이므로
-  인간 검토와 Git 체크포인트도 실행 전후 관리 항목으로 남긴다.
+- 기존 테스트를 삭제·약화하지 않는다. 한 회차가 미완료이면 해당 회차를 보수하고 다음
+  게이트로 넘어가지 않는다. 사용자가 명시한 08→09는 당시 계획상 조건을 넘긴 실행 예외로
+  기록돼 있다. 현재 Gate B가 제한 범위로 통과된 것은 별도 scope decision에 따른 재검토다.
+  인간 검토와 clean Git checkpoint를 실행 전후 관리 항목으로 남긴다.
 
-최초 재정렬은 문서 작업이었다. 이후 보완 02 구현 요청에 따라 확인/연결 서비스만 추가했다.
-그 뒤 보완 03에서 기존 World Bank 경로의 file/link/both를 연결하고 04회차에서 Gate A를 구현·실측 검증했다. 05회차 이후는 별도 순서와 작업으로 남아 있다.
+최초 재정렬은 문서 작업이었다. 이후 보완 02 확인/연결 서비스, 보완 03의 기존 World Bank
+file/link/both, 04회차 Gate A에 이어 05~07의 기관별 기반을 각각 추가했다. 07은 BLS/Census
+metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 보고서의 미구현 범위를
+포함해 08 후보 검색을 진행한다.
 
 ## 공통 회차 템플릿
 
@@ -109,6 +170,11 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
 ### Phase 2 — 기관과 데이터 자동 탐색 (05~08)
 
 #### 05 | 기관·사이트 탐색
+- 2026-10-26 부분 구현: BLS·Census catalogue/HTML fixture 전략, 공식 호스트 검증,
+  프로필 저장과 Orchestrator 연결. 후속으로 API v2/ACS 수집기와 secret 사용을 추가했다.
+  기관 탐색 6개·수집 10개 unittest 통과, 실제 BLS 12개 월 관측치 및 Census 1행 수집.
+  pytest/Ruff 미설치로 전체 회귀 미실행. live 사이트 탐색/문서 변경 감지는 남아 있다.
+  상세: `docs/ITERATION_05_REPORT.md`.
 - 구현: 기관 후보 → 공식 도메인 검증 → 통계 포털/메뉴/문서 링크 탐색, 기관 프로필 저장, 검증일 기록.
 - 완료: 2개 이상 탐색 전략 사례를 fixture로 재현. 임의 서드파티 링크를 공식 출처로 표시하지 않음.
 - 링크 발견 보조 모듈: 후보/메타데이터 탐색과 독립적으로 가능한 공식 데이터 링크 조사를
@@ -116,12 +182,21 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
   순차 실행 계약을 유지하고 권한·호출 상한과 결과의 후보/개정 일치를 검증한다.
 
 #### 06 | 이용 안내·기관별 전략
+- 2026-10-26 완료: 공식 BLS/Census/IMF/TIC 가이드 원본·텍스트·SHA256 manifest 보존,
+  제한된 HTML 추출, 문서 링크 후보, 기관 전략 선택 및 로컬 증거 재사용/TTL 확인/변경 비교.
+  9개 공식 안내 페이지를 live capture하고 전체 pytest 456개/Ruff를 통과했다.
+  라이선스 판단, PDF 텍스트 추출, 자동 정기 refresh는 미구현이다. 세부: `docs/ITERATION_06_REPORT.md`.
 - 구현: API 가이드, 이용 지침, 코드북, 통계 해설의 URL·원문·추출 경로 보존; 기관별 전략 선택과 재사용.
 - 완료: IMF SDMX 사용 안내, TIC 이용 안내 등 이질적 문서를 올바로 구분; 가이드 만료/변경 처리.
 
 #### 07 | 메타데이터 탐색·정규화
-- 구현: SDMX Dataflow/DSD/Codelist, API 목록, 표/시트 코드북 입력 어댑터; 원본 및 표준화 층 분리.
-- 완료: 원본 근거가 없는 단위·코드를 만들어내지 않고 정규화; 누락·다국어·충돌 테스트.
+- 2026-10-26 제한 구현: BLS series catalogue와 Census ACS variable metadata를 키 비노출
+  전송으로 수집하고, raw·정규화 파일·hash manifest를 분리 보존했다. SDMX-ML Dataflow/
+  DSD/Codelist fixture parser와 이미 읽어온 표/시트 행 adapter를 추가했다. BLS/Census
+  catalogue live 호출 각각 HTTP 200, 1 metadata record. 전체 dataset catalogue, IMF live SDMX,
+  XLS/XLSX reader 및 개념/분류 의미 모델은 미구현이다. 전체 pytest 470개와 Ruff 통과.
+  상세: `docs/ITERATION_07_REPORT.md`.
+- 완료 기준: 원본 근거가 없는 단위·코드를 만들어내지 않고 정규화; 누락·다국어·충돌 테스트.
 - 변형 메타데이터: 계절조정/비조정, 가격 기준·기준년, 수준/변화율, 단위·주기·개정 상태를
   원문 근거와 함께 구별한다. 미상은 비조정/기본값으로 치환하지 않는다.
 - 의미/분류 범위: 사용자 개념과 기관 조작적 정의, 분류 축/버전·포괄/제외 및 범주의
@@ -129,8 +204,17 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
   전제하지 않는다. 범용 온톨로지를 선행 구축하는 대신 확인된 사례로 필요한 계약만 확장한다.
 
 #### 08 | 실제 데이터셋/시계열 검색 및 수집 연동
-- 구현: 자연어 조건 → 후보 검색/순위/근거 → series ID·접근 경로 → Phase 1 수집 파이프라인 연결.
-- 완료(Gate B): 정답 후보 선택 및 불일치 후보 제외 테스트, 사용자 승인 필요 분기; 대표 E2E 검색→수집 성공.
+- 2026-10-26 제한 구현: hash-verified BLS/Census local metadata archive와 Gate A World Bank
+  경로를 검색하고 lexically score를 설명한다. 알려진 국가/기관/주기/기간 모순 후보는
+  제외하고 미상 필드는 `review_required`로 남긴다. 사용자의 명시 확인 스냅샷과 후보 증거를
+  task의 첫 단계에 기록한 뒤 기존 World Bank/BLS/Census engine으로 연결한다. fixture E2E 1건.
+  자연어 request parser, 동등성 일반 판정, live API candidate E2E는 미구현. 구조화 `DataRequest`
+  엔진의 제한 범위 Gate B 판정은 상단 현재 상태와 D-060을 따른다. 전체 pytest 477개/Ruff 통과.
+  세부: `docs/ITERATION_08_REPORT.md`.
+- 구현: 구조화 요청 조건 → 후보 검색/순위/근거 → series ID·접근 경로 → Phase 1 수집 pipeline 연결.
+- 완료(Gate B, 제한 engine/API 범위): 정답 후보 선택 및 불일치 후보 제외 테스트, 명시 확인 분기,
+  대표 E2E 검색→World Bank fixture 수집 성공. 일반 CLI·자연어 파서·전체 기관 검색은 별도 사용자
+  인터페이스/기관 확대 범위이며 현재 통과에 포함하지 않는다.
 - 사용자 흐름 검수: 기관 미지정/지정 요청 모두에서 근거 있는 후보를 제시하고 메타데이터를
   내부 확인한다. 선택 데이터·기간·출력 조건 중 누락/모호한 항목만 묻고, 명시된 지시는
   반복 확인하지 않는다. 미확정 선택·변경된 근거·미지원 조건에서는 수집을 시작하지 않는다.
@@ -145,6 +229,15 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
 ### Phase 3 — 수집 확대와 안정화 (09~10)
 
 #### 09 | API/파일 기반 파서 확장
+- 2026-10-26 제한 구현: `data/inbox/`의 명시된 파일을 CSV/TSV/delimited TXT, HTML table,
+  ZIP member, XLS/XLSX로 읽는 bounded adapter와 Orchestrator engine을 추가했다. 원본과
+  parsed table은 별도 보존하며 row duplicates는 남기고 위치만 보고한다. ZIP 탈출/링크/암호화/
+  bomb 제한, sheet/table/member 명시 선택, 동일 파일/옵션 재실행 idempotency를 검증했다.
+  World Bank GDP/BLS/Census의 제한된 sample/full 계획기는 연도·series·variable/geography별
+  청크를 나누고 요청은 전송하지 않는다. 예상 크기는 호출자가 주지 않으면 unknown으로 남긴다.
+  PDF/fixed-width, 범용 API 검색·호출, 큐 기반 청크 실행/재개, 관측치 변환 및 파일 exporter는
+  미구현. 전체 pytest 499개/Ruff 통과.
+  세부: `docs/ITERATION_09_REPORT.md`.
 - 구현: 기존 어댑터 유지 + 실수요 높은 API, CSV, TSV/TXT, ZIP, HTML 표, XLS/XLSX. PDF는 주로 가이드/근거; 숫자 자동 추출은 신뢰도 정책 적용.
 - 완료: TIC형 파일/표, BIS형 ZIP/SDMX를 포함한 변형 fixture 테스트. 파일 안전 검사 및 중복 처리.
 - 대규모 요청 범위: 샘플/본 수집을 구분하고 공식 bulk 또는 국가·지표·기간별 분할 계획,
@@ -153,6 +246,29 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
   파일 생성을 하지 않으며, 미지원 형식·링크를 임의의 다른 출력으로 대체하지 않는다.
 
 #### 10 | 품질 검증·오류 분류·복구
+- 2026-10-26 제한 구현: BLS/Census 결과의 중복 기간·중복/불일치 geography·빈/결측 셀을
+  보수적으로 진단하고 원값을 보존한다. 단위·주기·개정 vintage가 없으면 unknown 경고를 낸다.
+  동일한 공식 URL·요청 범위의 기존 원본 SHA256과 새 응답을 비교해 changed면 새 raw도 보존하고
+  `NEEDS_REVIEW`로 보낸다. 과거 hash 검증 실패나 1,000 package/64 MiB 비교 예산 초과는
+  비교 불가로 표시한다.
+- HTTP 401/403은 `AUTH_ACCESS` 검토, 429/5xx와 timeout은 `TRANSIENT` 수동 재개, redirect는
+  `LICENSE_SECURITY`, 예기치 않은 4xx는 `SITE_CHANGED`, 파싱 drift는 `SCHEMA_CHANGED`로 분류한다.
+  전송당 자동 재시도는 하지 않으며 Orchestrator의 max_attempts와 명시적 resume을 사용한다.
+  후속 계획 정합성 수정에서 `Retry-After` 초/HTTP-date를 저장하고 지정된 최소 대기시간이 지나기
+  전에는 resume를 거부하도록 보완했다. 자동 지수 backoff와 공용 rate limiter는 여전히 미구현이다.
+  후속 사용자 요청에 따라 현재 workspace 엔진으로 BLS `CUUR0000SA0` 2024 및 Census ACS1
+  California `B01001_001E`를 각각 1회 live 실행: 두 요청 모두 HTTP 200, BLS 12행/Census 1행,
+  raw·manifest SHA/크기 일치, 키 필드 비노출. 기존 raw manifests에 SHA가 없어 변경 비교는
+  `unknown_history_integrity`; 세 BLS capture의 observation은 같고 top-level `responseTime`만 달랐다.
+  비교기는 이제 이 volatile 필드를 제외한 canonical JSON hash를 사용하며 raw bytes는 보존한다.
+  설정의 repository ref는 `codex/iteration-04-gate-a`, 현재 미커밋 코드 workspace는
+  `codex/institution-discovery-05`였다. 당시 실측은 current workspace만 증명했고 fresh checkout ref는
+  증명하지 않았다. 게시 후 기준선 검증은 상단 배포 추적성 섹션의 후속 기록을 따른다.
+  환경 상태 telemetry는 네트워크·키 `unknown`; live 호출 성공은 이를 바꾸지 않는다. 따라서
+  live smoke는 확인했지만 Gate C는 미통과. 당시에는 World Bank 변경감지가 미구현이었다. 이후
+  local 후속으로 same-request JSON/bytes comparison을 추가했으나 fixture만 검증했고 live 확인은 없다.
+  자동 지수 backoff/공용 rate limiter, 의미 outlier·단절 판정은 여전히 미구현.
+  전체 pytest 518개/Ruff 통과. 상세: `docs/ITERATION_10_REPORT.md`.
 - 구현: 빈값/중복/단위/주기/개정 상태 확인, schema drift, 시간 제한·재시도·rate limit, 중단 지점 재실행.
 - 완료(Gate C): 429, 403, 형식 변화, 통계 의미 불명, 최신 원자료 변경을 각각 재현하여 안전한 분기 확인.
 - 대규모 요청 검수: 확정한 시간·호출·용량 상한에서 안전 중단하고, 단위별 성공·실패·미실행
@@ -185,10 +301,33 @@ OUTPUT_AND_VARIANT_POLICY와 KNOWLEDGE_ENGINE_PLAN은 해당 기능의 상세 �
 ### Phase 5 — 공통 개선 엔진 (13~14)
 
 #### 13 | 반복 패턴 집계·개선안 생성
-- 구현: 오류·사용자 교정 패턴 군집/빈도·심각도·재현성 추출, 변화 예상 영향과 테스트 계획 초안.
-- 완료: 반복 오류에서 근거 있는 개선안 생성, 단발성 오류와 구조적 문제 구분, 우선순위 기록.
-- 개념/분류 관계의 추론·일반화는 별도 후보로 생성하고 전제·근거·반례·범위·검토 상태를 남긴다.
-  요청의 즉시 응답 경로에서 무제한 추론/자료 재조사를 수행하거나 사실 저장소를 자동 변경하지 않는다.
+- 상태: 구현·로컬 검증 완료 (2026-10-26). 결과와 실제 한계는 `docs/ITERATION_13_REPORT.md`.
+- 입력: Orchestrator의 완료/실패 task·stage 결과와 상태가 accepted인 명시 사용자 feedback만 읽는다.
+  raw provider payload, 비밀값, 미검토 추론은 pattern source로 사용하지 않는다.
+- 반복 판정: 같은 fingerprint가 서로 다른 **3개 이상 task ID**에 있어야 recurring candidate가 된다.
+  한 task의 retry 횟수는 독립 사례로 세지 않는다. fingerprint는 알려진 institution, engine/version,
+  stage, error code/category, dataset/concept scope를 포함한다. 값이 다르거나 미상인 차원은
+  서로 합치지 않고 별도/insufficient evidence로 남긴다.
+- 입력 한도: 실행당 최대 500 task와 2,500 stage/feedback records를 읽고, 최대 20개 proposal과
+  proposal당 evidence reference 10개를 반환한다. 상한에 닿으면 partial/incomplete를 명시하고
+  "반복 없음"으로 판정하지 않는다. `scripts/benchmark_iteration_13.py` 측정 후 이 환경 기준
+  bounded run 참조 예산을 warm p95 150 ms, traced Python allocation 8 MiB로 설정했다.
+- 산출물: fingerprint와 scope, 서로 다른 task 수, 관측 시점, 대표 evidence IDs, 심각도 근거,
+  예상 영향, counterexample/불확실성, 검증할 regression test, 위험, priority, `draft` review status.
+  동일 task 안의 재시도, 1~2개 task의 반복, 충돌은 recurrence와 구분해 별도 보고한다.
+- 완료: 반복 오류/교정에서 traceable proposal을 만들고 one-off, insufficient, recurring을 구분한다.
+  기관·dataset scope가 다르면 후보도 분리하고, inference는 `not_promoted`, proposal은 승인 전
+  `draft`로 유지한다. 조회 상한 및 불완전 입력을 숨기지 않는다.
+- 승인 경계: task/feedback/source data를 수정하거나 지식을 accepted로 올리지 않고 코드를 고치지
+  않는다. 변경 구현은 14회차의 격리 branch·회귀·인간 승인 절차에서만 다룬다.
+- 검수: X09에서 같은 오류를 서로 다른 3개 task로 만들어 draft가 생기는 경우, 동일 task retry만
+  늘려도 recurring이 되지 않는 경우, 기관/dataset/engine 차원의 분리, withdrawn/unreviewed/inference
+  제외, 충돌·부분 입력·500/2,500·20/10 상한과 evidence trace를 검증한다. 100/1,000/5,000 records
+  에서 p50/p95, 최대 Python allocation, 읽은 행/논리 바이트, candidate 수와 scope relevance를 잰다.
+- 실제 검증: `tests/test_patterns.py` 11개 fixture, 전체 pytest **591 passed**, Ruff 및 diff 검사 통과.
+  100/1,000/5,000 stage-record 측정은 각각 p50/p95 5.113/5.448, 45.653/51.023,
+  125.960/134.287 ms였으며, 5,000 입력은 2,500 상한에서 `partial`이었다. 5,000 입력 기준
+  최대 Python allocation은 5,484,768 bytes였다. 상세 측정·제한: `docs/ITERATION_13_REPORT.md`.
 
 #### 14 | 격리 수정·검증·인간 승인·릴리스
 - 구현: 격리된 Git 브랜치에서 코드 변경 후보와 회귀 테스트; diff, 결과, 롤백 경로, 승인 게이트. 승인 전 main 병합/배포 금지.
@@ -213,8 +352,8 @@ docs/WORKFLOW_ALIGNMENT_PLAN.md는 01~03회차 최소 보완의 상세 명세다
 |---|---|---|---|
 | A | 04 | 지정 데이터 실제 수집+원본·이력 보존 | **통과** — `docs/ITERATION_04_REPORT.md` |
 | B | 08 | 기관/메타/시계열 검색→수집 연결 | 09 금지, 탐색 계약 수정 |
-| C | 10 | 파일·API 형태 + 실패 안전 처리 | 11 금지, 진단·파서 보수 |
-| D | 12 | 피드백 재사용, 잘못된 일반화 차단 | 13 금지, 지식 승격 정책 보수 |
+| C | 10 | 제한 live baseline + 통제 변경/복구 integration proof | **제한 범위 통과:** 자연 live revision/recovery·BOJ 및 미검증 기관 제외; 상세 범위는 Gate C review 참조 |
+| D | 12 | 피드백 재사용, 잘못된 일반화 차단 | **통과:** explicit exact-scope Orchestrator reuse; detailed E2E proof in Iteration 12 report |
 | E | 14 | 회귀·보안·원본 검증, 승인 절차 | v1 출시 보류 |
 
 ## 각 회차 종료 보고서 형식

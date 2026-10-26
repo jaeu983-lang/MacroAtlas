@@ -1,0 +1,133 @@
+# MacroAtlas 사용자 안내서
+
+기준 버전: **제한 범위 로컬 v1**, 2026-10-26
+
+MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 현재 일반 자연어 CLI나 MacroAtlas 자체
+채팅 UI는 없습니다. 이 안내서는 확인된 기능만 설명합니다. 기관별 전체 검색, 자동 기관 선택, 모든
+자료의 파일 내보내기, 무인 스케줄링을 제공한다고 가정하지 않습니다.
+
+## 설치
+
+Python 3.11 이상과 Git을 준비한 뒤 저장소 루트에서 실행합니다.
+
+Windows PowerShell:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+Linux/macOS:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e ".[dev]"
+```
+
+로컬 회귀 검사는 다음과 같습니다.
+
+```text
+python -m pytest -o addopts=''
+python -m ruff check .
+git diff --check
+```
+
+## 검증된 대표 수집 한 번 실행하기
+
+이 저장소는 고정된 World Bank WDI 검증 경로를 제공합니다. 아래 명령은 네트워크 접근을 명시적으로
+요청하고, 미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`, 2020–2022년만 한 번 수집합니다.
+일반 사용자 요청을 임의로 받아 주는 범용 검색 명령은 아닙니다.
+
+```text
+python scripts/verify_worldbank.py --live --gate-a
+```
+
+이 경로는 HTTPS, 시스템에 지정된 HTTP(S) 프록시와 CA bundle, TLS 검증, 5초 연결/20초 응답 timeout,
+redirect 차단, 자동 재시도 없음, 1 MiB 응답 상한을 사용합니다. 네트워크가 허용되지 않거나 일시 오류가
+나면 `TRANSIENT`로 종료될 수 있습니다. 프록시를 우회하거나 인증을 우회하지 마세요.
+
+명령은 JSON 한 줄에 task ID, 상태, 보고서 경로, 수집 요약을 출력합니다. 종료 코드가 0이고
+보고서의 `live_path_passed`가 `true`, task 상태가 `COMPLETED`, validation 상태가 `passed`일 때 해당
+검증 경로가 완료된 것입니다. `warnings`와 `not_checked`도 함께 확인하세요. 단위·주기가 원문에서
+확인되지 않으면 `null`/unknown으로 남습니다. `source_change_status=first_observation`은 이전 원본과의
+변경 비교를 수행했다는 뜻이 아닙니다.
+
+## 결과와 이력 확인
+
+- 원본 응답과 요청 manifest: `data/raw/worldbank/<package-id>/response.json` 및 `request.json`
+- task history와 Gate A 검증 기록: `data/catalog.sqlite`
+- 실행 요약: `reports/iteration_04_live_<id>.json`
+
+`data/`, `reports/`의 실행 산출물은 Git에 포함되지 않습니다. 원본 응답은 정규화된 관측치와 별도이며,
+원본 hash와 manifest를 확인한 뒤 SQLite 검증 기록의 `status`, `issues`, `warnings`, 요청·관측 기간을
+검토합니다. 전체 통계 이상치, 시계열 개정 역사, 다른 기관 자료와의 통계적 동등성은 이 고정 검증기의
+검사 범위가 아닙니다. World Bank 이용 조건은 자료별로 확인해야 하며, 이 도구가 재배포 권한을
+보증하지 않습니다.
+
+표 형식 자료는 `data/inbox/` 아래 명시적으로 선택한 기존 파일을 Python API의
+`TabularFileEngine`으로 처리할 수 있습니다. 자동 파일 탐색, 일반 파일 가져오기 CLI, CSV/XLSX exporter는
+없습니다. 파일 형식·시트·ZIP member가 모호하면 `NEEDS_REVIEW`로 멈춥니다.
+
+## 기관별 연결 및 API 키
+
+| 접근 경로 | 현재 범위 | 키 정책 |
+|---|---|---|
+| World Bank WDI | 위에 적힌 미국 GDP 고정 수집 경로 | 키 불필요 |
+| BLS Public Data API v2 | 선택한 series ID의 제한된 Python API 수집; metadata와 통계 의미는 별도 확인 | 일반 series-data 조회는 `BLS_API_KEY` 선택 사항. 일부 catalogue 요청은 등록 키 필요 |
+| Census ACS API | 제한된 ACS query connector | `CENSUS_API_KEY` 필수 |
+| TIC/BIS 파일 | 사용자가 고른 파일의 명시적 로컬 intake; 최신 기관 원본 자동 다운로드 경로가 아님 | API 키 없음 |
+| BOJ JSON API | `getMetadata`와 고정 FXERD01/202609 요청을 직접 smoke 검증; 재사용 collector 미구현 | 해당 smoke 요청에는 키를 보내지 않음 |
+| 그 밖의 기관 | 일부 공식 문서/fixture만 존재; 기관별 전체 수집 흐름은 미지원 또는 미검증 | 기관별 공식 안내 전 추정하지 않음 |
+
+필요한 키만 승인된 secret manager 또는 현재 프로세스 환경변수로 제공합니다. 프로젝트는 `.env`를
+자동 로드하지 않습니다. 키 값은 저장소, 코드, 테스트, URL, 채팅, 문서 예시에 넣지 마세요. 실제 인증
+성공은 설정돼 있다는 사실만으로 표시하지 않고 응답 결과로 확인해야 합니다.
+
+## 실패 처리와 안전한 재개
+
+- `FAILED_RETRYABLE` 또는 `TRANSIENT`: 완전한 응답이 보존되지 않았을 수 있습니다. 동일 task와 요청
+  범위를 확인하고, 서버가 `Retry-After`를 주면 그 최소 대기시간이 지난 뒤 명시적으로 resume합니다.
+  커넥터 내부 자동 재시도는 하지 않습니다.
+- `NEEDS_REVIEW`: 인증 거부, redirect, schema drift, 의미/품질 불확실성 등을 검토합니다. 입력이나
+  경로를 확인하기 전 강제로 resume하지 않습니다.
+- `FAILED_TERMINAL`: 입력 오류 또는 지원하지 않는 경로를 수정한 뒤 새 검증된 작업으로 시작합니다.
+- 같은 범위의 원본이 바뀌면 이전·새 raw를 보존하고 검토가 끝날 때까지 새 normalized 출력을 만들지
+  않습니다. `null`과 0은 다른 값입니다.
+
+Orchestrator를 사용하는 Python 통합은 task ID를 유지해야 합니다. 실패한 task의 변경된 요청이나
+confirmation은 기존 결과와 섞이지 않도록 막힐 수 있습니다. 자동 resume나 재시도 정책은 없습니다.
+
+## 피드백과 개선 제안
+
+먼저 task가 있어야 task에 연결된 피드백을 기록할 수 있습니다. 모듈 명령은 `python -m`으로 실행할 수
+있습니다.
+
+```text
+python -m macro_data_platform.feedback_cli --project-root . add --task-id <TASK_ID> --text "이 범위에서는 확인한 World Bank source method를 사용" --category source_method --knowledge-kind user_instruction --scope-json '{"institution_id":"worldbank","dataset_id":"2"}'
+python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK_ID>
+```
+
+새 피드백은 자동 승인되지 않습니다. 출력된 feedback ID를 검토한 뒤 필요할 때 revision을 지정해
+승인·거부·철회합니다.
+
+```text
+python -m macro_data_platform.feedback_cli --project-root . review --feedback-id <FEEDBACK_ID> --expected-revision 1 --status accepted --note "범위와 근거를 확인함"
+```
+
+반복 패턴 분석은 읽기 전용입니다.
+
+```text
+python -m macro_data_platform.pattern_cli --project-root .
+```
+
+분석기는 범위가 일치하는 서로 다른 task가 3개 이상일 때만 반복 후보를 만들고, 제안은 항상 `draft`로
+남깁니다. task·피드백·원본을 고치거나 코드를 자동 수정하지 않습니다.
+
+## Codex 사용
+
+Codex 데스크톱에서 이 저장소 작업을 요청할 수 있지만, MacroAtlas에 별도 채팅 UI나 ChatGPT 계정
+연동이 들어 있는 것은 아닙니다. 예를 들어 “`python -m pytest -o addopts=''`를 실행하고 실패를
+설명해줘”처럼 요청하면 작업 도구가 현재 저장소에서 해당 명령을 실행합니다. 실제 수집은 외부 요청이므로
+요청 범위, 키 사용 여부, 산출물 경로를 확인하고 명시적 실행 지시를 하세요.

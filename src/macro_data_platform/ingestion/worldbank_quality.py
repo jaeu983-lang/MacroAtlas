@@ -54,7 +54,37 @@ def verified_download(audit, artifact):
                     artifact["content_type"], EvidenceKind(artifact["mode"]))
 
 
-def normalize_worldbank(parsed, query):
+def comparison_fingerprint(source_url, query):
+    canonical = json.dumps({"source_url": source_url, "query": query}, sort_keys=True,
+                           ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def source_payload_digest(body):
+    """Ignore JSON formatting and key order; retain exact bytes for non-JSON sources."""
+    try:
+        parsed = json.loads(body)
+        canonical = json.dumps(parsed, sort_keys=True, ensure_ascii=False,
+                               separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (UnicodeDecodeError, ValueError, TypeError, RecursionError):
+        canonical = body
+        method = "worldbank_raw_bytes_v1"
+    else:
+        method = "worldbank_json_canonical_v1"
+    return hashlib.sha256(canonical).hexdigest(), method
+
+
+def _compare_prior_artifact(audit, artifact):
+    download = verified_download(audit, artifact)
+    calculated, method = source_payload_digest(download.body)
+    stored = artifact.get("comparison_sha256")
+    stored_method = artifact.get("comparison_method")
+    if stored is not None and (stored != calculated or stored_method != method):
+        raise ValueError("prior source comparison metadata does not match verified raw")
+    return calculated, method
+
+
+def normalize_worldbank(parsed, query, source_change_status="first_observation"):
     """Minimal deterministic checks; no inferred units, imputation or economic corrections."""
     rows = parsed["observations"]
     counts = Counter(row["date"] for row in rows)
@@ -77,6 +107,10 @@ def normalize_worldbank(parsed, query):
         warnings.append("source_observation_status_preserved")
     if parsed["unit"] is None or parsed["frequency"] is None:
         warnings.append("normalized_unit_or_frequency_unknown")
+    if source_change_status == "changed":
+        issues.append("source_payload_changed_since_prior_request")
+    elif source_change_status not in {"first_observation", "unchanged"}:
+        warnings.append("prior_response_comparison_unavailable")
     normalized = []
     if not issues:
         for position, row in enumerate(rows):
@@ -97,6 +131,7 @@ def normalize_worldbank(parsed, query):
         "status": "failed" if issues else "passed", "issues": issues, "warnings": warnings,
         "requested_periods": sorted(expected), "observed_periods": sorted(counts),
         "missing_periods": missing, "row_count": len(rows), "missing_value_count": nulls,
+        "source_change_status": source_change_status,
         "normalization_version": "worldbank_gate_a_v1", "page_metadata": parsed["page_metadata"],
         "scope": "raw integrity, identity, period coverage, duplicates, finite numbers and unit consistency",
         "not_checked": ["economic_outliers", "revision_history", "cross_source_equivalence"],
@@ -151,9 +186,18 @@ class WorldBankAuditedCollection:
                     "confirmation_fingerprint": context.get("confirmation", {}).get("fingerprint"),
                 }
                 verified_download(audit, artifact)
-                saved = audit.record_stage("artifact", request, owner, artifact)
+                comparison_sha256, comparison_method = source_payload_digest(download.body)
+                scope_fingerprint = comparison_fingerprint(download.source_url, request.input_data)
+                saved = audit.record_source_artifact(
+                    request, owner, artifact, scope_fingerprint=scope_fingerprint,
+                    comparison_sha256=comparison_sha256, comparison_method=comparison_method,
+                    compare_prior=lambda prior: _compare_prior_artifact(audit, prior),
+                )
                 result = replace(result, payload={**payload, "artifact_id": saved["record_id"],
-                                                  "raw_sha256": artifact["raw_sha256"]})
+                                                  "raw_sha256": artifact["raw_sha256"],
+                                                  "comparison_sha256": comparison_sha256,
+                                                  "comparison_method": comparison_method,
+                                                  "source_change_status": saved["source_change_status"]})
             return _incident(audit, request, owner, result)
         except (ValueError, OSError, sqlite3.Error):
             failed = StageResult(StageStatus.NEEDS_REVIEW,
@@ -180,7 +224,9 @@ class WorldBankValidation:
             download = verified_download(audit, artifact)
             query = GDPQuery(**request.input_data)
             parsed = parse_gdp(download, query)
-            report, observations = normalize_worldbank(parsed, query)
+            report, observations = normalize_worldbank(
+                parsed, query, artifact.get("source_change_status", "first_observation"),
+            )
             code = ErrorCode.QUALITY_FAILURE if report["status"] == "failed" else None
         except ConnectorFailure as failure:
             report, observations, code = {

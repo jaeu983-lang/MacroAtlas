@@ -11,7 +11,8 @@ from test_worldbank import FIXTURE, FixtureTransport, fixture_download
 from test_worldbank_request import child, supplied
 
 from macro_data_platform.config import Settings
-from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.connectors.worldbank import GDPQuery
+from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, StageStatus
 from macro_data_platform.ingestion.worldbank_quality import WorldBankValidation, verified_download
 from macro_data_platform.ingestion.worldbank_request import WorldBankRequestDispatcher
 from macro_data_platform.orchestration import WorkflowService
@@ -127,6 +128,136 @@ def test_explicit_source_unit_and_unknown_metadata_remain_distinct(setup):
                for row in dispatch.audit.observations(payload(result)["validation_id"]))
 
 
+def test_worldbank_same_request_source_change_preserves_both_raws_and_requires_review(setup):
+    settings, _, _, service = setup
+    first_task = child(service, supplied(service))
+    second_task = child(service, supplied(service))
+    changed = modified(lambda data: data[1][0].update(value=999.0))
+    dispatch = handler(setup, FixtureTransport(fixture_download(), changed))
+
+    first = dispatch.run(first_task["task_id"])
+    second = dispatch.run(second_task["task_id"])
+
+    first_data, second_data = payload(first), payload(second)
+    artifacts = [dispatch.audit.get(first_data["artifact_id"]),
+                 dispatch.audit.get(second_data["artifact_id"])]
+    assert first["status"] == "COMPLETED"
+    assert first_data["quality"]["source_change_status"] == "first_observation"
+    assert second["status"] == "NEEDS_REVIEW"
+    assert second_data["quality"]["issues"] == ["source_payload_changed_since_prior_request"]
+    assert second_data["normalized_ref"] is None
+    assert artifacts[1]["source_change_status"] == "changed"
+    assert artifacts[0]["comparison_sha256"] != artifacts[1]["comparison_sha256"]
+    assert (settings.project_root / artifacts[0]["raw_path"]).read_bytes() == FIXTURE.read_bytes()
+    assert (settings.project_root / artifacts[1]["raw_path"]).read_bytes() == changed.body
+    assert dispatch.audit.observations(second_data["validation_id"]) == []
+
+
+def test_worldbank_json_formatting_does_not_count_as_source_change(setup):
+    _, _, _, service = setup
+    first_task = child(service, supplied(service))
+    second_task = child(service, supplied(service))
+    reordered = json.dumps(json.loads(FIXTURE.read_bytes()), sort_keys=True,
+                           separators=(",", ":")).encode()
+    dispatch = handler(setup, FixtureTransport(fixture_download(), fixture_download(body=reordered)))
+
+    first = dispatch.run(first_task["task_id"])
+    second = dispatch.run(second_task["task_id"])
+
+    assert first["status"] == second["status"] == "COMPLETED"
+    assert payload(second)["quality"]["source_change_status"] == "unchanged"
+    assert payload(first)["raw_sha256"] != payload(second)["raw_sha256"]
+
+
+def test_worldbank_different_request_scope_starts_a_separate_baseline(setup):
+    _, _, _, service = setup
+    first_task = child(service, supplied(service))
+    other_request = supplied(service, request_changes={"period_end": "2021"})
+    second_task = child(service, other_request)
+
+    def limit_to_2021(data):
+        data[1] = [row for row in data[1] if row["date"] in {"2020", "2021"}]
+        data[0]["total"] = len(data[1])
+
+    other_scope_body = modified(limit_to_2021)
+    other_scope_download = replace(other_scope_body, source_url=GDPQuery(2020, 2021).url)
+    dispatch = handler(setup, FixtureTransport(fixture_download(), other_scope_download))
+
+    first = dispatch.run(first_task["task_id"])
+    second = dispatch.run(second_task["task_id"])
+
+    assert first["status"] == second["status"] == "COMPLETED"
+    assert payload(second)["quality"]["source_change_status"] == "first_observation"
+
+
+def test_worldbank_fixture_capture_is_not_a_live_source_baseline(setup):
+    _, _, _, service = setup
+    tasks = [child(service, supplied(service)) for _ in range(2)]
+    fixture = fixture_download()
+    live = replace(fixture, kind=EvidenceKind.LIVE_API)
+    dispatch = handler(setup, FixtureTransport(fixture, live))
+
+    fixture_result = dispatch.run(tasks[0]["task_id"])
+    live_result = dispatch.run(tasks[1]["task_id"])
+
+    assert fixture_result["status"] == live_result["status"] == "COMPLETED"
+    assert payload(fixture_result)["quality"]["source_change_status"] == "first_observation"
+    assert payload(live_result)["quality"]["source_change_status"] == "first_observation"
+
+
+def test_tampered_worldbank_prior_artifact_makes_change_comparison_unknown(setup):
+    settings, _, _, service = setup
+    first_task = child(service, supplied(service))
+    second_task = child(service, supplied(service))
+    dispatch = handler(setup, FixtureTransport(fixture_download(), fixture_download()))
+    first = dispatch.run(first_task["task_id"])
+    first_artifact = dispatch.audit.get(payload(first)["artifact_id"])
+    (settings.project_root / first_artifact["raw_path"]).write_bytes(b"tampered")
+
+    second = dispatch.run(second_task["task_id"])
+
+    assert second["status"] == "COMPLETED"
+    assert payload(second)["quality"]["source_change_status"] == "unknown_history_integrity"
+    assert "prior_response_comparison_unavailable" in payload(second)["quality"]["warnings"]
+
+
+def test_malformed_worldbank_history_record_does_not_hide_current_artifact(setup):
+    _, store, _, service = setup
+    first_task = child(service, supplied(service))
+    second_task = child(service, supplied(service))
+    dispatch = handler(setup, FixtureTransport(fixture_download(), fixture_download()))
+    first = dispatch.run(first_task["task_id"])
+    with store.transaction() as connection:
+        connection.execute("UPDATE gate_a_records SET document='{' WHERE record_id=?",
+                           (payload(first)["artifact_id"],))
+
+    second = dispatch.run(second_task["task_id"])
+
+    assert second["status"] == "COMPLETED"
+    assert payload(second)["quality"]["source_change_status"] == "unknown_history_integrity"
+
+
+def test_legacy_worldbank_artifact_is_compared_after_integrity_verification(setup):
+    _, store, _, service = setup
+    first_task = child(service, supplied(service))
+    second_task = child(service, supplied(service))
+    dispatch = handler(setup, FixtureTransport(fixture_download(), fixture_download()))
+    first = dispatch.run(first_task["task_id"])
+    first_artifact = dispatch.audit.get(payload(first)["artifact_id"])
+    first_artifact.pop("source_scope_fingerprint")
+    first_artifact.pop("comparison_sha256")
+    first_artifact.pop("comparison_method")
+    first_artifact.pop("source_change_status")
+    with store.transaction() as connection:
+        connection.execute("UPDATE gate_a_records SET document=? WHERE record_id=?",
+                           (json.dumps(first_artifact), first_artifact["record_id"]))
+
+    second = dispatch.run(second_task["task_id"])
+
+    assert second["status"] == "COMPLETED"
+    assert payload(second)["quality"]["source_change_status"] == "unchanged"
+
+
 @pytest.mark.parametrize("status,expected,error", [
     (503, "FAILED", "TRANSIENT"), (403, "NEEDS_REVIEW", "AUTH_ACCESS"),
     (404, "FAILED", "SITE_CHANGED"),
@@ -225,12 +356,15 @@ def test_transient_retry_records_new_artifact_without_overwriting_old_one(setup)
     final = dispatch.resume(task["task_id"])
     assert first["status"] == "FAILED" and final["status"] == "COMPLETED"
     assert len(transport.calls) == 2
-    assert len(dispatch.audit.for_task(task["task_id"], kind="artifact")) == 2
+    artifacts = dispatch.audit.for_task(task["task_id"], kind="artifact")
+    assert len(artifacts) == 2
+    assert artifacts[0]["source_change_status"] == "not_compared_collection_failed"
+    assert artifacts[1]["source_change_status"] == "first_observation"
     assert payload(final)["raw_path"] != first_artifact["raw_path"]
     assert (settings.project_root / first_artifact["raw_path"]).read_bytes() == before
 
 
-def test_failed_validation_requires_review_and_refetches_on_approved_retry(setup):
+def test_failed_validation_retry_reports_changed_payload_and_requires_review(setup):
     _, _, _, service = setup
     task = child(service, supplied(service))
     transport = FixtureTransport(modified(lambda d: d[1][1].update(date="2022")), fixture_download())
@@ -239,9 +373,10 @@ def test_failed_validation_requires_review_and_refetches_on_approved_retry(setup
     with pytest.raises(ValueError, match="review acknowledgement"):
         dispatch.resume(task["task_id"])
     final = dispatch.resume(task["task_id"], approved=True)
-    assert final["status"] == "COMPLETED" and len(transport.calls) == 2
+    assert final["status"] == "NEEDS_REVIEW" and len(transport.calls) == 2
     assert dispatch.audit.observations(payload(first)["validation_id"]) == []
-    assert len(dispatch.audit.observations(payload(final)["validation_id"])) == 3
+    assert payload(final)["quality"]["issues"] == ["source_payload_changed_since_prior_request"]
+    assert dispatch.audit.observations(payload(final)["validation_id"]) == []
 
 
 def test_valid_collection_reused_after_retryable_validation_interruption(setup, monkeypatch):

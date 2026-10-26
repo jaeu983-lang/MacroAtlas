@@ -91,6 +91,80 @@ class AuditStore:
                 ))
             return record
 
+    def record_source_artifact(self, request, owner, payload, *, scope_fingerprint,
+                               comparison_sha256, comparison_method, compare_prior):
+        """Record a source snapshot and compare its latest matching predecessor atomically.
+
+        The scan is deliberately bounded. A prior artifact is trusted only after the caller
+        verifies its raw file and manifest; failures produce an explicit unknown status while
+        the newly captured artifact remains auditable.
+        """
+        if not isinstance(scope_fingerprint, str) or not scope_fingerprint:
+            raise ValueError("source scope fingerprint is required")
+        token, stage_run_id = owner
+        with self.history.transaction() as connection:
+            doc = self.history.load(connection, request.task_id)
+            if (doc["active_token"] != token or not doc["stages"]
+                    or doc["stages"][-1]["stage_run_id"] != stage_run_id
+                    or doc["stages"][-1]["status"] != StageStatus.RUNNING):
+                raise ValueError("stale worker cannot write source artifact")
+            rows = connection.execute(
+                "SELECT document FROM gate_a_records WHERE kind='artifact' "
+                "ORDER BY rowid DESC LIMIT 1001",
+            ).fetchall()
+            prior = None
+            history_integrity_unknown = False
+            for row in rows[:1000]:
+                try:
+                    candidate = json.loads(row[0])
+                except (TypeError, ValueError):
+                    history_integrity_unknown = True
+                    break
+                if not isinstance(candidate, dict):
+                    history_integrity_unknown = True
+                    break
+                status_code = candidate.get("http_status")
+                if (candidate.get("collection_status") != StageStatus.SUCCEEDED
+                        or type(status_code) is not int or not 200 <= status_code < 300
+                        or candidate.get("mode") != payload.get("mode")):
+                    continue
+                if candidate.get("source_scope_fingerprint") == scope_fingerprint:
+                    prior = candidate
+                    break
+                if (candidate.get("source_scope_fingerprint") is None
+                        and candidate.get("source_url") == payload.get("source_url")
+                        and candidate.get("query") == payload.get("query")):
+                    # Backward compatibility for Gate A artifacts recorded before this index.
+                    prior = candidate
+                    break
+
+            status = "first_observation"
+            if payload.get("collection_status") != StageStatus.SUCCEEDED:
+                status = "not_compared_collection_failed"
+            elif history_integrity_unknown:
+                status = "unknown_history_integrity"
+            elif prior is None and len(rows) > 1000:
+                status = "unknown_history_scan_limit"
+            elif prior is not None:
+                try:
+                    prior_sha256, prior_method = compare_prior(prior)
+                    if prior_method != comparison_method:
+                        status = "unknown_comparison_method"
+                    else:
+                        status = ("unchanged" if prior_sha256 == comparison_sha256
+                                  else "changed")
+                except (OSError, ValueError, KeyError, TypeError):
+                    status = "unknown_history_integrity"
+
+            recorded = {
+                **payload,
+                "source_scope_fingerprint": scope_fingerprint,
+                "comparison_sha256": comparison_sha256,
+                "comparison_method": comparison_method,
+                "source_change_status": status,
+            }
+            return self._insert(connection, "artifact", request.task_id, stage_run_id, recorded)
+
     @staticmethod
     def _load(connection, record_id, kind=None):
         row = connection.execute(

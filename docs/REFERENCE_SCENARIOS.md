@@ -63,7 +63,7 @@
 
 | ID | 투입 조건 | 기대 시스템 행동 |
 |---|---|---|
-| X01 | API 429 또는 일시 5xx | backoff 후 상한 내 재시도, 실행 이력 저장 |
+| X01 | API 429 또는 일시 5xx | 호출당 1회 요청 후 `TRANSIENT`로 기록. `Retry-After`가 있으면 명시적 resume를 최소 대기시간 전까지 차단하고, 없으면 장애 해소 후 운영자가 resume. 단계별 호출 상한과 실행 이력 유지 |
 | X02 | 403, 키 만료, 접근권한 부족 | 인증 우회 없이 `NEEDS_REVIEW` |
 | X03 | 이전 파일의 열명/시트 변경 | schema drift 보고, 원본/이전 버전 유지 |
 | X04 | 잔액 대신 거래액 후보를 발견 | 매칭 거부·후보 불일치 이유 제시 |
@@ -71,6 +71,20 @@
 | X06 | 여러 기관에서 같은 파서 오류 반복 | 공통 개선 제안, 검증·승인 이전 코드 변경 금지 |
 | X07 | 중간 수집 실패 후 resume | 승인된 유효 산출물 재사용, 실패 지점부터 재개 |
 | X08 | 데이터 소급 수정 | 이전 raw/vintage 보존, 변경점 보고 |
+| X09 | 반복된 오류·사용자 교정에서 개선 후보 생성 | 서로 다른 3개 task 이상을 요구하고 scope별로 분리. 같은 task retry만으로 recurrence를 만들지 않으며 evidence와 regression test가 포함된 `draft` proposal만 생성 |
+
+## X09 iteration 13 fixture verification (2026-10-26)
+
+- **PASS, deterministic local fixtures:** Three distinct task IDs with the same bounded stage error produce
+  one `draft`; multiple retries in one task do not meet the threshold. Institution, dataset, engine/version,
+  and stage differences remain separate. Unknown scope dimensions cannot merge across tasks.
+- Only accepted `user_instruction` feedback is considered. Unreviewed feedback and inference are excluded;
+  differing accepted text at the same explicit scope is reported as a possible conflict requiring human
+  review. Raw provider payloads are not selected as analyzer fields and are absent from the report.
+- Task/record/proposal/evidence caps are 500/2,500/20/10. Cap tests return `partial` where records are omitted.
+  Full test and synthetic benchmark results are in `docs/ITERATION_13_REPORT.md`.
+- This is synthetic offline evidence. It does not claim recurring patterns in live provider history or root
+  cause, expand Gate C's D-067 limited pass, or automatically apply a proposal.
 
 ## 시나리오 공통 기록 포맷
 
@@ -91,7 +105,8 @@ run_date: null
 ## 단계별 적용
 
 - Gate A(04): B의 공개 파일 또는 H의 간단 API 중 한 자료로 실측 수집; X01/X07 기본.
-- Gate B(08): A/E의 메타데이터 경로 + 후보 검색; C 또는 D의 검색과 수집 연결.
+- Gate B(08): H의 World Bank evidence-backed seed를 사용한 구조화 요청→후보 순위→명시 선택→
+  대표 collector E2E. A/E와 C/D의 일반 메타데이터/API 연결은 기관 확대 시나리오로 남긴다.
 - Gate C(10): C/TIC 파일·B/ZIP·F/일본 기관 연결; X01~X04, X07/X08.
 - Gate D(12): X05/X06과 기관별 규칙 분리.
 - Gate E(14): A~H의 사용 가능한 정상·실패 매트릭스와 남은 BLOCKED를 공개.
@@ -113,3 +128,107 @@ run_date: null
 - 저장 보고서 `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`의 `live_path_passed=true`를 확인했다. pytest 433개 및 Ruff도 통과했다.
 - H의 OECD 비교, 다국가 탐색, 정의 비교와 자동 후보 선택은 여전히 NOT_RUN이다. 경제적 이상치, revision history, cross-source equivalence도 확인하지 않았다.
 - Gate A 상세와 한계는 `docs/ITERATION_04_REPORT.md` 참조.
+
+## Gate C X08 World Bank fixture follow-up (2026-10-26)
+
+- Same official URL and exact year-range request scope: changed JSON observations preserve both raw
+  captures and return `NEEDS_REVIEW`; no normalized observations are published.
+- Reordered JSON object keys/formatting are unchanged at the canonical payload level even though raw
+  byte hashes differ. A different request scope starts a separate baseline.
+- A tampered prior raw package makes history comparison unknown and emits
+  `prior_response_comparison_unavailable`; a verified legacy artifact without comparison metadata
+  can be used as a baseline.
+- TIC TSV/HTML and BIS ZIP/CSV-shaped fixture files also pass through `TabularFileEngine`; raw,
+  manifest, and normalized table hashes are checked.
+- This is fixture evidence. It does not establish live change detection or official TIC/BIS provider
+  workflows, Japan API support, or Gate C completion.
+
+## Gate C live TIC and tabular change-guard follow-up (2026-10-26)
+
+- Scenario C: **PARTIAL live**. One official Treasury Table 5 TXT response was imported from the
+  saved inbox file; the source page identifies end-of-period holdings in billions of dollars.
+  HTTP/content-type provenance, source URL, and raw/normalized hashes were checked. The Japan row is
+  retained as holdings data, not interpreted as a transaction flow.
+- X08: **fixture PASS for tabular intake**. Same source scope plus changed bytes preserves both raw
+  captures and returns `NEEDS_REVIEW` before normalized output. Unchanged bytes across capture times
+  compare as unchanged; a tampered previous raw file makes history unknown and blocks normalization.
+- X08 live TIC delta: **NOT_RUN**; only one live file capture was made. A subsequent source revision
+  must be captured before claiming live change-detection evidence. Gate C remains not passed.
+
+## Gate C live BIS bulk and BOJ access follow-up (2026-10-26)
+
+- Scenario B: **PARTIAL live**. The official BIS bulk page returned HTTP 200 and linked
+  `WS_GLI_csv_col.zip`; ZIP download returned HTTP 200 and passed raw archive → normalized table
+  intake (225 rows, 220 columns). The file includes multiple series/units and was not treated as one
+  homogeneous series. The flat CSV alternative returned HTTP 503; no retry was sent.
+- Scenario F: **BLOCKED for data collection at that time.** The official API notice returned HTTP 200
+  and described JSON/CSV time-series access, but its linked API manual returned HTTP 403. No BOJ API
+  request was formed because the manual was unavailable. See the later D-071 recheck.
+- X01: the live BIS 503 was recorded without retry. A deterministic guide-fetch fixture verifies a
+  503 `Retry-After: 17` is persisted as a retry hint and no automatic retry occurs. This does not
+  substitute for a real provider recovery/resume cycle.
+- X08 live TIC/BIS source delta and provider-specific recovery remain **NOT_RUN**. Gate C remains
+  **not passed at the time of this follow-up**; Gate D and Iteration 11 had not started yet.
+
+## BOJ API manual recheck (2026-10-26)
+
+- The official API notice and linked English manual returned HTTP 200. The manual is dated 2026-02-18;
+  current PDF SHA256 is `8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`.
+- It documents metadata, layer and data endpoints, request parameters and request limits. A limit section
+  uses `/getLayerCode` where the endpoint list and examples use `/getDataLayer`; verify this discrepancy
+  before a data request.
+- The previous 403 response had no content hash, so a change since that attempt cannot be proven. No BOJ
+  metadata or observation request was sent. Documentation access is restored; the BOJ observation collector
+  remains unimplemented. Details and archived manifest path: `docs/GATE_C_REVIEW_2026_10_26.md`.
+
+## Gate D X05/X06 Orchestrator integration follow-up (2026-10-26)
+
+- **X05 / PASS, local fixture:** First BLS/CPI task ran the source-search and collection stages and
+  recorded an accepted `source_method` instruction tied to that search stage. In a repeat task for the
+  same institution and dataset, the caller selected its feedback ID; Orchestrator omitted only the
+  stage explicitly tagged for `source_method` reuse and passed the selected instruction, exact scope,
+  feedback revision, and evidence references to the collection stage.
+- **X06 / PASS for non-promotion boundaries:** Query and plan require institution scope. Selecting the
+  same feedback ID under a different institution is rejected. Broad-scope, conflicting, inferred,
+  unreviewed, incomplete, or stale feedback cannot skip a stage. Current task instructions take priority.
+  There is no automatic promotion from institution knowledge to cross-institution common rules.
+- **Efficiency:** Across 30 baseline and 30 repeated fixture tasks, per-task stage calls fell from 2 to 1
+  (60 to 30 total). One benchmark run measured E2E p50/p95 as 4.207/4.582 ms baseline and 3.444/4.537 ms with reuse. The cold
+  knowledge lookup read 1 SQLite candidate row (178 logical bytes); cached lookups read 0 rows/bytes.
+  Maximum Python allocation was 32,304 bytes baseline and 39,301 bytes with knowledge context.
+- This is local SQLite plus fixture-engine evidence, not live-provider latency. Gate D passed for the
+  explicit scoped planning path. UI consent and automatic selection remain unimplemented. Iteration 13
+  was not started when this historical follow-up was written; it was completed later as recorded in
+  `docs/ITERATION_13_REPORT.md`. Full Gate D details are in `docs/ITERATION_12_REPORT.md`.
+
+## Gate E supported-scope final matrix (2026-10-26)
+
+This matrix supersedes only the current-status reading of earlier historical notes. `PARTIAL` means that
+one bounded supported path was exercised; it does not mean the full scenario request is available.
+
+| Scenario | Normal path | Failure/change path | Current result and boundary |
+|---|---|---|---|
+| A — IMF | Generic SDMX structure XML fixture parsing is tested. | Malformed/conflicting metadata fixtures are tested. | **BLOCKED end-to-end**: no IMF live dataflow discovery or observation connector. Fixture component evidence is not IMF support. |
+| B — BIS | Official `WS_GLI_csv_col.zip` was captured and locally ingested (225 rows × 220 columns). | Official flat ZIP returned HTTP 503; no retry was sent. Malformed/unsafe ZIP cases are fixture-tested. | **PARTIAL**: explicit bulk-file intake only; no general BIS concept search or series-level API workflow. |
+| C — Treasury TIC | Official Table 5 text was preserved and ingested; source describes end-period holdings in billions of dollars. | Controlled mutation of a copy of live raw returned `changed`/`NEEDS_REVIEW`; schema-drift fixtures preserve raw. | **PARTIAL**: explicit file intake and controlled change guard; next natural live source revision is not observed. |
+| D — BEA | No BEA collection path exercised. | No BEA-specific failure path exercised. | **BLOCKED**: no BEA connector or end-to-end parameter discovery. A configured key alone does not imply support. |
+| E — ECB/Eurostat | Generic SDMX structure parsing is fixture-tested. | Generic metadata conflict/schema cases are fixture-tested. | **BLOCKED end-to-end**: no ECB/Eurostat live data discovery or observation connector. |
+| F — Japan MOF/BOJ/e-Stat | BOJ official metadata and fixed FM08/FXERD01/202609 request returned HTTP 200 twice; response shape and nulls were checked. | No provider failure/resume or full Japan workflow was run. | **PARTIAL**: direct BOJ API smoke only; no reusable collector, Orchestrator integration, MOF or e-Stat path. D-072/D-073 evidence is in `docs/BOJ_LIVE_RECHECK_2026_10_26.md`. |
+| G — PBOC/SAFE/NBS | No live or end-to-end source path exercised. | No source-specific failure path exercised. | **BLOCKED**: unsupported; institution roles and language-specific series are not inferred. |
+| H — OECD/World Bank | Fixed World Bank USA WDI GDP source 2 path was live-collected and quality-validated for 2020–2022 (3 rows). | World Bank HTTP/schema/quality/resume branches are fixture-tested. | **PARTIAL**: fixed World Bank GDP path only; no OECD comparison, multi-country search, or cross-source equivalence claim. |
+
+| Shared case | Evidence | Result and boundary |
+|---|---|---|
+| X01 transient failure/resume | `test_orchestrator_persists_simulated_http_503_and_resumes_same_task_after_retry_after` | **PASS, simulated**; same persisted task resumes only after `Retry-After`. No natural provider failure/resume claim. |
+| X02 auth/permission | `test_403_requires_review_and_never_becomes_retryable`; connector auth fixtures | **PASS, fixture**; no authentication bypass. |
+| X03 schema drift | `test_schema_drift_retains_new_raw_response_for_diagnosis`; tabular parser fixtures | **PASS, fixture**; review state preserves source evidence. |
+| X04 stock/flow mismatch | `test_holdings_request_cannot_confirm_transaction_or_unknown_measure` | **PASS, fixture**; holdings and transaction concepts are not conflated. |
+| X05/X06 scoped feedback | `docs/ITERATION_12_REPORT.md`; `tests/test_knowledge_orchestration.py` | **PASS, local fixture**; explicit accepted scoped feedback only, conflicting/inferred/out-of-scope reuse blocked. |
+| X07 safe resume | `test_resume_reuses_valid_prefix_and_only_retries_failed_stage_after_restart`; `test_valid_collection_reused_after_retryable_validation_interruption` | **PASS, fixture**; verified prefix is reused and the failed stage is retried. |
+| X08 source change | Gate C review D-067 and `tests/test_gate_a.py` | **PASS, controlled/fixture**; preserve old/new raw and block new normalized output on change. Natural live revision remains `NOT_RUN`. |
+| X09 recurring improvement | `docs/ITERATION_13_REPORT.md`; `tests/test_patterns.py` | **PASS, synthetic**; 3 distinct tasks required; proposals remain read-only drafts. |
+
+Gate E release boundary is a restricted local v1 for the paths above. The blocked and partial scenarios are
+not advertised as completed agency workflows. The fixed World Bank live guide procedure was reproduced in
+the current execution environment after the connector began honoring its configured proxy and CA bundle;
+the report and verification details are in `docs/ITERATION_14_REPORT.md`.

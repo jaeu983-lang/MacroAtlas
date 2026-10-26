@@ -346,7 +346,9 @@ def test_workflow_hash_extends_legacy_without_changing_original_algorithm(setup)
     spec = StageSpec("collect", "collect")
     runner = Orchestrator(store, {}, clock=clock)
     legacy = store.get(runner.create("GDP data").task_id)
-    expected = hashlib.sha256(json.dumps({"request": "GDP data", "stage": asdict(spec),
+    stage = asdict(spec)
+    stage.pop("knowledge_reuse_category")
+    expected = hashlib.sha256(json.dumps({"request": "GDP data", "stage": stage,
                                          "upstream": None}, sort_keys=True,
                                         ensure_ascii=False, allow_nan=False).encode()).hexdigest()
     assert runner._fingerprint(legacy, spec, None) == expected

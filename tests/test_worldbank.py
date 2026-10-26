@@ -262,9 +262,12 @@ def mocked_session(monkeypatch, *, body=None, status=200, headers=None, error=No
     return session, response
 
 
-def test_live_transport_settings_with_mocked_session_use_tls_and_no_implicit_credentials(
+def test_live_transport_defaults_use_tls_without_implicit_credentials(
     tmp_path, monkeypatch,
 ):
+    for name in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy",
+                 "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
+        monkeypatch.delenv(name, raising=False)
     session, _ = mocked_session(monkeypatch)
     download = WorldBankTransport(Settings(tmp_path, network_enabled=True)).fetch(GDPQuery())
     assert download.body == FIXTURE.read_bytes()
@@ -274,8 +277,28 @@ def test_live_transport_settings_with_mocked_session_use_tls_and_no_implicit_cre
     assert kwargs["timeout"] == (5, 20)
     assert kwargs["allow_redirects"] is False
     assert kwargs["stream"] is True
-    assert kwargs.get("verify", True) is True
+    assert kwargs["verify"] is True
+    assert kwargs["proxies"] == {}
     assert "auth" not in kwargs
+    assert session.get.call_count == 1
+
+
+def test_live_transport_explicitly_uses_configured_proxy_and_ca_bundle(tmp_path, monkeypatch):
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
+    monkeypatch.setenv("HTTP_PROXY", "http://upper-proxy.example:8080")
+    monkeypatch.setenv("http_proxy", "http://lowercase-proxy.example:8081")
+    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "/etc/ssl/certs/custom-ca.pem")
+    monkeypatch.setenv("CURL_CA_BUNDLE", "/ignored/ca.pem")
+    session, _ = mocked_session(monkeypatch)
+
+    download = WorldBankTransport(Settings(tmp_path, network_enabled=True)).fetch(GDPQuery())
+
+    assert download.body == FIXTURE.read_bytes()
+    assert session.trust_env is False
+    kwargs = session.get.call_args.kwargs
+    assert kwargs["proxies"] == {"https": "http://proxy.example:8080",
+                                 "http": "http://upper-proxy.example:8080"}
+    assert kwargs["verify"] == "/etc/ssl/certs/custom-ca.pem"
     assert session.get.call_count == 1
 
 

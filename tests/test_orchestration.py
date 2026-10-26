@@ -298,6 +298,25 @@ def test_retry_budget_is_total_invocations_and_cannot_be_reset_by_approval(store
     assert "RETRY_LIMIT_REACHED" in [row["kind"] for row in store.events(task_id)]
 
 
+def test_server_retry_after_blocks_manual_resume_until_minimum_delay(store):
+    clock = Clock()
+    engine = MockEngine(
+        StageResult(StageStatus.FAILED_RETRYABLE, error_code=ErrorCode.TRANSIENT,
+                    retry_after_seconds=60),
+        success(),
+    )
+    runner, task_id = setup_task(store, {("one", "1"): engine}, clock=clock)
+
+    assert runner.run(task_id)["status"] == TaskStatus.FAILED
+    with pytest.raises(ValueError, match="Retry-After delay has not elapsed"):
+        runner.resume(task_id)
+    assert len(engine.calls) == 1
+
+    clock.value += timedelta(seconds=60)
+    assert runner.resume(task_id)["status"] == TaskStatus.COMPLETED
+    assert len(engine.calls) == 2
+
+
 def test_cancel_before_run_and_repeated_cancel_are_idempotent(store):
     engine = MockEngine(success())
     runner, task_id = setup_task(store, {("one", "1"): engine})

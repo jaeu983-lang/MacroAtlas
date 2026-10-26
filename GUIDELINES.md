@@ -68,7 +68,10 @@ Each connector should document:
 Never assume a public website has a stable API. Verify official documentation first.
 
 ## 7. Reliability
-- Use timeouts, bounded retries, and exponential backoff where appropriate.
+- Use timeouts and honor server `Retry-After` before resuming. A stage sends one request by default;
+  retries require a persisted attempt budget. Prefer explicit resume over hidden connector retries.
+  Add bounded exponential backoff only when the source policy, request budget, and execution model
+  are specified and tested.
 - Log metadata retrieval and data ingestion separately.
 - Store timestamps in ISO 8601 UTC unless the source requires a local time.
 - Make ingestion idempotent where feasible.

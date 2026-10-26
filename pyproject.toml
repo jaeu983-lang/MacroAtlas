@@ -9,8 +9,14 @@ description = "International finance data discovery and ingestion platform"
 requires-python = ">=3.11"
 dependencies = [
   "requests>=2.31,<3",
-  "pandas>=2.1,<4"
+  "pandas>=2.1,<4",
+  "openpyxl>=3.1,<4",
+  "xlrd>=2.0,<3"
 ]
+
+[project.scripts]
+macro-feedback = "macro_data_platform.feedback_cli:main"
+macro-patterns = "macro_data_platform.pattern_cli:main"
 
 [project.optional-dependencies]
 dev = [

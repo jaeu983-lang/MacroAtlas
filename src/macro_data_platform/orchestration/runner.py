@@ -3,7 +3,7 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -20,6 +20,7 @@ from macro_data_platform.contracts import (
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan, json_snapshot
 from macro_data_platform.orchestration.workflow import validate_workflow_task
 from macro_data_platform.storage.history import HistoryStore
+from macro_data_platform.storage.knowledge import KnowledgeStore
 
 SUCCESS = {StageStatus.SUCCEEDED, StageStatus.SKIPPED_REUSED}
 OUTCOMES = {StageStatus.SUCCEEDED, StageStatus.FAILED_RETRYABLE,
@@ -88,20 +89,98 @@ class Orchestrator:
                     TaskStatus(doc["status"]))
 
     def plan(self, task_id: str, plan: TaskPlan) -> None:
+        self._persist_plan(task_id, plan)
+
+    def plan_with_knowledge(self, task_id: str, plan: TaskPlan, knowledge_store: KnowledgeStore,
+                            *, institution_id: str, category: str,
+                            feedback_id: str | None = None, dataset_id: str | None = None,
+                            concept: str | None = None,
+                            classification_axis: str | None = None,
+                            version: str | None = None,
+                            current_instruction: str | None = None) -> dict:
+        """Plan with current instructions or one explicitly confirmed scoped feedback item."""
+        if not isinstance(plan, TaskPlan) or not isinstance(knowledge_store, KnowledgeStore):
+            raise TypeError("expected a task plan and KnowledgeStore")
+        if (knowledge_store.history.settings.database_path
+                != self.store.settings.database_path):
+            raise ValueError("knowledge and task history must use the same SQLite store")
+        resolution = knowledge_store.confirm_reuse(
+            institution_id=institution_id, category=category, feedback_id=feedback_id,
+            dataset_id=dataset_id, concept=concept, classification_axis=classification_axis,
+            version=version, current_instruction=current_instruction,
+        )
+        if resolution["status"] not in {"confirmed", "current_instruction"}:
+            raise ValueError(f"knowledge reuse blocked: {resolution['status']}")
+        context = json_snapshot(resolution["knowledge_context"])
+        lookup_metrics = resolution.get("lookup_metrics")
+        if lookup_metrics is not None:
+            context["lookup_metrics"] = json_snapshot(lookup_metrics)
+        skipped_stage_ids = []
+        planned = plan
+        if resolution["status"] == "confirmed":
+            skipped_stage_ids = [
+                spec.stage_id for spec in plan.stages
+                if spec.knowledge_reuse_category == category
+            ]
+            if not skipped_stage_ids:
+                raise ValueError("plan has no stage enabled for this knowledge category")
+            skipped_stage_set = set(skipped_stage_ids)
+            remaining = tuple(spec for spec in plan.stages
+                              if spec.stage_id not in skipped_stage_set)
+            if not remaining:
+                raise ValueError("confirmed knowledge cannot replace every task stage")
+            planned = TaskPlan(remaining)
+            context["skipped_stage_ids"] = skipped_stage_ids
+        else:
+            context["skipped_stage_ids"] = []
+        self._persist_plan(
+            task_id, planned, knowledge_context=context,
+            expected_knowledge_revision=resolution.get("index_revision"),
+        )
+        return {"status": resolution["status"], "skipped_stage_ids": skipped_stage_ids,
+                "index_revision": resolution.get("index_revision"),
+                "lookup_metrics": lookup_metrics}
+
+    def _persist_plan(self, task_id: str, plan: TaskPlan, *, knowledge_context: dict | None = None,
+                      expected_knowledge_revision: int | None = None) -> None:
         snapshot = plan.snapshot()
         with self.store.transaction() as connection:
             doc = self.store.load(connection, task_id)
             self._check_workflow(connection, doc)
+            if expected_knowledge_revision is not None:
+                row = connection.execute(
+                    "SELECT index_revision FROM knowledge_meta WHERE singleton=1",
+                ).fetchone()
+                pending = connection.execute(
+                    "SELECT 1 FROM knowledge_change_queue LIMIT 1",
+                ).fetchone()
+                if row is None or row[0] != expected_knowledge_revision or pending is not None:
+                    raise ValueError("knowledge changed after confirmation; refresh and confirm again")
             if doc["plan"] is not None:
-                if doc["plan"] == snapshot:
+                if (doc["plan"] == snapshot and
+                        (knowledge_context is None or doc.get("knowledge_context") == knowledge_context)):
                     return
                 raise ValueError("saved plan is immutable; create another task for changes")
             if doc["status"] != TaskStatus.CREATED:
                 raise ValueError("only a created task can be planned")
             doc["plan"] = snapshot
+            if knowledge_context is not None:
+                doc["knowledge_context"] = json_snapshot(knowledge_context)
             doc["status"] = TaskStatus.PLANNED
             self.store.save(connection, doc)
-            self._event(connection, doc, "TASK_PLANNED")
+            plan_details = ({"knowledge_status": knowledge_context["status"]}
+                            if knowledge_context is not None else {})
+            self._event(connection, doc, "TASK_PLANNED", **plan_details)
+            if (knowledge_context or {}).get("status") == "confirmed":
+                self._event(
+                    connection, doc, "KNOWLEDGE_REUSED",
+                    feedback_id=knowledge_context["feedback_id"],
+                    category=knowledge_context["category"],
+                    institution_id=knowledge_context["institution_id"],
+                    skipped_stage_ids=knowledge_context["skipped_stage_ids"],
+                    index_revision=knowledge_context["index_revision"],
+                    lookup_metrics=knowledge_context.get("lookup_metrics"),
+                )
 
     def cancel(self, task_id: str) -> None:
         with self.store.transaction() as connection:
@@ -151,8 +230,7 @@ class Orchestrator:
             self._event(connection, doc, "TASK_RESUMED" if resume else "TASK_STARTED")
             return token
 
-    @staticmethod
-    def _check_resume(doc: dict, *, approved: bool) -> None:
+    def _check_resume(self, doc: dict, *, approved: bool) -> None:
         if doc["status"] not in {
             TaskStatus.FAILED, TaskStatus.PARTIAL, TaskStatus.NEEDS_REVIEW, TaskStatus.CANCELLED,
         }:
@@ -166,6 +244,21 @@ class Orchestrator:
                 raise ValueError("terminal failure requires a new task")
             if latest["status"] == StageStatus.NEEDS_REVIEW and not approved:
                 raise ValueError("review acknowledgement required before resume")
+            result = latest.get("result") or {}
+            delay = result.get("retry_after_seconds")
+            if delay is not None and (type(delay) is not int or delay < 0):
+                raise ValueError("saved server retry delay is invalid; resume is blocked")
+            if latest["status"] == StageStatus.FAILED_RETRYABLE and delay is not None and delay > 0:
+                finished_at = latest.get("finished_at")
+                if not finished_at:
+                    raise ValueError("cannot verify the server retry delay; resume is blocked")
+                retry_at = datetime.fromisoformat(finished_at)
+                if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+                    raise ValueError("cannot verify the server retry timestamp; resume is blocked")
+                now = self.clock()
+                utc(now)
+                if now.astimezone(UTC) < retry_at.astimezone(UTC) + timedelta(seconds=delay):
+                    raise ValueError("server Retry-After delay has not elapsed; resume is blocked")
 
     @staticmethod
     def _owned(doc: dict, token: str) -> None:
@@ -200,9 +293,14 @@ class Orchestrator:
 
     @staticmethod
     def _fingerprint(doc: dict, spec: StageSpec, upstream: dict | None) -> str:
-        value = {"request": doc["request"], "stage": asdict(spec), "upstream": upstream}
+        stage = asdict(spec)
+        if stage["knowledge_reuse_category"] is None:
+            stage.pop("knowledge_reuse_category")
+        value = {"request": doc["request"], "stage": stage, "upstream": upstream}
         if "workflow_context" in doc:
             value["workflow_context"] = doc["workflow_context"]
+        if "knowledge_context" in doc:
+            value["knowledge_context"] = doc["knowledge_context"]
         encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False).encode()
         return hashlib.sha256(encoded).hexdigest()
 
@@ -285,6 +383,8 @@ class Orchestrator:
                     task_id, current["request"], spec.stage_id, json_snapshot(spec.input_data),
                     json_snapshot(upstream["payload"]) if upstream else None,
                     tuple(row["input_refs"]),
+                    json_snapshot(current["knowledge_context"])
+                    if "knowledge_context" in current else None,
                 ))
                 if not isinstance(result, StageResult) or result.status not in OUTCOMES:
                     raise ValueError("engine must return a terminal stage result")
@@ -295,6 +395,7 @@ class Orchestrator:
                     result = StageResult(
                         StageStatus.NEEDS_REVIEW, result.payload, result.evidence_refs,
                         result.warnings, result.error_code, result.retry_hint,
+                        result.retry_after_seconds,
                     )
                 serialized = json_snapshot(asdict(result))
             except Exception:  # noqa: BLE001 - isolate injected engines without logging secrets

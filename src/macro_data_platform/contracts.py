@@ -107,12 +107,16 @@ class StageResult(Generic[T]):
     warnings: tuple[str, ...] = ()
     error_code: ErrorCode | None = None
     retry_hint: str | None = None
+    retry_after_seconds: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.status, StageStatus):
             raise ValueError("invalid stage status")  # noqa: TRY004 - public validation contract
         if self.error_code is not None and not isinstance(self.error_code, ErrorCode):
             raise ValueError("invalid error code")
+        if (self.retry_after_seconds is not None
+                and (type(self.retry_after_seconds) is not int or self.retry_after_seconds < 0)):
+            raise ValueError("retry_after_seconds must be a nonnegative integer")
         failed = self.status in {StageStatus.FAILED_RETRYABLE, StageStatus.FAILED_TERMINAL}
         if failed and self.error_code is None:
             raise ValueError("failed results require an error code")

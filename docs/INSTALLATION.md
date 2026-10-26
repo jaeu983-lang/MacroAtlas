@@ -1,70 +1,64 @@
-# START HERE — 기획안 설치 및 첫 Codex High 작업
+# 개발 환경 설치와 검사
 
-## 1. 어디에 저장하나?
+이 문서는 현재 MacroAtlas 소스 체크아웃을 설치하고 로컬 테스트하는 절차다. 제품 상태와 다음
+구현 회차는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 제품 요구사항은
+[`../PROJECT_PLAN.md`](../PROJECT_PLAN.md)를 기준으로 한다.
 
-기존 Windows 프로젝트의 **루트 폴더**(예: `C:\Projects\macro_data_platform`)에 다음 파일을 배치한다.
+## 필요한 도구
 
-```text
-macro_data_platform/
-├─ PROJECT_PLAN.md                  # 제품 정의 및 최상위 설계
-├─ AGENTS.md                        # 기존 파일 유지, 아래 3항의 지침만 추가
-├─ GUIDELINES.md                    # 기존 데이터 보존·보안 원칙 유지
-├─ README.md                        # 기존 설치 안내 유지
-├─ docs/
-│  ├─ INSTALLATION.md               # 이 문서
-│  ├─ INSTITUTION_CATALOG.md        # 기관 21개 조사대장
-│  ├─ REFERENCE_SCENARIOS.md        # 표준 사례 A~H 및 오류 시나리오
-│  ├─ IMPLEMENTATION_PLAN.md        # 14회 High 회차별 구현 범위
-│  └─ DECISION_LOG.md               # 설계 변경 기록
-├─ src/
-└─ tests/
-```
+- Python 3.11 이상
+- Git
+- 선택: Codex CLI
 
-**권장:** 제공된 `macro_platform_final_plan_only.zip`을 기존 프로젝트 폴더에 푼다. `AGENTS.md`와 `GUIDELINES.md`는 포함되지 않으므로 기존 파일을 덮어쓰지 않는다. 대신 아래 항목만 `AGENTS.md` 상단에 추가한다.
+## 설치
 
-## 2. 처음 실행 전 확인
+프로젝트 루트에서 실행합니다.
 
 PowerShell:
 
 ```powershell
-cd C:\Projects\macro_data_platform
-git status
-# 파일을 배치한 뒤
-git add PROJECT_PLAN.md docs
-# 실제 변경 사항과 비밀정보 미포함 확인 후
-git commit -m "Add project plan and 14-step implementation roadmap"
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
-Git 저장소가 없다면 기존 `README.md`의 초기화 절차를 따른다. 파일 배치는 코드 구현이 아니다.
+Linux/macOS:
 
-## 3. `AGENTS.md`에 추가할 내용
-
-```markdown
-## Project plan precedence
-- Before implementing a feature, read `PROJECT_PLAN.md`, the matching section of `docs/IMPLEMENTATION_PLAN.md`, and the relevant institution/scenario documentation.
-- Treat `PROJECT_PLAN.md` as the authoritative product scope and acceptance criteria. Follow stricter security and data-integrity constraints in `AGENTS.md` and `GUIDELINES.md`.
-- Implement exactly one numbered High iteration at a time. Do not advance unless its acceptance gate passes.
-- Do not claim that an institution API, data series, or ingestion scenario worked without actual evidence; distinguish live tests from fixtures.
-- Preserve source provenance and original statistical meaning. Record conflicts and unresolved decisions in `docs/DECISION_LOG.md`.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e ".[dev]"
 ```
 
-## 4. Codex 실행
+## 검사
 
-```powershell
-cd C:\Projects\macro_data_platform
-codex
+```text
+python -m pytest
+python -m ruff check src tests
+git diff --check
 ```
 
-첫 요청 프롬프트:
+가상환경을 사용한다면 `python` 대신 해당 가상환경의 Python 경로를 사용합니다. 전체 제품 기능의
+검증을 주장하려면 테스트 결과 외에도 실제 서비스 호출 여부와 대상 경로를 따로 기록합니다.
 
-> `PROJECT_PLAN.md`를 최상위 기획서로 읽고 `AGENTS.md`, `GUIDELINES.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/INSTITUTION_CATALOG.md`, `docs/REFERENCE_SCENARIOS.md`를 확인해. 현재 코드와 테스트를 먼저 조사한 뒤 **01회차만** 구현해. 구현 범위를 넘어서는 기능을 미리 작성하지 마. 실제 테스트 결과, 검증하지 못한 가정, 변경 파일, 다음 회차 선행조건을 보고해.
+## API 비밀값
 
-한 회차 종료 후 보고를 확인하고 변경 파일/테스트를 Git에 기록한 다음 02회차를 별도 요청한다.
+`.env.example`은 환경 변수 이름 예시만 포함하며 프로젝트는 `.env`를 자동으로 읽지 않습니다.
+실제 키는 승인된 실행 환경의 secret 설정이나 프로세스 환경변수로 공급합니다.
 
-## 5. 주간 자동 개선 스크립트 주의
+- `BLS_API_KEY`: BLS 일반 series-data 조회에서는 선택 사항이고, 등록 키가 필요하다고 명시된
+  catalogue/선택 parameter 요청에는 필요합니다.
+- `CENSUS_API_KEY`: 저장소가 확인한 Census API 안내에 따라 데이터 조회에 필요합니다.
 
-기존 시작 템플릿의 `scripts/install_tasks.ps1`은 주간 Codex 개선 작업 등록 기능을 포함한다. **Phase 5가 완성되기 전에는 자동 개선 스케줄을 새로 설치하지 말 것.** 이미 예약 작업이 설치돼 있다면 실행 상태를 확인하고, 기획 범위 밖의 자동 코드 수정을 방지하도록 조직 정책 및 사용자 의사에 따라 비활성화한다. 수동 `Codex High` 회차 작업과 주간 자동 개선은 다른 절차다.
+키를 소스, Git, 테스트 fixture, 채팅, URL이 포함된 로그에 넣지 않습니다. 실제 인증 성공은 키가
+저장돼 있다는 설정 상태와 구분해 live 요청 결과로만 기록합니다.
 
-## 6. 경로가 다른 경우
+## 원격 코드와 배포 추적
 
-프로젝트를 다른 드라이브나 폴더에 설치했다면 `C:\Projects\macro_data_platform`만 실제 경로로 바꾼다. 파일명과 상대 경로는 유지한다.
+`git status -sb`, `git rev-parse HEAD`, `git ls-remote --heads origin`으로 작업 트리와 원격
+branch가 같은 commit을 가리키는지 확인합니다. local commit만으로 원격 checkout이나 실행 환경에
+코드가 전달되지는 않습니다. 검토용 task branch push는 작업 기록의 일부이며, main 병합과 실행 환경
+publish는 별도 사람 검토·승인 대상입니다.
+
+API 키와 실제 수집 원본은 저장소에 올리지 않습니다. 이 저장소는 현재 Python API 중심이며,
+자연어 채팅 UI와 무인 예약 개선 실행은 완료된 제품 기능이 아닙니다.

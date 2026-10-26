@@ -1,5 +1,45 @@
 # Decision Log — 설계 변경·미해결 판단
 
+> 이 문서는 날짜가 붙은 결정 이력이다. 현재 실행 상태와 다음 허용 작업은
+> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)만 기준으로 삼는다. 오래된 회차 기록은 당시
+> 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+
+## 05회차 제한 구현 (2026-10-26)
+
+- BLS·Census 기관 어댑터의 catalogue seed/HTML fixture 탐색과 프로필 저장을 추가했다.
+  정확한 공식 호스트만 허용하며 인증·live 가용성·수집 가능성은 추정하지 않는다.
+- 대화 속 후속 구현 보고서와 현재 체크아웃이 달라 현재 파일 기준으로 진행했다.
+  query 기반 공식 링크 허용, live 문서/원문 보존은 후속 판단으로 남긴다.
+- 신규 unittest 6개 통과. pytest 미설치로 전체 회귀 검증 미실행이며 다음 회차는 보류한다.
+  상세: docs/ITERATION_05_REPORT.md.
+
+## BLS·Census 수집 연결 및 live 확인 (2026-10-26)
+
+- BLS API v2와 Census ACS API에 전용 connector/ingestion을 연결했다. 키는
+  실행환경 변수에서 읽고, 원본 응답은 write-once raw 경로에, 키 없는 요청 메타데이터는
+  manifest에 저장한다. Orchestrator 등록 이름은 `bls/1`, `census/1`이다.
+- 실행 중인 새 게시 환경의 두 key binding을 확인했다. BLS CUUR0000SA0 2024년 요청은
+  API `REQUEST_SUCCEEDED`와 관측치 12개를, Census 2022 ACS1 California 요청은 HTTP 200,
+  주 코드 열을 포함한 한 행을 반환했다. 저장 원본/manifest의 키 비노출을 검사했다.
+- parser는 Census의 응답 지역코드 열을 원본 dimension으로 보존한다. 변수 정의·단위,
+  BLS series metadata 및 전체 회귀는 미검증이다. 신규 unittest 10개 통과, 기존 탐색
+  unittest 6개는 앞선 05회차 실행 결과이며 pytest/Ruff가 없어 전체 회귀는 수행하지 않았다.
+- 코드 branch만 갱신했다. 환경 설정이나 게시 동작은 수행하지 않았다.
+
+## 06회차 기관별 가이드와 전략 (2026-10-26)
+
+- `discovery/institution_guides.py`는 고정된 공식 HTTPS URL만 불러오고 redirect를 거부한다.
+  원본·HTML visible-text 추출·동일 호스트의 query 없는 link 후보·SHA256 manifest를
+  새 경로에 보존한다. 실패 상태도 manifest로 기록하며 원본 가이드는 덮어쓰지 않는다.
+- 동일 guide를 다시 받으면 직전 무결성 검증 성공본과 hash를 비교해 changed/unchanged를
+  남긴다. 전략별 재사용 함수는 archive hash를 검증하고 호출자가 지정한 TTL로 신선도를
+  표시한다. 자동 refresh·고정 TTL은 두지 않는다.
+- live HTTP 200: BLS API v2, Census API 안내 5종, IMF API, TIC portal/usage 2종.
+  IMF는 페이지의 식별 가능한 User-Agent 요청에서 성공했다. TIC 안내가 Excel 파일을
+  일반 지원하지 않고 MHT 예외를 둔다는 점을 전략에 반영했다. IMF/TIC 수집기는 미구현이다.
+- 현행 이용 조건 원문은 보존했으나 법적 이용/재배포 판단을 자동 승인하지 않는다.
+  PDF 추출·자동 갱신 예약도 미구현이다. 상세: `docs/ITERATION_06_REPORT.md`.
+
 | ID | 날짜 | 내용 | 결정/보류 이유 | 영향 범위 | 승인 | 상태 |
 |---|---|---|---|---|---|---|
 | D-001 | 2026-10-24 | Windows + Python + Git + Codex, SQLite+파일 기본 | 초기에 운영 복잡도 최소화 | Phase 1~5 | 사용자 검토 예정 | PROPOSED |
@@ -256,3 +296,330 @@
 - **보안·데이터 정확성 영향:**
 - **승인자/검증 방법:**
 - **상태:** Proposed / Approved / Rejected / Superseded
+
+## 07회차 메타데이터 탐색·정규화 (2026-10-26)
+
+- **D-053 / IMPLEMENTED, 범위 제한:** BLS catalogue, Census ACS variable metadata,
+  supplied codebook rows, SDMX-ML 2.1 structures를 공통 `known`/`unknown`/`conflict`
+  필드로 표현한다. 원본 응답은 `data/raw/metadata`, 표준 결과는 `data/processed/metadata`
+  에 분리하고 hash와 source pointer를 남긴다. 키는 BLS POST 본문 또는 Census 요청 중의
+  쿼리에만 사용하며 저장 URL·manifest·normalized records에는 넣지 않는다. 원문에 없는
+  정의·단위·주기·기간을 보충하지 않는다.
+- **D-054 / OPEN:** IMF/BIS 등 SDMX network discovery, 기관 전체 API 목록 순회, XLS/XLSX
+  reader, 계절/가격/비율 변형의 완전한 개념 모델, 분류 포괄/중첩 관계 해석 및 사용자
+  후보 검색은 구현되지 않았다. SDMX 근거는 fixture parser coverage이며 live endpoint
+  검증으로 간주하지 않는다. 제한 live 근거는 BLS `CUUR0000SA0` catalogue 1건과 Census
+  `B01001_001E` variable metadata 1건이다. 상세와 경계는 `docs/ITERATION_07_REPORT.md`.
+- 검증: 전체 pytest 470개, Ruff와 `git diff --check` 통과. Live raw/normalized SHA256 일치,
+  키 문자열 부재를 로컬 artifacts에서 확인했다. 환경 설정을 변경/게시하거나 코드를 커밋하지 않았다.
+
+## 08회차 후보 검색·수집 연결 (2026-10-26)
+
+- **D-055 / IMPLEMENTED, fixture E2E 범위:** `series_search/1`은 hash-verified 로컬 BLS/Census
+  metadata archive와 보고서 근거가 있는 단일 World Bank USA GDP 경로를 검색한다. 토큰 score는
+  후보 순위로만 사용하고 알려진 조건 모순은 제외한다. 누락된 정의/지역/기간/주기/차원은
+  `review_required`로 남긴다. 검색 엔진은 네트워크를 호출하지 않는다.
+- 명시된 `ConfirmedSelection`만 collector plan으로 바꾼다. 정확한 선택/증거/확인 시각을
+  `record_selection/1` stage에서 먼저 저장하고 raw_json 경로만 허용한다. World Bank, BLS,
+  Census의 기존 수집 engine으로 mapping하되 미상 메타데이터는 기존 확인 계약에서 차단한다.
+- fixture 검증은 candidate search→explicit selection→Orchestrator receipt→World Bank fixture
+  수집·raw 보존까지 확인했다. 실제 BLS/Census 선택 후 API 수집은 환경 readiness가 unknown이라
+  실행하지 않았다. 자연어 의미 분석, cross-source equivalence와 기관 전체 카탈로그는 OPEN.
+- 검증: 전체 pytest 477개, Ruff 및 `git diff --check` 통과. 환경 설정 변경/게시와 commit은 없다.
+
+## 09회차 로컬 표/파일 parser 확장 (2026-10-26)
+
+- **D-056 / IMPLEMENTED, bounded local input:** explicit format parser는 UTF-8/UTF-16 CSV/TSV/
+  delimited TXT, HTML table, ZIP tabular member, XLS, XLSX를 지원한다. 요청 파일은 repository-local
+  `data/inbox/` 아래에서만 읽고 16 MiB input, ZIP 1000 entries/64 MiB uncompressed/200x ratio,
+  100,000 rows/1,000 columns/500,000 cells 한도를 적용한다. XLSX/XLS readers는 `openpyxl`/`xlrd`
+  runtime dependency로 선언했다.
+- ZIP은 추출하지 않고 선택한 member만 메모리에서 읽는다. traversal, symbolic link, encrypted,
+  duplicate member names, expansion bomb를 거부한다. HTML span/중첩 표와 모호한 workbook/sheet/table
+  선택은 수동 review로 돌린다. Formula는 계산하지 않고 문자열/캐시값으로 남긴다.
+- raw source와 parsed table을 `data/raw/tabular` 및 `data/processed/tabular`에 별도 보존한다.
+  동일 raw hash+옵션+parser revision은 기존 결과를 재사용하고, 중복 data row는 지우지 않고
+  1-based row index로 기록한다. 파서 오류에도 안전 크기 안의 원본 raw는 보존한다.
+- fixture에는 synthetic TIC형 TSV/HTML과 BIS형 zipped CSV 구조가 있다. 별도 planning utility는
+  World Bank GDP/BLS/Census의 sample/full 요청을 bounded chunk로 분할하며 chunk 1000개 상한,
+  raw_json 외 format 거부, 미입력 예상 크기 unknown을 검증한다. 계획기는 Orchestrator queue,
+  chunk 실행/재개와 연결되지 않는다. PDF/fixed-width parser, formula evaluation/recovery,
+  external URL fetch, 범용 API 계획과 파일 exporter는 미구현.
+- 검증: 전체 pytest 499개, Ruff 및 `git diff --check` 통과; 외부 네트워크 사용 없음.
+
+## 10회차 품질 진단·오류 분류·복구 (2026-10-26)
+
+- **D-057 / IMPLEMENTED, 제한 API 범위:** BLS/Census 원본 저장 manifest에 raw SHA256,
+  source-payload comparison SHA256과 canonical request fingerprint를 기록하고 같은 URL·요청
+  범위의 최근 원본과 비교한다. BLS comparison은 top-level `responseTime`만 제외한 canonical
+  JSON이며 Census는 canonical JSON이다. 원본 raw bytes와 hash는 그대로 보존한다.
+  변경 응답은 덮어쓰지 않고 새 raw package로 남기며 `NEEDS_REVIEW/QUALITY_FAILURE`를 반환한다.
+  기존 비교 이력의 무결성이 깨졌거나 1,000 package/64 MiB scan budget을 넘으면
+  `unknown_history_*` 상태와 warning으로 남긴다. JSON 의미 정규화 비교는 하지 않는다.
+- BLS는 series-period 중복, 빈 value를 세고, Census는 중복/불일치 geography와 null/빈 셀을
+  진단한다. 누락·중복 값을 자동 제거/대체하지 않는다. 정의·단위·주기·revision이 불명확하면
+  unknown 상태를 유지한다. 통계적 이상치, 완전한 기간 간격, MOE·조정 방법, 기관 간 동등성은
+  판정하지 않는다.
+- HTTP 401/403은 AUTH_ACCESS, 429/5xx 및 timeout은 TRANSIENT, redirect는 LICENSE_SECURITY,
+  예기치 않은 HTTP status는 SITE_CHANGED로 분류한다. BLS/Census 수집기가 실패 error code와
+  sanitized status code를 Orchestrator에 보존한다. 자동 network retry는 없고 명시적 resume와
+  기존 max_attempts 상한을 따른다. HTTP error response body는 원본 저장하지 않는다.
+- 검증: mocked 403/429/503/404 및 timeout, 재시작 후 429 resume, schema drift 원본 보존,
+  unknown metadata, duplicate/mismatched rows, 같은 요청의 changed/unchanged raw, tampered
+  history, 다른 query scope, BLS `responseTime` volatility, 전체 pytest 518개/Ruff/diff check 통과. 환경 network/key 상태가
+  unknown이어서 구현 당시에는 live 호출을 하지 않았다. 후속 사용자 요청에서 BLS/Census 각각
+  한 건을 현재 workspace 엔진으로 직접 Orchestrator 실행해 HTTP 200/COMPLETED를 받았다.
+  BLS 12행/1,181 bytes, Census 1행/64 bytes, 두 manifest의 SHA와 byte_count 일치 및 키 필드
+  비노출을 확인했다. 이전 manifest에 저장 hash가 없어 두 응답 모두 source change는
+  `unknown_history_integrity`; 세 BLS capture의 post-hoc 차이는 top-level `responseTime`뿐이고
+  관측 row는 같았다. 네 Census capture는 raw가 byte-identical이다.
+  설정 draft repository ref는 `codex/iteration-04-gate-a`; 현재 `codex/institution-discovery-05`
+  작업 트리의 이후 코드는 미커밋이다. fresh checkout의 코드 상태는 확인되지 않았다.
+  환경 telemetry는 observed spec revision 5이나 network/key readiness는 계속 `unknown`이다.
+  환경 draft/게시를 변경하지 않았다. Gate C는 여전히 미통과.
+
+## 계획 구현 정합성 보완 (2026-10-26)
+
+- **D-058 / IMPLEMENTED, retry contract:** 제품 계획의 TRANSIENT/X01이 자동 backoff를 요구하던
+  반면 BLS/Census 구현은 호출당 1회 후 명시적 resume를 사용했다. 호출 예산과 Orchestrator의
+  동기 실행 모델에 맞춰 자동 재시도 대신 수동 resume를 기준 정책으로 확정했다. `Retry-After`
+  초/HTTP-date를 파싱해 실패 결과에 저장하며, 지연시간 전 resume는 차단한다. X01, PROJECT_PLAN,
+  GUIDELINES와 구현 상태 문서를 같은 정책으로 수정했다. 자동 지수 backoff와 공용 rate limiter는
+  미구현으로 남긴다.
+- 사용자가 요청한 08→09 순차 진행은 일반적인 단일 회차 규칙의 명시적 예외로 기록한다. 08은
+  fixture World Bank E2E만 통과했고 자연어 해석·공식 검색 범위·live BLS/Census 연결은 미검증이라
+  Gate B를 통과하지 않았다. 10의 두 live smoke도 기관 전반 검증을 대체하지 않으므로 Gate C는
+  미통과, 11회차는 보류다.
+- 구성·배포 추적성: live smoke는 현재 `codex/institution-discovery-05` 작업 트리에서 실행됐으며
+  05~10 변경 중 일부가 미커밋/untracked다. 관측된 환경 repository ref는 `codex/iteration-04-gate-a`로,
+  이 작업 트리와 일치하지 않는다. 현재 변경을 게시하거나 환경 draft를 바꾸지 않았으며, fresh
+  checkout에 05~10 소스가 포함됨을 확인하기 전까지 배포 검증으로 간주하지 않는다.
+- 검증: Retry-After 초/HTTP-date 파싱, BLS/Census 결과 전달, 조기 resume 차단을 포함해 전체
+  pytest 523개, Ruff, `git diff --check` 통과. 외부 요청을 하지 않았다.
+
+## API별 인증 정책과 후보 상태 보정 (2026-10-26)
+
+- **D-059 / IMPLEMENTED:** 공식 BLS API 가이드상 ordinary series-data request는 등록 키 없이
+  가능하지만 `catalog=true`와 선택 parameter는 등록 키가 필요하다. BLS observation transport는
+  키가 있을 때만 보내고, 없어도 ordinary series-data 요청을 수행한다. BLS 후보는 auth `optional`,
+  Census 후보는 보존된 공식 안내에 따라 auth `required`로 표시한다. Census 수집과 BLS metadata
+  catalogue 요청은 필요한 키가 없으면 안전하게 중단한다.
+- 검증: BLS 키 포함/미포함 mocked transport, 후보 인증 상태 단위 테스트 통과. Census live calls는
+  등록 키를 사용했던 과거 근거이며, Census 키 없는 호출을 시험하지 않았다.
+
+## Gate B 입력 계약과 통과 범위 명확화 (2026-10-26)
+
+- **D-060 / ACCEPTED:** `PROJECT_PLAN.md`가 MVP를 구조화된 요청으로 정의하고 자연어 UI를 별도
+  통합 단계로 두는 한편 Gate B 문구는 자연어 해석까지 요구해 서로 달랐다. Gate B는 Python engine/API
+  수준에서 구조화 `DataRequest`를 근거 후보 순위·사용자 명시 선택·지원 collector에 연결하는
+  최소 기능 게이트로 한정한다. 자연어 parser, CLI/UI, 일반 기관 전체 탐색은 별도 사용자 인터페이스/
+  기관 확대 작업으로 둔다.
+- 현재 테스트의 known-mismatch exclusion, explicit confirmation 및 World Bank fixture E2E가 위
+  제한 criteria를 충족하므로 Gate B를 제한 범위에서 통과 처리한다. 이는 BLS/Census candidate-to-live
+  collection 또는 전체 제품 출시를 승인하지 않는다. Gate C는 기존 범위의 부족한 기관/변경/복구
+  매트릭스를 채울 때까지 미통과다.
+- 이는 기존 `ITERATION_08_REPORT.md`의 당시 판정을 삭제하지 않고 후속 재판정으로 추가한다.
+  상세 적용은 PROJECT_PLAN의 현행 요구사항과 IMPLEMENTATION_PLAN의 상태 표를 따른다.
+
+## 로컬 source checkpoint와 clean checkout 검증 (2026-10-26)
+
+- **D-061 / IMPLEMENTED, remote publication pending:** 05~10회차 코드·테스트·계획을 local branch
+  `codex/institution-discovery-05`의 commit
+  `7a2bb031d61061abc894ac206c45a95d8e45f5fd`로 고정했다. detached clean checkout에서 pytest 524개,
+  Ruff 및 `git diff --check`가 통과했다. API 키와 `data/raw` 원본은 커밋하지 않았다.
+- 읽기 전용 `git ls-remote`에서 `origin/codex/iteration-04-gate-a`는 기존 기준 commit
+  `2c4e11fa0534bae6458154abfa14a03d3617a15b`이며, 새 local branch/commit은 origin에 없다.
+  기존의 게시 금지 지시에 따라 push, 환경 draft 변경 또는 publish를 수행하지 않았다. 따라서 clean
+  remote checkout과 실행 환경 배포 추적성은 아직 미해결이다.
+
+## 게시된 기준선 검증 및 World Bank 변경 감지 보완 (2026-10-26)
+
+- **D-062 / IMPLEMENTED LOCALLY, not published:** 게시 후 fresh environment의 `HEAD`가
+  `781827593924e35dadbc1188f09c7ea40a7b7c76`, branch가 `codex/institution-discovery-05`,
+  working tree가 clean임을 확인했다. Runtime은 observed spec revision 4에서 running/connected다.
+  이로써 해당 게시 기준선의 repository-reference mismatch를 닫았다. BLS/Census secret readiness와
+  network policy는 `unknown`; 이 후속 task에서는 실제 API 호출을 하지 않았다.
+- Gate C의 X08 보완으로 World Bank Gate A 감사 수집에서 동일 공식 URL·요청 범위·evidence mode의
+  최신 성공 capture와 현재 payload를 비교한다. JSON은 key order/formatting을 정규화하고, JSON이
+  아니면 raw bytes hash를 쓴다. 이전 raw와 manifest 무결성을 확인하기 전에는 과거 해시를 신뢰하지 않는다.
+  payload 변경은 두 원본을 보존하고 `NEEDS_REVIEW`와 함께 정규화 게시를 차단한다. 실패한 HTTP/
+  수집 capture는 비교 기준선이 되지 않는다. 최대 1,000개 artifact 조회 후 이력을 못 찾거나
+  이력 무결성·비교 방식이 확인되지 않으면 `unknown`으로 보고한다.
+- fixture 회귀는 changed/unchanged response, formatting-only difference, 다른 요청 범위,
+  손상된 prior raw, 비교 metadata가 없는 legacy artifact, evidence mode 분리, 재시도 중 바뀐
+  payload를 검증한다. TIC TSV/HTML과 BIS ZIP/CSV-shaped fixture는 raw archive·manifest·normalized
+  table까지 ingestion engine으로 통과한다. 전체 pytest 534개, Ruff와 `git diff --check`를 통과했다.
+  official provider/change workflow와 Japan 및 기관별 recovery 표본이 부족하므로 Gate C는 계속
+  미통과다. 이번 변경은 local-only이며 게시본에는 포함되지 않는다.
+
+## Tabular source provenance and changed-file guard (2026-10-26)
+
+- **D-063 / IMPLEMENTED LOCALLY:** For local tabular imports with a safe HTTPS `source_url`, store
+  source agency/table and bounded capture metadata in the request and final manifests. Compare
+  verified prior raw bytes only within the same source URL and parser scope; capture timestamp,
+  HTTP status, and content type are excluded from scope so repeated unchanged downloads compare
+  correctly. When source bytes changed or prior history integrity is unknown, preserve the raw file
+  and stop with `NEEDS_REVIEW` before normalized data is written.
+- Verified with a live Treasury TIC Table 5 file imported from the already-fetched official response,
+  plus deterministic tests for changed/unchanged and tampered-history cases. The live TIC source has
+  only one capture, so this does not establish live revision detection, an automatic TIC downloader,
+  or Gate C completion. These code changes remain local and unpublished.
+
+## Gate C follow-up: BIS/BOJ live evidence and parser policy (2026-10-26)
+
+- **D-064 / IMPLEMENTED LOCALLY:** BIS official guide inspection and one official Global Liquidity
+  column ZIP intake are limited live evidence. Keep the strategy as manual file intake; do not imply
+  SDMX/series-level support. Preserve exact-case distinct headers such as `DECIMALS` and `Decimals`
+  because they are separate source columns; reject only exact normalized duplicates.
+- **D-065 / BLOCKED:** BOJ's official API notice is reachable, but the linked official API manual
+  returned HTTP 403. Without verified request parameters and series IDs, do not guess or issue a data
+  API request; expose BOJ collection as `blocked_manual_access`.
+- Live BIS flat ZIP HTTP 503 is recorded without retry. For retryable guide-fetch failures,
+  `Retry-After` is parsed and persisted as a manual retry hint; automatic retry is not performed.
+- Full verification after these changes: **556 pytest passed**, Ruff and `git diff --check` passed.
+  Live source-change comparison and provider recovery evidence remain incomplete, so Gate C is not
+  passed. These code/document changes are local, uncommitted and unpushed; no environment publish was
+  performed.
+
+## Iteration 12 bounded knowledge lookup (2026-10-26)
+
+- **D-066 / IMPLEMENTED, Gate D not passed:** Following the user's explicit next-stage instruction,
+  continue with the bounded portion of iteration 12 while Gate C was still failed. Keep the feature in
+  SQLite as a current projection over the append-only feedback store. Feedback writes enqueue changes;
+  only an explicit refresh applies at most 500 queue entries. Requests never rebuild the projection or
+  load task histories. Institution and supplied scope dimensions are indexed; unspecified request
+  dimensions only match null-scope records, while requested dimensions may also match broader null scope.
+- Return only accepted instructions/evidence by default. Inference remains opt-in and review-required;
+  official evidence is reference-only. Prior output preferences always require user confirmation,
+  conflicts require review, and a current explicit instruction takes precedence. Bound candidate reads,
+  result count, and cache bytes/entries; incomplete candidate scans cannot supply reuse decisions.
+- Gate D remains **not passed** because no Orchestrator repeat-task/retry path consumes the lookup and
+  same-institution end-to-end efficiency has not been measured. Synthetic microbenchmark measurements
+  cover only the SQLite lookup layer. See `docs/ITERATION_12_REPORT.md`.
+
+## Gate C limited-scope acceptance (2026-10-26)
+
+- **D-067 / ACCEPTED AND IMPLEMENTED:** At the user's direction to change the way Gate C can proceed,
+  allow a limited pass for only the verified paths: selected live capture and manifest integrity,
+  deterministic changed-source handling using a controlled copy of an actual captured TIC raw file,
+  and Orchestrator persistence/resume through a simulated retryable provider response.
+- The TIC raw capture remains unchanged. Its temporary copy was altered from Japan `1068.3` to
+  `1068.4`; the ingestion engine returned `changed`/`NEEDS_REVIEW`, retained both raw copies, and
+  emitted no normalized table for the changed copy. The test suite separately includes an Orchestrator
+  integration test that persists HTTP 503 with `Retry-After: 2`, reopens the task store, blocks an early
+  resume, then succeeds on the same task after the delay using a fixture response.
+- This decision does **not** assert a natural live source revision or natural provider outage/recovery.
+  Both remain `NOT_RUN`; BOJ remains `BLOCKED`, semantic dimension checks remain partial, and untested
+  institutions and paths remain outside the passed scope. Detailed evidence and hashes are in
+  `docs/GATE_C_REVIEW_2026_10_26.md`. At that point Gate D was not passed; D-068 records the later
+  Orchestrator integration and current result.
+- This is a formal narrowing of the Gate C acceptance scope, not a backdated claim that the original
+  full-live evidence requirements were observed. No environment publish was performed.
+
+## Gate D knowledge-to-Orchestrator integration (2026-10-26)
+
+- **D-068 / IMPLEMENTED, Gate D passed:** Connect the existing bounded institution-scoped knowledge
+  projection to task planning through explicit feedback selection. Only an accepted `user_instruction`
+  returned by a ready, complete, matching-scope lookup can be attached to a task. The caller selects one
+  feedback ID; current instructions take precedence, and changed/pending index state blocks planning.
+- A stage opts in to conditional omission by declaring its `knowledge_reuse_category`. When the caller
+  selects matching knowledge, only that tagged planning stage is omitted and the task records the
+  selected scope, feedback revision, source evidence, skipped stage and index revision. Remaining stages
+  receive the context. Stage fingerprints include it so changed knowledge cannot reuse stale results.
+- A 30-repeat BLS/CPI fixture E2E measured stage runs decreasing from 2 to 1 per repeated task (60 to 30
+  total). One run measured p50/p95 latency 4.207/4.582 ms without reuse and 3.444/4.537 ms with reuse. A different
+  institution, broad scope, conflict, inference, unreviewed feedback, and stale index are blocked; current
+  instruction wins. Maximum Python allocation increased by about 7 KB in this tiny fixture.
+- This proves the supported explicit planning path only. It does not provide UI consent collection,
+  automatic knowledge selection, live-provider efficiency claims, or cross-institution common-rule
+  promotion. See `docs/ITERATION_12_REPORT.md`; no 13th iteration or environment publish was performed.
+
+## Iteration 13 planning criteria (2026-10-26)
+
+- **D-069 / PLANNED, not implemented:** After Gate D passed, make iteration 13 measurable before
+  starting it. Treat a pattern as recurring only when the same bounded fingerprint appears in at least
+  three distinct task IDs; retries inside one task do not count as independent cases. Keep institution,
+  engine/version, stage, error/category, and known dataset/concept scope in the fingerprint. Unknown or
+  different dimensions do not merge.
+- Bound one analysis to 500 tasks / 2,500 stage or feedback records, at most 20 proposals and 10 evidence
+  references per proposal. Report truncation as incomplete. Use only persisted outcome metadata and
+  accepted explicit feedback; exclude raw provider payloads, secrets, unreviewed feedback, and inference
+  from evidence. Every result remains a `draft` with evidence IDs, impact, risk, counterexamples, and a
+  regression-test proposal. No feedback status changes, fact promotion, or code edits occur in iteration 13.
+- X09 and the 100/1,000/5,000-record benchmark are the planned verification. These are initial planning
+  caps to measure and refine during iteration 13. Gate E / iteration 14 remains unstarted.
+
+## Iteration 13 bounded pattern analyzer (2026-10-26)
+
+- **D-070 / IMPLEMENTED:** Added a read-only SQLite analyzer and `macro-patterns` CLI. It selects only
+  terminal task/stage metadata and accepted `user_instruction` feedback. Stage and accepted-feedback
+  patterns use separate fingerprints; feedback is compared by normalized exact text hash, without
+  returning its text. At least three distinct tasks and a complete matching scope are required. Unknown
+  dimensions are task-local and do not merge. Conflicting accepted instructions are separated for human
+  review. Every proposal stays `draft`/`not_promoted`.
+- Enforced caps are 500 terminal tasks, 2,500 outcome/feedback records, 20 proposals, and 10 evidence IDs
+  each. Read-only SQLite mode does not initialize a missing database. Raw provider payloads and task request
+  text are not selected into Python; common secret-shaped feedback is excluded.
+- X09 synthetic tests pass; full suite **591 passed**, Ruff and `git diff --check` pass. Warm local synthetic
+  benchmark p95 was 5.448/51.023/134.287 ms for 100/1,000/5,000 stage records; the 5,000 input correctly
+  returns partial at the 2,500-record cap. The 5,000-case maximum traced Python allocation was 5,484,768 bytes.
+  The observed environment's reference budgets are p95 150 ms and 8 MiB Python allocation for bounded runs.
+- This is local synthetic evidence only. It does not establish live recurring errors or root cause, does not
+  change Gate C, and does not start iteration 14 / Gate E. See `docs/ITERATION_13_REPORT.md`.
+
+## BOJ official API manual recheck (2026-10-26)
+
+- **D-071 / DOCUMENTATION VERIFIED, COLLECTOR NOT IMPLEMENTED:** Re-fetched the official BOJ notice and
+  its linked API manual once each using the configured proxy and explicit network permission. The notice
+  returned HTTP 200, 36,614 bytes, SHA256
+  `1c48b9491cbfc43d7b8100278ef6a432a9fcb4996a34795c06e2f396d7d0db68`. The manual returned HTTP 200,
+  `application/pdf`, 857,117 bytes, SHA256
+  `8e289fb77b9e3f80569206d27059eeb3f35e824facff1c339670179aad5ba9cd`; it is dated 2026-02-18 and has
+  27 pages. Both original responses and manifests are preserved under gitignored `data/raw/guides/`.
+- The manual documents `/api/v1/getMetadata`, `/getDataLayer`, `/getDataCode`, request parameters and
+  250-series / 60,000-point per-request limits. One limit paragraph says `/getLayerCode`, unlike the
+  `/getDataLayer` endpoint elsewhere; verify that path before constructing a data request. No BOJ
+  metadata/data API request was sent, so series mapping and observation schema remain unverified.
+- The previous HTTP 403 attempt saved no body/hash and current archive comparison is `baseline_unavailable`;
+  whether the manual itself changed cannot be established. It is now accessible. Update institution support
+  state from `blocked_manual_access` to `collection_not_implemented`, since documentation exists but the
+  BOJ observation adapter is absent. Gate C's D-067 limited pass and its scope are unchanged.
+
+## BOJ live endpoint re-evaluation (2026-10-26)
+
+- **D-072 / LIMITED LIVE VERIFIED:** The manual naming discrepancy does not block independent,
+  explicitly documented metadata and code endpoints. One FM08 metadata GET and one confirmed FXERD01
+  September 2026 data GET both returned HTTP/JSON STATUS 200. Arrays contain 30 dates, 19 numeric
+  values and 11 nulls. No reusable collector or orchestration integration was implemented.
+  Details and hashes: `docs/BOJ_LIVE_RECHECK_2026_10_26.md`. This supersedes D-071
+  only regarding the later live requests, without expanding Gate C acceptance.
+
+## BOJ same-scope live retest (2026-10-26)
+
+- **D-073 / REPEAT VERIFIED, SCOPE UNCHANGED:** Repeated the official FM08 metadata request and the
+  fixed FXERD01/202609 `getDataCode` request once each. Both returned HTTP/JSON STATUS 200. Metadata
+  body hash matched the first request. The data response was 995 bytes, SHA256
+  `9633b5794015ffa16494228f84746152fdf02c7dc08f044d5bdb9f115a4264b2`; the documented nested
+  `RESULTSET[0].VALUES` schema contains 30 dates, 19 numeric values, and 11 nulls. The canonical
+  requested-scope data hash matched the first capture; only the response `DATE` envelope field
+  differed. A local validator initially assumed arrays were at the wrong JSON path; the already
+  archived body was revalidated against its actual nested schema without another network request.
+  This is repeat API-access/response-shape evidence only. It does not demonstrate a source revision,
+  provider durable resume, collector integration, or a broader Gate C pass. See
+  `docs/BOJ_LIVE_RECHECK_2026_10_26.md`.
+
+## Iteration 14 Gate E and explicit proxy support (2026-10-26)
+
+- **D-074 / IMPLEMENTED, GATE E PASSED FOR RESTRICTED LOCAL V1:** Reproducing the documented World Bank
+  live path exposed a transport issue: `trust_env=False` prevented use of the configured sidecar proxy.
+  Keep implicit `.netrc`/credential lookup disabled, but pass the configured HTTP(S) proxy and Requests/Curl
+  CA bundle explicitly to the request. TLS verification, redirect refusal, bounds, timeout, and no automatic
+  retry remain in force. Mocked tests verify both the default and configured-proxy cases without network use.
+- The first live task ended as `TRANSIENT` before a complete response; the same fixed request succeeded after
+  the change (`HTTP 200`, three validated observations, `live_path_passed=true`). Raw SHA256
+  `219e79f17e08a93d64f747f3cdb7376d09349e5c8525d24f316532b86cccd6b1` matches the prior Gate A capture,
+  so this is not a source revision. `592` tests and Ruff passed. The A–H/X01–X09 status matrix, supported-scope
+  user guide, and 10-slide PPTX were produced and checked.
+- Gate E is a restricted local-v1 review only. Blocked/partial institutions, Windows installation not run in
+  this Linux environment, natural TIC/BIS revision, natural provider durable resume, and absent BOJ collector
+  remain explicit. No environment publish or main merge occurred. See `docs/ITERATION_14_REPORT.md`.
