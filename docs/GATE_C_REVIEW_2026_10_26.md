@@ -37,8 +37,8 @@
 | X04 의미 불일치 | PARTIAL | 후보의 기관/국가 불일치 차단과 unknown 단위·빈도·vintage 경고 통과. 잔액/거래액의 일반 의미 판별 완료를 뜻하지 않음 |
 | X07 durable resume | fixture PASS | `test_429_failure_remains_retryable_across_process_restart`, `test_resume_reuses_valid_prefix_and_only_retries_failed_stage_after_restart`; 실제 기관 장애 후 복구는 NOT_RUN |
 | X08 source revision | fixture PASS / live NOT_RUN | `test_live_source_change_is_preserved_and_requires_review_before_normalization`는 이름과 달리 합성 bytes를 사용하는 fixture. 양쪽 raw 보존·정규화 중단은 검증했으나 실제 개정 관측 없음 |
-| B BIS ZIP | live BLOCKED | 아래 제한 재수집이 ProxyError로 중단됨 |
-| C TIC 파일 | 이전 보고서만 존재 | 이번 checkout에는 이전 raw가 없어 기존 hash를 재검증할 수 없음. 새 TIC 요청은 보내지 않음 |
+| B BIS ZIP | live PASS, limited | raw/manifest/normalized hash 검증 완료. exact-scope 반복은 unchanged |
+| C TIC 파일 | live PASS, limited | 기존 package `492bcc8a6a0e4892ac9c6a9377815aef`의 raw가 workspace에 존재하며 exact-scope hash 비교 완료 |
 | F BOJ | BLOCKED 유지 | 이전 manual 403 기록. 이번 작업에서 문서·API를 재요청하지 않음 |
 
 각 테스트의 경로는 `tests/test_statistical_quality.py`, `tests/test_orchestration.py`,
@@ -133,6 +133,13 @@ raw, request/manifest와 normalized 파일은 `.gitignore` 대상 `data/` 아래
 `reports/gate_c_baselines_20261026T091628Z.json` 및 `reports/gate_c_same_scope_repeats.json`에 있다.
 TIC의 첫 최신 capture는 delimiter를 TXT로 지정해 parser review로 남았고, 보존된 동일 raw를
 TSV/header row 6으로 재처리해 정상 검증했다. 원본은 변형하지 않았다.
+
+기존 package의 exact request scope를 적용해 과거 기준본과 비교했다. TIC package
+`492bcc8a6a0e4892ac9c6a9377815aef`(format `txt`, delimiter tab, header row 6, agency/table title 포함),
+BIS package `86a1923e3a2240dcbe8b1248b128443d`(format `zip`, agency `BIS`)에 대해 각각
+`SUCCEEDED`, `source_change_status=unchanged`가 나왔고 raw와 normalized hashes도 확인했다.
+요약은 `reports/gate_c_exact_scope_compare.json`이다. 두 기관 모두 exact-scope baseline을
+검증했고 다음 실제 원자료 개정 시 비교할 준비가 됐다.
 
 ### BIS flat ZIP 응답 변화와 복구 한계
 

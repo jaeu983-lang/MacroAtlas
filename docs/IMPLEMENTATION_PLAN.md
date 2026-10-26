@@ -13,6 +13,8 @@ Gate C 판정은 승격하지 않았다. D/12회차는 미시작이며 본 task 
 TIC/BIS 현재 원본·manifest는 보존했고 같은 scope 반복은 모두 `unchanged`였다. BIS flat ZIP은
 이전 503 뒤 현재 200을 반환했으나 parser 검토로 끝났고, 503 당시 저장된 task가 없어 durable
 resume 증거는 아니다. 실제 원본 개정과 live failure→persist→resume 쌍이 남았다.
+기존 artifact를 scope 전체까지 일치시켜 재비교해 TIC package `492bcc8…`와 BIS
+`86a1923…`의 raw/normalized hashes를 검증했고 둘 다 `unchanged`였다.
 
 | 게이트 | 상태 | 판정 근거 |
 |---|---|---|
