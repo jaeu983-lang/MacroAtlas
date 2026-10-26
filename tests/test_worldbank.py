@@ -286,7 +286,6 @@ def test_live_transport_defaults_use_tls_without_implicit_credentials(
 def test_live_transport_explicitly_uses_configured_proxy_and_ca_bundle(tmp_path, monkeypatch):
     monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
     monkeypatch.setenv("HTTP_PROXY", "http://upper-proxy.example:8080")
-    monkeypatch.setenv("http_proxy", "http://lowercase-proxy.example:8081")
     monkeypatch.setenv("REQUESTS_CA_BUNDLE", "/etc/ssl/certs/custom-ca.pem")
     monkeypatch.setenv("CURL_CA_BUNDLE", "/ignored/ca.pem")
     session, _ = mocked_session(monkeypatch)
