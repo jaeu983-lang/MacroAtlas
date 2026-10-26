@@ -33,3 +33,10 @@ jobs:
       - name: Run shared maintenance checks on Linux
         if: runner.os != 'Windows'
         run: python scripts/run_maintenance_qa.py
+      - name: Upload maintenance QA report and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-qa-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: reports/maintenance_qa_*/
+          if-no-files-found: warn

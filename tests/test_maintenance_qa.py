@@ -105,3 +105,26 @@ def test_cleanup_exception_fails_run_and_is_recorded(tmp_path, monkeypatch):
     assert report['status'] == 'FAILED'
     assert report['cleanup'] == 'FAILED'
     assert report['cleanup_failure_kind'] == 'OSError'
+
+
+def test_cli_prints_failed_check_summary(tmp_path, monkeypatch, capsys):
+    report = {
+        'status': 'FAILED',
+        'checks': [
+            {'name': 'pytest', 'status': 'FAILED', 'exit_code': 1},
+            {'name': 'ruff', 'status': 'PASSED', 'exit_code': 0},
+        ],
+        'cleanup': 'PASSED',
+    }
+    monkeypatch.setattr(qa, 'run', lambda *a, **k: (report, tmp_path / 'report.json'))
+
+    assert qa.main([]) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output['status'] == 'FAILED'
+    assert output['checks'][0] == {
+        'name': 'pytest',
+        'status': 'FAILED',
+        'exit_code': 1,
+        'failure_kind': None,
+    }
+    assert output['cleanup'] == 'PASSED'

@@ -126,17 +126,31 @@ def run(root, *, timeout=600):
     return report, run_dir / "report.json"
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--timeout", type=int, default=600, help="timeout per check in seconds")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         report, path = run(args.project_root, timeout=args.timeout)
     except (ValueError, OSError, subprocess.SubprocessError) as exc:
         print(json.dumps({"status": "NOT_EXECUTED", "reason": str(exc)}))
         return 2
-    print(json.dumps({"status": report["status"], "report": str(path)}))
+    summary = {
+        "status": report["status"],
+        "report": str(path),
+        "checks": [
+            {
+                "name": check["name"],
+                "status": check["status"],
+                "exit_code": check.get("exit_code"),
+                "failure_kind": check.get("failure_kind"),
+            }
+            for check in report["checks"]
+        ],
+        "cleanup": report["cleanup"],
+    }
+    print(json.dumps(summary))
     return 0 if report["status"] == "PASSED" else 1
 
 
