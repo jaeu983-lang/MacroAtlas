@@ -1,6 +1,6 @@
 # 엔진 통합·분리 개선안
 
-기준일: 2026-10-26. 이 문서는 현재 실행 경로를 대조해 중복을 줄이고 경계를 선명하게 하는 설계안이다. **코드 통합은 아직 실행하지 않았다.** 현재 제품 데이터 경로와 개발자 코드 업데이트 경로를 하나의 거대 엔진으로 합치지 않는다. 각 경로 내부에서 반복되는 실행·기록·검증만 공통화한다.
+기준일: 2026-10-26. 이 문서는 현재 실행 경로를 대조해 중복을 줄이고 경계를 선명하게 하는 설계와 단계별 구현 기록이다. 24회차에서 common check entrypoint를 구현했다. 현재 제품 데이터 경로와 개발자 코드 업데이트 경로를 하나의 거대 엔진으로 합치지 않는다. 각 경로 내부에서 반복되는 실행·기록·검증만 공통화한다.
 
 ## 용어
 
@@ -28,7 +28,7 @@ MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
 | `pattern_cli` / `PatternAnalyzer` | SQLite 이력을 읽고 개선 후보를 제안하는 read-only 분석 | 제안을 실제 코드 수정이나 QA에 넘기는 연결이 없다. scope가 unknown이면 근거를 만들지 않는다. | 유지보수 controller의 분석 단계 |
 | `scripts/run_improvement.ps1` | primary branch로 전환해 새 branch를 만들고 Codex가 현재 repository workspace에서 수정하도록 실행 | branch/workspace 작업은 하지만 QA runner를 호출하지 않는다. diff 검사만 기록하며 commit/push/PR은 자동화하지 않는다. 현 checkout을 branch 전환하므로 사용 중 workspace를 건드릴 수 있다. | 격리 worktree의 update executor로 교체 |
 | `scripts/run_maintenance_qa.py` | clean `HEAD`를 detached worktree에 checkout해 pytest/Ruff/diff/CLI 검사 | 변경 전용 candidate를 받지 않는다. 현재 Codex 변경은 commit 전에는 dirty라 바로 검증할 수 없다. | candidate commit SHA를 검증하는 공통 QA service |
-| `scripts/run_checks.ps1` | 현재 checkout에서 pytest와 health를 실행하고 text report를 작성 | pytest 실행이 maintenance QA와 겹친다. 범위와 결과 형식도 다르다. | 공통 Python check runner의 얇은 Windows wrapper 또는 삭제 대상 |
+| `scripts/run_checks.ps1` | 24회차부터 `run_maintenance_qa.py`를 호출하는 Windows wrapper | 이전에는 현재 checkout에서 pytest/health를 따로 돌리고 text report를 썼다. | 단일 Python runner만 호출. 실제 Windows wrapper invocation은 CI matrix에서 확인 |
 | `scripts/install_tasks.ps1` | 매일 health task와 매주 improvement task를 따로 등록 | scheduled improvement가 별도 QA flow와 연결되지 않는다. 운영 설명과 실행 경로가 여러 파일에 나뉜다. | 단일 maintenance command를 부르는 scheduler entry |
 
 `run_improvement.ps1`은 자동 코드 수정 시도를 시작하지만, 자동 업데이트가 완결된 것은 아니다. 현재 구현은 수정한 candidate에 대한 격리 QA, 성공 조건부 commit/push, PR 생성까지 연결하지 않는다. 반대로 `run_maintenance_qa.py`는 수정 능력이 없는 검사 전용 도구다. 둘 사이가 핵심 통합 공백이다.
@@ -81,9 +81,10 @@ flowchart LR
 
 ## 실행 단계를 하나로 잇는 설계
 
-유지보수 진입점은 예를 들어 `macroatlas-maintenance`로 통일한다. 이는 제품 사용자용 `macroatlas`와 별도 명령이며, 아직 구현된 CLI가 아니다.
+현재 초기 유지보수 check 진입점은 `python scripts/run_maintenance_qa.py`다. 제품 사용자용 `macroatlas`와 구별하며,
+장기적인 maintenance subcommand 이름은 후속 CLI 설계에서 결정한다.
 
-1. `check`: 현재 OS·Python·Git·Codex·필요 패키지를 확인하고 기존 `run_checks.ps1`와 `run_maintenance_qa.py`가 반복 수행하는 검사를 공통 Python service로 실행한다.
+1. `check` (24회차 완료): OS·Python의 clean committed checkout에서 project health, pytest, Ruff, commit whitespace, Python/installed CLI help를 한 번씩 실행하고 structured JSON report와 check별 log를 남긴다. `run_checks.ps1`은 이 Python entrypoint만 호출한다.
 2. `analyze`: PatternAnalyzer와 scope adapter를 읽기 전용으로 실행한다. missing scope는 unknown으로 남기고, 파일/라인 또는 task/event 근거가 없는 후보를 `NOT_ACTIONABLE`로 끝낸다.
 3. `improve --finding <id>`: 명시 근거와 수용 조건이 있는 변경만 최대 3개 선택한다. clean base SHA에서 task 전용 branch/worktree를 만들며 기존 checkout의 branch를 바꾸지 않는다. `Codex`는 허용 경로 안에서만 수정한다.
 4. `qa --candidate <sha>`: 수정 결과를 commit snapshot으로 고정한 뒤 같은 SHA에서 pytest, Ruff, diff, CLI, 관련 회귀 검사를 수행한다. 검사 실패나 timeout이면 status를 `QA_FAILED`로 기록하고 push/PR 단계로 가지 않는다.
@@ -93,11 +94,11 @@ flowchart LR
 
 ## 도입 순서와 완료 기준
 
-한 회차에 아래 항목 중 하나씩 진행한다. 이 문서는 설계이며 구현·스케줄 변경은 아직 하지 않는다.
+한 회차에 아래 항목 중 하나씩 진행한다. 24회차 구현으로 검사 경로가 통합됐으며 analyzer scope, updater handoff, scheduler는 남아 있다. Scheduler 설정은 변경하지 않았다.
 
 | 순서 | 다음 작업 | 선행 이유 | 완료 기준 |
 |---|---|---|---|
-| 24 | Cross-platform maintenance check service | 오늘 확인된 pytest 중복과 text/JSON report 차이를 먼저 줄인다. | 단일 Python command가 health·pytest·Ruff·CLI·diff를 실행하고 구조화 report를 남긴다. PowerShell은 인자 전달 wrapper만 한다. Ubuntu/Windows CI로 동일 계약을 확인한다. |
+| 24 완료 | Cross-platform maintenance check service | pytest 중복과 text/JSON report 차이를 줄인다. | `run_maintenance_qa.py`가 health·pytest·Ruff·CLI·commit whitespace를 구조화 report로 실행한다. `run_checks.ps1`은 wrapper다. CI matrix가 동일 Python entrypoint를 실행한다. [24회차 보고서](ITERATION_24_REPORT.md) |
 | 25 | Analyzer scope adapter와 proposal evidence | 최근 분석의 7개 insufficient-evidence가 `institution_id`, `dataset_id`, `concept`를 알 수 없어 발생했다. | 실제 workflow plans에서 제공되는 source/dataset scope만 검증해 연결하고, 미제공 concept은 unknown으로 둔다. 반복 후보 fixture에서 근거·영향 scope·제안 사유를 검사한다. |
 | 26 | Isolated updater와 candidate QA handoff | 현재 updater와 QA runner는 분리되어 있으며 서로 다른 checkout 가정이 있다. | updater가 기존 workspace를 바꾸지 않고 candidate branch/worktree를 생성한다. 같은 candidate SHA가 QA·diff·report·PR에 기록된다. 실패 candidate는 push되지 않는다. |
 | 27 | Schedule consolidation and supervised pilot | 자동 주기는 통합 CLI가 Windows에서 재현된 후에만 안전하다. | 먼저 Windows에서 사람이 직접 시작한 pilot 1회로 no-op·failure·success 보고를 검토한다. 반복 scheduler는 비활성 상태로 구성하고 사용자가 명시해 켠 뒤에만 실행한다. 일일/주간 작업은 공통 entrypoint 하나를 호출하며 중복 pytest를 하지 않는다. 이후 사용하지 않는 launcher를 제거한다. |

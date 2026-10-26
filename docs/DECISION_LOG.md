@@ -731,3 +731,13 @@ API connector, 작은 파일 engine, 대용량 worker, exporter는 source·parse
 
 현재는 설계 선택만 기록했으며 코드를 바꾸거나 scheduler를 수정하지 않았다. analyzer scope adapter의 허용 source
 field와 updater의 경로 allowlist는 후속 구현 시작 전에 실제 workflow model에 맞춰 확인한다. 미상 concept은 계속 unknown으로 둔다.
+
+## D-084 — 유지보수 health와 QA 진입점 통합
+
+24회차에서 `scripts/run_maintenance_qa.py`를 공통 offline check entrypoint로 확장했다. clean commit의 detached worktree에서
+pytest, Ruff, commit whitespace, CLI module/entrypoint help, project health를 check별 timeout/log/report로 수행한다.
+`scripts/run_checks.ps1`은 이 Python runner의 thin wrapper이며 GitHub Actions matrix도 동일 runner를 호출한다.
+실행 파일이 없거나 한 check가 실패해도 나머지 check를 실행해 원인을 구조화 결과에 남긴다.
+
+이 결정은 `run_improvement.ps1`의 코드 수정 경로, PatternAnalyzer의 근거 부족, candidate SHA 검증·PR 생성, Windows
+예약 설정을 연결 완료 처리하지 않는다. 이 잔여 범위는 D-083에서 정한 25–27회차 순서를 따른다.

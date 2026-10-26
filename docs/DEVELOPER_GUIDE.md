@@ -102,11 +102,11 @@ Gate가 통과되거나 다른 provider를 지원하게 되지 않습니다. Gat
 read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-26의 한 실행은 proposal 0개와 insufficient-evidence
 7개를 반환했고, 표본에서 기관·dataset·concept scope를 알 수 없어 분석기가 반복 개선을 만들 수 없는 공백을 드러냈습니다.
 
-현재 개발 자동화는 세 경로로 나뉩니다. `scripts/run_improvement.ps1`은 primary branch에서 task branch를 만들고
-Codex 수정 시도를 실행하지만 `run_maintenance_qa.py`를 호출하지 않습니다. `scripts/run_maintenance_qa.py`는 clean
-commit의 detached worktree만 검사해 아직 수정 candidate를 직접 받지 않습니다. `scripts/run_checks.ps1`도 pytest와
-health 검사를 별도로 수행해 테스트 경로가 중복됩니다. 따라서 자동 업데이트는 현재 수정 시도까지만 수행하며, 변경 candidate의
-격리 QA·조건부 push·PR 생성을 한 번에 보장하는 흐름은 아직 없습니다.
+`python scripts/run_maintenance_qa.py`가 공통 local check entrypoint입니다. clean commit을 detached worktree에
+checkout해 pytest, Ruff, commit whitespace, Python/installed CLI help, health 검사를 실행하고 check별 log와 JSON report를
+남깁니다. Windows의 `scripts/run_checks.ps1`은 이 entrypoint를 부르는 얇은 wrapper입니다. 저장소 업데이트 script
+`scripts/run_improvement.ps1`은 아직 이 검사 workflow와 candidate 수정 결과를 연결하지 않습니다. 자동 업데이트는 수정
+시도까지만 수행하며, candidate 격리 QA·조건부 push·PR 생성을 한 번에 보장하지 않습니다.
 
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
@@ -125,6 +125,10 @@ candidate SHA QA를 단계별로 도입합니다. 자동화가 만들 수 있는
 
 ## 공통 유지보수 QA 실행기
 
-현재 `python scripts/run_maintenance_qa.py`는 clean commit에서 detached worktree를 만들고 pytest, Ruff, diff, CLI 도움말을 검사합니다. 보고서는 `reports/maintenance_qa_<id>/report.json`과 개별 로그입니다. 실패/timeout/cleanup 실패는 성공으로 처리하지 않습니다. 현재 Python 환경에 pytest·Ruff와 프로젝트 의존성이 설치돼 있어야 합니다. 네트워크 호출이나 코드 수정·병합은 실행하지 않습니다. Windows에서는 Python 실행 경로를 그대로 사용하지만 실제 Windows 실행 증거는 CI에서 별도로 확인합니다. candidate 검증 연결은 위 개선안의 후속 구현입니다.
+`python scripts/run_maintenance_qa.py`는 clean commit에서 detached worktree를 만들고 pytest, Ruff, commit whitespace,
+CLI help와 project health를 검사합니다. 보고서는 `reports/maintenance_qa_<id>/report.json`과 check별 log입니다.
+실패·timeout·실행 파일 부재·cleanup 실패를 성공으로 취급하지 않고, 가능한 후속 검사는 계속 수행합니다. Python 환경에
+pytest·Ruff·프로젝트 설치가 필요합니다. 네트워크 호출이나 코드 수정·병합은 하지 않습니다. 수정 candidate를 검증하는
+연결은 [엔진 통합 계획](ENGINE_CONSOLIDATION_PLAN.md)의 후속 회차입니다.
 
 수정 흐름은 증거 기반 이슈 → 전용 branch → 수정 및 테스트 → commit → 격리 QA → push → PR 검토입니다. 읽기 전용 분석의 빈 후보는 품질 승인과 구분합니다. TIC/BIS watcher와 BOJ 고정 시리즈의 저장된 기관·dataset을 분석기에 연결했으며, 경제 concept은 추정하지 않아 unknown이면 반복 제안을 계속 차단합니다.

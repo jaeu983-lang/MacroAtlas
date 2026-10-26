@@ -72,6 +72,6 @@
 22회차는 대용량 qualification·BIS production 전에 예상 시간과 신뢰도를 알리고, 성공 task의 stage 실측으로 예측을
 보정합니다. [구현 보고서](ITERATION_22_REPORT.md)와 [대용량 엔진 안내](LARGE_FILE_ENGINE.md)를 참고하세요.
 
-개발자 측 자동 업데이트는 현재 analyzer·Codex runner·QA·health script로 분리돼 있습니다. 중복과 각 경계를 연결할
-목표 구조 및 구현 순서는 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 설계만 반영했으며
-실행기 통합이나 예약 작업 변경은 아직 하지 않았습니다.
+개발자 측 analyzer와 Codex updater는 아직 별도 흐름입니다. 중복을 줄일 목표 구조와 구현 순서는
+[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 24회차에서 QA·health 검사 경로는 공통 Python
+runner로 통합했습니다. Analyzer와 updater handoff, 예약 설정은 후속 단계이며 아직 바꾸지 않았습니다.
