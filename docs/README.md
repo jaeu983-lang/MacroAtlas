@@ -28,7 +28,7 @@
 
 - [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md): 어떤 문제를 먼저 풀고 엔진을 어디에 둘지에 대한 목표 설계.
 - [사용자 안내 PPT](MacroAtlas_User_Guide.pptx): 사용자 안내서와 같은 기준일의 시각 요약.
-- [대용량 엔진](LARGE_FILE_ENGINE.md): 비API 대용량 자료의 조사, 용량 시험, 미실행 규칙.
+- [대용량 엔진](LARGE_FILE_ENGINE.md): 비API 대용량 자료의 조사, 용량 시험, 미실행 규칙과 BIS flat 한 건의 승인 구조 보존 처리.
 - [엔진 연결](ENGINE_CONNECTIONS.md): 현재 호출 경로와 대용량 엔진으로 넘어가는 계약.
 - [기관 카탈로그](INSTITUTION_CATALOG.md), [`connectors/`](connectors/): 조사한 공식 자료와 connector별 확인 범위.
 - [출력·변형 정책](OUTPUT_AND_VARIANT_POLICY.md), [시나리오](REFERENCE_SCENARIOS.md): 사용자 선택과 수용 사례.
@@ -55,6 +55,9 @@
 ## 지금 기억할 상태
 
 2026-10-26 기준 제품은 고정된 구조화 CLI와 Python API 중심입니다. 전체 기관 탐색·대화형 UI,
-정식 대용량 정규화·exporter, 자연 TIC/BIS 개정 및 자연 provider 장애 후 durable resume은
+일반 대용량 정규화·CSV exporter, 자연 TIC/BIS 개정 및 자연 provider 장애 후 durable resume은
 완료된 제품 기능이나 증거로 표시하지 않습니다. 변경될 때 `USER_GUIDE.md`, `IMPLEMENTATION_PLAN.md`,
 로드맵의 상태를 함께 갱신합니다.
+
+19회차는 보존된 BIS GLI flat ZIP 한 건을 명시 승인 아래 Linux worker에서 JSONL로 구조 보존 처리했습니다.
+이 결과는 경제 의미 정규화도, 일반 파일 지원도, Gate C 자연 증거도 아닙니다.
