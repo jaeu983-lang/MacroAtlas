@@ -635,7 +635,8 @@
   provider failure occurred; same-task resume evidence remains fixture-only. Gate C D-067's limited pass is
   unchanged.
 - Added a Linux/Windows Python 3.11/3.12 CI workflow. Live World Bank and BOJ commands completed on the
-  managed Linux environment. The Windows result is recorded in `docs/ITERATION_15_REPORT.md` after the
-  workflow run.
+  managed Linux environment. The initial PR run caught a Windows case-insensitive environment-variable
+  assumption in one proxy test; after correcting the test, CI run `40336575209` passed all four OS/Python
+  combinations, including tests, Ruff, and installed CLI help. Details are in `docs/ITERATION_15_REPORT.md`.
 - No environment publish/deploy was performed. Current code, exact scopes, test evidence and remaining natural
   events are in `docs/ITERATION_15_REPORT.md`, `docs/GATE_C_SOURCE_WATCH.md`, and `docs/connectors/BOJ.md`.

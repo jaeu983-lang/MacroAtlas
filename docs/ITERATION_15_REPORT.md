@@ -53,8 +53,13 @@ task `d853ce18-5ddf-4d1a-b2f4-789e087c6321`는 HTTP 200, 3 observations, quality
 
 `.github/workflows/ci.yml`은 Linux/Windows의 Python 3.11/3.12에서 full pytest, Ruff 및 설치된 CLI help를
 검증하도록 추가했다. 로컬 Linux 검증은 전체 **609 tests passed**, Ruff 통과, `git diff --check` 통과다.
-설치된 entry point의 `macroatlas --help`와 `macroatlas collect --help`도 실행했다. **GitHub Windows job
-결과는 아직 대기 중이며 workflow run 후 이 보고서에 추가한다.**
+설치된 entry point의 `macroatlas --help`와 `macroatlas collect --help`도 실행했다. PR CI run
+[`40336575209`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40336575209)의 네 조합
+(Ubuntu/Windows × Python 3.11/3.12) 모두 full test suite, Ruff, CLI help까지 통과했다.
+
+첫 PR workflow에서는 Windows가 환경변수 이름의 대소문자를 구분하지 않는다는 점과 충돌하는 테스트
+설정이 드러났다. 테스트가 `HTTP_PROXY`와 `http_proxy`에 서로 다른 값을 동시에 넣지 않도록 고친 뒤
+재실행해 전체 네 조합이 통과했다.
 
 ## 변경 파일
 
