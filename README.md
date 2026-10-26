@@ -23,6 +23,7 @@ task-linked feedback CLI와 read-only pattern CLI도 제공합니다. 게이트�
 
 - [`START_HERE.md`](START_HERE.md): 현재 저장소에서 작업을 시작하는 순서
 - [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 제품 범위와 정책 요구사항
+- [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md): 실제 엔진 호출 흐름·전달 계약·대용량 후속 연결
 - [`docs/UNRESOLVED_ITEMS.md`](docs/UNRESOLVED_ITEMS.md): 현재 미해결 항목의 데이터 처리·접속·미구현·증거 대기 분류
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md): 완료 상태, 게이트, 다음 허용 작업의 단일 기준
 - [`docs/INSTITUTION_CATALOG.md`](docs/INSTITUTION_CATALOG.md): 공식 기관 자료와 확인 한계

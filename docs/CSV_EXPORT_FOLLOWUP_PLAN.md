@@ -36,3 +36,9 @@
 CLI 연결 → 정상·실패 수용 검증 → 사용자 안내·회차 보고서 → task branch commit/push 및 PR 검토.
 
 완료 선언은 실제 파일과 검증 결과가 확보된 뒤 한다. 이번 작업은 기획서 작성까지이며 16회차 코드를 구현한 것으로 세지 않는다.
+
+## 엔진 연결
+
+입력은 ENGINE_CONNECTIONS.md의 검증된 artifact adapter로 받는다. exporter는 네트워크 수집·
+원본 재파싱·대용량 작업 재개를 수행하지 않고, 완료된 지원 task/자식 task의 output manifest와
+quality·hash를 검증해 로컬 파일로 전달한다. 대용량 출력 지원 확대는 별도 수용 기준을 정한 뒤 한다.

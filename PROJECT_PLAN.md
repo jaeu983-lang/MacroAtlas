@@ -547,3 +547,9 @@ live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
 해당하면 현재 엔진에서 추가 처리를 중단한다. 원본을 보존하고 이유·측정값·출처·task 참조를
 영속 인계 목록에 모아 별도 대용량 엔진 대상으로 관리한다. 구체 기준과 경계 수용 조건은
 `docs/ITERATION_16_PLAN.md`를 따른다. 등록 자체를 수집 성공으로 처리하지 않는다.
+
+## 엔진 연결 기준
+
+현재 호출 경로와 후속 연결은 `docs/ENGINE_CONNECTIONS.md`를 따른다. 공통 Orchestrator·StageResult·
+HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔다. 대용량 인계는 불변 판정 event와
+원본 snapshot을 선택해 명시적인 자식 task로 연결한다. 큰 본문 대신 검증된 파일·manifest 참조를 전달한다.

@@ -58,3 +58,9 @@ security review도 필요하며 대용량 엔진으로 보내도 자동 해제�
 목록 CLI → 경계·무실행·재시작 검증 → 보고서·문서·commit/push.
 
 후속 CSV 계획은 `CSV_EXPORT_FOLLOWUP_PLAN.md`에 보존했다.
+
+## 후속 엔진 인계 연결
+
+ENGINE_CONNECTIONS.md의 실제 연결표와 미구현 bridge를 기준으로 후속 작업을 한다.
+현재 deferred record를 자동 실행 queue로 해석하지 않으며 불변 event/version·원본 snapshot·부모/자식 task
+연결·중복 방지 transaction을 먼저 구현한다.
