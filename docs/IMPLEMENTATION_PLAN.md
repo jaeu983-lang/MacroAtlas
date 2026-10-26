@@ -70,9 +70,12 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 
 ## 실패·미충족 항목과 해결 계획 — 2026-10-26
 
-현재 확인된 범위에서 재현 중인 테스트 실패는 없다. 로컬 609개 테스트와 Ruff가 통과했고,
-최종 코드·문서 HEAD `c1a841f`의 CI run
-[40337409105](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40337409105)는
+현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
+아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
+
+현재 재검증 범위에서 재현 중인 테스트 실패는 없다. 로컬 626개 테스트와 Ruff가 통과했고,
+재검증 HEAD `526bc7f`의 CI run
+[40342296370](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40342296370)는
 Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과거 실패, 미관측 증거,
 미지원 기능을 구분한 후속 목록이며 전체 기관의 무결함을 뜻하지 않는다.
 

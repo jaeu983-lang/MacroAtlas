@@ -60,3 +60,8 @@ BIS flat은 이번 네트워크 수집이 아니라 SHA256
 [PR #3](https://github.com/jaeu983-lang/MacroAtlas/pull/3)의 최신 커밋 CI에서
 Ubuntu/Windows × Python 3.11/3.12의 full suite·Ruff·CLI 검증 결과를 추적한다.
 기존 코드 검증 run은 [40341744954](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40341744954)에 있다.
+
+## 미해결 항목의 원인 분리
+
+현재 데이터 처리·서버 접속·제품 미구현·증거 미관측을 [분류표](UNRESOLVED_ITEMS.md)에 정리했다.
+최근 SQLite의 FAILED/NEEDS_REVIEW 상태도 원인과 후속 성공을 함께 확인했다. 과거 실패 상태를 현재 장애로 재사용하지 않는다.
