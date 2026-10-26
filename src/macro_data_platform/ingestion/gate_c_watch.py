@@ -75,6 +75,21 @@ class GateCFileEngine:
             return StageResult(result.status, payload, result.evidence_refs, result.warnings,
                                result.error_code, result.retry_hint, result.retry_after_seconds)
         except SourceFailure as failure:
+            if "sixteen MiB limit" in str(failure):
+                from macro_data_platform.ingestion.non_api_capacity import (
+                    DeferredNonAPIStore,
+                    decision,
+                )
+                details = getattr(failure, 'capacity', {})
+                record = DeferredNonAPIStore(self.settings).register(
+                    {"source_url": profile["url"], "format": profile["format"],
+                     "source_agency": profile["source_agency"]},
+                    request.task_id, request.stage_id,
+                    {**decision('download_bytes', details.get('observed'), 16 * 1024 * 1024),
+                     'inspection_point': details.get('point', 'bounded_stream')})
+                return StageResult(StageStatus.NEEDS_REVIEW, {"non_api_deferral": record},
+                                   warnings=("Download deferred to the large-file engine.",),
+                                   error_code=ErrorCode.SCHEMA_CHANGED)
             retry_hint = None
             retry_after = None
             if failure.status == StageStatus.FAILED_RETRYABLE:

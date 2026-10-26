@@ -404,3 +404,8 @@ docs/WORKFLOW_ALIGNMENT_PLAN.md는 01~03회차 최소 보완의 상세 명세다
 현재 엔진 처리를 중단하고 영속 목록으로 모은 뒤 별도 엔진에 인계한다. 정책·목록 구현은 대기 상태다.
 확인된 BIS flat ZIP은 [초기 대상 목록](NON_API_DEFERRED_CATALOG.json)에 등록했고, CSV 출력 계획은
 [후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md)으로 보존했다.
+
+## 16회차 구현 결과
+
+비API 대용량 사전 검사·bounded parser 중단·SQLite 인계 목록/이력·CLI 조회를 구현했다.
+[16회차 보고서](ITERATION_16_REPORT.md)의 범위와 한계를 따른다. 별도 엔진 실행은 향후 작업이다.

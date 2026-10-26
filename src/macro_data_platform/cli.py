@@ -58,6 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--live", action="store_true", required=True,
                        help="explicitly permit the official file request")
 
+    deferred = commands.add_parser("deferred", help="list deferred non-API files or record history")
+    deferred.add_argument("record_id", nargs="?")
+
     status = commands.add_parser("status", help="inspect a saved task without network access")
     status.add_argument("task_id")
 
@@ -147,6 +150,10 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
     live = bool(getattr(args, "live", False))
     settings = _settings(root, live=live)
     store = HistoryStore(settings)
+
+    if args.command == "deferred":
+        from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore
+        return 0, {"records": DeferredNonAPIStore(settings).list(args.record_id)}
 
     if args.command == "status":
         return 0, _summary(store.get(args.task_id))

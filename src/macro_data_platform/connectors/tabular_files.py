@@ -55,12 +55,12 @@ def _decode(raw: bytes) -> str:
 def _check_limits(raw: bytes) -> None:
     if not isinstance(raw, bytes) or not raw:
         raise ValueError("source file must be nonempty bytes")
-    if len(raw) > MAX_INPUT_BYTES:
+    if len(raw) >= MAX_INPUT_BYTES:
         raise ValueError("source file exceeds the sixteen MiB input limit")
 
 
 def _validate_headers(values: list[Any]) -> tuple[str, ...]:
-    if not 1 <= len(values) <= MAX_COLUMNS:
+    if not 1 <= len(values) < MAX_COLUMNS:
         raise ValueError("table must contain 1..1000 columns")
     headers = []
     for value in values:
@@ -79,10 +79,13 @@ def _table(format_name: str, header_values: list[Any], row_values: list[list[Any
            header_row: int, sheet_name: str | None = None,
            table_index: int | None = None, zip_member: str | None = None,
            warnings: tuple[str, ...] = ()) -> ParsedTable:
+    if any(len(str(value)) >= MAX_FIELD_CHARS for row in [header_values, *row_values]
+           for value in row if value is not None):
+        raise ValueError("table field exceeds the field character limit")
     headers = _validate_headers(header_values)
-    if len(row_values) > MAX_ROWS:
+    if len(row_values) >= MAX_ROWS:
         raise ValueError("table exceeds the 100000 data row limit")
-    if len(headers) * (len(row_values) + 1) > MAX_CELLS:
+    if len(headers) * (len(row_values) + 1) >= MAX_CELLS:
         raise ValueError("table exceeds the 500000 cell limit")
     rows = []
     duplicate_rows = []
@@ -138,10 +141,10 @@ def _parse_delimited(raw: bytes, format_name: str, *, delimiter: str,
         for row in reader:
             if len(records) >= MAX_ROWS + header_row:
                 raise ValueError("delimited file exceeds the row limit")
-            if len(row) > MAX_COLUMNS:
+            if len(row) >= MAX_COLUMNS:
                 raise ValueError("delimited file exceeds the column limit")
             cells += len(row)
-            if cells > MAX_CELLS:
+            if cells >= MAX_CELLS:
                 raise ValueError("delimited file exceeds the cell limit")
             records.append(row)
     except (csv.Error, UnicodeError):
@@ -200,12 +203,12 @@ class _HTMLTables(HTMLParser):
                     raise ValueError("HTML table exceeds the column limit")
                 self.current_row.append(text)
                 self.cell_count += 1
-                if self.cell_count > MAX_CELLS:
+                if self.cell_count >= MAX_CELLS:
                     raise ValueError("HTML source exceeds the cell limit")
             self.current_cell = None
         elif tag == "tr" and self.current_row is not None:
             if self.current_table is not None:
-                if len(self.current_row) > MAX_COLUMNS:
+                if len(self.current_row) >= MAX_COLUMNS:
                     raise ValueError("HTML table exceeds the column limit")
                 if len(self.current_table) >= MAX_ROWS:
                     raise ValueError("HTML table exceeds the row limit")
@@ -257,7 +260,7 @@ def _validate_zip(raw: bytes, *, workbook: bool = False) -> zipfile.ZipFile:
         entries = archive.infolist()
     except (zipfile.BadZipFile, OSError, ValueError):
         raise ValueError("input is not a valid ZIP container") from None
-    if not 1 <= len(entries) <= MAX_ZIP_ENTRIES:
+    if not 1 <= len(entries) < MAX_ZIP_ENTRIES:
         archive.close()
         raise ValueError("ZIP entry count is outside the allowed limit")
     names = [item.filename for item in entries]
@@ -277,10 +280,10 @@ def _validate_zip(raw: bytes, *, workbook: bool = False) -> zipfile.ZipFile:
             archive.close()
             raise ValueError("encrypted ZIP entries are unsupported")
         total += entry.file_size
-        if total > MAX_ZIP_UNCOMPRESSED_BYTES:
+        if total >= MAX_ZIP_UNCOMPRESSED_BYTES:
             archive.close()
             raise ValueError("ZIP exceeds the 64 MiB total uncompressed limit")
-        if entry.file_size and entry.file_size / max(entry.compress_size, 1) > MAX_ZIP_RATIO:
+        if entry.file_size and entry.file_size / max(entry.compress_size, 1) >= MAX_ZIP_RATIO:
             archive.close()
             raise ValueError("ZIP member expansion ratio exceeds the safety limit")
     if workbook:
@@ -306,7 +309,7 @@ def _zip_member(raw: bytes, *, selected: str | None) -> tuple[bytes, str, str]:
             if not isinstance(selected, str) or selected not in {item.filename for item in supported}:
                 raise ValueError("requested zip_member is not a supported archive entry")
             entry = next(item for item in supported if item.filename == selected)
-        if entry.file_size > MAX_INPUT_BYTES:
+        if entry.file_size >= MAX_INPUT_BYTES:
             raise ValueError("selected ZIP member exceeds the sixteen MiB input limit")
         with archive.open(entry, "r") as stream:
             parts = []
@@ -316,7 +319,7 @@ def _zip_member(raw: bytes, *, selected: str | None) -> tuple[bytes, str, str]:
                 if not chunk:
                     break
                 size += len(chunk)
-                if size > MAX_INPUT_BYTES:
+                if size >= MAX_INPUT_BYTES:
                     raise ValueError("selected ZIP member exceeds the input limit")
                 parts.append(chunk)
         suffix = PurePosixPath(entry.filename).suffix.lower().lstrip(".")
@@ -349,9 +352,9 @@ def _parse_xlsx(raw: bytes, *, sheet_name: str | None, header_row: int) -> Parse
         worksheet = workbook[selected]
         if (type(header_row) is not int or not 1 <= header_row <= MAX_ROWS
                 or worksheet.max_row is None or worksheet.max_column is None
-                or worksheet.max_row > MAX_ROWS + header_row
-                or worksheet.max_column > MAX_COLUMNS
-                or worksheet.max_row * worksheet.max_column > MAX_CELLS):
+                or worksheet.max_row >= MAX_ROWS + header_row
+                or worksheet.max_column >= MAX_COLUMNS
+                or worksheet.max_row * worksheet.max_column >= MAX_CELLS):
             raise ValueError("XLSX dimensions exceed the parsing limit")
         raw_rows = []
         formula_found = False
@@ -361,7 +364,7 @@ def _parse_xlsx(raw: bytes, *, sheet_name: str | None, header_row: int) -> Parse
                 formula_found = formula_found or cell.data_type == "f"
                 values.append(cell.value)
             raw_rows.append(values)
-            if len(raw_rows) > MAX_ROWS + 1:
+            if len(raw_rows) >= MAX_ROWS + 1:
                 raise ValueError("XLSX exceeds the 100000 data row limit")
         while raw_rows and all(value is None for value in raw_rows[-1]):
             raw_rows.pop()
@@ -385,8 +388,8 @@ def _parse_xls(raw: bytes, *, sheet_name: str | None, header_row: int) -> Parsed
         selected = _select_sheet(workbook.sheet_names(), sheet_name)
         sheet = workbook.sheet_by_name(selected)
         if (type(header_row) is not int or not 1 <= header_row <= MAX_ROWS
-                or sheet.nrows > MAX_ROWS + header_row or sheet.ncols > MAX_COLUMNS
-                or sheet.nrows * sheet.ncols > MAX_CELLS):
+                or sheet.nrows >= MAX_ROWS + header_row or sheet.ncols >= MAX_COLUMNS
+                or sheet.nrows * sheet.ncols >= MAX_CELLS):
             raise ValueError("XLS dimensions exceed the parsing limit")
         values = []
         for row_index in range(header_row - 1, sheet.nrows):
