@@ -90,8 +90,12 @@ def test_validity_and_version_filtering_and_cache_invalidation(tmp_path):
     query = {"institution_id": "agency_a", "version": "v2"}
     assert knowledge.query(**query)["items"] == []
     future = (AT + timedelta(days=2)).isoformat()
-    assert len(knowledge.query(**query, as_of=future)["items"]) == 1
-    assert knowledge.query(**query, as_of=future)["cache"] == "hit"
+    first = knowledge.query(**query, as_of=future)
+    assert len(first["items"]) == 1
+    cached = knowledge.query(**query, as_of=future)
+    assert cached["cache"] == "hit"
+    assert cached["candidate_rows_read"] == 0
+    assert cached["candidate_logical_bytes_read"] == 0
 
     updated = feedback.revise(valid["feedback_id"], expected_revision=2,
                               changes={"text": "Prefer the updated version 2 output."})

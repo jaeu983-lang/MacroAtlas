@@ -58,9 +58,10 @@ BIS raw `aa52afce…bdd9c1d`, normalized `46dd820e…e445854`. repeat의
 증거는 아니다. `reports/gate_c_network_recovery.json`에서도
 `live_revision_comparison`과 `provider_durable_resume`은 모두 `NOT_RUN`이다.
 
-11회차는 Gate C 통과 전에 사용자가 명시적으로 예외 진행을 지시해 구현·검증·push까지 완료했다.
-이미 끝난 회차를 중복 시작하지 않는다. 12회차는 후속 지시로 제한 knowledge lookup을 구현했지만,
-Orchestrator 재시도 연결이 없어 Gate D도 미통과다. 이 순서 예외는 Gate C/D 판정을 승격하지 않는다.
+이 현장 검토 당시 11회차는 Gate C 통과 전에 사용자가 명시적으로 예외 진행을 지시해
+구현·검증·push까지 완료했다. 이후 12회차의 Orchestrator 재시도 연결이 없어 Gate D 미통과였으나,
+현재 판정은 [`ITERATION_12_REPORT.md`](ITERATION_12_REPORT.md)와 결정 D-068의 후속 기록을 따른다.
+이미 완료된 11회차를 중복 시작하지 않는다.
 11회차 결과는 [`ITERATION_11_REPORT.md`](ITERATION_11_REPORT.md), 12회차 상태는
 [`ITERATION_12_REPORT.md`](ITERATION_12_REPORT.md)를 참조한다.
 

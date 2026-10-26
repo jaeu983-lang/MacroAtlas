@@ -511,6 +511,25 @@
 - This decision does **not** assert a natural live source revision or natural provider outage/recovery.
   Both remain `NOT_RUN`; BOJ remains `BLOCKED`, semantic dimension checks remain partial, and untested
   institutions and paths remain outside the passed scope. Detailed evidence and hashes are in
-  `docs/GATE_C_REVIEW_2026_10_26.md`. Gate D remains not passed.
+  `docs/GATE_C_REVIEW_2026_10_26.md`. At that point Gate D was not passed; D-068 records the later
+  Orchestrator integration and current result.
 - This is a formal narrowing of the Gate C acceptance scope, not a backdated claim that the original
   full-live evidence requirements were observed. No environment publish was performed.
+
+## Gate D knowledge-to-Orchestrator integration (2026-10-26)
+
+- **D-068 / IMPLEMENTED, Gate D passed:** Connect the existing bounded institution-scoped knowledge
+  projection to task planning through explicit feedback selection. Only an accepted `user_instruction`
+  returned by a ready, complete, matching-scope lookup can be attached to a task. The caller selects one
+  feedback ID; current instructions take precedence, and changed/pending index state blocks planning.
+- A stage opts in to conditional omission by declaring its `knowledge_reuse_category`. When the caller
+  selects matching knowledge, only that tagged planning stage is omitted and the task records the
+  selected scope, feedback revision, source evidence, skipped stage and index revision. Remaining stages
+  receive the context. Stage fingerprints include it so changed knowledge cannot reuse stale results.
+- A 30-repeat BLS/CPI fixture E2E measured stage runs decreasing from 2 to 1 per repeated task (60 to 30
+  total). One run measured p50/p95 latency 4.207/4.582 ms without reuse and 3.444/4.537 ms with reuse. A different
+  institution, broad scope, conflict, inference, unreviewed feedback, and stale index are blocked; current
+  instruction wins. Maximum Python allocation increased by about 7 KB in this tiny fixture.
+- This proves the supported explicit planning path only. It does not provide UI consent collection,
+  automatic knowledge selection, live-provider efficiency claims, or cross-institution common-rule
+  promotion. See `docs/ITERATION_12_REPORT.md`; no 13th iteration or environment publish was performed.

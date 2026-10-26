@@ -228,6 +228,8 @@ class KnowledgeStore:
                 self._cache.move_to_end(cache_key)
                 cached = json.loads(json.dumps(self._cache[cache_key], ensure_ascii=False))
                 cached["cache"] = "hit"
+                cached["candidate_rows_read"] = 0
+                cached["candidate_logical_bytes_read"] = 0
                 return cached
             rows = []
             candidate_rows_read = 0
@@ -384,3 +386,78 @@ class KnowledgeStore:
             return {"status": "suggestions_require_confirmation", "value": None,
                     "feedback_ids": [item["feedback_id"] for item in options]}
         return {"status": "no_accepted_prior_instruction", "value": None, "feedback_ids": []}
+
+    def confirm_reuse(self, *, institution_id, category, feedback_id, dataset_id=None,
+                      concept=None, classification_axis=None, version=None,
+                      current_instruction=None):
+        """Return one explicitly selected, accepted instruction for a bounded task plan."""
+        if current_instruction is not None:
+            if (not isinstance(current_instruction, str) or not current_instruction.strip()
+                    or len(current_instruction) > 4000):
+                raise ValueError("current_instruction must be nonempty text")
+            return {
+                "status": "current_instruction",
+                "index_revision": None,
+                "knowledge_context": {
+                    "status": "current_instruction",
+                    "text": current_instruction,
+                    "feedback_ids": [],
+                },
+            }
+        if not isinstance(category, str) or not category:
+            raise ValueError("knowledge category is required")
+        if not isinstance(feedback_id, str) or not feedback_id:
+            raise ValueError("explicit feedback_id selection is required")
+        lookup = self.query(
+            institution_id=institution_id, category=category, dataset_id=dataset_id,
+            concept=concept, classification_axis=classification_axis, version=version,
+            limit=MAX_QUERY_RESULTS,
+        )
+        metrics = {name: lookup[name] for name in (
+            "candidate_rows_read", "candidate_logical_bytes_read", "candidate_scan_cap",
+            "result_limit", "cache",
+        ) if name in lookup}
+        if lookup["status"] != "ready":
+            status = ("lookup_incomplete" if lookup["status"] == "partial" else
+                      "lookup_needs_refresh" if lookup["status"] == "NEEDS_REFRESH" else
+                      "lookup_unavailable")
+            return {"status": status, "index_revision": lookup.get("index_revision"),
+                    "feedback_ids": [], "lookup_metrics": metrics}
+        item = next((candidate for candidate in lookup["items"]
+                     if candidate["feedback_id"] == feedback_id), None)
+        if item is None:
+            return {"status": "feedback_not_in_scope", "index_revision": lookup["index_revision"],
+                    "feedback_ids": [], "lookup_metrics": metrics}
+        decision = self.decide_reuse(lookup, category=category)
+        if item.get("possible_conflict") or decision["status"] == "ask_to_resolve_conflict":
+            return {"status": "conflict_requires_review",
+                    "index_revision": lookup["index_revision"], "feedback_ids": [],
+                    "lookup_metrics": metrics}
+        if (item["knowledge_kind"] != "user_instruction" or item["review_status"] != "accepted"
+                or item["applicability"] != "suggestion"):
+            return {"status": "feedback_not_reusable",
+                    "index_revision": lookup["index_revision"], "feedback_ids": [],
+                    "lookup_metrics": metrics}
+        if item["scope_match"] == "broader_than_request":
+            return {"status": "feedback_scope_too_broad",
+                    "index_revision": lookup["index_revision"], "feedback_ids": [],
+                    "lookup_metrics": metrics}
+        return {
+            "status": "confirmed",
+            "index_revision": lookup["index_revision"],
+            "feedback_ids": [feedback_id],
+            "lookup_metrics": metrics,
+            "knowledge_context": {
+                "status": "confirmed",
+                "feedback_id": feedback_id,
+                "confirmed_by": "explicit_feedback_id_selection",
+                "source_revision": item["source_revision"],
+                "institution_id": institution_id,
+                "category": category,
+                "knowledge_kind": item["knowledge_kind"],
+                "scope": item["scope"],
+                "text": item["text"],
+                "evidence_refs": item["evidence_refs"],
+                "index_revision": lookup["index_revision"],
+            },
+        }

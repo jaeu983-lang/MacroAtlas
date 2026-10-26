@@ -154,4 +154,23 @@ run_date: null
   503 `Retry-After: 17` is persisted as a retry hint and no automatic retry occurs. This does not
   substitute for a real provider recovery/resume cycle.
 - X08 live TIC/BIS source delta and provider-specific recovery remain **NOT_RUN**. Gate C remains
-  **not passed**; Gate D/Iteration 11 stays unstarted.
+  **not passed at the time of this follow-up**; Gate D and Iteration 11 had not started yet.
+
+## Gate D X05/X06 Orchestrator integration follow-up (2026-10-26)
+
+- **X05 / PASS, local fixture:** First BLS/CPI task ran the source-search and collection stages and
+  recorded an accepted `source_method` instruction tied to that search stage. In a repeat task for the
+  same institution and dataset, the caller selected its feedback ID; Orchestrator omitted only the
+  stage explicitly tagged for `source_method` reuse and passed the selected instruction, exact scope,
+  feedback revision, and evidence references to the collection stage.
+- **X06 / PASS for non-promotion boundaries:** Query and plan require institution scope. Selecting the
+  same feedback ID under a different institution is rejected. Broad-scope, conflicting, inferred,
+  unreviewed, incomplete, or stale feedback cannot skip a stage. Current task instructions take priority.
+  There is no automatic promotion from institution knowledge to cross-institution common rules.
+- **Efficiency:** Across 30 baseline and 30 repeated fixture tasks, per-task stage calls fell from 2 to 1
+  (60 to 30 total). One benchmark run measured E2E p50/p95 as 4.207/4.582 ms baseline and 3.444/4.537 ms with reuse. The cold
+  knowledge lookup read 1 SQLite candidate row (178 logical bytes); cached lookups read 0 rows/bytes.
+  Maximum Python allocation was 32,304 bytes baseline and 39,301 bytes with knowledge context.
+- This is local SQLite plus fixture-engine evidence, not live-provider latency. Gate D passed for the
+  explicit scoped planning path. UI consent and automatic selection remain unimplemented; iteration 13
+  was not started. Full details are in `docs/ITERATION_12_REPORT.md`.

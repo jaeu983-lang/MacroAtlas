@@ -74,9 +74,11 @@ kind/category/정확 범위의 상충 지시는 review-required로 표시한다.
 적용되지 않는다. 새 output preference가 없으면 선택을 묻고, 기존 선호는 충돌이 없더라도
 확인을 요청한다. 현재 task의 명시 지시는 과거 지식보다 우선한다.
 
-이 구현은 Python storage API이며 Orchestrator의 실제 반복 task·재시도 계획에 연결하지 않았다.
-따라서 iteration 12의 코드·성능 검증 일부를 제공하지만 Gate D의 end-to-end 재시도 효율 조건을
-충족하지 않는다. 상세 결과와 benchmark 한계는 [12회차 보고서](ITERATION_12_REPORT.md)에 둔다.
+초기 storage API 구현 당시에는 Orchestrator의 실제 반복 task·재시도 계획에 연결되지 않아 Gate D가
+미통과였다. 2026-10-26 후속 변경은 사용자가 선택한 institution/dataset-scoped feedback을
+`Orchestrator.plan_with_knowledge()`에 연결해 표시된 planning stage만 조건부 생략하고 downstream
+stage에 근거를 전달한다. 이 경로는 Gate D를 통과했으며 측정 한계와 비범위는
+[12회차 보고서](ITERATION_12_REPORT.md)에 기록한다.
 
 ## 성능 및 정확성 검수
 

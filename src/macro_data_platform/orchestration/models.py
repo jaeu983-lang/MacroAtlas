@@ -19,6 +19,7 @@ class StageSpec:
     engine_version: str = "1"
     max_attempts: int = 3
     reuse_ttl_seconds: int = 3600
+    knowledge_reuse_category: str | None = None
 
     def __post_init__(self) -> None:
         for name in ("stage_id", "engine", "engine_version"):
@@ -27,6 +28,10 @@ class StageSpec:
             raise ValueError("max_attempts must be an integer between 1 and 10")
         if type(self.reuse_ttl_seconds) is not int or self.reuse_ttl_seconds < 0:
             raise ValueError("reuse_ttl_seconds must be a nonnegative integer")
+        if self.knowledge_reuse_category is not None:
+            required(self.knowledge_reuse_category, "knowledge_reuse_category")
+            if len(self.knowledge_reuse_category) > 64:
+                raise ValueError("knowledge_reuse_category is too long")
         json_snapshot(self.input_data)
 
 
@@ -42,7 +47,11 @@ class TaskPlan:
             raise ValueError("stage identifiers must be unique")
 
     def snapshot(self) -> list[dict]:
-        return json_snapshot([asdict(stage) for stage in self.stages])
+        rows = [asdict(stage) for stage in self.stages]
+        for row in rows:
+            if row["knowledge_reuse_category"] is None:
+                row.pop("knowledge_reuse_category")
+        return json_snapshot(rows)
 
 
 @dataclass(frozen=True)
@@ -53,3 +62,4 @@ class StageInput:
     input_data: Any
     upstream: Any
     input_refs: tuple[str, ...]
+    knowledge_context: Any = None

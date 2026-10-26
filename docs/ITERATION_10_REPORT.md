@@ -203,4 +203,5 @@ resumes the same task after the delay and succeeds on the fixture response. This
 durable path only; no natural provider outage/recovery was observed. No external source request was
 made for this follow-up. Gate C is **passed for the limited paths listed in the evidence review**;
 natural TIC/BIS revisions and natural provider failure/resume remain `NOT_RUN`, BOJ remains `BLOCKED`,
-and Gate D remains not passed. Iteration 11 had already been completed and is not restarted.
+and Gate D had not yet passed at this follow-up. Gate D's later status is recorded in
+`ITERATION_12_REPORT.md` and decision D-068. Iteration 11 had already been completed and is not restarted.
