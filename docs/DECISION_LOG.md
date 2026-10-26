@@ -682,3 +682,15 @@ PR #6은 CI 네 조합 통과 후 merge commit `dfdfa307`로 통합됐다. 보�
 `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 한 번 처리되어 24,378×21 구조 보존 JSONL을 만들었다.
 원본·manifest·chunk hash와 `handed_off/resolved` 이력을 확인했다. 이번 로컬 처리 결과는 Gate C 자연 revision이나
 자연 장애 후 재개 증거가 아니다. 후속 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
+
+## D-080 — 검증된 World Bank/BOJ task의 제한 CSV 전달
+
+20회차에서 완료·quality-passed인 고정 World Bank USA GDP와 BOJ FM08/FXERD01 task만 읽는 CSV CLI를 추가했다.
+exporter는 SQLite 이력을 read-only로 열고 stage, provider scope, quality, normalized observations, raw 및
+request manifest를 task와 대조한다. UTF-8 CSV와 provenance sidecar를 `data/exports/`에 no-overwrite로 만들며,
+null과 0을 구분하고 unknown unit/frequency는 빈 값으로 남긴다. BOJ는 수집 시 manifest digest를 task에
+기록하지 않아 export에서 manifest field/raw hash를 다시 검증하고 이 한계를 sidecar에 공개한다.
+
+`NEEDS_REVIEW`, changed/unknown source status, 미완료 task, 변조 원본, 경로 traversal/symlink와 기존 출력은
+거부한다. BIS flat JSONL, XLSX, 임의 provider는 미지원이다. 로컬 증거는 [20회차 보고서](ITERATION_20_REPORT.md)에
+있으며 자연 Gate C revision/recovery 증거와 무관하다.

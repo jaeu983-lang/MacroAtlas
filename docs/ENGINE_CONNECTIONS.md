@@ -28,7 +28,7 @@ flowchart TD
     HANDOFF --> CHILD[부모 연결 child TaskPlan]
     CHILD --> LARGE[Linux 제한 stream / chunk + checkpoint]
     LARGE --> ARTIFACT[JSONL chunks + output manifest]
-    RESULT -.-> EXPORT[검증된 완료 산출물 export]
+    RESULT --> EXPORT[검증된 완료 World Bank/BOJ task CSV export]
 ```
 
 그림의 파일 경로는 논리 흐름이다. 현재 `GateCFileEngine` 내부 호출 순서는 transport의 HTTP 용량 검사 →
@@ -47,6 +47,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
 | BLS/Census | Python API에서 BLSEngine/CensusEngine을 runner에 명시 등록 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI dispatch 대상에는 없음 |
 | `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. World Bank/BOJ/watch는 저장된 계획을 재개하고, 대용량 시험 task는 중단 worker의 종료를 확인해 미확정 결과를 기록 |
+| `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산 결합 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음 |
 | `deferred [ID]` | DeferredNonAPIStore의 read-only 조회 | 대상 목록 / 최근 이력 조회. 조회가 대용량 엔진 실행을 유발하지 않음 |
 | `deferred ID --events` | read-only append-only event 조회 | 불변 event sequence를 포함해 정확한 handoff 대상을 지정 |
@@ -102,7 +103,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | capacity 상수는 parser 모듈에 있고 parser 한도 분류 일부는 오류 문자열에 의존 | 작은 공통 policy/reason 모듈로 정리. transport/parser/engine이 같은 typed capacity reason 사용 |
 | 보안/데이터/용량에 모두 NEEDS_REVIEW가 사용됨 | 상태를 늘려 라우팅하지 말고 고정된 reason·result kind로 분기. 범용 resume가 자동 handoff하지 않음 |
 | 작은 파일 저장도 용량 상한을 갖고 있음 | 작은 parser/storage 재호출 없이 대용량 전용 budget·segmented artifact manifest로 보존 |
-| 대용량 output의 경제 의미·단위 해석과 CSV 전달은 없음 | World Bank/BOJ 검증 task를 위한 제한 CSV exporter가 별도 순서로 남음. 대용량 artifact export는 별도 범위 |
+| 대용량 output의 경제 의미·단위 해석과 CSV 전달은 없음 | 현재 World Bank/BOJ 검증 task만 CSV exporter에 연결됐다. 대용량 artifact export와 다른 provider는 별도 범위 |
 
 확인 소스: [CLI](../src/macro_data_platform/cli.py), [runner](../src/macro_data_platform/orchestration/runner.py),
 [공통 입력](../src/macro_data_platform/orchestration/models.py), [StageResult](../src/macro_data_platform/contracts.py),

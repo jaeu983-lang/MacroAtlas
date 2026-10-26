@@ -1,6 +1,6 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 19회차 기준 갱신: PR #3/#4/#5/#6은 `codex/iteration-04-gate-a`에 통합됐고 HEAD는 `dfdfa307`이다. 18회차 QA·범위 adapter·수정/검토 흐름은 [18회차 보고서](ITERATION_18_REPORT.md)를 따른다. 19회차 BIS flat 보존본 production run은 완료됐고 세부 근거는 [19회차 보고서](ITERATION_19_REPORT.md)에 있다.
+> 20회차 기준 갱신: PR #3~#8 통합 후 base HEAD는 `09594871`이었다. 20회차에서 World Bank/BOJ task CSV export를 구현·로컬 검증했고, PR 통합 상태는 [20회차 보고서](ITERATION_20_REPORT.md)에 기록한다. 18·19회차의 당대 결과는 각 [18회차 보고서](ITERATION_18_REPORT.md), [19회차 보고서](ITERATION_19_REPORT.md)를 따른다.
 
 기준일: 2026-10-26. 근거는 17회차 시험, 현재 저장소 상태, 과거 네 provider live 결과와
 최신 TIC/BIS exact-scope 감시다. TIC task `2733c6a3-abb8-4201-9735-b3354fd32bd9`와
@@ -13,7 +13,7 @@ provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로
 | 항목 | 현재 확인된 상태 | 남은 작업 | 접속 문제 여부 |
 |---|---|---|---|
 | BIS GLI flat ZIP 구조 보존 materialization | PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 event seq 1/raw를 한 번 처리. 24,378×21 문자열 JSONL, manifest/chunk hash, 원본 불변성, task attempt와 `handed_off/resolved` 확인 | 이 단일 BIS flat profile은 완료. 다른 provider·format·의미 정규화는 별도 qualification과 승인으로 계획 | 해결된 로컬 데이터 처리 항목. 접속 오류나 Gate C 자연 증거가 아님 |
-| World Bank/BOJ 정규화 결과 CSV 전달 | 현재 구조화 CLI는 저장 경로·상태를 제공하며 provider-task exporter가 없음 | [CSV 후속 계획](CSV_EXPORT_FOLLOWUP_PLAN.md)의 provenance·null·무결성·경로·덮어쓰기 방지를 구현 | 남은 로컬 결과 전달 기능. XLSX와 BIS flat JSONL 변환은 별도 범위 |
+| World Bank/BOJ 정규화 결과 CSV 전달 | 20회차에서 완료 task의 저장 evidence를 read-only 재검증해 CSV와 provenance sidecar를 만들고, 보존 World Bank/BOJ task로 확인 | 현재 좁은 provider scope를 유지. XLSX, BIS flat JSONL, 다른 기관 export는 별도 요구·검증 후 계획 | 이 제한된 로컬 전달 기능은 해결. XLSX/BIS export는 미구현 제품 범위이지 접속 장애가 아님 |
 | 통계 의미·품질 범위 확대 | World Bank 고정 실측은 quality passed이지만 normalized unit/frequency unknown 경고가 있음. 경제 이상치·개정 역사·기관 간 동등성은 검사 범위 밖 | 공식 metadata로 단위·빈도·정의 확인 및 범위별 품질 검증 설계 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
 | 시험 worker 강제 종료 복구 | 17회차 구현에서 RUNNING task와 orphan scratch 복구가 빠져 있었음. lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 코드 HEAD `e2e72a5`의 645개 로컬 테스트/Ruff 및 4조합 CI run 40359478210이 통과 | 구현 검증 완료. PR #4 통합은 PR #3 다음 순서 | 제품 내부 복구 결함. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | PR #6에서 BIS flat 전용 `handed_off/resolved`, 승인 child, chunk/hash checkpoint와 same-task resume 구조를 통합했고 실제 보존 raw task가 완료됨 | 다른 provider, Windows resource worker, 더 큰 입력·pagination은 별도 qualification 후 평가 | BIS flat 제한 경로 완료. 범용 대용량 지원은 남은 제품 범위 |
@@ -71,11 +71,11 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 
 1. **완료:** PR #1~#6 통합과 18회차 QA 경로. PR #6 merge commit `dfdfa307`의 CI 네 조합이 통과했다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
-3. **다음 개발:** 검증된 World Bank/BOJ completed task만 입력으로 받는 CSV exporter. output provenance, null 의미, hash, 경로·symlink·덮어쓰기 가드를 고정한다. XLSX는 별도 결정이다.
-4. **후속 범위:** 추가 provider/format, Windows resource-limited worker, 일반 자연어/다국가 탐색, 경제적 outlier·개정 의미 검증은 미구현이다. 각각 공식 자료·명시적 수용 범위가 정해질 때 별도 작업으로 시작한다.
+3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
+4. **다음 제품 작업:** 한 가지 사용자 업무 흐름의 사용성 검증 후 다음 provider·UI·자연어 범위를 정한다. 다른 export format/provider, Windows 대용량 worker, 경제 이상치·개정 의미 검증은 별도 요구와 수용 기준을 기다린다.
 5. **병행 증거 대기:** TIC/BIS 감시는 유지하되 unchanged는 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
 
-이번 계획에서 남은 항목은 모두 같은 종류의 “실패”가 아니다. PR #3~#6과 19회차 BIS flat 단일 처리 경로는 완료됐다. World Bank/BOJ CSV 전달과 provider 확대는 미구현 기능이고, 자연 개정/장애는 아직 관측되지 않은 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
+남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 더 넓은 provider/format은 미구현 기능이고, 자연 개정/장애는 아직 관측되지 않은 Gate C 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 
 근거: [현행 Gate 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md), [인계 목록](NON_API_DEFERRED_CATALOG.json),
 [엔진 연결 설계](ENGINE_CONNECTIONS.md), [17회차 시험 계획](ITERATION_17_PLAN.md),

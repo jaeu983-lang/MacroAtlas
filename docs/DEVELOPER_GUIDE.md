@@ -34,6 +34,7 @@ py -3 -m venv .venv
 | `storage/` | SQLite task, raw-download, feedback, deferred record, artifact 관련 저장 |
 | `connectors/` | 기관 전송과 parser adapter |
 | `ingestion/` | connector를 실행 가능한 stage/engine으로 연결 |
+| `ingestion/csv_export.py` | 완료된 World Bank/BOJ task와 저장 원본을 읽기 전용 검증한 뒤 CSV/provenance 파일 생성 |
 | `discovery/` | 근거가 붙은 제한 후보 찾기와 명시 선택 보조 |
 | `analysis/` | 기록을 읽는 pattern 분석. 결과는 검토 후보이지 자동 지식이나 코드가 아님 |
 | `tests/` | offline fixture, 계약, 상태 전이, 제한된 live 관련 단위 검증 |
@@ -50,6 +51,11 @@ py -3 -m venv .venv
 4. connector는 source별 transport/parser 범위에서 raw와 manifest를 보존하고 검증된 값만 반환합니다.
 5. changed, schema/meaning ambiguity, capacity, auth, retryable failure는 구체 상태로 멈춥니다.
 6. 성공 결과는 다음 stage에 전달됩니다. 저장된 artifact를 외부로 내보낼 때도 exporter는 검증 상태를 다시 확인해야 합니다.
+
+현재 `export` 경로는 task/stage·quality·raw/manifest 해시를 다시 확인하고 read-only SQLite 연결을 사용합니다.
+출력은 `data/exports/` 아래에서 덮어쓰지 않는 CSV/sidecar 쌍으로 생성됩니다. provider별 adapter만 허용하며,
+BIS flat JSONL과 임의 provider는 받지 않습니다. BOJ manifest digest는 수집 시 저장되지 않으므로 raw hash와
+manifest 필드를 대조하고 해당 한계를 sidecar provenance에 기록합니다.
 
 이 구조는 분산 queue, exactly-once 외부 부작용, 범용 planner를 제공하지 않습니다. 재시도 가능한 외부 요청은
 같은 task ID로 명시 재개하고 `Retry-After`와 예산을 준수합니다. 새 요청 범위는 새 task여야 합니다.

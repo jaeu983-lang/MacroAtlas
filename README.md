@@ -5,7 +5,8 @@ Python 프로젝트입니다. 모든 기관을 자동 검색하는 챗봇보다,
 안전하게 멈추는 데 먼저 집중합니다.
 
 현재 진입점은 고정 범위 구조화 CLI와 Python API입니다. 자연어 채팅 UI, 기관 전체 검색, 정식 대용량
-정규화, CSV/XLSX exporter는 완료된 제품 기능이 아닙니다. 비API 대용량 후보는 격리 qualification을 할 수
+정규화, 범용 CSV/XLSX exporter는 제공하지 않습니다. 완료·검증된 World Bank/BOJ task에 한정한 CSV 전달은
+지원합니다. 비API 대용량 후보는 격리 qualification을 할 수
 있지만 시험 통과는 production 실행 승인이 아닙니다. 별도로 명시 승인·같은 raw qualification을 요구하는
 BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며, 의미 정규화나 일반 CSV 전달을 제공하지 않습니다.
 
@@ -46,14 +47,19 @@ python3 -m venv .venv
 
 ```bash
 .venv/bin/macroatlas collect worldbank-gdp --start-year 2020 --end-year 2022 --live
+.venv/bin/macroatlas status <TASK_ID>
+.venv/bin/macroatlas export <TASK_ID> --format csv --output data/exports/worldbank.csv
 ```
+
+`export`는 저장된 완료 task만 로컬에서 검증해 CSV와 provenance sidecar를 생성하며 네트워크를 사용하지
+않습니다. 기존 World Bank/BOJ 지원 범위와 파일 필드는 [사용자 안내서](docs/USER_GUIDE.md)를 확인하세요.
 
 Windows PowerShell 설치 명령, task·오류·결과 확인, 보안과 데이터 한도는 [사용자 안내서](docs/USER_GUIDE.md)에
 있습니다. 코드 검사 절차는 [개발자 안내서](docs/DEVELOPER_GUIDE.md)에 있습니다.
 
 ## 데이터와 상태 안전
 
-`data/raw/`, `data/processed/`, SQLite DB와 live 수집 결과는 로컬 산출물입니다. 원본을 덮어쓰지 않고,
+`data/raw/`, `data/processed/`, `data/exports/`, SQLite DB와 live 수집 결과는 로컬 산출물입니다. 원본을 덮어쓰지 않고,
 동일 범위의 원본이 바뀌면 이전·새 원본을 보존하며 검토 전 새 normalized 출력을 차단합니다. transient 실패는
 저장된 동일 task로 `Retry-After`와 시도 예산을 지켜 재개합니다. 실제 키는 저장소·문서·로그에 넣지 않습니다.
 
