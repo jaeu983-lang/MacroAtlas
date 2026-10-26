@@ -24,10 +24,10 @@ flowchart TD
     DEFER --> TRIAL[명시 large-check / 불변 event 결합]
     TRIAL --> QUAL[격리 시험 task / 예산 제한]
     QUAL --> PROOF[시험 통과 또는 미실행 / 본 실행 승인 아님]
-    DEFER -.-> HANDOFF[명시 인계 서비스: 대상 버전 고정]
-    HANDOFF -.-> CHILD[별도 TaskPlan / 대용량 stage]
-    CHILD -.-> LARGE[stream / chunk + checkpoint]
-    LARGE -.-> RAW
+    DEFER --> HANDOFF[명시 승인·불변 event 검증]
+    HANDOFF --> CHILD[부모 연결 child TaskPlan]
+    CHILD --> LARGE[Linux 제한 stream / chunk + checkpoint]
+    LARGE --> ARTIFACT[JSONL chunks + output manifest]
     RESULT -.-> EXPORT[검증된 완료 산출물 export]
 ```
 
@@ -35,7 +35,7 @@ flowchart TD
 inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 → parser/normalized 저장이다.
 로컬 intake는 HTTP 단계를 거치지 않는다. API는 기관별 응답 예산을 사용하며 비API 인계 기준을 적용하지 않는다.
 그림의 raw/manifest는 공통적인 보존 책임을 뜻한다. 현재 작은 파일 저장 함수는 16 MiB 입력/64 MiB
-정규화 상한이 있으므로, 대용량 엔진은 별도 예산의 segmented artifact 저장·chunk manifest로 연결해야 한다.
+정규화 상한을 유지하며, 19회차 대용량 실행은 BIS flat ZIP 한 건에 한해 별도 budget과 segmented JSONL manifest를 쓴다.
 
 ## 현재 실제 연결표
 
@@ -49,6 +49,9 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. World Bank/BOJ/watch는 저장된 계획을 재개하고, 대용량 시험 task는 중단 worker의 종료를 확인해 미확정 결과를 기록 |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산 결합 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음 |
 | `deferred [ID]` | DeferredNonAPIStore의 read-only 조회 | 대상 목록 / 최근 이력 조회. 조회가 대용량 엔진 실행을 유발하지 않음 |
+| `deferred ID --events` | read-only append-only event 조회 | 불변 event sequence를 포함해 정확한 handoff 대상을 지정 |
+| `large-run ID --event-seq N --approve-production` | 성공한 동일 event/hash qualification 확인 → 보존 raw/request manifest binding → atomic child task와 `handed_off` event → resource-limited worker | BIS GLI flat ZIP 1개만 Linux에서 처리. JSONL string chunks/checkpoint/output manifest, 완료 시 `resolved` event. 새 네트워크 요청 없음 |
+| `large-resume CHILD_TASK_ID` | 같은 child plan과 artifact checkpoint를 재검증해 이어 처리 | 원본·manifest 변경 시 중단. Worker 중단 시 lock 해제 후 같은 child를 재개. 임의 source/engine 변경 불가 |
 
 검색은 `discovery/series_search.py`의 근거 후보 생성과 명시 선택으로 분리돼 있다. 현재 고정 CLI는
 범용 검색 전체를 호출하지 않는다. `acquisition_planning.py`는 API chunk 계획만 반환하며 실행 queue가 아니다.
@@ -71,7 +74,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 - 큰 원본·정규화 본문은 파일로 둔다. 후속 대용량 stage 간 payload는 `artifact_id, relative_path, manifest_ref,
   sha256(확인된 경우), schema/version, counts/quality` 참조로 제한한다. 현재 작은 API payload 전체를 즉시 재작성하지 않는다.
 
-## 대용량 엔진 연결 규칙 — 후속 구현 계약
+## 대용량 엔진 연결 규칙
 
 1. 진입점은 한 개의 handoff service로 둔다. 인계 record ID뿐 아니라 **변경 불가한 판정 event/version**을 선택한다.
    현재 목록의 최신 raw 경로를 나중에 다시 읽어 선택 당시 원본이 바뀌는 일을 막는다.
@@ -85,20 +88,21 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
    같은 작업의 일시 장애는 자식 task를 resume한다. 승인된 scope·engine이 바뀌면 새 인계로 기록한다.
 5. 보안 검토는 대용량 실행 승인과 따로 충족해야 한다. 더 큰 엔진도 경로·압축·TLS·출처·변경 검사를 유지한다.
    stream 원본 hash와 manifest를 보존하고, 변경/품질 검토가 필요하면 새 normalized 산출물을 공개하지 않는다.
-6. 완료는 자식의 검증된 output manifest와 인계 event에 연결한다. exporter는 그 검증된 artifact만 읽는다.
+6. 완료는 자식의 검증된 output manifest와 인계 event에 연결한다. 현재 대용량 결과는 구조 보존 JSONL이며,
+   World Bank/BOJ CSV exporter 입력으로 승격하지 않는다. exporter는 provider별 검증 artifact만 읽는다.
    원본 다운로드·파싱·resume·출처 검사를 exporter에 다시 구현하지 않는다.
 
 ## 코드 대조에서 확인한 연결 공백과 최소 보완 순서
 
 | 현재 공백 | 연결 전에 필요한 보완 |
 |---|---|
-| 17회차 시험 task가 event seq·원본 stat·worker 코드에 결합됨. 일반 인계 목록 조회는 seq를 직접 표시하지 않음 | 정식 handoff는 검증된 immutable artifact/hash와 승인 상태를 추가 |
-| stage 실행 ID는 runner 내부에 있고 현재 StageInput에는 없음 | 인계 bridge가 origin stage_run/attempt를 신뢰 가능하게 연결하도록 최소 계약 확장 |
-| 인계 저장과 stage 결과 저장은 현재 별도 transaction | 중단 후 record만 남거나 event가 중복될 경우를 대비한 stage-run idempotency·복구 reconciliation |
+| 정식 production handoff는 BIS flat ZIP 단일 source profile만 지원 | 다른 agency/file type은 별도 qualification·예산·안전 경계를 정하기 전까지 `NOT_EXECUTED` |
+| stage 실행 ID는 runner 내부에 있고 현재 StageInput에는 없음 | 19회차 handoff는 immutable origin task/event와 child stage를 연결함. 세부 stage_run lineage 확장은 후속 검토 |
+| task stage 완료와 output 파일 작성은 SQLite/파일 시스템에 따로 저장됨 | idempotent child task, atomic checkpoint/manifest, 재개 시 hash 검증으로 crash 창을 복구. 일반 cross-store transaction은 보장하지 않음 |
 | capacity 상수는 parser 모듈에 있고 parser 한도 분류 일부는 오류 문자열에 의존 | 작은 공통 policy/reason 모듈로 정리. transport/parser/engine이 같은 typed capacity reason 사용 |
 | 보안/데이터/용량에 모두 NEEDS_REVIEW가 사용됨 | 상태를 늘려 라우팅하지 말고 고정된 reason·result kind로 분기. 범용 resume가 자동 handoff하지 않음 |
 | 작은 파일 저장도 용량 상한을 갖고 있음 | 작은 parser/storage 재호출 없이 대용량 전용 budget·segmented artifact manifest로 보존 |
-| 격리 용량 시험은 구현. 정식 대용량 정규화·artifact 공통 adapter·exporter 연결은 없음 | 시험 증거 → 정식 handoff 승인/원본 artifact → 대용량 stage → 검증 artifact adapter → exporter 순서로 구현 |
+| 대용량 output의 경제 의미·단위 해석과 CSV 전달은 없음 | World Bank/BOJ 검증 task를 위한 제한 CSV exporter가 별도 순서로 남음. 대용량 artifact export는 별도 범위 |
 
 확인 소스: [CLI](../src/macro_data_platform/cli.py), [runner](../src/macro_data_platform/orchestration/runner.py),
 [공통 입력](../src/macro_data_platform/orchestration/models.py), [StageResult](../src/macro_data_platform/contracts.py),
@@ -106,4 +110,4 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 [파일 watcher](../src/macro_data_platform/ingestion/gate_c_watch.py), [파일 intake](../src/macro_data_platform/ingestion/tabular_files.py),
 [capacity/목록](../src/macro_data_platform/ingestion/non_api_capacity.py).
 
-17회차 시험 경로·실측 예산·미실행 응답은 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 따른다.
+17회차 시험과 19회차 제한 production handoff 경로·예산·미실행 응답은 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 따른다.

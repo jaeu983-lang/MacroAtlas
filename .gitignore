@@ -22,4 +22,5 @@ data/inbox/*
 .DS_Store
 
 data/large_trials/
+data/large_artifacts/
 data/qualification_benchmark/

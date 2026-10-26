@@ -179,3 +179,21 @@ Linux에서 입력 128 MiB 미만·출력 192 MiB 미만·가상 메모리 384 M
 `TRIAL_PASSED`도 본 실행 승인이 아니며 production_execution=NOT_EXECUTED입니다.
 같은 후보·코드·예산은 기존 결과를 반환하고 원본이 바뀌면 재사용하지 않습니다.
 상세 조사·실측·한계는 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 참조하세요.
+
+### BIS flat 파일의 별도 대용량 실행
+
+현재 별도 production 경로는 BIS GLI flat ZIP 한 건만 지원합니다. 실행 전 불변 event 순번을 확인하고,
+일치하는 raw/hash qualification이 있어야 합니다. `--approve-production`은 별도 실행 승인을 뜻합니다.
+
+```text
+macroatlas deferred <DEFERRAL_ID> --events
+macroatlas large-run <DEFERRAL_ID> --event-seq <SEQ> --approve-production
+macroatlas status <CHILD_TASK_ID>
+macroatlas large-resume <CHILD_TASK_ID>
+```
+
+Linux에서 입력 128 MiB, 출력 192 MiB, 메모리 384 MiB, CPU 30초, wall 60초 상한의 worker가
+원본 값을 문자열로 보존한 JSONL chunk를 생성합니다. 원본과 요청 manifest는 변경하지 않습니다.
+완료 manifest는 구조·출처·hash만 검증하며 통계 단위·빈도·경제적 의미를 판정하지 않습니다.
+Windows나 미지원 포맷은 실행하지 않습니다. 결과 artifact는 `data/large_artifacts/` 아래에 남고,
+현재 범용 CSV/XLSX export는 제공하지 않습니다.

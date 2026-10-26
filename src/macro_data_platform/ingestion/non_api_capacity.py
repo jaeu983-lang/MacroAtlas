@@ -219,3 +219,17 @@ class DeferredNonAPIStore:
                                   '(SELECT MAX(seq) FROM deferred_non_api_events e '
                                   'WHERE e.id=deferred_non_api.id) DESC LIMIT 100').fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def events(self, record_id):
+        """Return append-only event sequence numbers and documents without creating state."""
+        if not self.settings.database_path.exists():
+            return []
+        with self.connect() as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
+                              "AND name='deferred_non_api_events'").fetchone():
+                return []
+            rows = db.execute(
+                'SELECT seq,document FROM deferred_non_api_events WHERE id=? ORDER BY seq DESC LIMIT 100',
+                (record_id,),
+            ).fetchall()
+        return [{"event_seq": seq, **json.loads(document)} for seq, document in rows]
