@@ -158,7 +158,7 @@ STRATEGIES = {
         "collection_not_implemented", "unknown",
         ("BOJ's 2026 notice announces JSON and CSV access to time-series data.",
          "The official API manual is reachable and documents request parameters and limits.",
-         "No BOJ observation connector or series-specific request has been implemented or tested."),
+         "A limited FM08/FXERD01 live request succeeded; no reusable BOJ observation connector exists."),
     ),
     "treasury_tic": InstitutionStrategy(
         "treasury_tic", "treasury_tic_tables", "official_table_and_usage_guidance",

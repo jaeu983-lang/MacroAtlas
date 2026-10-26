@@ -584,3 +584,12 @@
   whether the manual itself changed cannot be established. It is now accessible. Update institution support
   state from `blocked_manual_access` to `collection_not_implemented`, since documentation exists but the
   BOJ observation adapter is absent. Gate C's D-067 limited pass and its scope are unchanged.
+
+## BOJ live endpoint re-evaluation (2026-10-26)
+
+- **D-072 / LIMITED LIVE VERIFIED:** The manual naming discrepancy does not block independent,
+  explicitly documented metadata and code endpoints. One FM08 metadata GET and one confirmed FXERD01
+  September 2026 data GET both returned HTTP/JSON STATUS 200. Arrays contain 30 dates, 19 numeric
+  values and 11 nulls. No reusable collector or orchestration integration was implemented.
+  Details and hashes: `docs/BOJ_LIVE_RECHECK_2026_10_26.md`. This supersedes D-071
+  only regarding the later live requests, without expanding Gate C acceptance.

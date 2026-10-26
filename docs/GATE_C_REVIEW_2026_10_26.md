@@ -42,6 +42,14 @@ failure→durable resume은 `NOT_RUN`으로 남는다.
 합성 bytes를 사용한다. 위 controlled copy 결과는 별도의 임시 실행으로 실제 TIC raw를 사용했으며,
 실제 새 provider capture를 만들지 않았다.
 
+## 최신 BOJ 실측 정정 — D-072
+
+기존 보류 판단을 재검토해 공식 metadata 및 확인된 FM08/FXERD01의 2026-09 데이터 요청을
+각각 한 번 실행했고 모두 HTTP/JSON STATUS 200이었다. 날짜/값 각 30개(19개 값, 11개 null)를
+확인했다. BOJ API 자체의 접근 차단은 현재 재현되지 않는다. 재사용 collector는 미구현이다.
+아래 D-071의 API 미호출 기록은 당시 이력이며, 최신 증거는
+`docs/BOJ_LIVE_RECHECK_2026_10_26.md`를 따른다. Gate C 제한 범위는 확대하지 않는다.
+
 ## BOJ 공식 API 매뉴얼 재확인 — D-071 (2026-10-26)
 
 기존 API notice를 한 번 GET했다. HTTP 200, 36,614 bytes, SHA256
