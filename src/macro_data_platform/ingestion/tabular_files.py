@@ -1,4 +1,7 @@
 """Orchestrator engine for safe local tabular file intake and archival."""
+from datetime import datetime
+from urllib.parse import urlsplit
+
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.tabular_files import (
     MAX_INPUT_BYTES,
@@ -13,9 +16,58 @@ from macro_data_platform.storage.tabular_archives import (
 )
 
 _INPUT_KEYS = {
-    "relative_path", "format", "delimiter", "sheet_name", "table_index",
-    "zip_member", "header_row",
+    "relative_path", "source_url", "format", "delimiter", "sheet_name", "table_index",
+    "zip_member", "header_row", "source_agency", "source_captured_at",
+    "source_content_type", "source_http_status", "source_last_modified", "source_table_name",
 }
+_PROVENANCE_LIMITS = {
+    "source_agency": 128,
+    "source_content_type": 128,
+    "source_last_modified": 128,
+    "source_table_name": 256,
+}
+_PROVENANCE_KEYS = {
+    "source_agency", "source_captured_at", "source_content_type", "source_http_status",
+    "source_last_modified", "source_table_name",
+}
+
+
+def _safe_source_url(value) -> bool:
+    if value is None:
+        return True
+    if (not isinstance(value, str) or not value or len(value) > 512
+            or value.strip() != value or any(character.isspace() for character in value)
+            or "?" in value or "#" in value):
+        return False
+    try:
+        parsed = urlsplit(value)
+        return (parsed.scheme == "https" and parsed.hostname is not None
+                and parsed.username is None and parsed.password is None
+                and not parsed.query and not parsed.fragment)
+    except ValueError:
+        return False
+
+
+def _safe_provenance(data: dict) -> bool:
+    for key, limit in _PROVENANCE_LIMITS.items():
+        value = data.get(key)
+        if value is not None and (
+                not isinstance(value, str) or not value.strip() or len(value) > limit):
+            return False
+    captured_at = data.get("source_captured_at")
+    if captured_at is not None:
+        if not isinstance(captured_at, str) or len(captured_at) > 40:
+            return False
+        try:
+            parsed = datetime.fromisoformat(captured_at)
+        except ValueError:
+            return False
+        if parsed.tzinfo is None or parsed.utcoffset() is None or parsed.utcoffset().total_seconds():
+            return False
+    status = data.get("source_http_status")
+    return not (status is not None and (
+        isinstance(status, bool) or not isinstance(status, int) or not 100 <= status <= 599
+    ))
 
 
 class TabularFileEngine:
@@ -27,7 +79,9 @@ class TabularFileEngine:
         data = request.input_data
         if (not isinstance(data, dict) or set(data) - _INPUT_KEYS
                 or not isinstance(data.get("relative_path"), str)
-                or data.get("format") not in SUPPORTED_FORMATS):
+                or data.get("format") not in SUPPORTED_FORMATS
+                or not _safe_source_url(data.get("source_url"))
+                or not _safe_provenance(data)):
             return _invalid("Expected a repository-local inbox path and an explicit supported format.")
         try:
             relative = data["relative_path"]
@@ -42,9 +96,25 @@ class TabularFileEngine:
             context = {key: data.get(key) for key in (
                 "delimiter", "header_row", "sheet_name", "table_index", "zip_member",
             ) if key in data}
+            if "source_url" in data:
+                context["source_url"] = data["source_url"]
+            context.update({key: data[key] for key in _PROVENANCE_KEYS if key in data})
             package = begin_tabular_package(self.settings, raw, data["format"], context)
         except (OSError, ValueError):
             return _invalid("Tabular input path or local archive could not be validated.")
+
+        if package["source_change_status"] not in {
+                "not_tracked", "first_observation", "unchanged"}:
+            return StageResult(
+                StageStatus.NEEDS_REVIEW,
+                {"package_id": package["package_id"], "raw_path": package["raw_path"],
+                 "request_manifest_path": package["request_manifest_path"],
+                 "source_change_status": package["source_change_status"],
+                 "source_url": data.get("source_url")},
+                (package["raw_path"], package["request_manifest_path"]),
+                ("Prior source bytes differ or history integrity is unknown; review before normalization.",),
+                ErrorCode.SCHEMA_CHANGED,
+            )
 
         try:
             table = parse_tabular_document(
@@ -71,7 +141,7 @@ class TabularFileEngine:
                 ErrorCode.INTERNAL_BUG,
             )
         return StageResult(StageStatus.SUCCEEDED, {
-            **saved, "mode": "local_file",
+            **saved, "mode": "local_file", "source_url": data.get("source_url"),
             "table": {"format": table.format, "headers": list(table.headers),
                       "row_count": len(table.rows),
                       "duplicate_data_rows": list(table.duplicate_data_rows),

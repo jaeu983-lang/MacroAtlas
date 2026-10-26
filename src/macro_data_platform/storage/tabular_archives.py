@@ -2,6 +2,7 @@
 import hashlib
 import json
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,7 +16,16 @@ from macro_data_platform.connectors.tabular_files import (
 PARSER_VERSION = "tabular-parser-v1"
 MAX_EXISTING_PACKAGES = 1000
 MAX_NORMALIZED_BYTES = 64 * 1024 * 1024
-_CONTEXT_KEYS = {"delimiter", "format", "header_row", "sheet_name", "table_index", "zip_member"}
+MAX_HISTORY_BYTES = 64 * 1024 * 1024
+MAX_REQUEST_MANIFEST_BYTES = 64 * 1024
+_CAPTURE_METADATA_KEYS = {
+    "source_captured_at", "source_content_type", "source_http_status", "source_last_modified",
+}
+_CONTEXT_KEYS = {
+    "delimiter", "format", "header_row", "sheet_name", "source_agency", "source_captured_at",
+    "source_content_type", "source_http_status", "source_last_modified", "source_table_name",
+    "source_url", "table_index", "zip_member",
+}
 
 
 def _safe_context(context: dict) -> dict:
@@ -29,6 +39,90 @@ def _safe_context(context: dict) -> dict:
             raise ValueError("tabular request context value exceeds its limit")
         result[key] = value
     return result
+
+
+def _scope(context: dict) -> dict:
+    return {key: value for key, value in context.items() if key not in _CAPTURE_METADATA_KEYS}
+
+
+def _source_change_status(settings: Settings, root: Path, entries: list[Path],
+                          context: dict, raw_sha256: str) -> str:
+    if context.get("source_url") is None:
+        return "not_tracked"
+    if not entries:
+        return "first_observation"
+    if len(entries) > MAX_EXISTING_PACKAGES:
+        return "unknown_history_limit"
+
+    current_scope = _scope(context)
+    matches = []
+    scanned_bytes = 0
+    for request_path in entries:
+        if (request_path.is_symlink() or request_path.parent.is_symlink()
+                or not request_path.parent.resolve().is_relative_to(root)):
+            return "unknown_history_integrity"
+        try:
+            manifest_size = request_path.stat().st_size
+            if manifest_size > MAX_REQUEST_MANIFEST_BYTES:
+                return "unknown_history_limit"
+            scanned_bytes += manifest_size
+            if scanned_bytes > MAX_HISTORY_BYTES:
+                return "unknown_history_limit"
+            request = json.loads(request_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError):
+            return "unknown_history_integrity"
+        if not isinstance(request, dict):
+            return "unknown_history_integrity"
+        prior_context = request.get("request_context")
+        if not isinstance(prior_context, dict):
+            return "unknown_history_integrity"
+        if _scope(prior_context) != current_scope:
+            continue
+
+        package_id = request.get("package_id")
+        raw_document = request.get("raw")
+        raw_relative = raw_document.get("path") if isinstance(raw_document, dict) else None
+        stored_format = prior_context.get("format")
+        if (not isinstance(package_id, str) or not re.fullmatch(r"[a-f0-9]{32}", package_id)
+                or package_id != request_path.parent.name or stored_format not in SUPPORTED_FORMATS):
+            return "unknown_history_integrity"
+        expected_raw = (Path(settings.data_dir) / "raw" / "tabular" / package_id
+                        / f"source.{stored_format}").as_posix()
+        if raw_relative != expected_raw:
+            return "unknown_history_integrity"
+        original_path = settings.project_root / raw_relative
+        if original_path.is_symlink() or original_path.parent.is_symlink():
+            return "unknown_history_integrity"
+        raw_path = settings._inside(raw_relative)
+        try:
+            raw_size = raw_path.stat().st_size
+            if not raw_path.is_file() or raw_size > MAX_INPUT_BYTES:
+                return "unknown_history_integrity"
+            scanned_bytes += raw_size
+            if scanned_bytes > MAX_HISTORY_BYTES:
+                return "unknown_history_limit"
+            previous_raw = raw_path.read_bytes()
+        except OSError:
+            return "unknown_history_integrity"
+        previous_sha256 = hashlib.sha256(previous_raw).hexdigest()
+        recorded_sha256 = raw_document.get("sha256")
+        if not isinstance(recorded_sha256, str) or recorded_sha256 != previous_sha256:
+            return "unknown_history_integrity"
+
+        captured_at = prior_context.get("source_captured_at")
+        try:
+            sort_time = (datetime.fromisoformat(captured_at)
+                         .astimezone(UTC).timestamp() if isinstance(captured_at, str)
+                         else request_path.stat().st_mtime)
+            modified_ns = request_path.stat().st_mtime_ns
+        except (OSError, ValueError):
+            return "unknown_history_integrity"
+        matches.append((sort_time, modified_ns, package_id, previous_sha256))
+
+    if not matches:
+        return "first_observation"
+    previous_sha256 = max(matches)[-1]
+    return "unchanged" if previous_sha256 == raw_sha256 else "changed"
 
 
 def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
@@ -89,7 +183,10 @@ def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
                 "request_manifest_path": request_path.relative_to(settings.project_root).as_posix(),
                 "normalized_path": normalized_relative, "manifest_path": manifest_relative,
                 "complete": complete, "reused": True,
+                "source_change_status": request.get("source_change_status", "unknown_history_integrity"),
             }
+    source_change_status = _source_change_status(settings, root, existing if root.exists() else [],
+                                                 context, raw_digest)
     package_id = uuid4().hex
     raw_relative = Path(settings.data_dir) / "raw" / "tabular" / package_id
     processed_relative = Path(settings.data_dir) / "processed" / "tabular" / package_id
@@ -102,7 +199,7 @@ def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
     raw_reference = raw_path.relative_to(settings.project_root).as_posix()
     request_document = {
         "package_id": package_id, "fingerprint": fingerprint, "parser_version": PARSER_VERSION,
-        "request_context": context,
+        "request_context": context, "source_change_status": source_change_status,
         "raw": {"path": raw_reference, "sha256": raw_digest, "bytes": len(raw)},
     }
     request_path = raw_directory / "request.json"
@@ -113,7 +210,7 @@ def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
         "request_manifest_path": request_path.relative_to(settings.project_root).as_posix(),
         "normalized_path": f"{processed_relative.as_posix()}/table.json",
         "manifest_path": f"{raw_relative.as_posix()}/manifest.json",
-        "complete": False, "reused": False,
+        "complete": False, "reused": False, "source_change_status": source_change_status,
     }
 
 
@@ -137,6 +234,7 @@ def complete_tabular_package(settings: Settings, package: dict, table: ParsedTab
             "package_id": package["package_id"], "raw_path": package["raw_path"],
             "normalized_path": package["normalized_path"],
             "manifest_path": package["manifest_path"], "reused": True,
+            "source_change_status": manifest.get("source_change_status", "unknown_history_integrity"),
         }
     with normalized_path.open("xb") as stream:
         stream.write(table_bytes)
@@ -147,6 +245,7 @@ def complete_tabular_package(settings: Settings, package: dict, table: ParsedTab
     manifest = {
         "package_id": package["package_id"], "parser_version": PARSER_VERSION,
         "request_context": request_manifest["request_context"], "raw": request_manifest["raw"],
+        "source_change_status": request_manifest.get("source_change_status", "unknown_history_integrity"),
         "normalized": {"path": package["normalized_path"],
                        "sha256": hashlib.sha256(table_bytes).hexdigest(),
                        "bytes": len(table_bytes)},
@@ -163,5 +262,5 @@ def complete_tabular_package(settings: Settings, package: dict, table: ParsedTab
     return {
         "package_id": package["package_id"], "raw_path": package["raw_path"],
         "normalized_path": package["normalized_path"], "manifest_path": package["manifest_path"],
-        "reused": False,
+        "reused": False, "source_change_status": manifest["source_change_status"],
     }

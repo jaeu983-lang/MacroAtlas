@@ -31,7 +31,7 @@ class SourceFailure(Exception):
         self.retry_after_seconds = retry_after_seconds
 
 
-def _retry_after_seconds(value: str | None) -> int | None:
+def parse_retry_after(value: str | None) -> int | None:
     """Parse the standard delay-seconds or HTTP-date form without trusting arbitrary text."""
     if not value:
         return None
@@ -127,7 +127,7 @@ def request_json(url: str, *, method: str, body: bytes | None = None,
         raise
     except urllib.error.HTTPError as error:
         status = error.code
-        retry_after = _retry_after_seconds(error.headers.get("Retry-After")) if error.headers else None
+        retry_after = parse_retry_after(error.headers.get("Retry-After")) if error.headers else None
         error.close()
     except urllib.error.URLError as error:
         if isinstance(error.reason, ssl.SSLError):

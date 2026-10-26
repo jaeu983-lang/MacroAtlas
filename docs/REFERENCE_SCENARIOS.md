@@ -114,3 +114,44 @@ run_date: null
 - 저장 보고서 `reports/iteration_04_live_33263386304d44ee9ba174e0609d6cff.json`의 `live_path_passed=true`를 확인했다. pytest 433개 및 Ruff도 통과했다.
 - H의 OECD 비교, 다국가 탐색, 정의 비교와 자동 후보 선택은 여전히 NOT_RUN이다. 경제적 이상치, revision history, cross-source equivalence도 확인하지 않았다.
 - Gate A 상세와 한계는 `docs/ITERATION_04_REPORT.md` 참조.
+
+## Gate C X08 World Bank fixture follow-up (2026-10-26)
+
+- Same official URL and exact year-range request scope: changed JSON observations preserve both raw
+  captures and return `NEEDS_REVIEW`; no normalized observations are published.
+- Reordered JSON object keys/formatting are unchanged at the canonical payload level even though raw
+  byte hashes differ. A different request scope starts a separate baseline.
+- A tampered prior raw package makes history comparison unknown and emits
+  `prior_response_comparison_unavailable`; a verified legacy artifact without comparison metadata
+  can be used as a baseline.
+- TIC TSV/HTML and BIS ZIP/CSV-shaped fixture files also pass through `TabularFileEngine`; raw,
+  manifest, and normalized table hashes are checked.
+- This is fixture evidence. It does not establish live change detection or official TIC/BIS provider
+  workflows, Japan API support, or Gate C completion.
+
+## Gate C live TIC and tabular change-guard follow-up (2026-10-26)
+
+- Scenario C: **PARTIAL live**. One official Treasury Table 5 TXT response was imported from the
+  saved inbox file; the source page identifies end-of-period holdings in billions of dollars.
+  HTTP/content-type provenance, source URL, and raw/normalized hashes were checked. The Japan row is
+  retained as holdings data, not interpreted as a transaction flow.
+- X08: **fixture PASS for tabular intake**. Same source scope plus changed bytes preserves both raw
+  captures and returns `NEEDS_REVIEW` before normalized output. Unchanged bytes across capture times
+  compare as unchanged; a tampered previous raw file makes history unknown and blocks normalization.
+- X08 live TIC delta: **NOT_RUN**; only one live file capture was made. A subsequent source revision
+  must be captured before claiming live change-detection evidence. Gate C remains not passed.
+
+## Gate C live BIS bulk and BOJ access follow-up (2026-10-26)
+
+- Scenario B: **PARTIAL live**. The official BIS bulk page returned HTTP 200 and linked
+  `WS_GLI_csv_col.zip`; ZIP download returned HTTP 200 and passed raw archive → normalized table
+  intake (225 rows, 220 columns). The file includes multiple series/units and was not treated as one
+  homogeneous series. The flat CSV alternative returned HTTP 503; no retry was sent.
+- Scenario F: **BLOCKED** for BOJ API collection. The official API notice returned HTTP 200 and
+  describes JSON/CSV time-series access, but its linked API manual returned HTTP 403. No BOJ API
+  request was formed because request parameters and series identifiers could not be verified.
+- X01: the live BIS 503 was recorded without retry. A deterministic guide-fetch fixture verifies a
+  503 `Retry-After: 17` is persisted as a retry hint and no automatic retry occurs. This does not
+  substitute for a real provider recovery/resume cycle.
+- X08 live TIC/BIS source delta and provider-specific recovery remain **NOT_RUN**. Gate C remains
+  **not passed**; Gate D/Iteration 11 stays unstarted.

@@ -431,3 +431,52 @@
   `2c4e11fa0534bae6458154abfa14a03d3617a15b`이며, 새 local branch/commit은 origin에 없다.
   기존의 게시 금지 지시에 따라 push, 환경 draft 변경 또는 publish를 수행하지 않았다. 따라서 clean
   remote checkout과 실행 환경 배포 추적성은 아직 미해결이다.
+
+## 게시된 기준선 검증 및 World Bank 변경 감지 보완 (2026-10-26)
+
+- **D-062 / IMPLEMENTED LOCALLY, not published:** 게시 후 fresh environment의 `HEAD`가
+  `781827593924e35dadbc1188f09c7ea40a7b7c76`, branch가 `codex/institution-discovery-05`,
+  working tree가 clean임을 확인했다. Runtime은 observed spec revision 4에서 running/connected다.
+  이로써 해당 게시 기준선의 repository-reference mismatch를 닫았다. BLS/Census secret readiness와
+  network policy는 `unknown`; 이 후속 task에서는 실제 API 호출을 하지 않았다.
+- Gate C의 X08 보완으로 World Bank Gate A 감사 수집에서 동일 공식 URL·요청 범위·evidence mode의
+  최신 성공 capture와 현재 payload를 비교한다. JSON은 key order/formatting을 정규화하고, JSON이
+  아니면 raw bytes hash를 쓴다. 이전 raw와 manifest 무결성을 확인하기 전에는 과거 해시를 신뢰하지 않는다.
+  payload 변경은 두 원본을 보존하고 `NEEDS_REVIEW`와 함께 정규화 게시를 차단한다. 실패한 HTTP/
+  수집 capture는 비교 기준선이 되지 않는다. 최대 1,000개 artifact 조회 후 이력을 못 찾거나
+  이력 무결성·비교 방식이 확인되지 않으면 `unknown`으로 보고한다.
+- fixture 회귀는 changed/unchanged response, formatting-only difference, 다른 요청 범위,
+  손상된 prior raw, 비교 metadata가 없는 legacy artifact, evidence mode 분리, 재시도 중 바뀐
+  payload를 검증한다. TIC TSV/HTML과 BIS ZIP/CSV-shaped fixture는 raw archive·manifest·normalized
+  table까지 ingestion engine으로 통과한다. 전체 pytest 534개, Ruff와 `git diff --check`를 통과했다.
+  official provider/change workflow와 Japan 및 기관별 recovery 표본이 부족하므로 Gate C는 계속
+  미통과다. 이번 변경은 local-only이며 게시본에는 포함되지 않는다.
+
+## Tabular source provenance and changed-file guard (2026-10-26)
+
+- **D-063 / IMPLEMENTED LOCALLY:** For local tabular imports with a safe HTTPS `source_url`, store
+  source agency/table and bounded capture metadata in the request and final manifests. Compare
+  verified prior raw bytes only within the same source URL and parser scope; capture timestamp,
+  HTTP status, and content type are excluded from scope so repeated unchanged downloads compare
+  correctly. When source bytes changed or prior history integrity is unknown, preserve the raw file
+  and stop with `NEEDS_REVIEW` before normalized data is written.
+- Verified with a live Treasury TIC Table 5 file imported from the already-fetched official response,
+  plus deterministic tests for changed/unchanged and tampered-history cases. The live TIC source has
+  only one capture, so this does not establish live revision detection, an automatic TIC downloader,
+  or Gate C completion. These code changes remain local and unpublished.
+
+## Gate C follow-up: BIS/BOJ live evidence and parser policy (2026-10-26)
+
+- **D-064 / IMPLEMENTED LOCALLY:** BIS official guide inspection and one official Global Liquidity
+  column ZIP intake are limited live evidence. Keep the strategy as manual file intake; do not imply
+  SDMX/series-level support. Preserve exact-case distinct headers such as `DECIMALS` and `Decimals`
+  because they are separate source columns; reject only exact normalized duplicates.
+- **D-065 / BLOCKED:** BOJ's official API notice is reachable, but the linked official API manual
+  returned HTTP 403. Without verified request parameters and series IDs, do not guess or issue a data
+  API request; expose BOJ collection as `blocked_manual_access`.
+- Live BIS flat ZIP HTTP 503 is recorded without retry. For retryable guide-fetch failures,
+  `Retry-After` is parsed and persisted as a manual retry hint; automatic retry is not performed.
+- Full verification after these changes: **556 pytest passed**, Ruff and `git diff --check` passed.
+  Live source-change comparison and provider recovery evidence remain incomplete, so Gate C is not
+  passed. These code/document changes are local, uncommitted and unpushed; no environment publish was
+  performed.

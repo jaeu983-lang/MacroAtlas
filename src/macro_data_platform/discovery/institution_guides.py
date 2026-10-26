@@ -14,7 +14,11 @@ from uuid import uuid4
 import requests
 
 from macro_data_platform.config import Settings
-from macro_data_platform.connectors.statistical_http import MAX_BYTES, SourceFailure
+from macro_data_platform.connectors.statistical_http import (
+    MAX_BYTES,
+    SourceFailure,
+    parse_retry_after,
+)
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.orchestration.models import StageInput
 
@@ -75,6 +79,27 @@ GUIDES = {
         "https://data.imf.org/en/Resource-Pages/IMF-API", ("data.imf.org",),
         "html_visible_text_v1", "International Monetary Fund",
     ),
+    "bis_bulk_download": GuideSpec(
+        "bis_bulk_download", "bis", "bulk_download_catalogue",
+        "https://data.bis.org/bulkdownload", ("data.bis.org",),
+        "html_visible_text_v1", "Bank for International Settlements",
+    ),
+    "boj_api_notice": GuideSpec(
+        "boj_api_notice", "boj", "api_announcement",
+        "https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm",
+        ("www.boj.or.jp", "www.stat-search.boj.or.jp"),
+        "html_visible_text_v1", "Bank of Japan",
+    ),
+    "boj_api_manual": GuideSpec(
+        "boj_api_manual", "boj", "api_manual_pdf",
+        "https://www.stat-search.boj.or.jp/info/api_manual_en.pdf",
+        ("www.stat-search.boj.or.jp",), "pdf_raw_only_v1", "Bank of Japan",
+    ),
+    "boj_api_terms": GuideSpec(
+        "boj_api_terms", "boj", "api_use_notice_pdf",
+        "https://www.stat-search.boj.or.jp/info/api_notice_en.pdf",
+        ("www.stat-search.boj.or.jp",), "pdf_raw_only_v1", "Bank of Japan",
+    ),
     "tic_usage": GuideSpec(
         "tic_usage", "treasury_tic", "usage_guidance",
         "https://home.treasury.gov/data/treasury-international-capital-tic-system/contact-tic-using-tic",
@@ -121,6 +146,19 @@ STRATEGIES = {
                                 "unknown",
                                 ("IMF documents SDMX 2.1 and 3.0 data APIs.",
                                  "The Swagger explorer page requests beta portal sign-in.")),
+    "bis": InstitutionStrategy(
+        "bis", "bis_sdmx_and_bulk", "official_catalogue_then_explicit_file_selection",
+        None, ("bis_bulk_download",), "manual_file_intake_only", "unknown",
+        ("The official bulk page links dated CSV and SDMX ZIP snapshots.",
+         "No BIS-specific downloader exists; selected files use bounded local tabular intake."),
+    ),
+    "boj": InstitutionStrategy(
+        "boj", "boj_json_csv_timeseries_api", "official_api_notice_then_series_lookup",
+        None, ("boj_api_notice", "boj_api_manual", "boj_api_terms"),
+        "blocked_manual_access", "unknown",
+        ("BOJ's 2026 notice announces JSON and CSV access to time-series data.",
+         "The linked API manual returned HTTP 403; no BOJ observation connector exists."),
+    ),
     "treasury_tic": InstitutionStrategy(
         "treasury_tic", "treasury_tic_tables", "official_table_and_usage_guidance",
         None, ("tic_portal", "tic_usage"), "collection_not_implemented", "unknown",
@@ -329,9 +367,10 @@ class OfficialGuideFetcher:
                     raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.AUTH_ACCESS,
                                         "Official guide access was denied.", status)
                 if status == 429 or 500 <= status < 600:
+                    retry_after = parse_retry_after(response.headers.get("Retry-After"))
                     raise SourceFailure(StageStatus.FAILED_RETRYABLE, ErrorCode.TRANSIENT,
                                         "Official guide server returned a temporary error.",
-                                        status)
+                                        status, retry_after)
                 if 300 <= status < 400:
                     raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                                         "Official guide redirect requires review.", status)
@@ -369,7 +408,8 @@ class OfficialGuideFetcher:
 
 def _save_guide(settings: Settings, spec: GuideSpec, download: GuideDownload | None,
                 extraction: dict | None, *, status_code: int | None,
-                fetch_error: str | None = None) -> dict:
+                fetch_error: str | None = None,
+                retry_after_seconds: int | None = None) -> dict:
     if download is not None:
         parsed = urlsplit(download.source_url)
         if (parsed.scheme != "https" or parsed.hostname not in spec.official_hosts
@@ -425,6 +465,7 @@ def _save_guide(settings: Settings, spec: GuideSpec, download: GuideDownload | N
             "state": "extracted",
         },
         "auth_requirement": "unknown", "license_status": "not_assessed",
+        "retry_after_seconds": retry_after_seconds,
         "content_comparison": (
             "unavailable" if download is None else
             "baseline_unavailable" if previous is None else
@@ -463,9 +504,19 @@ class InstitutionGuideEngine:
             record = _save_guide(
                 self.settings, spec, None, None,
                 status_code=failure.status_code, fetch_error=str(failure),
+                retry_after_seconds=failure.retry_after_seconds,
             )
+            retry_hint = None
+            if failure.status == StageStatus.FAILED_RETRYABLE:
+                if failure.retry_after_seconds is None:
+                    retry_hint = ("Manual resume is available after the temporary source "
+                                  "condition clears; no automatic retry was sent.")
+                else:
+                    retry_hint = (f"Wait at least {failure.retry_after_seconds} seconds before "
+                                  "manual resume; no automatic retry was sent.")
             return StageResult(failure.status, record, (record["manifest_path"],),
-                               (str(failure),), failure.code)
+                               (str(failure),), failure.code, retry_hint,
+                               failure.retry_after_seconds)
         media_type = download.content_type.split(";", 1)[0].strip().lower()
         extraction = None
         if media_type == "text/html":

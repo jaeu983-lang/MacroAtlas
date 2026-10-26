@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.statistical_http import SourceFailure
@@ -43,6 +44,10 @@ class GuideTests(unittest.TestCase):
                 "census_core_concepts", "census_terms",
             ]),
             "imf": ("imf_sdmx", None, ["imf_api"]),
+            "bis": ("bis_sdmx_and_bulk", None, ["bis_bulk_download"]),
+            "boj": ("boj_json_csv_timeseries_api", None, [
+                "boj_api_notice", "boj_api_manual", "boj_api_terms",
+            ]),
             "treasury_tic": ("treasury_tic_tables", None, ["tic_portal", "tic_usage"]),
         }
         for institution, (strategy_id, collection, guides) in expected.items():
@@ -54,6 +59,21 @@ class GuideTests(unittest.TestCase):
                 self.assertTrue(strategy["operating_notes"])
         with self.assertRaises(ValueError):
             select_strategy("Treasury TIC")
+        self.assertEqual(select_strategy("boj")["collection_status"], "blocked_manual_access")
+
+    def test_bis_bulk_guide_accepts_only_official_archive_candidates(self):
+        spec = GUIDES["bis_bulk_download"]
+        source = b"""<html><body>
+        <a href='/static/bulk/WS_GLI_PUB_csv_col.zip'>Global liquidity indicators (CSV)</a>
+        <a href='https://outside.example/other.zip'>unofficial</a>
+        <a href='/static/bulk/download.zip?token=private'>query</a>
+        </body></html>"""
+
+        parsed = extract_html(source, spec)
+
+        self.assertEqual(parsed["link_candidates"], [
+            "https://data.bis.org/static/bulk/WS_GLI_PUB_csv_col.zip",
+        ])
 
     def test_html_extraction_omits_scripts_and_unapproved_links(self):
         spec = GUIDES["tic_usage"]
@@ -131,6 +151,35 @@ class GuideTests(unittest.TestCase):
             self.assertIsNone(record["original_path"])
             self.assertIsNone(record["sha256"])
             self.assertTrue(Path(directory, record["manifest_path"]).exists())
+
+    def test_bis_bulk_503_preserves_retry_after_without_automatic_retry(self):
+        class Response:
+            def __init__(self):
+                self.status_code = 503
+                self.headers = {"Retry-After": "17", "Content-Type": "text/plain"}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+        with tempfile.TemporaryDirectory() as directory, patch(
+                "macro_data_platform.discovery.institution_guides.requests.get",
+                return_value=Response()) as get:
+            result = InstitutionGuideEngine(Settings(Path(directory), network_enabled=True)).run(
+                StageInput("task", "BIS bulk catalogue", "guide",
+                           {"guide_id": "bis_bulk_download"}, None, ()),
+            )
+            self.assertEqual(result.status, StageStatus.FAILED_RETRYABLE)
+            self.assertEqual(result.retry_after_seconds, 17)
+            self.assertIn("Wait at least 17 seconds", result.retry_hint)
+            self.assertEqual(get.call_count, 1)
+            record = result.payload
+            self.assertEqual(record["http_status"], 503)
+            self.assertEqual(record["retry_after_seconds"], 17)
+            self.assertIsNone(record["original_path"])
+            self.assertIsNone(record["sha256"])
 
     def test_invalid_guide_id_does_not_call_fetcher(self):
         fetcher = FixtureFetcher(None)

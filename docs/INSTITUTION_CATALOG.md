@@ -10,7 +10,7 @@
 | ID | 지역 | 기관/서비스 | 대표 주제 | 관찰된 접근 유형·특징 | 조사 상태 | 공식 출처 |
 |---|---|---|---|---|---|---|
 | INT-01 | 국제 | IMF | BOP/IIP, IFS·외환·거시 | SDMX 2.1/3.0 API, Data Portal 문서 | 공식 문서 확인 | https://data.imf.org/en/Resource-Pages/IMF-API |
-| INT-02 | 국제 | BIS | 국제은행·글로벌 유동성·파생상품 | SDMX REST, CSV/SDMX ZIP bulk, Excel 수동 export | 공식 문서 확인 | https://stats.bis.org/api-doc/v1/ ; https://data.bis.org/bulkdownload |
+| INT-02 | 국제 | BIS | 국제은행·글로벌 유동성·파생상품 | SDMX REST, CSV/SDMX ZIP bulk, Excel 수동 export | 공식 문서 확인 + Global Liquidity CSV bulk 제한 live intake | https://stats.bis.org/api-doc/v1/ ; https://data.bis.org/bulkdownload |
 | INT-03 | 국제 | OECD | GDP·고용·산업·국가비교 | Data Explorer SDMX API·쿼리 빌더, rate limit | 공식 문서 확인 | https://www.oecd.org/en/data/insights/data-explainers/2024/09/api.html |
 | INT-04 | 국제 | World Bank | WDI 등 국가별 지표 | Indicators API v2, 국가·지표 기반 | 공식 문서 확인 | https://datahelpdesk.worldbank.org/knowledgebase/articles/889392 |
 | US-01 | 미국 | Federal Reserve Board | 금리·금융계정·통화·대출 | DDP·공표통계·FRED 매핑, 2026~27 전환 예고 | 공식 문서 확인 | https://www.federalreserve.gov/data/data-download-fred-information.htm |
@@ -24,7 +24,7 @@
 | EU-03 | 독일 | Bundesbank | 독일·유로 금융/경제 시계열 | 새 통계포털·SDMX REST, 구 시계열 키 매핑 | 공식 문서 확인 | https://www.bundesbank.de/en/statistics/time-series-and-real-time-data |
 | EU-04 | 영국 | Bank of England | 통화·금융·금리 | Bankstats IADB 검색, 다운로드·코드 기반 탐색 | 공식 문서 확인 | https://www.bankofengland.co.uk/boeapps/database/help.asp |
 | EU-05 | 프랑스 | INSEE | 생산·물가·거시시계열 | SDMX 2.1 웹서비스, idbank 단위 시계열 | 공식 문서 확인 | https://www.insee.fr/en/information/2868055 |
-| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | 공식 문서 확인 | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
+| JP-01 | 일본 | Bank of Japan | 금융·금리·국제수지 | 2026-02-18 JSON/CSV API 도입, flat files 병행 | API 공지 live 200, 연결 매뉴얼 403, 플랫폼 연결 `BLOCKED` | https://www.boj.or.jp/en/statistics/outline/notice_2026/not260218a.htm |
 | JP-02 | 일본 | Ministry of Finance | 국제수지·직접·증권투자 | 공개 통계표 및 BOJ Time-Series Data Search 연계 | 공식 문서 확인 | https://www.mof.go.jp/english/policy/international_policy/reference/balance_of_payments/index.htm |
 | JP-03 | 일본 | e-Stat | 정부 통계표·코드북 | 표 목록→메타→통계값 API, 등록/Application ID | 공식 문서 확인 | https://www.e-stat.go.jp/api/en/api-info |
 | CN-01 | 중국 | PBOC | 통화량·대출·사회융자 | 공식 홈페이지 통계 섹션의 접근·재사용 경로 추가 실사 | 기관 확인·경로 추가 조사 | https://www.pbc.gov.cn/en/ |
@@ -139,3 +139,31 @@ known_issues: []
   저장된 raw·normalized SHA256은 각 manifest와 일치하고 API key 문자열은 해당 파일들에 없다.
 - 이 확인은 선택한 두 metadata record의 live 경로다. 전체 API catalogue 검색, 다른 BLS/Census
   변수 정의나 license/reuse 조건 검증은 아니다. 보고서: `docs/ITERATION_07_REPORT.md`.
+
+## 2026-10-26 Treasury TIC Table 5 live file intake
+
+- 공식 TIC 포털의 "direct link to the MFH table"가 연결하는 `slt_table5.txt`를 한 번 요청해
+  HTTP 200, `text/plain`, 3,804 bytes를 확인했다. 포털·사용 안내 페이지에서 확인한 링크와
+  응답 내부의 출처 URL이 일치한다.
+- 저장된 원본을 일반 tabular intake에 넣어 TSV 형태, 6행 헤더를 읽고 manifest와 normalized
+  table을 만들었다. raw와 normalized SHA256이 각각 저장 파일과 일치한다. 36개국, 2025-08~
+  2026-08 월별 13개 기간의 표이며 일본 2026-08 값은 1,068.3이다. 표 설명은 기간 말 보유잔액,
+  십억 달러 단위를 명시한다.
+- 이는 실제 파일 1건의 출처·파싱 실측이지 TIC 자동 다운로드 어댑터나 전체 TIC 지원이 아니다.
+  보유잔액을 증권 거래액과 혼동하지 않도록 범위를 확인했으며, 변경된 실제 후속 파일은 아직
+  요청하지 않았다. 상세·manifest 경로는 `docs/ITERATION_10_REPORT.md` 참조.
+
+## 2026-10-26 BIS bulk 및 BOJ API 경로 실측
+
+- BIS 공식 bulk 다운로드 페이지 `https://data.bis.org/bulkdownload`는 HTTP 200으로 저장했고,
+  페이지에서 `WS_GLI_csv_col.zip`을 연결했다. 해당 ZIP은 HTTP 200, 104,833 bytes,
+  SHA256 `aa52afce4e18214831cfa00d3cb5aef76db04c375dc6d3346e99f0568bdd9c1d`였다.
+  일반 ZIP/CSV intake 결과는 225행·220열이고 raw, manifest, normalized table 해시가 일치한다.
+  여러 series와 단위가 섞여 있어 자동으로 단일 시계열로 해석하지 않는다. 평면형 대안 ZIP은
+  HTTP 503을 반환해 재시도하지 않았다.
+- BOJ의 공식 API 공지는 HTTP 200이며 JSON/CSV 시계열 API 제공을 설명한다. 공지에서 연결된
+  API user manual은 HTTP 403을 반환해 본문 없이 응답 상태만 기록했다. 요청 규격과 series ID를
+  확립하지 못해 BOJ observation API 요청은 만들지 않았고, 플랫폼 collector 지원 상태는
+  `BLOCKED`다. 상세 응답 manifest와 한계는 `docs/ITERATION_10_REPORT.md`에 있다.
+- 이 결과는 BIS 한 파일의 intake와 BOJ 공식 안내/접근 상태만 확인한다. BIS SDMX 전체 지원,
+  BOJ 데이터 API 연결, source revision 감지 또는 Gate C 통과를 뜻하지 않는다.

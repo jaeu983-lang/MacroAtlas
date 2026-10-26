@@ -10,13 +10,15 @@
 |---|---|---|
 | A / 04 | **통과** | 제한된 World Bank USA GDP file 경로 실측·원본/manifest/SQLite 검증. [보고서](ITERATION_04_REPORT.md) |
 | B / 08 | **제한 범위 통과** | 구조화 `DataRequest`→근거 후보 순위→명시 선택→World Bank fixture collector E2E와 불일치 후보 차단을 확인. 일반 자연어 parser, CLI, 기관 전체 검색은 이 엔진 게이트 범위 밖이며 아직 미구현. [보고서](ITERATION_08_REPORT.md) |
-| C / 10 | **미통과** | BLS/Census live smoke와 fixture 진단은 있음. `REFERENCE_SCENARIOS.md`의 기관별 API/파일 및 변경·복구 표본이 부족. [보고서](ITERATION_10_REPORT.md) |
+| C / 10 | **미통과** | BLS/Census·TIC·BIS의 제한 live 수집과 원본/manifest 검증이 있음. BOJ API 안내는 HTTP 200, 연결된 공식 매뉴얼은 403으로 platform connector 상태는 `BLOCKED`; TIC/BIS live 변경 재수집과 남은 복구 표본이 부족. [보고서](ITERATION_10_REPORT.md) |
 | D / 12 | **미실행** | 11~12회차 기능을 시작하지 않음. |
 | E / 14 | **미실행** | 최종 회귀·릴리스 검토를 시작하지 않음. |
 
-Plan/code audit 전체 검증: **pytest 524 passed**, Ruff 통과, `git diff --check` 통과.
-validated source checkpoint `7a2bb031d61061abc894ac206c45a95d8e45f5fd`를 detached clean checkout해
-같은 524개 테스트, Ruff, diff check를 다시 통과했다.
+이번 Gate C 후속 변경은 전체 **pytest 556 passed**, Ruff, `git diff --check`를 통과했다.
+기준 checkout은 `codex/institution-discovery-05`의
+`781827593924e35dadbc1188f09c7ea40a7b7c76`다. 이전 fresh checkout 검증 때 clean이었지만,
+이번 task 시작 workspace에는 그 위에 이전 로컬 diff가 이미 있었다. 최신 게시 환경은 revision 5에서
+실행 중이며 source checkout의 기준 SHA는 위 커밋이다. 현재 uncommitted diff는 GitHub에 없다.
 
 Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 CLI·자연어 UI나 BLS/Census의
 후보 선택을 통한 live 수집까지 제공함을 뜻하지 않는다. Gate C를 통과하기 전에는 11회차에
@@ -24,8 +26,9 @@ Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 C
 명시적 예외였으며, 현재 scope clarification으로 그 이력을 덮어쓰지 않는다. Gate 상태는
 코드가 존재하거나 한 번의 live 요청이 성공했다는 이유만으로 승격하지 않는다.
 
-**배포 추적성은 별도 상태다.** Gate C와 혼합하지 않는다. local commit은 작업 트리를 고정하지만,
-원격 push와 환경 draft/publish가 없으면 새 환경에서 그 commit을 받지 못한다.
+**배포 추적성은 별도 상태다.** Gate C와 혼합하지 않는다. 게시된 환경의 checkout은 아래
+체크포인트에서 확인했다. 이번 작업의 World Bank/BIS/BOJ 후속 코드는 현재 local diff에만 있으며,
+GitHub에는 아직 포함되지 않았다.
 
 ### 구현 자산과 한계
 
@@ -35,7 +38,7 @@ Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 C
 | 05~07 | BLS/Census 제한 API·metadata, 공식 안내 저장, 일부 metadata 정규화 | 모든 기관 검색, live SDMX, 광범위한 분류 의미 모델 |
 | 08 | 로컬 hash-verified metadata와 WDI seed의 lexical ranking, 명시 선택 기록, World Bank fixture E2E | 자연어 parser/CLI, 전체 기관 검색, 미확인 BLS/Census 후보의 자동 승격 |
 | 09 | CSV/TSV/TXT/HTML/ZIP/XLS/XLSX 제한 parser, 수집량 planning helper | PDF/fixed-width, output exporter, queue형 chunk 실행·resume |
-| 10 | BLS/Census 품질 진단·payload 비교·오류 분류·Retry-After 대기 강제 | World Bank 변경 비교, automatic backoff/rate limiter, 기관 전반 오류 검증 |
+| 10 | BLS/Census/World Bank 품질·오류 진단, TIC/BIS live file intake, source-change guard, `Retry-After` 수동 재개 제약 | Japan BOJ observation connector, live revision comparison, automatic backoff/rate limiter, 기관 전반 오류 검증 |
 | 11~14 | 계획 문서만 존재 | 사용자 교정 지식화, 지식 검색, 개선 제안, 격리 코드 수정·승인 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
@@ -43,18 +46,24 @@ Gate B는 **제한된 엔진 API 기준으로만 통과**했다. 이 결과는 C
 
 ## 다음 작업 순서
 
-로컬 source checkpoint는 이번 task에서 수행한다. 원격·환경 반영은 기존 게시 금지 지시 때문에
-수행하지 않는다. 다음 허용 구현 task는 **Gate C 종료 조건 보완**이다. 09~10회차 코드는 제한
-범위로 존재하지만 기관별 표본과 실패·변경·재개 매트릭스가 부족하다.
+현재 local diff에서 10회차 Gate C의 X08 변경 감지 경로를 World Bank 감사 수집과 일반 tabular 파일
+수집으로 보완했다. 공식 TIC Table 5와 BIS Global Liquidity bulk CSV를 실제 원본 파일 intake까지 검증했다.
+이번 수정에 대한 Git commit/push는 하지 않는다. 이어서 허용되는 작업도 **Gate C 종료 조건 보완**이며,
+코드 한 건의 추가만으로 게이트를 통과 처리하지 않는다.
 
-1. Gate C의 기관 범위는 현재 지원되는 World Bank/BLS/Census API와 로컬 표 parser로 한정한다.
+1. Gate C의 기관 범위는 현재 지원되는 World Bank/BLS/Census API와 로컬 표 parser, 이번에
+   실측한 TIC/BIS의 명시 파일 intake로 한정한다.
    이를 기관 전체 자동 지원으로 표현하지 않는다.
-2. `REFERENCE_SCENARIOS.md`의 C/B/F 입력 모양을 fixture로 재현하되, fixture 결과를 live provider
-   지원 근거로 표시하지 않는다. Japan API나 agency-specific importer가 없으면 `BLOCKED`로 남긴다.
+2. 공식 Treasury Table 5 TXT와 BIS `WS_GLI_csv_col.zip`을 원본 archive→normalized table까지
+   검증했다. 둘 다 로컬 파일 intake를 사용하며 source-specific observation downloader가 아니다.
+   BIS flat CSV 대안은 HTTP 503을 반환해 재시도하지 않았다. BOJ 공지 페이지는 200이었으나
+   연결된 API manual은 403이라 API 호출을 만들지 않았고 platform support를 `BLOCKED`로 기록한다.
 3. X01~X04, X07/X08을 HTTP 오류, 인증 제한, schema drift, 알려진 의미 불일치, durable resume,
-   변경 원본 보존에 매핑하고 각 기대/실제 결과를 기록한다.
-4. BLS/Census의 제한 live smoke와 raw integrity 결과를 증거로 연결한다. 단위·빈도·vintage가
-   unknown이면 경고를 유지하고 키 값은 출력하지 않는다.
+   변경 원본 보존에 매핑하고 각 기대/실제 결과를 기록한다. 실제 BIS 503과 BOJ manual 403을
+   관찰했고, fixture에서는 Retry-After 대기, 미재시도, 원본 보존을 검증했다. 실제 changed-source
+   capture는 아직 없어 `BLOCKED/NOT_RUN`을 유지한다.
+4. BLS/Census 제한 live smoke와 TIC/BIS live file의 원본·normalized hash를 증거로 연결한다.
+   단위·빈도·vintage가 unknown이면 경고를 유지하고 키 값은 출력하지 않는다.
 5. Gate C 조건 미충족 시 미통과를 유지한다. 통과한 뒤 11회차를 별도 task로 시작한다.
 
 Gate C 이후에는 Gate D(11~12), Gate E(13~14)를 한 task당 한 회차로 진행한다.
@@ -62,13 +71,19 @@ Gate C 이후에는 Gate D(11~12), Gate E(13~14)를 한 task당 한 회차로 �
 
 ## 저장소·배포 추적성
 
-작업 시작/종료 때 branch, `HEAD`, 원격 ref와 dirty status를 기록한다. 이 checkout의 branch는
-`codex/institution-discovery-05`이며 source checkpoint는
-`7a2bb031d61061abc894ac206c45a95d8e45f5fd`다. detached clean checkout에서 pytest 524개, Ruff,
-`git diff --check`를 통과했다. 확인된 `origin/codex/iteration-04-gate-a`는 이전
-`2c4e11fa0534bae6458154abfa14a03d3617a15b`를 가리킨다. 이 task는 원격 push와 환경 draft/publish를
-하지 않았으므로 새 원격 checkout 및 실행 환경에는 위 source checkpoint가 아직 전달되지 않았다.
-실제 배포 추적성을 닫으려면 해당 원격 branch/ref 갱신과 환경 설정 변경·게시가 필요하다.
+현재 branch는 `codex/institution-discovery-05`, Git `HEAD`는
+`781827593924e35dadbc1188f09c7ea40a7b7c76`다. 이 task 시작 시 기존 로컬 diff가 이미 있었고,
+최신 게시 runtime은
+observed spec revision `5`에서 running/connected이며 `Settings.from_env`가 `MACROATLAS_NETWORK_ENABLED`
+를 true로 읽는다. fresh checkout의 source SHA와 브랜치가
+일치하므로 **이 기준선의 배포 추적성은 닫혔다**. BLS/Census secret readiness 및 network policy는
+telemetry상 `unknown`이다. 선택한 BLS/Census 호출과 TIC 요청은 HTTP 200을 반환했으나, 이 상태는
+기관 전반의 인증·접속 준비 완료를 뜻하지 않는다.
+
+현재 loaded workspace에는 게시 후속 작업의 미커밋 diff가 남아 있고 Git HEAD는 여전히 위 SHA다.
+`MACROATLAS_NETWORK_ENABLED`는 현재 프로세스에 제공되며, 이번 task에서 한 BIS/BOJ 실제 요청에 사용됐다.
+이번 task 코드 변경에 대한 commit/push는 하지 않았다. 최신 환경은 사용자가 게시한 revision 5이며,
+GitHub에는 새 commit이 없어 현재 변경이 원격 브랜치에 반영됐다고 보고하지 않는다.
 
 ## 문서 사용 순서
 
@@ -249,10 +264,12 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
   `unknown_history_integrity`; 세 BLS capture의 observation은 같고 top-level `responseTime`만 달랐다.
   비교기는 이제 이 volatile 필드를 제외한 canonical JSON hash를 사용하며 raw bytes는 보존한다.
   설정의 repository ref는 `codex/iteration-04-gate-a`, 현재 미커밋 코드 workspace는
-  `codex/institution-discovery-05`다. 실측은 현재 workspace를 증명하며 fresh checkout ref는 증명하지 않는다.
+  `codex/institution-discovery-05`였다. 당시 실측은 current workspace만 증명했고 fresh checkout ref는
+  증명하지 않았다. 게시 후 기준선 검증은 상단 배포 추적성 섹션의 후속 기록을 따른다.
   환경 상태 telemetry는 네트워크·키 `unknown`; live 호출 성공은 이를 바꾸지 않는다. 따라서
-  live smoke는 확인했지만 Gate C는 미통과. World Bank 변경감지, 자동 지수 backoff/공용 rate limiter,
-  의미 outlier·단절 판정은 미구현.
+  live smoke는 확인했지만 Gate C는 미통과. 당시에는 World Bank 변경감지가 미구현이었다. 이후
+  local 후속으로 same-request JSON/bytes comparison을 추가했으나 fixture만 검증했고 live 확인은 없다.
+  자동 지수 backoff/공용 rate limiter, 의미 outlier·단절 판정은 여전히 미구현.
   전체 pytest 518개/Ruff 통과. 상세: `docs/ITERATION_10_REPORT.md`.
 - 구현: 빈값/중복/단위/주기/개정 상태 확인, schema drift, 시간 제한·재시도·rate limit, 중단 지점 재실행.
 - 완료(Gate C): 429, 403, 형식 변화, 통계 의미 불명, 최신 원자료 변경을 각각 재현하여 안전한 분기 확인.

@@ -70,8 +70,7 @@ def _validate_headers(values: list[Any]) -> tuple[str, ...]:
         if not text:
             raise ValueError("table header contains an empty cell")
         headers.append(re.sub(r"\s+", " ", text))
-    normalized = [header.casefold() for header in headers]
-    if len(normalized) != len(set(normalized)):
+    if len(headers) != len(set(headers)):
         raise ValueError("duplicate table headers are ambiguous")
     return tuple(headers)
 

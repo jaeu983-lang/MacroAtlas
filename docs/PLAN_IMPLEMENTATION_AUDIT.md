@@ -64,3 +64,45 @@ pytest 524개, Ruff, `git diff --check`를 통과했다. 원격 push와 환경 d
 local commit `7a2bb031`과 clean checkout 검증은 이 코드 snapshot을 재현 가능하게 하지만,
 push/publish가 없으므로 실행 환경의 원격 checkout까지 해결하지 않는다. 자동 기관 지원 완료나
 출시 준비로 표현하지 않는다.
+
+## 게시 후 follow-up (2026-10-26)
+
+이 보고서의 위 배포 추적성 판정은 이후 사용자가 환경을 게시하기 전 상태의 기록이다. 게시 후
+새 실행 환경이 branch `codex/institution-discovery-05`의
+`781827593924e35dadbc1188f09c7ea40a7b7c76`에서 clean checkout으로 시작했고, runtime observed
+spec revision 4에서 running/connected임을 확인했다. 따라서 해당 게시 기준선의 추적성은 확인됐다.
+이번 후속 World Bank X08 코드 변경은 이 게시 SHA에 포함되지 않아 local 검토 상태이며,
+push/publish하지 않았다. `BLS_API_KEY`/`CENSUS_API_KEY` readiness와 network policy는 telemetry에서
+계속 `unknown`; live API 호출은 하지 않았다. World Bank same-scope change detection은 local
+후속 diff로 구현했고 TIC/BIS-shaped ingestion fixture를 추가해 pytest 534개, Ruff,
+`git diff --check`를 통과했으나 게시 SHA에는 포함되지 않았다. Gate C는 기관별 공식 경로/API 및
+복구 시나리오가 남아 있어 미통과다. 현행 상태는
+`docs/IMPLEMENTATION_PLAN.md`의 상단을 따른다.
+
+## 최신 후속 상태 (2026-10-26)
+
+위의 revision 4/pytest 534 상태는 앞선 후속 시점의 기록이다. 이후 게시된 환경은 observed spec
+revision 5에서 running/connected로 확인됐다. BLS `CUUR0000SA0` 2024 및 Census ACS 2022
+California 요청의 새 HTTP 200 응답과 raw hash를 확인했고, 공식 Treasury TIC Table 5 TXT 한 건을
+일반 파일 intake로 파싱해 원본·manifest·normalized hash를 대조했다. 이 TIC 표는 기간 말 보유잔액
+(십억 달러)이다.
+
+Local tabular intake는 동일 source URL/parser scope의 과거 원본을 검증해 비교한다. 변경 bytes나
+검증 불가 이력은 raw만 보존하고 `NEEDS_REVIEW`로 멈추며, changed/unchanged/손상 이력과 서로 다른
+URL 분기 테스트가 추가됐다. 그 시점에 **551 pytest**, Ruff, `git diff --check`가 통과했다. 아래
+최신 follow-up은 그 뒤 사용자가 게시한 revision 5 runtime과 BIS/BOJ live 결과를 기록한다.
+
+## 최신 Gate C 후속 — BIS bulk / BOJ 경로 (2026-10-26)
+
+- 게시된 revision 5 runtime은 running/connected였고 현재 프로세스에서
+  `MACROATLAS_NETWORK_ENABLED=true`가 읽혔다. telemetry의 network/key readiness는 여전히
+  `unknown`이다. 이 task에서는 환경 draft를 변경하거나 게시하지 않았다.
+- BIS official bulk page와 Global Liquidity column ZIP을 실제 호출해 HTTP 200을 받았고, ZIP→CSV
+  raw/manifest/normalized intake와 SHA256 대조를 완료했다. 혼합 series를 한 시계열로 간주하지
+  않는다. flat ZIP 대안은 HTTP 503으로 끝났으며 retry하지 않았다.
+- BOJ API 공지는 HTTP 200, 연결된 manual은 HTTP 403이었다. API parameter/series mapping을
+  확인하지 못했으므로 BOJ observation request는 미구성, collector 상태는 `BLOCKED`다.
+- BIS/BOJ 실측과 Retry-After fixture를 반영한 전체 **556 pytest**, Ruff, `git diff --check` 통과.
+  실제 source revision comparison과 기관별 복구/resume는 미완료라 Gate C 미통과, Gate D/11 미실행.
+- 현재 branch `codex/institution-discovery-05`의 base HEAD는
+  `781827593924e35dadbc1188f09c7ea40a7b7c76`; 후속 수정은 미커밋·미푸시다.
