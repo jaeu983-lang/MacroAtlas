@@ -40,6 +40,10 @@ Build a reliable international-finance data discovery and ingestion platform for
 - Never print secrets or place API keys in source files, tests, prompts, or logs.
 - Do not make destructive changes, deploy, publish, or merge to the main branch.
 - Do not run network-dependent actions unless network access has been explicitly configured and the task requires it.
+- In this managed runtime, network commands may also require the execution tool's supported
+  network permission (`with_additional_permissions`, `network.enabled=true`). A default-sandbox
+  `PermissionError` reaching the proxy does not prove the proxy service is down. Preserve the
+  configured proxy and TLS settings; do not bypass them. Respect approval rejections.
 - Keep automatic changes on a separate Git branch. Human review is required before merging.
 - After repository changes and appropriate checks, commit and push the task branch by default
   (user preference, 2026-10-26). Report the commit and push outcome. A later explicit instruction

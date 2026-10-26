@@ -1,5 +1,9 @@
 # Gate C 증거 재검토 — 2026-10-26
 
+최신 정정: **revision 10에서 실행 네트워크 권한을 지정하자 BIS 실측과 Git push가 성공했다.**
+아래 ProxyError 기록은 당시 기본 실행 권한의 결과이며 프록시 서버 장애로 확정할 수 없다.
+최신 원인·복구 증거는 문서 마지막 절을 따른다. Gate C 자체는 아직 미통과다.
+
 판정: **미통과**. 11회차는 시작하지 않았다. 오류 분기 fixture 통과와 실제 기관의
 변경·복구 검증을 구분하며, 남은 live 검증을 fixture로 대체하지 않는다.
 
@@ -81,3 +85,29 @@
   기관별 장애 복구 증거는 여전히 없다. **Gate C 미통과, 11회차 미시작**이다.
   11회차를 시작하라는 지시는 Gate C 보완·통과 후 진행 순서로 적용하며, 통과를 가정하지 않는다.
   다음 선행 작업은 지원되는 환경 설정/복구 경로를 통한 실행 프록시 연결 복구다.
+
+## 원인 확인·접속 복구 — revision 10
+
+- 환경은 running/connected, revision 10, unrestricted/enforced였다. HTTP(S) proxy는
+  정책과 런타임 변수 모두 `http://proxy:8080`으로 일치했고 Git 전용 proxy override는 없었다.
+- 기본 sandbox에서 `proxy`는 `172.31.0.237`로 해석됐지만 8080/8088 TCP 연결은
+  `PermissionError`, errno 1이었다. DNS 실패나 BIS의 HTTP 거부가 아니다.
+- 실행 도구의 지원 옵션 `sandbox_permissions=with_additional_permissions`,
+  `additional_permissions.network.enabled=true`를 지정한 요청은 동일 proxy에 연결됐고
+  BIS GET도 HTTP 200이었다. proxy/TLS/키/환경 URL 변경이나 우회는 하지 않았다.
+  따라서 관측된 실패 원인은 기본 명령 실행의 네트워크 권한 제한이었다. 과거 개별 실행의
+  다른 장애 가능성까지 소급 부정하지 않지만, 프록시 서비스가 고장났다는 기존 설명은 정정한다.
+- 최초 권한 요청에 포함한 push는 자동 검토에서 외부 대상/전송 범위 미확인을 이유로 거절됐다.
+  기존 origin이 `https://github.com/jaeu983-lang/MacroAtlas.git`이고 기존 작업 브랜치도 origin을
+  추적하며, 전송 차이가 문서/테스트 5개뿐임을 확인한 후 동일 명령 재검토가 승인돼 push 성공했다.
+  `35efa62`까지 `origin/codex/gate-c-evidence-review`에 반영됐다.
+- 2026-10-26 09:02:43 UTC (18:02:43 KST) BIS 재수집·intake 성공:
+  HTTP 200, 104,833 bytes, SHA256
+  `aa52afce4e18214831cfa00d3cb5aef76db04c375dc6d3346e99f0568bdd9c1d`.
+  package `86a1923e3a2240dcbe8b1248b128443d`, 225행/220열, raw/normalized hash 모두 일치.
+  로컬 보고서는 `reports/gate_c_network_recovery.json`; raw/normalized는 gitignore 대상이다.
+- `source_change_status=first_observation`. 과거 보고서의 BIS hash와 같으며, 실제 개정된
+  원본 쌍을 확보한 것은 아니다. Git push 성공도 데이터 품질 게이트 조건이 아니다.
+  실제 개정 비교와 기관별 durable resume는 여전히 NOT_RUN이므로 Gate C 미통과·11회차 보류다.
+- 다음 네트워크 작업은 위 실행 권한을 명시하고 제한된 요청 예산을 유지한다.
+  접속 복구를 위해 환경 설정을 다시 게시하거나 키·도메인을 바꿀 필요는 확인되지 않았다.

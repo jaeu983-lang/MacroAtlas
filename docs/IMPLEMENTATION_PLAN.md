@@ -6,6 +6,11 @@
 
 ## 현재 상태 — 2026-10-26
 
+**최신 정정(revision 10):** 기본 실행 sandbox의 네트워크 권한 제한을 확인했다.
+지원되는 실행 네트워크 권한 지정 후 BIS HTTP 200·225행/220열 intake·hash 검증 및 Git push 성공.
+아래 revision 9의 프록시 연결 차단은 해결됐으나 실제 개정 비교/기관별 durable resume는
+여전히 NOT_RUN이어서 Gate C 미통과·11회차 보류다. 자세한 원인은 증거표 마지막 절을 따른다.
+
 후속 보완(revision 9): X04 잔액/거래액·unknown 차원의 순위/확정 차단 fixture 두 경우를 추가해
 **558 tests passed**. BIS GET와 Git push는 실행 프록시 연결 실패로 차단됐다.
 Gate C 미통과·11회차 미시작을 유지한다. 상세와 다음 선행조건은 아래 증거표의 후속 절을 따른다.
