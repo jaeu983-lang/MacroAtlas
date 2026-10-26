@@ -282,3 +282,25 @@ def test_cli_does_not_create_a_database_for_empty_project(tmp_path, capsys):
     assert report["read_only"] is True
     assert report["metrics"]["records_scanned"] == 0
     assert not (tmp_path / "data" / "catalog.sqlite").exists()
+
+
+def test_persisted_file_scope_adapter_preserves_unknown_concept():
+    import sqlite3
+
+    from macro_data_platform.analysis.patterns import _stage_scope_sql
+
+    connection = sqlite3.connect(':memory:')
+    try:
+        for source, expected in [('tic', 'TIC_TABLE5'), ('bis', 'WS_GLI_csv_col'),
+                                 ('unknown', None)]:
+            plan = json.dumps({'engine': 'gate_c_file_watch', 'input_data': {'source_id': source}})
+            expressions = [_stage_scope_sql(field, field, field)
+                           for field in ('institution_id', 'dataset_id', 'concept')]
+            row = connection.execute(
+                'SELECT ' + ','.join(expressions) +
+                ' FROM (SELECT ? AS value) p, (SELECT ? AS document) t',
+                (plan, '{}'),
+            ).fetchone()
+            assert row == ((source if expected else None), expected, None)
+    finally:
+        connection.close()

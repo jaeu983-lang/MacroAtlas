@@ -9,8 +9,10 @@ Task: perform a conservative weekly maintenance and improvement pass.
 5. Add or update deterministic tests. Prefer mocked HTTP responses over live calls.
 6. Run the full test suite and `git diff --check`.
 7. Do not access secrets, unrelated folders, personal files, or external systems.
-8. Do not enable network access, disable sandboxing, commit, merge, deploy, publish, or delete source data.
+8. Do not enable network access, disable sandboxing, merge, deploy, publish, or delete source data.
 9. If there is no justified improvement, make no code changes and report that conclusion.
 10. Finish with a concise report: findings, files changed, tests and exact outcomes, risks, and manual review steps.
 
 The user must review the branch and diff before any merge.
+
+11. Use scripts/run_maintenance_qa.py from a clean committed task branch. Record report.json and check outcomes in the PR. Commit and push when the user authorizes repository work; create a review PR. Do not merge the new PR without user authorization.
