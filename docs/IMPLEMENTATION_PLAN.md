@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 20회차 기준 갱신: PR #3~#8 통합 후 기준 HEAD는 `09594871`이다. 20회차 branch에서 World Bank/BOJ 검증 task의 CSV exporter를 구현했고 로컬 666개 테스트·Ruff·diff check 및 보존 task 2건의 export 검증을 마쳤다. PR 통합/CI 결과는 [20회차 보고서](ITERATION_20_REPORT.md)에 기록한다.
+> 20회차 기준 갱신: PR #3~#8 통합 후 기준 HEAD는 `09594871`이었다. World Bank/BOJ 검증 task CSV exporter를 구현한 commit `cb7fdcd`는 PR #9에서 666개 test와 Ruff, diff check, Ubuntu/Windows × Python 3.11/3.12 CI를 통과했다. 보존 task 2건의 export evidence는 [20회차 보고서](ITERATION_20_REPORT.md)에 기록한다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -100,8 +100,8 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
 아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
 
-20회차 작업 branch에서 로컬 666개 테스트, Ruff, diff 검사가 통과했고 보존된 World Bank·BOJ task export hash와
-SQLite 불변성을 확인했다. PR CI는 integration 단계에서 기록한다. 19회차 구현 HEAD에서는 로컬 656개 테스트, Ruff, diff 검사가 통과했고 PR #6 CI run
+20회차 구현 commit `cb7fdcd`에서 666개 테스트, Ruff, diff 검사 및 보존된 World Bank·BOJ task export hash와
+SQLite 불변성을 확인했다. PR #9 CI는 네 OS/Python 조합에서 통과했다. 19회차 구현 HEAD에서는 로컬 656개 테스트, Ruff, diff 검사가 통과했고 PR #6 CI run
 [`40369653182`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40369653182) 및
 [`40369693950`](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40369693950)이 Ubuntu/Windows ×
 Python 3.11/3.12 네 조합에서 모두 통과했다. 이전 회차의 검사 근거는 다음과 같다. 수정 전 PR #4 HEAD의 CI run
@@ -141,7 +141,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 ## 다음 작업 순서
 
 현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #3~#8과
-유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·로컬 검증을 마쳤고 현재 PR 통합 중이다. 다음 제품 순서는
+유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·로컬/PR CI 검증을 마쳤다. 다음 제품 순서는
 한 가지 사용자 업무의 사용성 검증이다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 

@@ -1,6 +1,6 @@
 # 20회차 계획 — 검증된 task의 CSV 전달
 
-상태: 구현·로컬 수용 검증 완료. 통합 후 현재 HEAD/CI 근거를 보고서에 추가한다. 19회차 BIS flat structural JSONL은 이 작업에서 처리하지 않는다.
+상태: 구현·로컬 수용 및 PR CI 검증 완료. 통합 근거는 [20회차 보고서](ITERATION_20_REPORT.md)에 둔다. 19회차 BIS flat structural JSONL은 이 작업에서 처리하지 않는다.
 
 ## 목표
 
@@ -31,4 +31,4 @@
 
 저장 payload 계약 확인 → provider별 검증 adapter → atomic CSV/sidecar 생성 → fixture 수용 검사·전체 test/Ruff/diff →
 task branch commit/push 및 PR/CI 통합 → 기존 성공 World Bank/BOJ task를 로컬로 export하고 결과 hash·null·원본 불변성을
-재확인 → 보고서와 현재 상태표 갱신. 실제 export와 로컬 검증은 완료됐으며 PR/CI 결과는 통합 후 기록한다.
+재확인 → 보고서와 현재 상태표 갱신. PR #9에서 Ubuntu/Windows × Python 3.11/3.12 검증을 마쳤다.

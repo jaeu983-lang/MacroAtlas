@@ -43,4 +43,7 @@
 [제품 로드맵](ROADMAP_2026_10_26.md)의 사용자 업무 흐름 검증이다. XLSX·BIS JSONL 전달·새 provider는
 실제 수요와 수용 기준을 정한 뒤 별도 계획으로 다룬다.
 
-통합 commit/PR/CI 근거는 저장소에 반영된 후 이 보고서 하단에 추가한다.
+구현 commit `cb7fdcd`는 PR [#9](https://github.com/jaeu983-lang/MacroAtlas/pull/9)에서 Ubuntu/Windows ×
+Python 3.11/3.12 CI를 통과했다. 실행 `40383805569`와 push 이벤트의 중복 실행 `40383791920`에서 네 조합이
+모두 성공했다. 최초 Windows CI는 test의 SQLite connection이 닫히지 않아 임시 폴더 cleanup이 실패했으며,
+test helper가 연결을 명시적으로 닫도록 수정한 commit `cb7fdcd`에서 재검증했다.
