@@ -73,6 +73,19 @@
 | X08 | 데이터 소급 수정 | 이전 raw/vintage 보존, 변경점 보고 |
 | X09 | 반복된 오류·사용자 교정에서 개선 후보 생성 | 서로 다른 3개 task 이상을 요구하고 scope별로 분리. 같은 task retry만으로 recurrence를 만들지 않으며 evidence와 regression test가 포함된 `draft` proposal만 생성 |
 
+## X09 iteration 13 fixture verification (2026-10-26)
+
+- **PASS, deterministic local fixtures:** Three distinct task IDs with the same bounded stage error produce
+  one `draft`; multiple retries in one task do not meet the threshold. Institution, dataset, engine/version,
+  and stage differences remain separate. Unknown scope dimensions cannot merge across tasks.
+- Only accepted `user_instruction` feedback is considered. Unreviewed feedback and inference are excluded;
+  differing accepted text at the same explicit scope is reported as a possible conflict requiring human
+  review. Raw provider payloads are not selected as analyzer fields and are absent from the report.
+- Task/record/proposal/evidence caps are 500/2,500/20/10. Cap tests return `partial` where records are omitted.
+  Full test and synthetic benchmark results are in `docs/ITERATION_13_REPORT.md`.
+- This is synthetic offline evidence. It does not claim recurring patterns in live provider history, root cause,
+  Gate C completion, or automatic application of a proposal.
+
 ## 시나리오 공통 기록 포맷
 
 ```yaml

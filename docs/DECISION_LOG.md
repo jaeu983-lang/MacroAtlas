@@ -548,3 +548,21 @@
   regression-test proposal. No feedback status changes, fact promotion, or code edits occur in iteration 13.
 - X09 and the 100/1,000/5,000-record benchmark are the planned verification. These are initial planning
   caps to measure and refine during iteration 13. Gate E / iteration 14 remains unstarted.
+
+## Iteration 13 bounded pattern analyzer (2026-10-26)
+
+- **D-070 / IMPLEMENTED:** Added a read-only SQLite analyzer and `macro-patterns` CLI. It selects only
+  terminal task/stage metadata and accepted `user_instruction` feedback. Stage and accepted-feedback
+  patterns use separate fingerprints; feedback is compared by normalized exact text hash, without
+  returning its text. At least three distinct tasks and a complete matching scope are required. Unknown
+  dimensions are task-local and do not merge. Conflicting accepted instructions are separated for human
+  review. Every proposal stays `draft`/`not_promoted`.
+- Enforced caps are 500 terminal tasks, 2,500 outcome/feedback records, 20 proposals, and 10 evidence IDs
+  each. Read-only SQLite mode does not initialize a missing database. Raw provider payloads and task request
+  text are not selected into Python; common secret-shaped feedback is excluded.
+- X09 synthetic tests pass; full suite **591 passed**, Ruff and `git diff --check` pass. Warm local synthetic
+  benchmark p95 was 5.448/51.023/134.287 ms for 100/1,000/5,000 stage records; the 5,000 input correctly
+  returns partial at the 2,500-record cap. The 5,000-case maximum traced Python allocation was 5,484,768 bytes.
+  The observed environment's reference budgets are p95 150 ms and 8 MiB Python allocation for bounded runs.
+- This is local synthetic evidence only. It does not establish live recurring errors or root cause, does not
+  change Gate C, and does not start iteration 14 / Gate E. See `docs/ITERATION_13_REPORT.md`.

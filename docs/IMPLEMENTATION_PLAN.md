@@ -315,6 +315,7 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
 ### Phase 5 — 공통 개선 엔진 (13~14)
 
 #### 13 | 반복 패턴 집계·개선안 생성
+- 상태: 구현·로컬 검증 완료 (2026-10-26). 결과와 실제 한계는 `docs/ITERATION_13_REPORT.md`.
 - 입력: Orchestrator의 완료/실패 task·stage 결과와 상태가 accepted인 명시 사용자 feedback만 읽는다.
   raw provider payload, 비밀값, 미검토 추론은 pattern source로 사용하지 않는다.
 - 반복 판정: 같은 fingerprint가 서로 다른 **3개 이상 task ID**에 있어야 recurring candidate가 된다.
@@ -323,7 +324,8 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
   서로 합치지 않고 별도/insufficient evidence로 남긴다.
 - 입력 한도: 실행당 최대 500 task와 2,500 stage/feedback records를 읽고, 최대 20개 proposal과
   proposal당 evidence reference 10개를 반환한다. 상한에 닿으면 partial/incomplete를 명시하고
-  "반복 없음"으로 판정하지 않는다. 세부 시간·메모리 예산은 규모 benchmark 후 확정한다.
+  "반복 없음"으로 판정하지 않는다. `scripts/benchmark_iteration_13.py` 측정 후 이 환경 기준
+  bounded run 참조 예산을 warm p95 150 ms, traced Python allocation 8 MiB로 설정했다.
 - 산출물: fingerprint와 scope, 서로 다른 task 수, 관측 시점, 대표 evidence IDs, 심각도 근거,
   예상 영향, counterexample/불확실성, 검증할 regression test, 위험, priority, `draft` review status.
   동일 task 안의 재시도, 1~2개 task의 반복, 충돌은 recurrence와 구분해 별도 보고한다.
@@ -336,6 +338,10 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
   늘려도 recurring이 되지 않는 경우, 기관/dataset/engine 차원의 분리, withdrawn/unreviewed/inference
   제외, 충돌·부분 입력·500/2,500·20/10 상한과 evidence trace를 검증한다. 100/1,000/5,000 records
   에서 p50/p95, 최대 Python allocation, 읽은 행/논리 바이트, candidate 수와 scope relevance를 잰다.
+- 실제 검증: `tests/test_patterns.py` 11개 fixture, 전체 pytest **591 passed**, Ruff 및 diff 검사 통과.
+  100/1,000/5,000 stage-record 측정은 각각 p50/p95 5.113/5.448, 45.653/51.023,
+  125.960/134.287 ms였으며, 5,000 입력은 2,500 상한에서 `partial`이었다. 5,000 입력 기준
+  최대 Python allocation은 5,484,768 bytes였다. 상세 측정·제한: `docs/ITERATION_13_REPORT.md`.
 
 #### 14 | 격리 수정·검증·인간 승인·릴리스
 - 구현: 격리된 Git 브랜치에서 코드 변경 후보와 회귀 테스트; diff, 결과, 롤백 경로, 승인 게이트. 승인 전 main 병합/배포 금지.

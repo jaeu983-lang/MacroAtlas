@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 macro-feedback = "macro_data_platform.feedback_cli:main"
+macro-patterns = "macro_data_platform.pattern_cli:main"
 
 [project.optional-dependencies]
 dev = [
