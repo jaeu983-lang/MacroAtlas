@@ -83,8 +83,8 @@
   review. Raw provider payloads are not selected as analyzer fields and are absent from the report.
 - Task/record/proposal/evidence caps are 500/2,500/20/10. Cap tests return `partial` where records are omitted.
   Full test and synthetic benchmark results are in `docs/ITERATION_13_REPORT.md`.
-- This is synthetic offline evidence. It does not claim recurring patterns in live provider history, root cause,
-  Gate C completion, or automatic application of a proposal.
+- This is synthetic offline evidence. It does not claim recurring patterns in live provider history or root
+  cause, expand Gate C's D-067 limited pass, or automatically apply a proposal.
 
 ## 시나리오 공통 기록 포맷
 
