@@ -55,7 +55,7 @@ def run(root, *, timeout=600):
         if scripts_dir:
             env["PATH"] = scripts_dir + os.pathsep + env.get("PATH", "")
         commands = [
-            ("pytest", [sys.executable, "-m", "pytest", "-q"]),
+            ("pytest", [sys.executable, "-m", "pytest"]),
             ("ruff", [sys.executable, "-m", "ruff", "check", "."]),
             ("diff", ["git", "show", "--check", "--oneline", commit]),
             ("cli", [sys.executable, "-m", "macro_data_platform.cli", "--help"]),
