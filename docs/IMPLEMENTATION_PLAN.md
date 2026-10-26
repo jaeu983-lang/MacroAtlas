@@ -10,6 +10,9 @@
 Gate C는 실제 원자료 변경 비교와 기관별 durable resume 증거가 없어 미통과다. 사용자의
 명시적 지시에 따른 순서 예외로 11회차를 구현·검증했다(전체 564 tests passed).
 Gate C 판정은 승격하지 않았다. D/12회차는 미시작이며 본 task 범위 밖이다.
+TIC/BIS 현재 원본·manifest는 보존했고 같은 scope 반복은 모두 `unchanged`였다. BIS flat ZIP은
+이전 503 뒤 현재 200을 반환했으나 parser 검토로 끝났고, 503 당시 저장된 task가 없어 durable
+resume 증거는 아니다. 실제 원본 개정과 live failure→persist→resume 쌍이 남았다.
 
 | 게이트 | 상태 | 판정 근거 |
 |---|---|---|

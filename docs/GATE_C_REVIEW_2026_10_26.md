@@ -115,3 +115,45 @@
   실제 개정 비교와 기관별 durable resume는 여전히 NOT_RUN이므로 Gate C 미통과다.
 - 다음 네트워크 작업은 위 실행 권한을 명시하고 제한된 요청 예산을 유지한다.
   접속 복구를 위해 환경 설정을 다시 게시하거나 키·도메인을 바꿀 필요는 확인되지 않았다.
+
+## 기준본 보존·동일 범위 재수집 — revision 16
+
+2026-10-26 09:16–09:19 UTC에 TIC/BIS 각 파일을 네트워크 권한이 지정된 실행에서 한 번씩 받고,
+수 초 뒤 동일 URL·동일 parser scope로 다시 한 번 받았다. 매 요청 timeout은 30초,
+redirect는 금지, 응답 상한은 16 MiB였다. `source_captured_at`, HTTP status, content type,
+Last-Modified, 원본 hash 및 parser manifest를 저장했다. 따라서 다음 source revision을 비교할
+검증된 baseline이 이제 현재 workspace에 있다.
+
+| 출처/URL | 현재 baseline | 동일 scope 반복 | 판정 |
+|---|---|---|---|
+| TIC Table 5 `slt_table5.txt` | HTTP 200, 3,804 bytes, SHA256 `e5de973b1a6f13c8ec95707d665ce107f53f467db10d7a2d991677ee67d1de11`, Last-Modified `Fri, 16 Oct 2026 20:07:27 GMT`; TSV 36행 intake 및 raw/normalized hash PASS | 같은 bytes/hash, `unchanged` | 변경본은 아님 |
+| BIS `WS_GLI_csv_col.zip` | HTTP 200, 104,833 bytes, SHA256 `aa52afce4e18214831cfa00d3cb5aef76db04c375dc6d3346e99f0568bdd9c1d`, Last-Modified `Wed, 21 Oct 2026 07:59:26 GMT`; 225×220 intake 및 raw/normalized hash PASS | 같은 bytes/hash, `unchanged` | 변경본은 아님 |
+
+raw, request/manifest와 normalized 파일은 `.gitignore` 대상 `data/` 아래에 보존했다. 조회 요약은
+`reports/gate_c_baselines_20261026T091628Z.json` 및 `reports/gate_c_same_scope_repeats.json`에 있다.
+TIC의 첫 최신 capture는 delimiter를 TXT로 지정해 parser review로 남았고, 보존된 동일 raw를
+TSV/header row 6으로 재처리해 정상 검증했다. 원본은 변형하지 않았다.
+
+### BIS flat ZIP 응답 변화와 복구 한계
+
+이전 10회차 보고에는 공식 BIS `WS_GLI_csv_flat.zip`의 HTTP 503 관측이 기록돼 있었다.
+2026-10-26 09:18:10 UTC 새 요청은 동일 URL에서 HTTP 200, 256,334 bytes,
+SHA256 `0ff64677d00c4c1a880816e401d0ea0802cb5924cab24b4987373320b95b0bb5`,
+Last-Modified `Wed, 21 Oct 2026 07:59:26 GMT`를 받았다. ZIP 안 CSV는 9,403,437 uncompressed
+bytes여서 현재 parser의 행/셀 한도 검토에 걸렸고, 원본·request.json은 저장했지만 intake task는
+`NEEDS_REVIEW/SCHEMA_CHANGED`로 끝났다. task `bea335ad-1819-42cb-8acd-797c6a452255`의 첫
+attempt와 stage 결과도 `data/catalog.sqlite`에 남았다. 이는 제공자의 503 이후 같은 경로가 다시
+200을 반환한 실측이지만, 503 당시 attempt 자체가 영속 task로 저장돼 있지 않았다. 그러므로
+durable resume 성공 증거로 승격하지 않는다.
+
+### 남은 Gate C 차단 조건
+
+1. 보존된 TIC/BIS baseline과 같은 URL·요청/parser 범위에서 **다음 실제 원본 개정**을 받아야 한다.
+   이전·새 raw hash가 다르고, 엔진이 `changed`/`NEEDS_REVIEW`를 내며 두 raw를 보존하고
+   새 normalized 파일 발행을 막는지 확인한다. 현재 반복 결과는 양쪽 모두 unchanged다.
+2. 향후 자연 발생하는 429/5xx 또는 retryable transport failure를 실행 중인 Orchestrator task에
+   저장하고, `Retry-After`를 지킨 뒤 process/store를 다시 열어 같은 task를 수동 resume해야 한다.
+   같은 stage가 성공하고 attempt/event 기록이 유지될 때 완료로 본다. 실패를 인위적으로 만들거나
+   반복 요청해 rate limit을 유발하지 않는다.
+
+따라서 현재도 **Gate C 미통과**다. 11회차는 명시적 사용자 예외로 이미 완료했고 12회차는 미시작이다.
