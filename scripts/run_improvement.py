@@ -94,6 +94,83 @@ def _write_report(path, report):
     temporary.replace(path)
 
 
+def _path_key(path):
+    return os.path.normcase(os.path.abspath(os.fspath(path)))
+
+
+def _worktree_registered(root, worktree):
+    result = _git(root, "worktree", "list", "--porcelain", check=False)
+    if result.returncode:
+        return None
+    target = _path_key(worktree)
+    return any(
+        _path_key(line.removeprefix("worktree ")) == target
+        for line in result.stdout.splitlines()
+        if line.startswith("worktree ")
+    )
+
+
+def _cleanup_worktree(root, worktree):
+    worktree = Path(worktree)
+    result = _git(root, "worktree", "remove", str(worktree), check=False)
+    details = {
+        "remove_returncode": result.returncode,
+        "remove_stdout": result.stdout.strip(),
+        "remove_stderr": result.stderr.strip(),
+    }
+
+    if result.returncode:
+        registered = _worktree_registered(root, worktree)
+        if registered is None:
+            details["recovery"] = "could_not_check_worktree_registration"
+            return False, details
+        details["registered_after_remove"] = registered
+        if registered:
+            details["recovery"] = "worktree_still_registered"
+            return False, details
+
+    if worktree.exists():
+        try:
+            worktree.rmdir()
+        except OSError as exc:
+            details["recovery"] = "directory_not_empty_or_unremovable"
+            details["recovery_error"] = str(exc)
+            return False, details
+        details["recovery"] = "removed_empty_unregistered_directory"
+    elif result.returncode:
+        details["recovery"] = "worktree_already_removed"
+    else:
+        details["recovery"] = "removed"
+    return True, details
+
+
+def _cleanup_noop_branch(root, branch, base_sha):
+    branch_ref = f"refs/heads/{branch}"
+    current = _git(root, "rev-parse", "--verify", branch_ref, check=False)
+    if current.returncode:
+        return True, {"status": "already_absent"}
+    branch_sha = current.stdout.strip()
+    if branch_sha != base_sha:
+        return False, {"status": "preserved_moved_branch", "commit": branch_sha}
+
+    result = _git(root, "branch", "-D", branch, check=False)
+    details = {
+        "status": "deleted" if result.returncode == 0 else "delete_failed",
+        "returncode": result.returncode,
+        "stdout": result.stdout.strip(),
+        "stderr": result.stderr.strip(),
+    }
+    return result.returncode == 0, details
+
+
+def _cleanup_noop(root, worktree, branch, base_sha):
+    worktree_ok, details = _cleanup_worktree(root, worktree)
+    if not worktree_ok:
+        return False, {"worktree": details, "branch": {"status": "preserved"}}
+    branch_ok, branch_details = _cleanup_noop_branch(root, branch, base_sha)
+    return branch_ok, {"worktree": details, "branch": branch_details}
+
+
 def _run_codex(worktree, prompt, log_path, timeout):
     codex = shutil.which("codex")
     if not codex:
@@ -221,11 +298,10 @@ def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
         report["changed_paths"] = changed
         if not changed:
             report["status"] = "NO_ACTIONABLE_CHANGE"
-            cleanup = _git(root, "worktree", "remove", str(worktree), check=False)
-            report["cleanup"] = "PASSED" if cleanup.returncode == 0 else "FAILED"
-            if cleanup.returncode == 0:
-                _git(root, "branch", "-D", branch)
-            else:
+            cleanup_ok, cleanup_details = _cleanup_noop(root, worktree, branch, base_sha)
+            report["cleanup"] = "PASSED" if cleanup_ok else "FAILED"
+            report["cleanup_details"] = cleanup_details
+            if not cleanup_ok:
                 report["status"] = "CLEANUP_FAILED"
             return report, report_path
         if any(not _allowed_path(path) for path in changed):
@@ -322,9 +398,10 @@ def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
             return report, report_path
         report["pull_request"] = pr_result.stdout.strip().splitlines()[-1]
         report["status"] = "PULL_REQUEST_CREATED"
-        cleanup = _git(root, "worktree", "remove", str(worktree), check=False)
-        report["cleanup"] = "PASSED" if cleanup.returncode == 0 else "FAILED"
-        if cleanup.returncode:
+        cleanup_ok, cleanup_details = _cleanup_worktree(root, worktree)
+        report["cleanup"] = "PASSED" if cleanup_ok else "FAILED"
+        report["cleanup_details"] = cleanup_details
+        if not cleanup_ok:
             report["status"] = "CLEANUP_FAILED"
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
         report["status"] = "FAILED"
