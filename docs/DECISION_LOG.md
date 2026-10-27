@@ -752,3 +752,15 @@ PowerShell wrapper를 함께 검증한다.
 
 QA runner는 변경을 commit/push하거나 PR을 만들지 않는다. `run_improvement.ps1`의 별도 updater worktree·수정 범위 allowlist·
 candidate commit·QA·성공 조건부 push/PR handoff와 scheduler pilot은 아직 후속 단계이며, merge/publish는 사람 검토로 남긴다.
+
+## D-086 — updater와 candidate QA handoff 연결
+
+2026-10-27 `scripts/run_improvement.ps1`을 Python workflow의 얇은 Windows wrapper로 바꾸고, `scripts/run_improvement.py`에서
+source checkout을 전환하지 않는 흐름을 구현한다. 기본 base는 `origin/HEAD`이며, 없으면 명시 `--base-ref`를 요구한다.
+Codex는 git worktree에서 실행되고, 변경은 `src/`, `tests/`, `docs/`, 제한된 문서/스크립트 경로에만 허용한다. database·credential·
+symlink·`.github` 등 보호 경로 변경은 거부한다. 실행 결과와 단계별 log를 구조화 report로 남긴다.
+
+변경이 없으면 생성 worktree/branch를 정리한다. 변경이 있으면 candidate commit을 만든 뒤 D-085 runner가 같은 SHA를 검사한다.
+QA 실패나 timeout이면 push/PR을 하지 않으며, 통과한 경우에만 원격 branch를 push하고 review PR을 생성한다. 자동 merge와 publish는
+없다. Unit tests는 no-op 정리, allowlist, QA 실패 시 무push, 성공 시 QA→push→PR 순서를 검증하고 CI dry-run은 Linux/Windows wrapper를
+확인한다. 상세 구현 근거는 `docs/ITERATION_26_REPORT.md`에 둔다. 실제 Windows Codex pilot, scheduler 운영 및 동시성은 아직 검증하지 않았다.

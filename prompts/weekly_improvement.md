@@ -15,4 +15,4 @@ Task: perform a conservative weekly maintenance and improvement pass.
 
 The user must review the branch and diff before any merge.
 
-11. Use scripts/run_maintenance_qa.py from a clean committed task branch. Record report.json and check outcomes in the PR. Commit and push when the user authorizes repository work; create a review PR. Do not merge the new PR without user authorization.
+11. Do not commit, push, or create a PR yourself. The isolated updater will review the changed-path allowlist, create one candidate commit, run scripts/run_maintenance_qa.py against that exact candidate SHA, and push/create a review PR only if QA passes. The updater never merges or publishes.
