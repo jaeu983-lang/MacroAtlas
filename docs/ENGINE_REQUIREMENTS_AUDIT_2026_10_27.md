@@ -10,8 +10,8 @@
 | 엔진별 성능·병목 계측 | **공통 계측 구현, 자연 기준선 수집 중** | Orchestrator stage monotonic wall, API network/raw/parse/quality/SQLite, CSV export timing을 privacy-safe `performance.sqlite`에 둔다. knowledge 결과에 `latency_ns`가 추가되고 hit/miss 및 SQLite 시간이 집계된다. `macro-perf report`는 read-only다. [offline fixture 161개 표본](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)은 경로 검증이며 live network 기준선이 아니다. | live network는 승인된 자연 요청에서만 표본화한다. 실사용 workload와 production 대용량 비교는 남아 있으며, worker qualification/production 시간은 scope를 분리한다. |
 | 피드백 별도 로그 | **구현됨** | `FeedbackStore`가 task/stage 연결, append-only revision, review 상태, 철회, 범위 필터를 SQLite에 기록하고 `macro-feedback` CLI가 관리한다. | 사용자가 검토하지 않은 내용은 지식 재사용에 쓰지 않는다. 로그에서 평가 사례나 공통 코드 규칙을 자동 생성하지 않는다. |
 | 주기별 최신성 | **구현됨, 기본 정책 제한** | 공통 `assess_freshness`가 daily/weekly/monthly/quarterly/semiannual/annual 허용일, period-end, exact series override, 정책 fingerprint를 기록하고 오래되거나 확인 불가한 결과를 차단한다. World Bank·BOJ·BLS·Census 경로에 연결돼 있다. | 기본 허용일은 운용상 기본값이지 각 시리즈 공표 달력 보증이 아니다. 실제 series별 공표 일정 검증과 모든 generic tabular 경로 적용은 남았다. |
-| A. 평가 사례 형식 | **기반 구현, synthetic 준비 사례 있음** | `evaluation/sets/*.json`에 synthetic 사례 6개(각 split 2개)가 있고, validator가 필드와 provenance별 개수, 선언된 reviewed-feedback split coverage를 표시한다. | 모두 author self-reviewed synthetic 사례라 user evidence·실제 source 결과를 입증하지 않는다. coverage는 feedback ID를 SQLite 로그와 대조하지 않는다. 실제 검토와 evidence 확인이 필요하다. |
-| B. 개발·검증·보류 세트 분리 | **구조 검증 통과, 근거 Gate 미통과** | development/validation/holdout 파일을 분리하고 validation/holdout의 version·SHA-256을 고정한다. exact 질문 중복과 명시 contrast group의 split 횡단을 차단한다. | 의미 유사성은 curator가 표시해야 한다. 공개 저장소의 holdout은 비밀이 아니며 hash는 무단 drift만 감지한다. 실제 reviewed evidence가 보충돼야 한다. |
+| A. 평가 사례 형식 | **계약 구현, evidence gate 차단** | 기존 `evaluation/sets/` synthetic scaffold 6건과 별도의 evidence-backed v1 계약·고정 corpus 9건·assistant draft 27건이 있다. v1 manifest와 evidence hash를 검증한다. | fixed corpus는 9/36이고 near-match가 없다. 27 drafts는 assistant-simulated·독립 검토 전이다. 구조/해시 검증은 의미 검토나 engine evaluation이 아니다. |
+| B. 개발·검증·보류 세트 분리 | **텍스트 구조 검사 통과, 독립 검토 대기** | scaffold validator와 v1 split leakage audit가 exact/template/family 누수를 검사하고 manifest hash를 고정한다. v1 fixed 9건과 drafts 27건은 분리 보관한다. | 의미상 유사성은 자동 audit으로 확정되지 않는다. holdout hash는 비밀성·anti-overfitting을 보증하지 않는다. 검토된 사례를 반영한 후 고정 세트 gate를 통과해야 한다. |
 | C. 기준안·후보안 전후 평가 | **미구현** | 일반 코드 테스트와 반복 시나리오가 존재하지만 이는 제품 사례별 후보안 비교기가 아니다. | 엔진 공통 outcome(답 상태, target, ranking, evidence, forbidden action) 계약과 같은 사례 버전의 비교 실행기가 필요하다. 유형별 정확도·오확정·금지 동작을 계산해야 한다. |
 | D. 규칙 반영 심사 | **부분 구현** | 피드백 검토/지식 범위·사용자 확인 흐름이 있고, pattern analyzer는 `draft` 제안만 만든다. 자동 승격은 하지 않는다. | 코드 규칙의 근거 case/version, 전후 지표, 리뷰 승인, applied commit, rollback을 묶는 promotion record/절차는 없다. |
 | E. 공통 시계열 정규화 | **부분 구현** | 수집기별 normalized observation에는 날짜·값·단위/주기(가능한 경우)와 source provenance를 보존한다. 최신성 evaluator는 period와 override를 별도 기록한다. | 종목·필드·통화·단위·주기·달력·override·출처/원본을 모든 provider에 걸쳐 표현하는 공통 typed series/batch 계약은 없다. 미제공 메타데이터는 기존처럼 unknown이어야 한다. |
@@ -43,6 +43,6 @@ fixture 기반 API 실행, 보존 task exporter, knowledge lookup으로 offline 
 3. 규칙 승격 기록(D)을 case version, 데이터 지표, reviewer, candidate commit, rollback commit과 결합한다.
 4. 공통 typed series/batch 계약(E)을 설계하고 우선 World Bank와 BOJ에 연결한 뒤, 호환성 증명 없이 provider들을 합치지 않는다.
 5. 같은 series의 원자료 출력(F)을 XLSX로 추가하고, 이후에만 여러 series 정렬·가공 출력(G)을 별도 기능으로 구현한다. 결측은 기본 빈칸이며 보간/forward-fill은 명시 근거 없이는 금지한다.
-6. 실제 분석가 1–2명 관찰(23회차)은 위의 기술 기반 다음, [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11의 순서 13이자 마지막으로 유지한다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
+6. 실제 분석가 1–2명 관찰(기존 23회차 명칭)은 A–G gate 뒤 40회차 마지막 제품 검증으로 유지한다. 상세 기준은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따른다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
 
 따라서 엔진 통합과 freshness/feedback 기반은 일부 동작하지만, 전체 평가-승격 루프 및 다중 시계열 Excel 흐름은 아직 완료되지 않았다.

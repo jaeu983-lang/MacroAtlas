@@ -911,3 +911,7 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 `independent_review_pending`이고 평가 corpus나 candidate catalog에 들어가지 않는다. hash 검증과 날짜 정규화 text audit은
 독립 의미 검토를 대신하지 않는다. `validate-corpus`는 evidence integrity와 gate 상태만 보고하고 검색 엔진을 실행하거나 draft를
 승격하지 않는다. 이 변경은 A의 일부 계약/fixture 준비이며 36-case gate, C/D 평가·승격 또는 사용자 관찰 통과를 뜻하지 않는다.
+
+## D-104 — 계획 기준 통합과 PR 묶음 축소
+
+2026-10-27. 사용자가 반복 계획·과거 다음 단계 문구·회차별 PR 수를 줄이고 기준을 통합하도록 요청했다. 제품 요구사항과 실행 순서는 `PROJECT_PLAN.md`에만 두고, `IMPLEMENTATION_PLAN.md`는 현행 상태 요약, `PRODUCT_EVALUATION_ENGINE_PLAN.md`는 상세 gate, 회차 보고서는 당시 실행 증거로 분리한다. 28–29, 30–32, 33–37, 38–39회차를 네 review PR 묶음으로 관리하며, 내부 회차 checkpoint와 실패 gate는 그대로 유지한다. 기존 열린 PR #50은 corpus gate가 통과한 것으로 취급하지 않으며, 27개 assistant-simulated 사례의 독립 검토·명시적 승격 전까지 draft 상태를 유지한다. 과거 보고서의 결과·수치는 소급 변경하지 않고, 과거의 다음 단계는 현행 순서가 아님을 문서 안내에 명시한다. 이 통합은 코드 기능 구현, 평가 gate 통과 또는 사람 검토 완료를 뜻하지 않는다.

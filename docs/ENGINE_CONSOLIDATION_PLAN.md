@@ -18,7 +18,7 @@ MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
 
 즉, 제품 엔진은 **공통 실행 계약 아래 분리**하고, 유지보수 스크립트는 **한 개발자 workflow controller 아래 통합**한다. source별 처리 규칙이나 대용량 worker를 공통 로직에 억지로 흡수하지 않는다.
 
-요구사항 A–G와 현재 코드의 대조 결과는 [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md)에 기록한다. 2026-10-27에는 기존 split-set scaffold validator와 split별 synthetic 사례 두 건, 별도의 evidence-backed `EvaluationCase` v1 contract·고정 snapshot·9개 사례 corpus를 추가했다. 고정 corpus는 목표 36개 중 9개여서 gate가 차단됐고, 독립 검토 전인 27개 assistant-simulated draft는 별도 보관한다. 실제 검토된 feedback 사례와 candidate 평가(C)·규칙 승격 심사(D)·공통 다중 시계열 Excel 출력(E–G)은 구현 완료가 아니다.
+요구사항 A–G와 현재 코드의 대조 결과는 [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md)에 기록한다. 2026-10-27에는 기존 split-set scaffold validator와 split별 synthetic 사례 여섯 건, 별도의 evidence-backed `EvaluationCase` v1 contract·고정 snapshot·9개 사례 corpus를 추가했다. 고정 corpus는 목표 36개 중 9개여서 gate가 차단됐고, 독립 검토 전인 27개 assistant-simulated draft는 별도 보관한다. 실제 검토된 feedback 사례와 candidate 평가(C)·규칙 승격 심사(D)·공통 다중 시계열 Excel 출력(E–G)은 구현 완료가 아니다.
 
 ## 현재 코드에서 확인한 중복과 단절
 
