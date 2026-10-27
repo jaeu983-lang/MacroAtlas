@@ -822,3 +822,11 @@ removed 0, preserved 3이었다. 이는 단일 정상 no-op 경로만 확인하�
 `20261027T063105Z-60a54edf`는 `ALREADY_RUNNING`, `network_requested=false`, `changed_paths=[]`, `push_status=NOT_RUN`,
 `pull_request=null`을 반환했으며 저장소 수정이나 provider 요청은 없었다. 이는 Windows OS-level lock 경합 차단을 확인한 증거다.
 실제 Windows candidate QA/handoff, failure 복구 및 Task Scheduler invocation은 아직 검증하지 않았다. 예약 task는 계속 비활성이다.
+
+## D-093 — 최신 base의 Windows updater no-op 재실측
+
+2026-10-27. 사용자가 PR #38 merge commit `aefd320a67d0abb5779393b90d32f6d149efa77e`를 checkout한 뒤 updater를 실행했다.
+Run `20261027T063907Z-d01e9247`은 `NO_ACTIONABLE_CHANGE`, `cleanup=PASSED`, `network_requested=false`로 끝났고 candidate, QA,
+push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 retention report는 `scanned=5`, `removed=0`, `preserved=5`를
+기록했다. 이는 최신 base의 no-op 정리 경로를 확인하며 Windows changed-candidate/failure 복구나 실제 scheduler 실행의 증거는 아니다.
+예약 task는 계속 비활성이다.

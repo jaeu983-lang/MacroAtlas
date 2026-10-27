@@ -1,8 +1,8 @@
 # 27회차 updater pilot 상태 — 최신 Windows no-op 통과, scheduler 비활성
 
-> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff가 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 사용자가 Windows에서 최신 installer dry-run(`registered=false`), updater no-op/cleanup, 교차 프로세스 lock 경합을 직접 확인했다. 구버전 checkout으로 실수 등록됐던 두 task는 제거됐고 후속 조회에서 남은 task가 없었다.
+> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff가 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 사용자가 Windows에서 최신 installer dry-run(`registered=false`), updater no-op/cleanup, 교차 프로세스 lock 경합을 직접 확인했다. 가장 최근 run `20261027T063907Z-d01e9247`은 base `aefd320`에서 no-op cleanup과 retention 요약까지 통과했다. 구버전 checkout으로 실수 등록됐던 두 task는 제거됐고 후속 조회에서 남은 task가 없었다.
 
-기준일: 2026-10-27. PR #26 이후 Linux에서 updater를 두 차례, Windows에서 no-op 경로를 두 차례 수동 실행했다. Linux 첫 시도는 Codex token refresh `401 Unauthorized`로 막혔고, 기기 코드 재인증 뒤 두 번째 시도는 candidate QA와 PR handoff까지 성공했다. 첫 Windows 시도는 cleanup이 실패했지만 PR #31 수정 후 재실행에서 no-op cleanup까지 통과했다.
+기준일: 2026-10-27. PR #26 이후 Linux에서 updater를 두 차례 실행했고, Windows에서 no-op 경로를 여러 차례 수동 확인했다. Linux 첫 시도는 Codex token refresh `401 Unauthorized`로 막혔고, 기기 코드 재인증 뒤 두 번째 시도는 candidate QA와 PR handoff까지 성공했다. 첫 Windows 시도는 cleanup이 실패했지만 PR #31 수정 후 재실행에서 no-op cleanup까지 통과했다.
 
 ## 첫 시도: 인증 차단
 
@@ -25,7 +25,7 @@ Linux 첫 시도는 자연 발생한 인증 실패 결과를, 두 번째는 cand
 
 ## 다음 단계
 
-Windows no-op 실행과 cleanup, 교차 프로세스 lock 경합은 검증됐다. Windows read-only `Get-ScheduledTask` 조회에서 `MacroData-HealthCheck`와 `MacroData-AgentImprovement`가 등록되지 않은 것을 확인했다. 따라서 조회할 task principal이나 실행 이력은 없다. Windows changed-candidate success, failure 복구, 실제 scheduled invocation은 미해결이므로 scheduler는 비활성으로 둔다.
+Windows no-op 실행과 cleanup, 교차 프로세스 lock 경합은 검증됐다. 최신 no-op run `20261027T063907Z-d01e9247`은 base `aefd320a67d0abb5779393b90d32f6d149efa77e`에서 `NO_ACTIONABLE_CHANGE`, `cleanup=PASSED`, `network_requested=false`로 끝났다. Retention은 90일 정책, `scanned=5`, `removed=[]`, `preserved=5`를 기록했다. Windows read-only `Get-ScheduledTask` 조회에서 MacroAtlas 작업이 등록되지 않은 것을 확인했다. 따라서 조회할 task principal이나 실행 이력은 없다. Windows changed-candidate success, failure 복구, 실제 scheduled invocation은 미해결이므로 scheduler는 비활성으로 둔다.
 
 
 ## 예약 설정 정적 검토 — 2026-10-27
@@ -80,5 +80,10 @@ Windows no-op 실행과 cleanup, 교차 프로세스 lock 경합은 검증됐다
 - 테스트용 Python holder가 OS lock을 잡은 동안 별도 PowerShell process에서 updater를 실행했다. Run `20261027T063105Z-60a54edf`는 `ALREADY_RUNNING`과 `reason=another maintenance updater owns the repository lock`을 기록했다.
 - 결과는 `network_requested=false`, `changed_paths=[]`, `push_status=NOT_RUN`, `pull_request=null`이며 worktree나 candidate를 만들지 않았다. 이 검사는 Windows OS-level lock contention 경로를 직접 확인했다.
 - provider 오류나 rate limit을 유발하지 않았다. Temporary holder는 종료되어 lock을 해제했다. 실제 Task Scheduler 실행과 Windows candidate/failure/resume 경로는 아직 미검증이며 scheduler는 계속 비활성이다.
+
+## 최신 base에서 Windows no-op 재확인 — 2026-10-27
+
+- PR #38 merge base `aefd320a67d0abb5779393b90d32f6d149efa77e`에서 run `20261027T063907Z-d01e9247`을 실행했다. 결과는 `NO_ACTIONABLE_CHANGE`, Codex exit code 0, `changed_paths=[]`, `candidate_commit=null`, `qa_report=null`, `push_status=NOT_RUN`, `pull_request=null`, `network_requested=false`였다.
+- Worktree와 branch cleanup은 `PASSED`; retention report는 90일, `scanned=5`, `removed=[]`, `preserved=5`였다. 이는 최신 base에서 정상 no-op·cleanup 경로를 재확인한 결과이며 changed-candidate QA/handoff, failure 복구 또는 실제 scheduler 실행을 입증하지 않는다.
 
 이 updater 작업은 MacroAtlas provider 접속이나 Gate C 원자료 증거와 별도다.
