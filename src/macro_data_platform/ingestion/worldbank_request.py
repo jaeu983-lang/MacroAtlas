@@ -6,6 +6,12 @@ from uuid import uuid4
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.worldbank import INDICATOR, SOURCE, GDPQuery
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus, TaskStatus, utc
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.ingestion.worldbank import GDPTransport, WorldBankGDPEngine
 from macro_data_platform.ingestion.worldbank_quality import (
     WorldBankAuditedCollection,
@@ -57,7 +63,7 @@ def build_worldbank_plan(selection: ConfirmedSelection, settings: Settings) -> T
         raise ValueError("Only the configured raw directory is supported; no output relocation")
     return TaskPlan((StageSpec("collect", "worldbank_gdp", {
         "start_year": query.start_year, "end_year": query.end_year,
-    }),))
+    }, engine_version="2"),))
 
 
 def _plan(confirmed: ConfirmedDelivery, settings: Settings, at: datetime) -> TaskPlan | None:
@@ -109,10 +115,14 @@ class WorldBankRequestDispatcher:
     def __init__(self, settings: Settings, store: HistoryStore, *,
                  transport: GDPTransport | None = None,
                  clock: Callable[[], datetime] = lambda: datetime.now(UTC),
-                 gate_a: bool = False):
+                 gate_a: bool = False,
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY):
         if settings.database_path != store.settings.database_path:
             raise ValueError("Dispatcher and history must use the same configured storage")
         self.settings, self.store, self.transport, self.clock = settings, store, transport, clock
+        if not isinstance(freshness_policy, FreshnessPolicy):
+            raise TypeError("freshness_policy must be a FreshnessPolicy")
+        self.freshness_policy = freshness_policy
         if type(gate_a) is not bool:
             raise ValueError("gate_a must be an explicit boolean")
         self.gate_a = gate_a
@@ -135,28 +145,49 @@ class WorldBankRequestDispatcher:
                 collect = plan.stages[0]
                 plan = TaskPlan((
                     StageSpec("collect", "worldbank_collect_audit", collect.input_data),
-                    StageSpec("validate", "worldbank_validate", collect.input_data),
+                    StageSpec("validate", "worldbank_validate", collect.input_data,
+                              engine_version="2"),
                     *plan.stages[1:],
                 ))
             if doc["plan"] is not None and (plan is None or doc["plan"] != plan.snapshot()):
                 raise ValueError("Saved plan differs from the confirmed World Bank request")
         if self.gate_a and plan is not None and doc["status"] == TaskStatus.COMPLETED:
-            verify_completed(self.audit, doc)
+            verify_completed(self.audit, doc, freshness_policy=self.freshness_policy)
+        elif plan is not None and doc["status"] == TaskStatus.COMPLETED:
+            completed_stage = next(
+                (row for row in reversed(doc["stages"])
+                 if row.get("stage_id") == "collect"), None,
+            )
+            payload = (((completed_stage or {}).get("result") or {}).get("payload") or {})
+            if payload.get("quality", {}).get("status") != "passed":
+                raise ValueError("completed World Bank result has no passed freshness evidence")
+            freshness = assess_freshness(
+                [row.get("date") for row in payload.get("observations", [])],
+                frequency=payload.get("frequency"), period_format=payload.get("period_format"),
+                series_id=payload.get("series_id"), series_key=payload.get("series_key"),
+                as_of=self._now(), policy=self.freshness_policy,
+            )
+            if freshness["status"] != FreshnessStatus.FRESH:
+                raise ValueError("completed World Bank observations are stale or unverified")
         return doc, confirmed, plan
 
     def _runner(self):
         engines = {
-            ("worldbank_gdp", "1"): WorldBankGDPEngine(self.settings, self.transport),
+            ("worldbank_gdp", "2"): WorldBankGDPEngine(
+                self.settings, self.transport, clock=self.clock,
+                freshness_policy=self.freshness_policy),
             ("worldbank_delivery", "1"): _LinkStage(self),
         }
         if self.gate_a:
             engines.update({
                 ("worldbank_collect_audit", "1"): WorldBankAuditedCollection(
                     self.audit, self.transport, settings=self.settings),
-                ("worldbank_validate", "1"): WorldBankValidation(self.audit),
+                ("worldbank_validate", "2"): WorldBankValidation(
+                    self.audit, freshness_policy=self.freshness_policy),
             })
         return Orchestrator(self.store, engines, clock=self.clock,
-                            reuse_validator=(lambda spec, stage: reusable(self.audit, spec, stage))
+                            reuse_validator=(lambda spec, stage: reusable(
+                                self.audit, spec, stage, freshness_policy=self.freshness_policy))
                             if self.gate_a else None)
 
     def prepare(self, task_id: str) -> dict:

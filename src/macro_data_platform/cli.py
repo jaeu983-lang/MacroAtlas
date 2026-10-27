@@ -16,6 +16,7 @@ from macro_data_platform.ingestion.boj import (
     build_boj_plan,
     make_boj_orchestrator,
 )
+from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.gate_c_watch import (
     build_gate_c_watch_plan,
     make_gate_c_watch_orchestrator,
@@ -377,7 +378,9 @@ def _settings(root: Path, *, live: bool) -> Settings:
     return Settings(root, data_dir=data_dir, network_enabled=live)
 
 
-def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transport=None) -> tuple[int, dict]:
+def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transport=None,
+             clock=lambda: datetime.now(UTC),
+             freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY) -> tuple[int, dict]:
     root = args.project_root.resolve()
     if not root.is_dir() or not (root / "pyproject.toml").is_file():
         raise ValueError("project root must contain the MacroAtlas pyproject.toml")
@@ -385,7 +388,8 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
     settings = _settings(root, live=live)
     if args.command == "export":
         from macro_data_platform.ingestion.csv_export import export_task
-        result = export_task(settings, args.task_id, args.output, format=args.format)
+        result = export_task(settings, args.task_id, args.output, format=args.format,
+                             freshness_policy=freshness_policy, as_of=clock())
         return 0, result
     if args.command == "deferred":
         from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore
@@ -494,13 +498,16 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
     if args.command == "collect" and args.source == "worldbank-gdp":
         task_id = _worldbank_task(store, settings, args.start_year, args.end_year)
         dispatcher = WorldBankRequestDispatcher(
-            settings, store, transport=worldbank_transport, gate_a=True,
+            settings, store, transport=worldbank_transport, gate_a=True, clock=clock,
+            freshness_policy=freshness_policy,
         )
         return _exit_code(doc := dispatcher.run(task_id)), _summary(doc)
 
     if args.command == "collect" and args.source == "boj-fxer":
         query = BOJQuery(args.month)
-        runner = make_boj_orchestrator(store, settings, boj_transport)
+        runner = make_boj_orchestrator(
+            store, settings, boj_transport, clock=clock, freshness_policy=freshness_policy,
+        )
         task = runner.create(f"BOJ {query.database}/{query.series_code} observations {query.month}")
         runner.plan(task.task_id, build_boj_plan(query))
         doc = runner.run(task.task_id)
@@ -517,7 +524,8 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         doc = store.get(args.task_id)
         if "workflow_context" in doc:
             dispatcher = WorldBankRequestDispatcher(
-                settings, store, transport=worldbank_transport, gate_a=True,
+                settings, store, transport=worldbank_transport, gate_a=True, clock=clock,
+                freshness_policy=freshness_policy,
             )
             resumed = dispatcher.resume(args.task_id, approved=args.approve_review)
         else:
@@ -563,7 +571,10 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                 resumed = runner.resume(args.task_id, approved=args.approve_review)
                 return _exit_code(resumed), _summary(resumed)
             elif engines <= {"boj_metadata", "boj_observations"}:
-                runner = make_boj_orchestrator(store, settings, boj_transport)
+                runner = make_boj_orchestrator(
+                    store, settings, boj_transport, clock=clock,
+                    freshness_policy=freshness_policy,
+                )
             elif engines == {"gate_c_file_watch"}:
                 runner = make_gate_c_watch_orchestrator(store, settings, file_transport)
             elif not doc.get("trial_only"):

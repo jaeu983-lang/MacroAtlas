@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import pytest
 import requests
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 from test_orchestration import Clock
 from test_worldbank import FIXTURE, FixtureTransport, fixture_download
 from test_worldbank_request import child, supplied
@@ -44,7 +45,10 @@ def setup(tmp_path):
 
 def handler(setup, transport=None):
     settings, store, clock, _ = setup
-    return WorldBankRequestDispatcher(settings, store, clock=clock, transport=transport, gate_a=True)
+    return WorldBankRequestDispatcher(
+        settings, store, clock=clock, transport=transport, gate_a=True,
+        freshness_policy=HISTORICAL_FIXTURE_POLICY,
+    )
 
 
 def payload(result):
@@ -495,7 +499,8 @@ def test_gate_a_is_explicit_and_existing_plan_schema_and_json_remain_intact(setu
     settings, store, clock, service = setup
     task = child(service, supplied(service))
     old = WorldBankRequestDispatcher(settings, store, clock=clock,
-                                     transport=FixtureTransport(fixture_download()))
+                                     transport=FixtureTransport(fixture_download()),
+                                     freshness_policy=HISTORICAL_FIXTURE_POLICY)
     old.prepare(task["task_id"])
     before = store.get(task["task_id"])
     with pytest.raises(ValueError, match="Saved plan differs"):

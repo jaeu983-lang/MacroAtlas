@@ -3,20 +3,26 @@ import json
 import tempfile
 import unittest
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
+
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.bls import BLSQuery, BLSTransport, parse_bls
 from macro_data_platform.connectors.census import CensusQuery, CensusTransport, parse_census
 from macro_data_platform.connectors.statistical_http import ApiDownload
 from macro_data_platform.contracts import EvidenceKind, StageStatus
-from macro_data_platform.ingestion.bls import BLSEngine
-from macro_data_platform.ingestion.census import CensusEngine
+from macro_data_platform.ingestion.bls import BLSEngine as _BLSEngine
+from macro_data_platform.ingestion.census import CensusEngine as _CensusEngine
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
 from macro_data_platform.orchestration.runner import Orchestrator
 from macro_data_platform.storage.history import HistoryStore
+
+BLSEngine = partial(_BLSEngine, freshness_policy=HISTORICAL_FIXTURE_POLICY)
+CensusEngine = partial(_CensusEngine, freshness_policy=HISTORICAL_FIXTURE_POLICY)
 
 NOW = datetime(2026, 10, 26, tzinfo=UTC)
 BLS_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
@@ -140,7 +146,9 @@ class CensusTests(unittest.TestCase):
             engines = {
                 ("bls", "1"): BLSEngine(settings, FixtureTransport(download(BLS_URL, {
                     "status": "REQUEST_SUCCEEDED", "Results": {"series": [{
-                        "seriesID": "CUUR0000SA0", "data": []
+                        "seriesID": "CUUR0000SA0", "data": [{
+                            "year": "2024", "period": "M01", "value": "308.417",
+                        }]
                     }]},
                 }))),
                 ("census", "1"): CensusEngine(settings, FixtureTransport(download(CENSUS_URL, self.body))),

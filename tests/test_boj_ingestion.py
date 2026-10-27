@@ -3,7 +3,10 @@ import json
 import tempfile
 import unittest
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
+
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.boj import (
@@ -21,12 +24,18 @@ from macro_data_platform.connectors.statistical_http import ApiDownload, SourceF
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus
 from macro_data_platform.ingestion.boj import (
     build_boj_plan,
-    make_boj_orchestrator,
+)
+from macro_data_platform.ingestion.boj import (
+    make_boj_orchestrator as _make_boj_orchestrator,
 )
 from macro_data_platform.storage.history import HistoryStore
 
 NOW = datetime(2026, 10, 26, tzinfo=UTC)
 QUERY = BOJQuery("202609")
+make_boj_orchestrator = partial(
+    _make_boj_orchestrator, clock=lambda: NOW,
+    freshness_policy=HISTORICAL_FIXTURE_POLICY,
+)
 
 
 def api_download(endpoint, document, *, retrieved_at=NOW):

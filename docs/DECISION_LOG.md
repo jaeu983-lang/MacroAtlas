@@ -840,3 +840,15 @@ push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 reten
 그러나 response의 structured `unit` 값은 빈 문자열이고 frequency/periodicity field가 없다. 따라서 이 결과는
 indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
 원본 manifest, 과거 quality report는 변경하지 않고 unit/frequency unknown을 유지한다.
+
+## D-095 — 시계열 주기 기반 최신성 판정
+
+2026-10-27. 사용자의 요청에 따라 최신성은 다운로드 시각이나 metadata refresh 시각이 아니라
+관측기간 끝을 기준으로 평가한다. 기본 최대 허용 일수는 일간 7, 주간 21, 월간 120, 분기 240,
+반기 183, 연간 730이며, 정책 ID·SHA256 fingerprint와 시계열 단위 override를 기록한다.
+이는 발표 달력을 공식 검증한 값이 아니라 명시적 운영 기본값이다. 주기가 없거나, 기간을
+해석할 수 없거나, 관측이 미래인 경우 `FRESHNESS_UNVERIFIED`; 허용치를 초과하면 `STALE`로
+분류하고 정규화 관측값과 지원 CSV 출력을 보류한다. 원본·manifest는 보존한다. World Bank,
+BLS, Census, BOJ 경로 및 World Bank/BOJ CSV 재검증에 연결했다. fixture 기반 테스트는
+실행했으나 이 변경의 live freshness 동작은 검증하지 않았다. Gate C는 통과 처리하지 않는다.
+세부 정책과 현재 범위는 [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md).
