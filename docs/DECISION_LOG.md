@@ -898,3 +898,7 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 
 2026-10-27. 통합 기획 §11 순서 7을 구현하면서 UTC 시각을 elapsed 계산에 쓰지 않고 `perf_counter_ns()`를 사용한다.
 공통 stage wall과 가능한 network/raw/parse/quality/SQLite/export 경계는 engine/version·상태·attempt·숫자 크기·evidence class·workload·code/environment와 함께 별도 `performance.sqlite`에 쓴다. 요청, 원본 값, task ID, credential, URL은 제외한다. 이 DB 분리는 export의 catalog read-only 계약을 유지하고 측정 기록을 task history와 분리한다. knowledge는 latency를 반환하고 cache hit/miss를 표본화한다. 보고기는 read-only이고 그룹당 표본이 20개 미만이면 p95를 미확정으로 표시한다. live API 요청은 측정용으로 만들지 않는다. 대용량 worker 기준은 그대로 별도 유지한다. 실제 병목이 드러날 때까지 EngineRegistry/composition 및 저장 경로 최적화를 다음 순서로 미룬다.
+
+## D-102 — 23회차 분석가 관찰을 A–G 제품 작업 뒤 최종 검증으로 둠
+
+2026-10-27. 사용자는 준비된 분석가 1–2명 관찰을 다음 단계가 아니라 모든 제품 구현·검증 뒤 마지막으로 배치하도록 요청했다. 통합 기획 `PROJECT_PLAN.md`가 단일 제품 기준이며, 새 `PRODUCT_EVALUATION_ENGINE_PLAN.md`는 그 §11의 A–G를 28–39회차로 구체화하는 하위 일정이다. 기존 23회차 관찰은 상세 일정의 40회차 최종 제품 검증으로 남긴다. 실제 세션 전에 workbook 구현 결과에 맞게 scenario task/series ID, 명령, 기대 sheet와 경고를 갱신한다. 계획·fixture·내부 dry run은 독립 분석가 관찰 evidence로 계산하지 않는다. 이 순서 변경은 workbook/freshness/feedback 기능의 구현 완료를 뜻하지 않으며, updater/scheduler pilot과 자연 Gate C evidence도 별도 상태로 유지한다.

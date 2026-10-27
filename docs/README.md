@@ -82,5 +82,5 @@ World Bank API에서 자연 transient failure를 보존한 same-task resume은 �
 QA→review PR handoff까지 구현했습니다. Windows no-op/cleanup과 OS lock 경합 pilot은 통과했으며, changed-candidate/failure 경로 및 예약 실행 검토가 남아 있습니다. 세부 근거는
 [26회차 보고서](ITERATION_26_REPORT.md)와 [27회차 pilot 상태](ITERATION_27_PILOT_REPORT.md)를 보세요. Linux candidate handoff, Windows installer dry-run, updater no-op/cleanup, 교차 프로세스 lock 경합을 확인했습니다. PR #34에서 scheduler용 base ref, principal, 중복 실행 lock과 report retention을 구현했습니다. GitHub Actions는 계정 결제/사용 한도 문제로 실행되지 않았고 candidate/failure 경로도 남아 있어 예약 task는 등록되지 않았습니다.
 
-다음 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. 계획 문서는 참가자
-세션을 수행했다는 증거가 아닙니다.
+최종 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. A–G 평가·엔진·Excel
+선행 작업이 끝난 뒤 실행하며, 계획 문서는 참가자 세션을 수행했다는 증거가 아닙니다.
