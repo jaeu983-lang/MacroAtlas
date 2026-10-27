@@ -8,7 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from macro_data_platform.evaluation import EvaluationCase, load_corpus, read_cases
+from macro_data_platform.evaluation import (
+    EvaluationCase,
+    audit_split_leakage,
+    load_corpus,
+    read_cases,
+)
 from macro_data_platform.workflow_contracts import Candidate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -168,10 +173,35 @@ def test_manifest_detects_tampering_without_touching_the_source_corpus(tmp_path)
 
 def test_manifest_reports_partial_gate_without_promoting_it_to_complete():
     manifest = json.loads((CORPUS / "manifest.json").read_text(encoding="utf-8"))
+    corpus = load_corpus(CORPUS)
     assert manifest["intended_case_count"] == 36
     assert manifest["case_count"] == 9
     assert manifest["gate_status"] == "blocked"
     assert any("near-match distractor" in message for message in manifest["gate_blockers"])
+    assert any("split leakage" in message for message in manifest["gate_blockers"])
+    assert any(issue.kind == "query_template_crosses_splits"
+               for issue in corpus.split_leakage_issues)
+
+
+def test_split_audit_catches_year_only_query_variants_across_splits():
+    source = next(case for case in read_cases(CORPUS / "cases.jsonl")
+                  if case.split == "development" and case.case_type == "rankable")
+    row = source.to_dict()
+    row["case_id"] = "eval-v1-validation-rankable-period-audit"
+    row["case_family_id"] = source.case_family_id
+    row["split"] = "validation"
+    row["request"]["request_id"] = row["case_id"]
+    row["request"]["text"] = "GDP for the United States in 2021"
+    row["query_variants"] = ["GDP for the United States in 2021"]
+    second = EvaluationCase.from_dict(row)
+
+    issues = audit_split_leakage((source, second))
+    assert any(issue.kind == "query_template_crosses_splits"
+               and set(issue.case_ids) == {source.case_id, second.case_id}
+               for issue in issues)
+    assert any(issue.kind == "case_family_crosses_splits"
+               and set(issue.case_ids) == {source.case_id, second.case_id}
+               for issue in issues)
 
 
 def test_unreviewed_official_near_match_draft_stays_outside_fixed_corpus():

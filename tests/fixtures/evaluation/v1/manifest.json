@@ -20,6 +20,7 @@
   "gate_blockers": [
     "Only one evidence-backed candidate is present in the current fixed catalog snapshot; 27 of 36 planned cases are not authored.",
     "An official near-match distractor draft exists but is not in the fixed catalog or evaluation set pending independent review; the corpus still has no near_match cases.",
+    "The starter corpus reuses date-normalized query templates across splits; split leakage blocks acceptance until cases are re-authored.",
     "BLS and Census catalog records in current tests are synthetic fixtures, not retained official metadata snapshots suitable for positive gold labels."
   ],
   "gate_status": "blocked",

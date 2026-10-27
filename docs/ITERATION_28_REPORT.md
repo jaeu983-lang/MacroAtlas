@@ -31,7 +31,9 @@
 | validation | 1 | 0 | 1 | 1 | 3 |
 | holdout | 1 | 0 | 1 | 1 | 3 |
 
-목표는 split당 12개, 각 유형 3개다. 따라서 초기 manifest의 gate 상태는 **blocked**다. 27개를 더 채워야 한다. 후속으로
+목표는 split당 12개, 각 유형 3개다. 따라서 초기 manifest의 gate 상태는 **blocked**다. 27개를 더 채워야 하며, 추가한 split
+audit은 현재 코퍼스에서 날짜만 정규화하면 겹치는 질문 템플릿을 찾아낸다. 이 누수는 새 초안에서 재사용하지 않고 고정 사례를
+재작성해야 한다. 후속으로
 World Bank의 current-price/constant-price GDP 공식 metadata와 2020–2022 관측 응답을 보존해 near-match 초안 하나를 만들었지만,
 독립 검토 대기 상태라 fixed catalog와 평가 코퍼스에 아직 넣지 않았다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
 candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1-candidate snapshot에만 해당하며, MacroAtlas 전체 또는 공식
@@ -39,7 +41,7 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 
 ## 변경 파일
 
-- `src/macro_data_platform/evaluation/`: case contract와 JSONL/manifest/candidate reader.
+- `src/macro_data_platform/evaluation/`: case contract, JSONL/manifest/candidate reader, split leakage audit.
 - `tests/fixtures/evaluation/v1/`: v1 schema, 9개 case, 고정 catalog, 초기 manifest 및 hash.
 - `tests/fixtures/evaluation/drafts/`: assistant-simulated, 독립 검토 대기 near-match 후보. 평가 세트에 포함하지 않는다.
 - `docs/evidence/worldbank_gdp_constant_*_20261027.json`: World Bank 공식 metadata와 USA 2020–2022 응답 원문 snapshot.
@@ -50,9 +52,10 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 
 초기 코퍼스 구현 당시 전체 pytest **745 passed**, `ruff check .`, `git diff --check`, `compileall`이 통과했다. 후속 초안은
 World Bank 공식 API 두 응답의 HTTP 200 및 기간 식별을 확인했고, 평가 case/candidate contract와 evidence SHA-256을 검증했다.
-`tests/test_evaluation_cases.py` 15개도 통과했다. 이 후속 작업은 product 수집, SQLite, raw store, export 경로를 실행하지 않았다.
+`tests/test_evaluation_cases.py` 16개도 통과했다. Split audit은 연도·월 범위를 정규화해 반복 템플릿을 찾지만 완전한 의미 유사도
+판정은 아니다. 이 후속 작업은 product 수집, SQLite, raw store, export 경로를 실행하지 않았다.
 
-이 작업은 검색 점수·순위·거절 동작을 실행 평가하지 않는다. 피드백 수집/검토 bridge, split leakage 검증, 규칙 승격,
+이 작업은 검색 점수·순위·거절 동작을 실행 평가하지 않는다. 피드백 수집/검토 bridge와 규칙 승격,
 freshness 및 Excel writer는 구현하지 않는다. Gate는 9개 고정 사례로 계속 차단되며, pending draft는 검토 후에만 승격할 수 있다.
 
 ## 검토 판단

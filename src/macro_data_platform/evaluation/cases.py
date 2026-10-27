@@ -9,6 +9,7 @@ from types import MappingProxyType
 from typing import Any
 
 from macro_data_platform.evaluation.case_contracts import EvaluationCase
+from macro_data_platform.evaluation.split_audit import SplitLeakageIssue, audit_split_leakage
 from macro_data_platform.workflow_contracts import Candidate
 
 _MAX_CORPUS_BYTES = 8 * 1024 * 1024
@@ -85,6 +86,7 @@ class EvaluationCorpus:
     candidates: tuple[Candidate, ...]
     case_sha256: str
     catalog_sha256: str
+    split_leakage_issues: tuple[SplitLeakageIssue, ...]
 
     def __repr__(self) -> str:
         return "EvaluationCorpus(<values omitted>)"
@@ -214,6 +216,12 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
             != 4 * manifest["intended_cases_per_type_per_split"]):
         raise ValueError("Invalid initial case distribution target")
     complete = len(cases) == manifest["intended_case_count"] and not expected_missing
+    leakage_issues = audit_split_leakage(cases)
+    if leakage_issues and not any("split leakage" in item.casefold()
+                                  for item in manifest["gate_blockers"]):
+        raise ValueError("Evaluation manifest omits the detected split leakage blocker")
+    if complete and leakage_issues:
+        raise ValueError("Complete evaluation corpus cannot contain cross-split leakage")
     if (manifest["gate_status"] == "complete") != complete:
         raise ValueError("Evaluation corpus gate status does not match its case counts")
     if not complete and not manifest["gate_blockers"]:
@@ -237,4 +245,4 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
     _verify_evidence_files(cases, Path(repo_root))
     return EvaluationCorpus(MappingProxyType(manifest), cases, candidates,
                             manifest["files"]["cases.jsonl"],
-                            manifest["files"]["catalog_snapshot.json"])
+                            manifest["files"]["catalog_snapshot.json"], leakage_issues)
