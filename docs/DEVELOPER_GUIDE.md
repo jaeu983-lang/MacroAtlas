@@ -118,9 +118,9 @@ checkout이 dirty여도 결과가 섞이지 않습니다. Windows의 `scripts/ru
 `origin/HEAD`이며 설정이 없으면 `-BaseRef`로 branch를 지정해야 합니다. Codex는 source checkout의 ignored 파일과 분리된
 Git worktree에서 실행됩니다. 변경 경로 allowlist를 통과한 candidate만 commit하며, 동일 SHA QA 실패 시 push하지 않습니다.
 QA가 통과하면 원격 branch와 검토 PR을 생성하지만 자동 merge/publish는 하지 않습니다. `-DryRun`은 Codex 없이 base와 prompt만
-확인하며 worktree나 report를 만들지 않습니다. 2026-10-27 Linux 재시도에서 `codex login status`는 로그인으로 표시됐지만 실제 요청은
-token refresh `401`로 prompt 전에 종료됐습니다. Windows 환경의 Codex CLI를 실제로 재인증한 뒤 수동 pilot을 수행해야 합니다. 이 시도에서는
-candidate·QA·push·PR이 없었습니다. 최신 상태는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)를 참고하세요.
+확인하며 worktree나 report를 만들지 않습니다. 2026-10-27 첫 Linux 재시도는 token refresh `401`로 막혔지만, device-code 재인증 뒤
+updater가 candidate QA와 PR handoff에 성공했습니다. Windows Codex CLI wrapper와 사용자 세션의 수동 pilot은 별도로 수행해야 합니다.
+최신 상태와 다음 조건은 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)를 참고하세요.
 
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
