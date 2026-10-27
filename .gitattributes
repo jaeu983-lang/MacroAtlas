@@ -1,2 +1,4 @@
 # Evaluation corpus hashes cover exact file bytes; keep snapshot inputs stable on Windows.
 tests/fixtures/evaluation/** text eol=lf
+docs/evidence/** text eol=lf
+docs/ITERATION_04_REPORT.md text eol=lf
