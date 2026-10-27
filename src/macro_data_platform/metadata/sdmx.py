@@ -8,6 +8,7 @@ from macro_data_platform.metadata.normalize import (
     _unknown,
     _valid_source,
 )
+from macro_data_platform.performance.metrics import measured_phase
 
 MAX_XML_BYTES = 2 * 1024 * 1024
 
@@ -28,6 +29,7 @@ def _named_children(element: ElementTree.Element, wanted: str) -> list[ElementTr
     return [child for child in element.iter() if _local(child.tag) == wanted]
 
 
+@measured_phase("parse")
 def parse_sdmx_structure_xml(raw: bytes, *, source_agency: str, source_url: str,
                              retrieved_at: datetime, raw_path: str) -> list[dict]:
     """Parse Dataflow, DSD, and Codelist names/references without semantic inference."""

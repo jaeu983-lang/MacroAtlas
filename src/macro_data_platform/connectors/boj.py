@@ -12,6 +12,7 @@ from macro_data_platform.connectors.statistical_http import (
     request_json,
 )
 from macro_data_platform.contracts import ErrorCode, StageStatus
+from macro_data_platform.performance.metrics import measured_phase
 
 API_ROOT = "https://www.stat-search.boj.or.jp/api/v1"
 METADATA_ENDPOINT = f"{API_ROOT}/getMetadata"
@@ -66,6 +67,7 @@ class BOJTransport:
         return request_json(query.data_url, method="GET")
 
 
+@measured_phase("parse")
 def parse_boj_metadata(download: ApiDownload, query: BOJQuery) -> dict:
     if download.source_url != METADATA_ENDPOINT:
         raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
@@ -99,6 +101,7 @@ def parse_boj_metadata(download: ApiDownload, query: BOJQuery) -> dict:
     }
 
 
+@measured_phase("parse")
 def parse_boj_observations(download: ApiDownload, query: BOJQuery,
                            metadata: dict) -> dict:
     if download.source_url != DATA_ENDPOINT:

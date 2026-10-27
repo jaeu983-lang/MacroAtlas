@@ -19,6 +19,7 @@ from macro_data_platform.ingestion.freshness import (
     assess_freshness,
 )
 from macro_data_platform.orchestration.models import StageInput
+from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.raw_downloads import save_worldbank_download
 
 
@@ -74,12 +75,13 @@ class WorldBankGDPEngine:
                 StageStatus.SUCCEEDED, payload, refs,
                 ("Source bytes preserved; freshness is evaluated in the validation stage.",),
             )
-        freshness = assess_freshness(
-            [row["date"] for row in parsed["observations"]],
-            frequency=parsed.get("frequency"), period_format=parsed.get("period_format"),
-            series_id=parsed.get("series_id"), series_key=parsed.get("series_key"),
-            as_of=self.clock(), policy=self.freshness_policy,
-        )
+        with measure_current("quality"):
+            freshness = assess_freshness(
+                [row["date"] for row in parsed["observations"]],
+                frequency=parsed.get("frequency"), period_format=parsed.get("period_format"),
+                series_id=parsed.get("series_id"), series_key=parsed.get("series_key"),
+                as_of=self.clock(), policy=self.freshness_policy,
+            )
         quality_issue = (
             "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
             "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None

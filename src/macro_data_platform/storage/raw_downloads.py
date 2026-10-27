@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.worldbank import API_DOCS, TERMS_URL, Download
+from macro_data_platform.performance.metrics import measured_phase, observe_download
 
 
 @dataclass(frozen=True)
@@ -14,7 +15,9 @@ class SavedDownload:
     manifest_path: str
 
 
+@measured_phase("raw_write")
 def save_worldbank_download(settings: Settings, download: Download) -> SavedDownload:
+    observe_download(download)
     # An exclusive new directory and exclusive files prevent silent raw overwrites.
     relative = Path(settings.data_dir) / "raw" / "worldbank" / uuid4().hex
     directory = settings._inside(str(relative))

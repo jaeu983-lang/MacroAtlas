@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus, utc
+from macro_data_platform.performance.metrics import measured_phase
 
 MAX_BYTES = 2 * 1024 * 1024
 TIMEOUT_SECONDS = 25
@@ -92,6 +93,7 @@ def read_optional_api_key(env_name: str) -> str | None:
     return value or None
 
 
+@measured_phase("network")
 def request_json(url: str, *, method: str, body: bytes | None = None,
                  headers: dict[str, str] | None = None) -> ApiDownload:
     request = urllib.request.Request(

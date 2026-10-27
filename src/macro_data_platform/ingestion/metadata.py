@@ -13,6 +13,7 @@ from macro_data_platform.metadata.normalize import (
 )
 from macro_data_platform.metadata.sdmx import parse_sdmx_structure_xml
 from macro_data_platform.orchestration.models import StageInput
+from macro_data_platform.performance.metrics import measured_phase
 from macro_data_platform.storage.metadata_archives import (
     begin_metadata_package,
     complete_metadata_package,
@@ -152,6 +153,7 @@ class SDMXMetadataEngine:
         return _success(saved, ("SDMX input was supplied locally; no SDMX network collector is registered.",))
 
 
+@measured_phase("parse")
 def _json(download: ApiDownload):
     from macro_data_platform.connectors.statistical_http import decode_json
     return decode_json(download)

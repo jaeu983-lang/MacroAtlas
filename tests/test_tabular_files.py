@@ -2,6 +2,7 @@
 import hashlib
 import io
 import json
+import sqlite3
 import warnings
 import zipfile
 from datetime import UTC, datetime
@@ -409,3 +410,12 @@ def test_orchestrator_runs_tabular_file_engine_as_a_registered_stage(tmp_path):
     result = runner.run(task.task_id)
     assert result["status"] == "COMPLETED"
     assert result["stages"][0]["result"]["payload"]["table"]["row_count"] == 1
+    with sqlite3.connect(settings.performance_database_path) as connection:
+        sample = connection.execute(
+            "SELECT sample_class, input_bytes, output_rows, output_columns, phase_timings_json "
+            "FROM performance_samples WHERE execution_scope='orchestrator_stage' "
+            "AND engine='tabular_file'",
+        ).fetchone()
+    assert sample[:4] == ("stored", len(b"code\tvalue\nA\t1\n"), 1, 2)
+    phases = json.loads(sample[4])
+    assert "parse" in phases and "raw_write" in phases

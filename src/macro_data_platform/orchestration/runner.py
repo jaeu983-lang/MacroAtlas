@@ -1,9 +1,11 @@
 """Synchronous sequential runner with durable attempts and explicit resumption."""
 import hashlib
 import json
+import logging
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
+from time import perf_counter_ns
 from typing import Any
 from uuid import uuid4
 
@@ -19,10 +21,17 @@ from macro_data_platform.contracts import (
 )
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan, json_snapshot
 from macro_data_platform.orchestration.workflow import validate_workflow_task
+from macro_data_platform.performance.metrics import (
+    PerformanceMetrics,
+    observe_result_shape,
+    runtime_metadata,
+)
+from macro_data_platform.performance.storage import build_sample
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.storage.knowledge import KnowledgeStore
 
 SUCCESS = {StageStatus.SUCCEEDED, StageStatus.SKIPPED_REUSED}
+_LOGGER = logging.getLogger(__name__)
 OUTCOMES = {StageStatus.SUCCEEDED, StageStatus.FAILED_RETRYABLE,
             StageStatus.FAILED_TERMINAL, StageStatus.NEEDS_REVIEW}
 
@@ -40,6 +49,7 @@ class Orchestrator:
         self.engines = dict(engines)
         self.clock = clock
         self.reuse_validator = reuse_validator
+        self.performance_environment = runtime_metadata(store.settings.project_root)
 
     def _now(self) -> str:
         value = self.clock()
@@ -387,31 +397,56 @@ class Orchestrator:
                 upstream_run_id = row["stage_run_id"]
                 continue
             reuse_prefix = False
+            metrics = PerformanceMetrics()
+            raw_input = spec.input_data
+            if isinstance(raw_input, dict):
+                metrics.observe_input(
+                    byte_count=raw_input.get("input_bytes", raw_input.get("byte_count")),
+                    rows=raw_input.get("input_rows", raw_input.get("rows")),
+                    columns=raw_input.get("input_columns", raw_input.get("columns")),
+                )
+            started_ns = perf_counter_ns()
             try:
-                result = self.engines[(spec.engine, spec.engine_version)].run(StageInput(
-                    task_id, current["request"], spec.stage_id, json_snapshot(spec.input_data),
-                    json_snapshot(upstream["payload"]) if upstream else None,
-                    tuple(row["input_refs"]),
-                    json_snapshot(current["knowledge_context"])
-                    if "knowledge_context" in current else None,
-                ))
-                if not isinstance(result, StageResult) or result.status not in OUTCOMES:
-                    raise ValueError("engine must return a terminal stage result")
-                if (
-                    result.status == StageStatus.FAILED_RETRYABLE
-                    and result.error_code in {ErrorCode.AUTH_ACCESS, ErrorCode.LICENSE_SECURITY}
-                ):
-                    result = StageResult(
-                        StageStatus.NEEDS_REVIEW, result.payload, result.evidence_refs,
-                        result.warnings, result.error_code, result.retry_hint,
-                        result.retry_after_seconds,
-                    )
-                serialized = json_snapshot(asdict(result))
+                with metrics.activate():
+                    result = self.engines[(spec.engine, spec.engine_version)].run(StageInput(
+                        task_id, current["request"], spec.stage_id, json_snapshot(spec.input_data),
+                        json_snapshot(upstream["payload"]) if upstream else None,
+                        tuple(row["input_refs"]),
+                        json_snapshot(current["knowledge_context"])
+                        if "knowledge_context" in current else None,
+                        metrics,
+                    ))
+                    if not isinstance(result, StageResult) or result.status not in OUTCOMES:
+                        raise ValueError("engine must return a terminal stage result")
+                    if (
+                        result.status == StageStatus.FAILED_RETRYABLE
+                        and result.error_code in {ErrorCode.AUTH_ACCESS, ErrorCode.LICENSE_SECURITY}
+                    ):
+                        result = StageResult(
+                            StageStatus.NEEDS_REVIEW, result.payload, result.evidence_refs,
+                            result.warnings, result.error_code, result.retry_hint,
+                            result.retry_after_seconds,
+                        )
+                    observe_result_shape(result.payload)
+                    serialized = json_snapshot(asdict(result))
             except Exception:  # noqa: BLE001 - isolate injected engines without logging secrets
                 serialized = json_snapshot(asdict(StageResult(
                     StageStatus.FAILED_TERMINAL, error_code=ErrorCode.INTERNAL_BUG,
                     warnings=("Engine exception or invalid result; details omitted.",),
                 )))
+            duration_ns = max(0, perf_counter_ns() - started_ns)
+            try:
+                self.store.record_performance(build_sample(
+                    observed_at=self._now(), execution_scope="orchestrator_stage",
+                    engine=spec.engine, engine_version=spec.engine_version,
+                    stage=spec.stage_id, status=serialized["status"],
+                    task_attempt_no=row["task_attempt_no"], attempt_no=row["attempt_no"],
+                    duration_ns=duration_ns, metrics=metrics.snapshot(),
+                    environment=self.performance_environment,
+                ))
+            except Exception:  # noqa: BLE001 - telemetry cannot change the stage outcome
+                # Missing telemetry must never change the stage's business outcome.
+                _LOGGER.warning("performance telemetry sample could not be recorded")
             with self.store.transaction() as connection:
                 current = self.store.load(connection, task_id)
                 self._owned(current, token)

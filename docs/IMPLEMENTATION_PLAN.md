@@ -13,10 +13,13 @@
 > 현재 구조 검증은 통과하지만 세 split 모두 synthetic이어서 실제 user evidence나 엔진 후보 비교·규칙 승격은 통과하지 않았다. 해당 PR들의 CI는
 > Ubuntu/Windows × Python 3.11/3.12 8개 job 모두 통과했다. 남은 순서는 통합 기획서 §11을 따른다.
 
-> **엔진 시간 계측 상태:** 공통 runner는 stage의 UTC 시작·종료 시각을 보존하지만 monotonic elapsed time이나
-> HTTP·raw 저장·parse·quality·SQLite·export별 하위 시간을 내지 않는다. 대용량 worker의 실행시간/메모리와
-> knowledge query의 행·byte/cache 지표는 별도 경로에만 있다. 현재 workspace에는 task DB도 없어 connector별 실제
-> stage history를 재분석할 수 없다. 따라서 공통 engine 성능 baseline은 미수집이며 통합 기획서 §11 순서 7의 작업이다.
+> **엔진 시간 계측 상태:** §11 순서 7의 공통 계측은 구현됐다. Orchestrator stage는 monotonic elapsed와
+> API·raw·parse·quality·SQLite·CSV export의 가능한 하위 시간을 별도 `data/performance.sqlite`에 저장하고,
+> knowledge query는 latency와 cache hit/miss를 보고한다. `macro-perf report`는 privacy-safe 집계를 읽기 전용으로
+> 출력한다. live API 표본을 임의 생성하지 않았으며, source별 자연 기준선은 승인된 요청의 표본을 기다린다.
+> 세부 phase가 없는 Discovery와 기존 대용량 worker 자료는 별도 scope다. 161개의 fixture/stored 반복 결과는
+> [오프라인 기준선](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)에 기록했으며 실제 API 지연을 나타내지 않는다.
+> 측정 전 최적화나 registry 통합은 하지 않는다.
 
 ## 현재 상태 — 2026-10-27
 

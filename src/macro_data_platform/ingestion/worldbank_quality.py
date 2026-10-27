@@ -23,6 +23,7 @@ from macro_data_platform.ingestion.freshness import (
     assess_freshness,
 )
 from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
+from macro_data_platform.performance.metrics import measured_phase
 
 NORMALIZATION_VERSION = "worldbank_gate_a_v3"
 PARSER_VERSION = "worldbank_gdp_parser_v2"
@@ -93,6 +94,7 @@ def _compare_prior_artifact(audit, artifact):
     return calculated, method
 
 
+@measured_phase("quality")
 def normalize_worldbank(
     parsed,
     query,

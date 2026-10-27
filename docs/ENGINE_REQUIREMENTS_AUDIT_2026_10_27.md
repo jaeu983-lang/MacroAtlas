@@ -7,7 +7,7 @@
 | 영역 | 판정 | 코드·검증에서 확인한 내용 | 남은 조건 |
 |---|---|---|---|
 | 공통 데이터 실행 엔진 | **부분 통합** | `Engine`/`StageResult` 계약과 공통 `Orchestrator`가 stage·attempt·retry/resume·task history를 관리한다. World Bank, BOJ, BLS/Census, 파일, 대용량 작업은 이 계약에 맞춘 adapter/worker다. | CLI와 provider별 runner factory가 각각 엔진 mapping을 구성한다. 전역 단일 registry/control-plane wiring은 아직 완전히 공통화되지 않았다. provider adapter는 출처별 전송·응답 차이 때문에 유지하는 편이 맞다. |
-| 엔진별 성능·병목 계측 | **일부 개별 계측만 존재** | 일반 stage에는 UTC `started_at`/`finished_at`이 있으나 monotonic elapsed/phase timings는 없다. 대용량 worker는 elapsed/RSS를, knowledge query는 candidate rows/bytes/cache를 기록한다. | API·discovery·tabular·export 등 engine별 기준선과 하위 단계별 시간은 미수집이다. 통합 기획서 §11 순서 7에서 계측·표본 수·환경을 고정한다. |
+| 엔진별 성능·병목 계측 | **공통 계측 구현, 자연 기준선 수집 중** | Orchestrator stage monotonic wall, API network/raw/parse/quality/SQLite, CSV export timing을 privacy-safe `performance.sqlite`에 둔다. knowledge 결과에 `latency_ns`가 추가되고 hit/miss 및 SQLite 시간이 집계된다. `macro-perf report`는 read-only다. [offline fixture 161개 표본](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)은 경로 검증이며 live network 기준선이 아니다. | live network는 승인된 자연 요청에서만 표본화한다. 실사용 workload와 production 대용량 비교는 남아 있으며, worker qualification/production 시간은 scope를 분리한다. |
 | 피드백 별도 로그 | **구현됨** | `FeedbackStore`가 task/stage 연결, append-only revision, review 상태, 철회, 범위 필터를 SQLite에 기록하고 `macro-feedback` CLI가 관리한다. | 사용자가 검토하지 않은 내용은 지식 재사용에 쓰지 않는다. 로그에서 평가 사례나 공통 코드 규칙을 자동 생성하지 않는다. |
 | 주기별 최신성 | **구현됨, 기본 정책 제한** | 공통 `assess_freshness`가 daily/weekly/monthly/quarterly/semiannual/annual 허용일, period-end, exact series override, 정책 fingerprint를 기록하고 오래되거나 확인 불가한 결과를 차단한다. World Bank·BOJ·BLS·Census 경로에 연결돼 있다. | 기본 허용일은 운용상 기본값이지 각 시리즈 공표 달력 보증이 아니다. 실제 series별 공표 일정 검증과 모든 generic tabular 경로 적용은 남았다. |
 | A. 평가 사례 형식 | **기반 구현, synthetic 준비 사례 있음** | `evaluation/sets/*.json`에 synthetic 사례 6개(각 split 2개)가 있고, validator가 필드와 provenance별 개수, 선언된 reviewed-feedback split coverage를 표시한다. | 모두 author self-reviewed synthetic 사례라 user evidence·실제 source 결과를 입증하지 않는다. coverage는 feedback ID를 SQLite 로그와 대조하지 않는다. 실제 검토와 evidence 확인이 필요하다. |
@@ -28,7 +28,15 @@
 
 아래 항목은 통합 순서를 새로 정하지 않는다. 작업 우선순위와 완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따른다.
 
-통합 실행 순서 7은 모든 runtime engine의 공통 stage 시간과 가능한 phase breakdown을 수집하는 별도 선행 작업이다. 기존 duration forecast는 대용량 qualification/production만 다루므로 일반 connector·discovery·export의 성능 기준선으로 보지 않는다. 성능을 측정하기 위해 live API 요청을 반복하지 않는다.
+통합 실행 순서 7의 공통 stage/선택 phase 수집과 privacy-safe read-only 보고는 구현됐다. 기존 duration forecast는 대용량 qualification/production만 다루므로 일반 connector·discovery·export의 기준선과 혼합하지 않는다. live network 표본은 사용자가 승인한 자연 요청에서만 얻으며 성능 측정을 위한 요청을 반복하지 않는다.
+
+## 성능 계측 반영
+
+`HistoryStore`의 task 이력은 유지하고 `Settings.performance_database_path` 아래 별도 DB에 숫자 크기, 고정 상태·engine/version/stage label, 시도 번호, monotonic duration, 선택 phase, evidence class, workload tier, code SHA, Python/platform 정보만 저장한다. URL, 요청, task ID, 응답 본문/값, credential은 projection 대상이 아니다. 작업 tree가 dirty면 code SHA를 `unknown`으로 둔다. HistoryStore stage DB 접근은 활성 계측 안에서 SQLite phase로 누적된다.
+
+World Bank/BOJ/BLS/Census 공통 transport, raw 저장, parser, freshness/quality 경계와 CSV exporter에 선택 계측을 붙였다. CSV export 표본은 별도 DB를 써서 exporter의 task DB 읽기 전용·hash 불변 조건을 보존한다. KnowledgeStore는 기존 cache 및 candidate rows/bytes에 latency를 더해 반환하고, scope/text 없는 hit/miss 표본을 저장한다. `macro-perf report --project-root .`는 execution scope, engine/version, stage, workload tier, sample/evidence/cache class, code SHA, 환경별 p50/p95·처리량·표본 수를 보여주며 p95는 n≥20에서만 확정한다. phase는 inclusive 경계로 겹칠 수 있어 합산하지 않는다.
+
+fixture 기반 API 실행, 보존 task exporter, knowledge lookup으로 offline 표본을 모은다. 아직 live network latency를 입증하지 않으며 자연 사용자 요청 전송도 발생시키지 않는다. 대용량 qualification·production 기록은 기존 시간/메모리 보고에서 관리하고 일반 stage duration과 한 표본군에 합치지 않는다. 병목이 확인되기 전에는 Registry/composition이나 catalog/task 저장 최적화는 수행하지 않는다.
 
 1. 사용자가 명시적으로 검토한 피드백 또는 공개 근거에서 개인정보를 제거한 사례를 개발 세트에 추가한다. 유사하지만 정답이 다른 질문은 같은 contrast group에 넣는다. 검토 전 피드백은 옮기지 않는다.
 2. 실제 engine output을 사례 기준으로 정규화하는 outcome adapter와 기준안/후보안 비교기(C)를 만든다. validation·holdout 결과, false-confirmation 0건, forbidden action 0건이 확인되기 전에는 규칙을 반영하지 않는다.

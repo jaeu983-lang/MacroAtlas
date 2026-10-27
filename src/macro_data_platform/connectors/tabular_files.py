@@ -16,6 +16,8 @@ from typing import Any
 import openpyxl
 import xlrd
 
+from macro_data_platform.performance.metrics import measured_phase
+
 MAX_INPUT_BYTES = 16 * 1024 * 1024
 MAX_ZIP_ENTRIES = 1000
 MAX_ZIP_UNCOMPRESSED_BYTES = 64 * 1024 * 1024
@@ -414,6 +416,7 @@ def _parse_xls(raw: bytes, *, sheet_name: str | None, header_row: int) -> Parsed
         workbook.release_resources()
 
 
+@measured_phase("parse")
 def parse_tabular_document(raw: bytes, format_name: str, *, delimiter: str | None = None,
                            sheet_name: str | None = None, table_index: int | None = None,
                            zip_member: str | None = None, header_row: int = 1) -> ParsedTable:
