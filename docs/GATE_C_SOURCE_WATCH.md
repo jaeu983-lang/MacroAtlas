@@ -2,6 +2,9 @@
 
 > 이 문서는 작성 당시 계획 또는 검증 결과를 보존하는 스냅샷입니다. 현재 구현 상태는 [구현 상태](IMPLEMENTATION_PLAN.md), 다음 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 현재 지원 경로는 [사용자 안내서](USER_GUIDE.md)를 확인하세요. 아래의 당시 판정·수치는 수정하지 않습니다.
 
+현재 상태(2026-10-27): 사용자가 TIC/BIS 자료 변경상태 확인은 필요하지 않다고 지정해 두 반복 감시 자동화를
+중지했습니다. 아래 명령은 사용자가 다시 단발 확인을 요청할 때만 검토하며, 자동 실행하지 않습니다.
+
 The CLI provides one manual live GET for each previously checked official file. Each task and stage
 are persisted before the request, so a natural retryable provider failure has a task ID and attempt
 history ready for later resume.
@@ -60,3 +63,13 @@ Immediate recheck: TIC task `bb269b6e-adac-451b-b6a5-ad85b3bc5aa7` and BIS task
 `2b795b28-a742-4821-bbfe-8887e37b5099` both completed with `unchanged`. No natural failure occurred.
 Gate C D-067 limited pass remains; actual revision and natural durable recovery remain NOT_RUN.
 The automation reassesses evidence when observed and reports actionable changes only.
+
+## Monitoring stopped by user request — 2026-10-27
+
+The user no longer requires recurring checks of TIC/BIS source-change status. The
+`Gate C 자연 증거 감시` and `Gate C Source Watch` automations were disabled. No
+further scheduled source requests are planned. The captures, baseline hashes,
+`unchanged` results, and historical `NOT_RUN` statuses above are preserved as
+records; stopping the watch does not change the Gate C limited-pass judgment or
+claim a source revision/recovery event occurred. A future one-off check requires
+a new user request and an explicitly scoped run.
