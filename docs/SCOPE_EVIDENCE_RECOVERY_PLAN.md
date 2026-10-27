@@ -37,8 +37,10 @@
 3. 기술 오류는 concept 미상이어도 동일한 institution/dataset/engine/version/stage/error에 한해 검토할 수 있다. 경제 의미·품질 분석은 concept 미상일 때 제안하지 않는다.
 4. 원본 보존, 출력의 민감 정보 비노출, 기존 3개 distinct task 기준, reader-only 동작을 회귀 검증한다.
 
-## 다음 후속: engine별 기관 오류 전체 목록
+## 완료된 후속: engine별 기관 오류 전체 목록
 
-이번 49-task/57-stage snapshot만으로 “기관별 오류가 BIS 두 건뿐”이라고 결론 내리지 않는다. PR 검토 후 별도 read-only audit에서 catalog 전체를 pagination 또는 집계 query로 훑고, analyzer의 현재 500-task/2,500-record 상한에 의존하지 않는다. 결과표는 `engine × engine_version × institution × dataset × stage × error_code`별 distinct task 수와 성공 counterexample, 미확인 institution/dataset, adapter 미지원 엔진, 제외된 synthetic/qualification 수, 전체 조회 범위를 함께 기록한다. 경로·manifest 검증 없는 라벨을 새로 추론하지 않으며, 고빈도처럼 보이는 행도 최소 3개 서로 다른 task와 같은 scope를 확인하기 전에는 개선 후보로 승격하지 않는다.
+전체 69개 task와 저장 stage 57개를 상한 없이 읽은 [full-catalog 감사 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 작성했다. 운영 오류는 3건이며 모두 기관/dataset을 식별했다: BIS `SCHEMA_CHANGED` 2건과 World Bank `TRANSIENT` 1건. World Bank 오류는 같은 task/stage에서 실패 후 성공한 기록을 보존한다. 이 catalog snapshot의 현재 운영 오류에 기관/dataset unknown은 없다.
 
-이 audit은 이번 코드의 회귀 QA·PR 다음에 진행하며, Gate C 자연 원본 변경·자연 장애 증거 또는 사용자 사용성 시험과 별도 트랙으로 관리한다.
+다만 `bls`, `census`, `large_file_production` 성공 stage 5건은 analyzer scope projection에서 기관/dataset이 unknown이다. 보존 payload/plan에는 BLS·Census source metadata와 BIS production raw/manifest reference가 있으므로, 다음 작업은 이 세 engine의 근거 경로와 scope adapter를 별도로 검증·보완하는 것이다. BLS `dataset_id=null`은 유지하고, 미상 identity를 가진 오류처럼 취급하거나 추정하지 않는다. 해당 scope projection 보완 뒤 전체 audit를 다시 실행해 범위를 확인한다.
+
+이 audit과 adapter 후속은 Gate C 자연 원본 변경·자연 장애 증거 및 사용자 사용성 시험과 별도 트랙으로 관리한다.

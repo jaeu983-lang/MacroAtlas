@@ -33,7 +33,7 @@ MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
 
 `run_improvement.ps1`은 `run_improvement.py`의 Windows wrapper다. updater는 원래 checkout을 전환하지 않고, Git에 저장된 base만 별도 worktree로 가져온다. allowlist 검사와 동일 candidate SHA QA가 통과한 경우에만 push하고 review PR을 연다. merge와 publish는 자동화하지 않는다. 실제 Codex task 실행 pilot과 예약 작업 경계는 별도 확인 대상이다.
 
-2026-10-27 첫 read-only pattern 분석은 47 tasks/55 stages에서 insufficient-evidence 7개를 반환했다. 재검증에서는 다섯 fixture 오류와 BIS 오류 둘의 성격이 달랐다. 보존 event와 manifest를 연결한 후 현 snapshot은 49 tasks/57 stages 중 synthetic qualification fixture 15건, 보존 파일 qualification trial 5건, operational stage 37건으로 분리된다. operational insufficient-evidence는 0, BIS manifest-backed scope 복구는 2건, technical error는 3건이다. BIS 두 건의 경제 concept은 미상으로 남고, 세 건 모두 단발이라 proposal은 0이다. 근거와 상한은 [scope evidence recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 둔다. engine×institution 전체 이력 audit은 별도 후속으로 남아 있으며, 이 snapshot만으로 기관별 오류가 이 두 BIS 건뿐이라고 결론 내리지 않는다.
+2026-10-27 첫 read-only pattern 분석은 47 tasks/55 stages에서 insufficient-evidence 7개를 반환했다. 재검증에서는 다섯 fixture 오류와 BIS 오류 둘의 성격이 달랐다. 보존 event와 manifest를 연결한 후 analyzer snapshot은 49 tasks/57 stages 중 synthetic qualification fixture 15건, 보존 파일 qualification trial 5건, operational stage 37건으로 분리된다. 전체 69 task/57 stage catalog audit에서는 operational 오류 3건(BIS 2, World Bank 1)과 BLS/Census/large-file-production 성공 stage의 projection 공백 5건을 확인했다. 전체 집계와 후속 scope 작업은 [scope evidence recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [engine×institution 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)에 있다.
 
 ## 목표 구성
 
@@ -116,4 +116,4 @@ flowchart LR
 
 ### 2026-10-27 scope 재점검 정정
 
-근거 부족 7건 재검토를 구현했다. task/event/manifest에 근거한 domain 분리, exact BIS flat ZIP의 기관·dataset projection, technical error와 economic-meaning 요구 분리를 적용했고 저장 task/raw를 수정하지 않았다. 다음 후속은 [scope 근거 복구 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 명시한 engine×institution 전체 이력 audit이다. 현재 snapshot만으로 “BIS 두 사례가 전부”라고 단정하지 않는다.
+근거 부족 7건 재검토와 full-catalog engine×institution 오류 감사를 완료했다. 현재 저장 이력에는 운영 오류가 BIS 2건과 World Bank 1건 있으며, 미상 institution/dataset을 가진 오류 stage는 없다. 성공 stage에서 BLS/Census/large-file-production scope projection 공백 5건이 확인되어 별도 후속으로 남긴다. 표본·전체 조회 범위와 근거는 [scope recovery](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [full-catalog 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 따른다.
