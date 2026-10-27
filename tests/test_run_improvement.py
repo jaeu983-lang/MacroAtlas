@@ -65,6 +65,45 @@ def test_staged_symlink_is_detected(monkeypatch, tmp_path):
     assert maintenance._has_staged_symlink(tmp_path) is True
 
 
+def test_codex_invocation_uses_current_global_approval_and_workspace_sandbox(
+    monkeypatch, tmp_path
+):
+    calls = []
+    monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/codex")
+    monkeypatch.setattr(
+        maintenance.subprocess,
+        "run",
+        lambda command, **kwargs: (
+            calls.append((command, kwargs)) or subprocess.CompletedProcess(command, 0)
+        ),
+    )
+
+    result = maintenance._run_codex(tmp_path, "prompt", tmp_path / "codex.log", 30)
+
+    assert result.returncode == 0
+    assert calls[0][0] == [
+        "/fake/codex",
+        "--ask-for-approval",
+        "never",
+        "exec",
+        "--sandbox",
+        "workspace-write",
+        "prompt",
+    ]
+    assert calls[0][1]["cwd"] == tmp_path
+
+
+def test_codex_cli_preflight_rejects_unsupported_options(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        maintenance.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, 2),
+    )
+
+    with pytest.raises(ValueError, match="safe exec options"):
+        maintenance._validate_codex_cli(tmp_path, "/fake/codex")
+
+
 def _initialize_repository(root):
     subprocess.run(["git", "init", "--quiet", "--initial-branch=main"], cwd=root, check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=root, check=True)
@@ -116,6 +155,7 @@ def test_missing_origin_head_requires_explicit_base_ref(tmp_path):
 def test_noop_update_uses_temporary_worktree_and_never_pushes(monkeypatch, tmp_path):
     _initialize_repository(tmp_path)
     monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
+    monkeypatch.setattr(maintenance, "_validate_codex_cli", lambda *args: None)
     monkeypatch.setattr(
         maintenance,
         "_run_codex",
@@ -142,6 +182,7 @@ def test_noop_update_uses_temporary_worktree_and_never_pushes(monkeypatch, tmp_p
 def test_out_of_scope_change_is_preserved_locally_and_never_pushed(monkeypatch, tmp_path):
     _initialize_repository(tmp_path)
     monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
+    monkeypatch.setattr(maintenance, "_validate_codex_cli", lambda *args: None)
 
     def fake_codex(worktree, prompt, log_path, timeout):
         (worktree / "data").mkdir()
@@ -162,6 +203,7 @@ def test_failed_candidate_qa_never_pushes_or_opens_pr(monkeypatch, tmp_path):
     real_run = subprocess.run
     actions = []
     monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
+    monkeypatch.setattr(maintenance, "_validate_codex_cli", lambda *args: None)
 
     def fake_codex(worktree, prompt, log_path, timeout):
         (worktree / "README.md").write_text("candidate change\n", encoding="utf-8")
@@ -197,6 +239,7 @@ def test_only_passing_candidate_qa_precedes_push_and_review_pr(monkeypatch, tmp_
     real_run = subprocess.run
     actions = []
     monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
+    monkeypatch.setattr(maintenance, "_validate_codex_cli", lambda *args: None)
 
     def fake_codex(worktree, prompt, log_path, timeout):
         (worktree / "README.md").write_text("candidate change\n", encoding="utf-8")
