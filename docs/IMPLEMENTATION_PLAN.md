@@ -15,6 +15,9 @@ near_match 0이다. 36개 목표, split별 12개, 유형별 3개 기준을 충�
 metadata를 정답 근거로 승격하지 않았다. [28회차 보고서](ITERATION_28_REPORT.md)를 따른다. 이 코퍼스는 PR 검토 중인 branch 자산이며
 통합된 기본 동작으로 간주하지 않는다.
 
+후속 계약 변경은 AI 모의 작성 provenance와 candidate별 로컬 synthetic evidence를 표현할 수 있지만, 완성된 v2 schema/manifest,
+누수 없는 36개 검토 사례, 엔진 회귀 평가는 아직 없다. 따라서 모의 사례 작성 가능성과 공식 근거 gate는 별도 상태로 유지한다.
+
 19회차 BIS flat 대용량 production handoff는 PR #6으로 통합되어 보존 원본 1건에서 실제 실행됐다. 이 실행은
 정해진 BIS flat scope의 구조 보존 materialization이며 Gate C natural evidence나 일반 기관·파일 지원 확대가
 아니다. 구현 계약과 당시 실측은 [19회차 기획안](ITERATION_19_PLAN.md), [19회차 보고서](ITERATION_19_REPORT.md)를 따른다.

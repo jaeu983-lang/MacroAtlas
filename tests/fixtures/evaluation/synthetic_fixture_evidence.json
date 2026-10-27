@@ -1,0 +1,5 @@
+{
+  "candidate_id": "synthetic:test:sample",
+  "notice": "Synthetic evaluation fixture only; not official source data.",
+  "purpose": "Exercise the case evidence contract without a provider claim."
+}

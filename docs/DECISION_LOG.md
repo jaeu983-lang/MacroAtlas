@@ -853,3 +853,14 @@ forward-fill 없음, 결측 빈칸으로 고정한다. 이 계약과 사례 파�
 candidate로 승격하지 않고, 같은 개념의 정답/오답 후보 쌍도 만들지 않는다. 따라서 case corpus manifest는 `blocked`이며
 near-match 0건과 유형·split 부족을 정확히 기록한다. 이 상태는 Iteration 28 gate 통과가 아니고, 이후 split/evaluator 작업으로
 진행할 수 없다. 보류를 해제하려면 공식 근거·무결성 검증이 가능한 추가 candidate snapshot과 근접 distractor가 먼저 필요하다.
+
+## D-096 — 모의 평가 근거와 작성자 provenance 계약
+
+2026-10-27. 사용자의 요청에 따라 사람이 입력한 사례와 AI 모의 사례를 구분할 수 있도록 `EvaluationCase` Python 계약을 확장한다.
+모의 작성 provenance는 origin, run ID, 작성·검토 agent, generation prompt hash, review status, `human_observed=false`를 검증한다.
+`synthetic_fixture` evidence는 고정 candidate ID, 로컬 파일 경로와 SHA-256, 목적을 요구하고 official URI와 retrieval timestamp를
+허용하지 않는다. `catalog_snapshot` evidence도 로컬 hash에 한정하고 claim을 fixed evaluation catalog 범위로 제한한다.
+
+이는 **계약 확장**이며 36개 코퍼스 완료나 평가 통과가 아니다. v1 manifest와 9개 starter case는 변경하지 않고 gate는 계속 차단한다.
+엔진 평가는 실행하지 않았고 공식 근거 gate는 blocked, 사람 관찰은 not observed 상태다. 사례 재사용 전에는 split 사이의
+의도·템플릿 누수를 제거하고 v2 schema/manifest 및 검토 provenance를 완성해야 한다.

@@ -56,3 +56,10 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 코드·데이터 무결성 변경은 별도 review branch에서 검토할 수 있다. Iteration 28의 acceptance gate는 미통과이므로 다음 회차를
 시작할 준비가 된 것으로 선언하지 않는다. gate 해제에는 보존 가능한 official evidence가 있는 추가 후보와 유사하지만 다른
 기대 답을 갖는 verified distractor가 필요하다.
+
+## 후속 계약 확장
+
+후속 작업에서는 AI 모의 사례를 사람 관찰로 오인하지 않도록 Python value contract에 작성 provenance와 별도 evidence 종류를
+추가했다. Synthetic fixture evidence는 후보 ID와 로컬 SHA-256을 가리키며 official URI나 조회 시각을 가질 수 없다.
+기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 36개 모의 코퍼스 초안은 holdout에 날짜만 바꾼 동일 템플릿이 반복되고
+manifest가 없어 반영하지 않았다. 따라서 코퍼스 gate는 여전히 차단이며 엔진 회귀 평가는 실행되지 않았다.

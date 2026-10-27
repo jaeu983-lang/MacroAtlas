@@ -1,4 +1,4 @@
-"""Versioned, evidence-linked evaluation case contract (v1)."""
+"""Versioned, evidence-linked evaluation case contract."""
 
 import json
 import math
@@ -18,7 +18,10 @@ _SPLITS = {"development", "validation", "holdout"}
 _STATES = {"candidate_found", "review_required", "unmatched"}
 _MATCH_STATUSES = {"exact", "comparable", "related", "review_required"}
 _FIELD_STATES = {"known", "unknown", "conflict"}
-_EVIDENCE_KINDS = {"official_docs", "live_api", "live_ingestion", "fixture"}
+_EVIDENCE_KINDS = {
+    "official_docs", "live_api", "live_ingestion", "fixture", "synthetic_fixture",
+    "catalog_snapshot",
+}
 _ID = re.compile(r"[a-z0-9][a-z0-9_.:-]{0,127}")
 _CANDIDATE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}")
 _SHA256 = re.compile(r"[a-f0-9]{64}")
@@ -124,18 +127,60 @@ def _local_ref(value: Any) -> str:
 
 def _evidence(value: Any) -> Mapping[str, Any]:
     _check(isinstance(value, Mapping), "Expected required evidence object")
-    required = {"evidence_id", "evidence_kind", "official_uri", "local_ref",
-                "retrieved_at", "sha256", "claim"}
+    base = {"evidence_id", "evidence_kind", "official_uri", "local_ref",
+            "retrieved_at", "sha256", "claim"}
+    kind = value.get("evidence_kind")
+    if kind == "synthetic_fixture":
+        required = base | {"purpose", "candidate_id"}
+    elif kind == "catalog_snapshot":
+        required = base | {"purpose"}
+    else:
+        required = base
     _check(set(value) == required, "Invalid required evidence fields")
     _identifier(value["evidence_id"], "evidence identifier")
-    _check(isinstance(value["evidence_kind"], str)
-           and value["evidence_kind"] in _EVIDENCE_KINDS, "Unknown evidence kind")
-    _safe_uri(value["official_uri"])
+    _check(isinstance(kind, str) and kind in _EVIDENCE_KINDS, "Unknown evidence kind")
     _local_ref(value["local_ref"])
-    _utc_timestamp(value["retrieved_at"])
     _check(isinstance(value["sha256"], str) and _SHA256.fullmatch(value["sha256"]),
            "Invalid evidence SHA-256")
     _text(value["claim"], "evidence claim")
+    if kind in {"synthetic_fixture", "catalog_snapshot"}:
+        _check(value["official_uri"] is None and value["retrieved_at"] is None,
+               "Local evaluation evidence cannot claim an official URI or retrieval time")
+        _text(value["purpose"], "evaluation evidence purpose")
+        if kind == "synthetic_fixture":
+            _candidate_identifier(value["candidate_id"], "synthetic evidence candidate identifier")
+            _check("synthetic" in value["claim"].casefold()
+                   and "not official" in value["claim"].casefold(),
+                   "Synthetic fixture claims must explicitly deny official-source status")
+        else:
+            _check("fixed evaluation catalog" in value["claim"].casefold(),
+                   "Catalog-snapshot evidence must scope its claim to the fixed catalog")
+    else:
+        _safe_uri(value["official_uri"])
+        _utc_timestamp(value["retrieved_at"])
+    return _json_value(value)
+
+
+def _authorship(value: Any) -> Mapping[str, Any]:
+    _check(isinstance(value, Mapping), "Expected case authorship provenance")
+    required = {"origin", "run_id", "generator_agents", "reviewer_agents",
+                "prompt_sha256", "review_status", "human_observed"}
+    _check(set(value) == required, "Invalid case authorship fields")
+    _check(value["origin"] == "agent_simulated", "Unsupported case authorship origin")
+    _identifier(value["run_id"], "case generation run identifier")
+    generators = _sequence(value["generator_agents"], "generator agent", maximum=8)
+    reviewers = _sequence(value["reviewer_agents"], "reviewer agent", maximum=8)
+    _check(bool(generators) and bool(reviewers),
+           "Agent-simulated cases need recorded authors and reviewers")
+    _check(all(_ID.fullmatch(item) is not None for item in (*generators, *reviewers)),
+           "Invalid case provenance agent identifier")
+    _check(isinstance(value["prompt_sha256"], str)
+           and _SHA256.fullmatch(value["prompt_sha256"]),
+           "Invalid generation prompt SHA-256")
+    _check(value["review_status"] == "multi_agent_reviewed",
+           "Agent-simulated cases require multi-agent review")
+    _check(value["human_observed"] is False,
+           "AI-simulated cases cannot be marked as human observed")
     return _json_value(value)
 
 
@@ -214,13 +259,15 @@ class EvaluationCase:
     prohibited_actions: tuple[str, ...]
     excel_policy: Mapping[str, Any]
     feedback_ref: Mapping[str, Any] | None = None
+    authorship: Mapping[str, Any] | None = None
 
-    _FIELDS: ClassVar[frozenset[str]] = frozenset({
+    _BASE_FIELDS: ClassVar[frozenset[str]] = frozenset({
         "case_id", "case_version", "case_family_id", "split", "case_type", "request",
         "query_variants", "expected_state", "relevant_candidate_ids",
         "forbidden_candidate_ids", "expected_match_status", "expected_fields",
         "required_evidence", "prohibited_actions", "excel_policy", "feedback_ref",
     })
+    _FIELDS: ClassVar[frozenset[str]] = _BASE_FIELDS | {"authorship"}
 
     def __post_init__(self) -> None:
         _identifier(self.case_id, "case identifier")
@@ -294,6 +341,9 @@ class EvaluationCase:
                    "Invalid feedback revision")
             object.__setattr__(self, "feedback_ref", MappingProxyType(dict(feedback)))
 
+        if self.authorship is not None:
+            object.__setattr__(self, "authorship", _authorship(self.authorship))
+
         if self.case_type == "rankable":
             _check(bool(relevant) and self.expected_state == "candidate_found",
                    "Rankable cases need relevant candidates and candidate_found state")
@@ -318,7 +368,7 @@ class EvaluationCase:
                        "Unknown/conflict fields need evidence and review_required status")
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "case_id": self.case_id,
             "case_version": self.case_version,
             "case_family_id": self.case_family_id,
@@ -336,11 +386,15 @@ class EvaluationCase:
             "excel_policy": dict(self.excel_policy),
             "feedback_ref": _thaw(self.feedback_ref) if self.feedback_ref is not None else None,
         }
+        if self.authorship is not None:
+            result["authorship"] = _thaw(self.authorship)
+        return result
 
     @classmethod
     def from_dict(cls, value: Any) -> "EvaluationCase":
-        _check(isinstance(value, Mapping) and set(value) == cls._FIELDS,
-               "Invalid EvaluationCase v1 fields")
+        keys = frozenset(value) if isinstance(value, Mapping) else frozenset()
+        _check(isinstance(value, Mapping) and keys in {cls._BASE_FIELDS, cls._FIELDS},
+               "Invalid EvaluationCase fields")
         data = dict(value)
         return cls(**data)
 
@@ -355,7 +409,7 @@ class EvaluationCase:
                                parse_constant=_reject_json_constant)
             return cls.from_dict(value)
         except (ValueError, TypeError, KeyError, RecursionError):
-            raise ValueError("Invalid EvaluationCase v1 JSON") from None
+            raise ValueError("Invalid EvaluationCase JSON") from None
 
     def __repr__(self) -> str:
         return "EvaluationCase(<values omitted>)"

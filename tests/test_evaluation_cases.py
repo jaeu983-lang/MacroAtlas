@@ -1,6 +1,7 @@
 """Iteration 28: immutable, evidence-backed evaluation case inputs."""
 
 import copy
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -90,6 +91,58 @@ def test_evidence_refs_reject_credentials_and_repository_traversal():
         changed["required_evidence"][0][name] = value
         with pytest.raises(ValueError):
             EvaluationCase.from_dict(changed)
+
+
+def test_synthetic_fixture_evidence_is_candidate_scoped_and_never_official():
+    row = read_cases(CORPUS / "cases.jsonl")[0].to_dict()
+    fixture_path = ROOT / "tests/fixtures/evaluation/synthetic_fixture_evidence.json"
+    evidence = {
+        "evidence_id": "synthetic-fixture-test",
+        "evidence_kind": "synthetic_fixture",
+        "official_uri": None,
+        "local_ref": "tests/fixtures/evaluation/synthetic_fixture_evidence.json",
+        "retrieved_at": None,
+        "sha256": hashlib.sha256(fixture_path.read_bytes()).hexdigest(),
+        "claim": "This is synthetic evaluation data and not official source evidence.",
+        "purpose": "Unit-test fixture classification only.",
+        "candidate_id": "synthetic:test:sample",
+    }
+    row["required_evidence"].append(evidence)
+    assert EvaluationCase.from_dict(row).required_evidence[-1]["candidate_id"] == evidence[
+        "candidate_id"
+    ]
+
+    missing_candidate = copy.deepcopy(row)
+    del missing_candidate["required_evidence"][-1]["candidate_id"]
+    with pytest.raises(ValueError):
+        EvaluationCase.from_dict(missing_candidate)
+
+    invented_official_source = copy.deepcopy(row)
+    invented_official_source["required_evidence"][-1]["official_uri"] = (
+        "https://example.org/synthetic-fixture"
+    )
+    with pytest.raises(ValueError):
+        EvaluationCase.from_dict(invented_official_source)
+
+
+def test_agent_authorship_round_trips_without_becoming_human_observation():
+    row = read_cases(CORPUS / "cases.jsonl")[0].to_dict()
+    row["authorship"] = {
+        "origin": "agent_simulated",
+        "run_id": "test-run-01",
+        "generator_agents": ["case_generator"],
+        "reviewer_agents": ["independent_reviewer"],
+        "prompt_sha256": "a" * 64,
+        "review_status": "multi_agent_reviewed",
+        "human_observed": False,
+    }
+    restored = EvaluationCase.from_json(EvaluationCase.from_dict(row).to_json())
+    assert restored.authorship["origin"] == "agent_simulated"
+    assert restored.authorship["human_observed"] is False
+
+    row["authorship"]["human_observed"] = True
+    with pytest.raises(ValueError, match="human observed"):
+        EvaluationCase.from_dict(row)
 
 
 def test_jsonl_reader_rejects_duplicate_keys_duplicate_ids_and_blank_lines(tmp_path):

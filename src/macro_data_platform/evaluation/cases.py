@@ -186,8 +186,8 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
             or not isinstance(schema.get("required"), list)
             or not all(isinstance(item, str) for item in schema["required"])
             or not isinstance(schema.get("properties"), dict)
-            or set(schema["required"]) != EvaluationCase._FIELDS
-            or set(schema["properties"]) != EvaluationCase._FIELDS):
+            or set(schema["required"]) != EvaluationCase._BASE_FIELDS
+            or set(schema["properties"]) != EvaluationCase._BASE_FIELDS):
         raise ValueError("EvaluationCase v1 schema does not match its contract")
 
     cases = read_cases(paths["cases.jsonl"])
