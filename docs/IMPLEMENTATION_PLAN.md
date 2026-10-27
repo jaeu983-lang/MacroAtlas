@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-27 갱신: 이번 maintenance follow-up은 PR #16 merge commit `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`에서 시작했다. 여기에는 PR #1–#16이 통합돼 있다. PR #9의 `7723afe`, PR #10의 `1a00c18`, PR #13의 `74075fc`, PR #14의 `d890540`, PR #15의 `dec763f`, PR #16의 `5ade536`는 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을, PR #13에서 source timeout·evidence 상태를, PR #14/#15에서 고정 World Bank GDP의 value/indicator 검사를, PR #16에서 immutable candidate SHA QA를 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
+> 2026-10-27 갱신: 이번 maintenance follow-up은 PR #16 merge commit `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`에서 시작했다. 여기에는 PR #1–#16이 통합돼 있었다. PR #9의 `7723afe`, PR #10의 `1a00c18`, PR #13의 `74075fc`, PR #14의 `d890540`, PR #15의 `dec763f`, PR #16의 `5ade536`는 역사적 병합점이다. 후속 PR #17–#21에서 isolated updater handoff, Codex CLI compatibility/auth blocker reporting, 문서 정합성 및 TIC/BIS watcher exact-baseline parser scope를 보완했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐다. Gate C의 판정과 남은 자연 증거는 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -162,8 +162,8 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#15와
-공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff는 구현됐다. 세부 구현·검증은 [26회차 보고서](ITERATION_26_REPORT.md)에 기록했다. 실제 Windows Codex pilot과 scheduler 검토는 남아 있다.
+현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#21이 통합됐고,
+공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Codex CLI `401` 사용자 조치 상태는 [26회차 차단 기록](ITERATION_26_PILOT_BLOCKER_REPORT.md)에 있다. 실제 Windows Codex pilot과 scheduler 검토는 재로그인 후 남아 있다.
 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
