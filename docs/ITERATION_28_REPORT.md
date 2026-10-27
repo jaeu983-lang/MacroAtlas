@@ -31,8 +31,9 @@
 | validation | 1 | 0 | 1 | 1 | 3 |
 | holdout | 1 | 0 | 1 | 1 | 3 |
 
-목표는 split당 12개, 각 유형 3개다. 따라서 초기 manifest의 gate 상태는 **blocked**다. 27개를 더 채워야 하고, 지금 보존된
-근거만으로는 near-match 정답·오답 후보 쌍을 만들 수 없다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
+목표는 split당 12개, 각 유형 3개다. 따라서 초기 manifest의 gate 상태는 **blocked**다. 27개를 더 채워야 한다. 후속으로
+World Bank의 current-price/constant-price GDP 공식 metadata와 2020–2022 관측 응답을 보존해 near-match 초안 하나를 만들었지만,
+독립 검토 대기 상태라 fixed catalog와 평가 코퍼스에 아직 넣지 않았다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
 candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1-candidate snapshot에만 해당하며, MacroAtlas 전체 또는 공식
 기관에서 해당 통계가 없다는 주장을 하지 않는다. 이 gate 상태로 29회차 split/feedback bridge나 30회차 evaluator를 시작하지 않는다.
 
@@ -40,16 +41,19 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 
 - `src/macro_data_platform/evaluation/`: case contract와 JSONL/manifest/candidate reader.
 - `tests/fixtures/evaluation/v1/`: v1 schema, 9개 case, 고정 catalog, 초기 manifest 및 hash.
-- `tests/test_evaluation_cases.py`: cross-field 거부, immutable snapshot, hash tamper, reader 경계 검사.
+- `tests/fixtures/evaluation/drafts/`: assistant-simulated, 독립 검토 대기 near-match 후보. 평가 세트에 포함하지 않는다.
+- `docs/evidence/worldbank_gdp_constant_*_20261027.json`: World Bank 공식 metadata와 USA 2020–2022 응답 원문 snapshot.
+- `tests/test_evaluation_cases.py`: cross-field 거부, immutable snapshot, hash tamper, reader 경계 및 unreviewed draft 격리 검사.
 - `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`: D-095 결정과 현재 gate 상태.
 
 ## 검증과 한계
 
-검증 결과: 전체 pytest **745 passed**, `ruff check .` 통과, `git diff --check` 통과, `compileall` 통과다.
-네트워크/API/key/SQLite/raw/export 경로는 사용하지 않았다.
+초기 코퍼스 구현 당시 전체 pytest **745 passed**, `ruff check .`, `git diff --check`, `compileall`이 통과했다. 후속 초안은
+World Bank 공식 API 두 응답의 HTTP 200 및 기간 식별을 확인했고, 평가 case/candidate contract와 evidence SHA-256을 검증했다.
+`tests/test_evaluation_cases.py` 15개도 통과했다. 이 후속 작업은 product 수집, SQLite, raw store, export 경로를 실행하지 않았다.
 
-이 작업은 검색 점수·순위·거절 동작을 실행 평가하지 않는다. 피드백 수집/검토, split leakage 검증, 피드백 case draft,
-규칙 승격, freshness 및 Excel writer도 구현하지 않는다. Gate는 사례 수와 evidence snapshot을 확장할 때까지 차단한다.
+이 작업은 검색 점수·순위·거절 동작을 실행 평가하지 않는다. 피드백 수집/검토 bridge, split leakage 검증, 규칙 승격,
+freshness 및 Excel writer는 구현하지 않는다. Gate는 9개 고정 사례로 계속 차단되며, pending draft는 검토 후에만 승격할 수 있다.
 
 ## 검토 판단
 
@@ -61,5 +65,6 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 
 후속 작업에서는 AI 모의 사례를 사람 관찰로 오인하지 않도록 Python value contract에 작성 provenance와 별도 evidence 종류를
 추가했다. Synthetic fixture evidence는 후보 ID와 로컬 SHA-256을 가리키며 official URI나 조회 시각을 가질 수 없다.
-기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 36개 모의 코퍼스 초안은 holdout에 날짜만 바꾼 동일 템플릿이 반복되고
-manifest가 없어 반영하지 않았다. 따라서 코퍼스 gate는 여전히 차단이며 엔진 회귀 평가는 실행되지 않았다.
+기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 추가 GDP 가격 기준 사례는 provenance에 assistant 생성·비관찰·독립 검토
+대기를 기록하고 별도 draft 디렉터리에 둔다. 36개 모의 코퍼스 초안은 holdout에 날짜만 바꾼 동일 템플릿이 반복되고 manifest가
+없어 반영하지 않았다. 따라서 코퍼스 gate는 여전히 차단이며 엔진 회귀 평가는 실행되지 않았다.

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from macro_data_platform.evaluation import EvaluationCase, load_corpus, read_cases
+from macro_data_platform.workflow_contracts import Candidate
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/fixtures/evaluation/v1"
@@ -171,3 +172,31 @@ def test_manifest_reports_partial_gate_without_promoting_it_to_complete():
     assert manifest["case_count"] == 9
     assert manifest["gate_status"] == "blocked"
     assert any("near-match distractor" in message for message in manifest["gate_blockers"])
+
+
+def test_unreviewed_official_near_match_draft_stays_outside_fixed_corpus():
+    draft_path = ROOT / "tests/fixtures/evaluation/drafts/worldbank_gdp_price_basis_near_match.json"
+    draft = json.loads(draft_path.read_text(encoding="utf-8"))
+    assert draft["draft_status"] == "independent_review_pending"
+    assert draft["authorship"] == {
+        "origin": "assistant_simulated",
+        "human_observed": False,
+        "independent_review_completed": False,
+    }
+
+    case = EvaluationCase.from_dict(draft["case"])
+    candidate = Candidate.from_dict(draft["candidate"])
+    assert case.case_type == "near_match"
+    assert candidate.candidate_id in case.relevant_candidate_ids
+    assert case.forbidden_candidate_ids == ("worldbank:2:USA:NY.GDP.MKTP.CD",)
+    for evidence in case.required_evidence:
+        evidence_path = ROOT / evidence["local_ref"]
+        assert hashlib.sha256(evidence_path.read_bytes()).hexdigest() == evidence["sha256"]
+    for evidence in candidate.evidence:
+        evidence_path = ROOT / evidence.original_ref.split(":", 1)[0]
+        assert evidence_path.is_file()
+
+    corpus = load_corpus(CORPUS)
+    assert len(corpus.cases) == 9
+    assert case.case_id not in {item.case_id for item in corpus.cases}
+    assert candidate.candidate_id not in {item.candidate_id for item in corpus.candidates}

@@ -19,7 +19,7 @@
   },
   "gate_blockers": [
     "Only one evidence-backed candidate is present in the current fixed catalog snapshot; 27 of 36 planned cases are not authored.",
-    "No evidence-backed near-match distractor pair is available; near_match cases were intentionally not fabricated.",
+    "An official near-match distractor draft exists but is not in the fixed catalog or evaluation set pending independent review; the corpus still has no near_match cases.",
     "BLS and Census catalog records in current tests are synthetic fixtures, not retained official metadata snapshots suitable for positive gold labels."
   ],
   "gate_status": "blocked",
