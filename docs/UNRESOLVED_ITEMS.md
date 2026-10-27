@@ -1,6 +1,6 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: 이 후속 작업의 base에는 PR #1–#15가 병합돼 있었고 HEAD는 `dec763fe1da1e35b42eb47257eb9ee365bb60d5a`였다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 PR #4의 worker 복구도 `25f3c87`로 통합됐다. 고정 World Bank GDP에 음수값 격리 및 indicator title/identity 검사를 추가했다. 이 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
+> 2026-10-27 갱신: 이 maintenance follow-up의 base에는 PR #1–#16이 병합돼 있었고 HEAD는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`였다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 PR #4의 worker 복구도 `25f3c87`로 통합됐다. 고정 World Bank GDP에 음수값 격리 및 indicator title/identity 검사를 추가했다. 이 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -71,20 +71,20 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 
 ## 6. 개발자 유지보수 자동화에 남은 연결
 
-공통 QA runner는 base와 candidate의 전체 commit SHA를 받아 조상 관계를 확인하고, 정확한 candidate를 detached worktree에서
-검사하도록 확장했다. runner와 Windows wrapper는 준비됐지만 `run_improvement.ps1`은 아직 기존 checkout을 전환해 Codex를
-실행하고, 결과 candidate를 고정·QA·push·PR로 전달하지 않는다. 따라서 자동 업데이트 엔진 전체가 완성된 상태는 아니다.
+공통 QA runner는 전체 base/candidate SHA를 detached worktree에서 검사하며, `run_improvement.py`가 Codex 작업을 별도 Git
+worktree로 격리하고 허용 경로를 검사한 뒤 candidate commit→동일 SHA QA→통과 시 push/PR 흐름을 연결한다. no-op에서는 작업
+worktree와 생성 branch를 정리하고, QA 실패·범위 밖 변경은 push하지 않는다. 자동 merge/publish 권한은 없다.
 
-남은 순서는 updater를 별도 worktree에서 구동하도록 변경하고, 허용 경로 및 변경 범위를 검사한 뒤 candidate commit을 만들고,
-같은 SHA로 QA한 다음 통과했을 때만 원격 branch/검토 PR을 만드는 것이다. scheduler는 Windows 직접 실행 pilot과 동시 실행 보호를
-입증할 때까지 비활성으로 둔다. 이 개발자 workflow 작업은 제품 데이터 engine, Gate C 원자료 증거 또는 서버 접속 상태와 별도다.
+남은 검증은 실제 Windows 환경에서 감독자가 시작하는 Codex pilot 1회와 scheduler 중복 실행·base ref·로그 보존 확인이다.
+Codex CLI를 사용할 수 없는 현재 작업 환경에서는 실제 updater pass를 실행하지 않았다. 이 개발자 workflow 작업은 제품 data
+engine, Gate C 원자료 증거 또는 서버 접속 상태와 별도다. 구현 근거는 [26회차 보고서](ITERATION_26_REPORT.md)에 있다.
 
 ## 다음 작업 우선순위
 
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#15 병합. 이번 유지보수 후속 작업의 시작 base는 `dec763fe1da1e35b42eb47257eb9ee365bb60d5a`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다.
+1. **완료:** PR #1~#16 병합. 이번 maintenance follow-up의 시작 base는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.

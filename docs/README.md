@@ -72,9 +72,10 @@ World Bank API에서 자연 transient failure를 보존한 same-task resume은 �
 22회차는 대용량 qualification·BIS production 전에 예상 시간과 신뢰도를 알리고, 성공 task의 stage 실측으로 예측을
 보정합니다. [구현 보고서](ITERATION_22_REPORT.md)와 [대용량 엔진 안내](LARGE_FILE_ENGINE.md)를 참고하세요.
 
-개발자 측 analyzer와 Codex updater는 아직 별도 흐름입니다. 중복을 줄일 목표 구조와 구현 순서는
-[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 24회차에서 QA·health 검사 경로는 공통 Python
-runner로 통합했습니다. Analyzer와 updater handoff, 예약 설정은 후속 단계이며 아직 바꾸지 않았습니다.
+개발자 측 analyzer와 Codex updater는 서로 다른 control plane으로 유지합니다. 목표 구조와 구현 순서는
+[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 24회차 공통 QA와 26회차 isolated updater→candidate
+QA→review PR handoff까지 구현했으며, 실제 Windows Codex pilot과 예약 실행 검토는 남아 있습니다. 세부 근거는
+[26회차 보고서](ITERATION_26_REPORT.md)를 보세요.
 
 다음 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. 계획 문서는 참가자
 세션을 수행했다는 증거가 아닙니다.

@@ -108,14 +108,17 @@ checkout해 pytest, Ruff, commit whitespace, Python/installed CLI help, health �
 남깁니다. 수정 candidate는 `python scripts/run_maintenance_qa.py --base <full-sha> --candidate <full-sha>`로 검사할 수
 있습니다. 이 모드는 base가 candidate의 조상인지 확인하고 같은 candidate SHA를 detached worktree에서 검사하므로 원
 checkout이 dirty여도 결과가 섞이지 않습니다. Windows의 `scripts/run_checks.ps1`도 `-Base`와 `-Candidate` 인자를 전달합니다.
-저장소 업데이트 script `scripts/run_improvement.ps1`은 아직 별도 updater worktree, candidate commit, QA 호출, 통과 시
-push/PR handoff까지 연결하지 않습니다.
+저장소 업데이트 script `scripts/run_improvement.ps1`은 `scripts/run_improvement.py`의 Windows wrapper입니다. 기본 base는
+`origin/HEAD`이며 설정이 없으면 `-BaseRef`로 branch를 지정해야 합니다. Codex는 source checkout의 ignored 파일과 분리된
+Git worktree에서 실행됩니다. 변경 경로 allowlist를 통과한 candidate만 commit하며, 동일 SHA QA 실패 시 push하지 않습니다.
+QA가 통과하면 원격 branch와 검토 PR을 생성하지만 자동 merge/publish는 하지 않습니다. `-DryRun`은 Codex 없이 base와 prompt만
+확인하며 worktree나 report를 만들지 않습니다. 실제 Windows Codex pilot은 아직 수행하지 않았습니다.
 
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
-완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint와 candidate SHA QA는 구현됐고, scope-aware 분석의
-미상 범위는 계속 보수적으로 차단합니다. 격리 updater 및 push/PR handoff는 남았습니다. 자동화가 만들 수 있는 최종 결과는
-사람 검토용 branch/PR이고 merge/publish가 아닙니다.
+완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint, candidate SHA QA, 격리 updater 및 QA 성공 시
+push/PR handoff는 구현됐습니다. scope-aware 분석의 미상 범위는 보수적으로 차단하며, 실제 Windows Codex pilot과 scheduler
+검토는 남았습니다. 자동화가 만들 수 있는 최종 결과는 사람 검토용 branch/PR이고 merge/publish가 아닙니다.
 
 ## 변경 작업과 문서
 
