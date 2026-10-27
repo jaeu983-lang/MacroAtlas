@@ -1,6 +1,6 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: PR #1–#12가 병합됐고 현재 기준 HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`이다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 현재 HEAD가 아니다. PR #4의 worker 복구도 `25f3c87`로 이미 통합됐다. 이번 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
+> 2026-10-27 갱신: PR #1–#13이 병합됐고 현재 기준 HEAD는 `74075fc53c43720ca2b61198b5c8f025f52139ec`이다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 현재 HEAD가 아니다. PR #4의 worker 복구도 `25f3c87`로 이미 통합됐다. 이번 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -16,7 +16,7 @@
 | BIS GLI flat ZIP 구조 보존 materialization | PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 event seq 1/raw를 한 번 처리. 24,378×21 문자열 JSONL, manifest/chunk hash, 원본 불변성, task attempt와 `handed_off/resolved` 확인 | 이 단일 BIS flat profile은 완료. 다른 provider·format·의미 정규화는 별도 qualification과 승인으로 계획 | 해결된 로컬 데이터 처리 항목. 접속 오류나 Gate C 자연 증거가 아님 |
 | World Bank/BOJ 정규화 결과 CSV 전달 | 20회차에서 완료 task의 저장 evidence를 read-only 재검증해 CSV와 provenance sidecar를 만들고, 보존 World Bank/BOJ task로 확인 | 현재 좁은 provider scope를 유지. XLSX, BIS flat JSONL, 다른 기관 export는 별도 요구·검증 후 계획 | 이 제한된 로컬 전달 기능은 해결. XLSX/BIS export는 미구현 제품 범위이지 접속 장애가 아님 |
 | 비API 대용량 시간 예측의 경험 보정 | 현재 catalog에 qualification 성공 사례 15건, production 1건, baseline/empirical paired forecast 0건 | 각 실행 전 예측과 실제 stage 시간을 기존의 승인된 작업에서 축적한다. 예측 표본을 만들 목적만으로 대용량 작업을 실행하지 않는다. Qualification과 production은 따로 보정 | 기능은 구현·통합됐다. 예측 정확도는 증거 부족으로 낮은 신뢰도 |
-| 통계 의미·품질 범위 확대 | World Bank 고정 실측은 quality passed이지만 normalized unit/frequency unknown 경고가 있음. 경제 이상치·개정 역사·기관 간 동등성은 검사 범위 밖 | 공식 metadata로 단위·빈도·정의 확인 및 범위별 품질 검증 설계 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
+| 통계 의미·품질 범위 확대 | 고정 World Bank GDP 경로에서 음수 값을 격리하고 결측·0을 분리 보존한다. 저장된 2020–2022 원본의 read-only v2 재검증은 3행, 결측 0, 음수 0, 이슈 없음이며 단위·빈도 unknown 경고는 유지됐다. 원 기록은 v1로 보존했다. [근거](WORLDBANK_QUALITY_RECHECK_2026_10_27.md) | 공식 metadata로 단위·빈도·정의 확인; 경제 이상치(음수 외), 개정 이력·기관 간 동등성은 별도 검증 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
 | 시험 worker 강제 종료 복구 | lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 당시 4조합 CI가 통과 | PR #4가 `25f3c87`에 이미 병합됨 | 완료된 제품 복구 항목. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | PR #6에서 BIS flat 전용 `handed_off/resolved`, 승인 child, chunk/hash checkpoint와 same-task resume 구조를 통합했고 실제 보존 raw task가 완료됨 | 다른 provider, Windows resource worker, 더 큰 입력·pagination은 별도 qualification 후 평가 | BIS flat 제한 경로 완료. 범용 대용량 지원은 남은 제품 범위 |
 | 추가 형식·기관과 Windows 대용량 worker | 현행 production worker는 BIS flat ZIP 한 경로의 Linux 자원 제한 실행만 지원. 다른 형식·기관 및 Windows 자원 worker는 지원 범위 밖 | 각 provider/format을 격리 qualification하고, Windows는 별도 process memory/time/cancel/orphan recovery 한도를 실제 Windows에서 입증한 뒤 한 경로씩 결정 | 제품 지원 범위 미구현. 서버 접속 오류로 분류하지 않음 |
@@ -74,7 +74,7 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#12 병합. 현재 base HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다.
+1. **완료:** PR #1~#13 병합. 현재 base HEAD는 `74075fc53c43720ca2b61198b5c8f025f52139ec`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.

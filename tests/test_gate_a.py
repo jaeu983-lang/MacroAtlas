@@ -13,9 +13,14 @@ from test_worldbank_request import child, supplied
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.worldbank import GDPQuery
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, StageStatus
-from macro_data_platform.ingestion.worldbank_quality import WorldBankValidation, verified_download
+from macro_data_platform.ingestion.worldbank_quality import (
+    NORMALIZATION_VERSION,
+    WorldBankValidation,
+    reusable,
+    verified_download,
+)
 from macro_data_platform.ingestion.worldbank_request import WorldBankRequestDispatcher
-from macro_data_platform.orchestration import WorkflowService
+from macro_data_platform.orchestration import StageSpec, WorkflowService
 from macro_data_platform.storage.audit import AuditStore
 from macro_data_platform.storage.history import HistoryStore
 
@@ -78,6 +83,7 @@ def test_request_to_quality_observations_and_feedback_survives_restart(setup, mo
     assert rows[0]["source_unit"] == "" and rows[0]["observation_status"] == "F"
     assert rows[0]["source_version"] is None and rows[0]["source_last_updated"] == "2026-01-01"
     assert data["quality"]["status"] == "passed" and data["quality"]["missing_value_count"] == 1
+    assert data["quality"]["normalization_version"] == NORMALIZATION_VERSION
     feedback = audit.add_feedback(task["task_id"], text="Check source status flag before analysis.",
                                   category="problem", record_id=data["validation_id"],
                                   idempotency_key="feedback-1")
@@ -100,6 +106,7 @@ def test_request_to_quality_observations_and_feedback_survives_restart(setup, mo
     ("missing_periods", lambda d: (d[1].pop(), d[0].update(total=2))),
     ("inconsistent_source_units", lambda d: (d[1][0].update(unit="USD"), d[1][1].update(unit="EUR"))),
     ("invalid_source_unit", lambda d: d[1][0].update(unit=123)),
+    ("negative_gdp_values", lambda d: d[1][0].update(value=-1)),
 ])
 def test_bad_quality_is_recorded_without_normalized_publication(setup, issue, change):
     settings, _, _, service = setup
@@ -111,6 +118,8 @@ def test_bad_quality_is_recorded_without_normalized_publication(setup, issue, ch
     assert result["stages"][-1]["result"]["error_code"] == "QUALITY_FAILURE"
     data = payload(result)
     assert issue in data["quality"]["issues"] and data["normalized_ref"] is None
+    if issue == "negative_gdp_values":
+        assert data["quality"]["negative_gdp_value_count"] == 1
     assert dispatch.audit.observations(data["validation_id"]) == []
     assert (settings.project_root / data["raw_path"]).read_bytes() == download.body
     incidents = dispatch.audit.for_task(task["task_id"], kind="incident")
@@ -398,6 +407,29 @@ def test_valid_collection_reused_after_retryable_validation_interruption(setup, 
     final = dispatch.resume(task["task_id"])
     assert final["status"] == "COMPLETED" and len(transport.calls) == 1
     assert any(row["status"] == "SKIPPED_REUSED" for row in final["stages"])
+
+
+def test_validation_from_an_older_quality_policy_is_not_reused(setup):
+    _, store, _, service = setup
+    task = child(service, supplied(service))
+    dispatch = handler(setup, FixtureTransport(fixture_download()))
+    result = dispatch.run(task["task_id"])
+    validation = dispatch.audit.for_task(task["task_id"], kind="validation")[0]
+    with store.transaction() as connection:
+        encoded = connection.execute(
+            "SELECT document FROM gate_a_records WHERE record_id=?",
+            (validation["record_id"],),
+        ).fetchone()[0]
+        report = json.loads(encoded)
+        report["normalization_version"] = "worldbank_gate_a_v1"
+        connection.execute(
+            "UPDATE gate_a_records SET document=? WHERE record_id=?",
+            (json.dumps(report), validation["record_id"]),
+        )
+
+    stage = next(row for row in result["stages"] if row["stage_id"] == "validate")
+    spec = StageSpec("validate", "worldbank_validate", {"start_year": 2020, "end_year": 2022})
+    assert not reusable(dispatch.audit, spec, stage)
 
 
 def test_validation_and_rows_roll_back_as_one_batch(setup, monkeypatch):

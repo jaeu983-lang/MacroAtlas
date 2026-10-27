@@ -3,7 +3,7 @@
 기준일: 2026-10-27. PR #10 통합 뒤 준비한 다음 제품 단계로 분석가 1–2명의 status→CSV 업무 흐름을 관찰한다.
 이 문서는 세션 준비안이다. 참가자를 구하거나 관찰 세션을 실행한 것은 아니다.
 
-현재 기준 HEAD는 PR #11과 #12 병합 후 `8b856fd34924a796f96c33d4ec8608593fc46889`다. 실제 세션을 준비할 때는
+현재 기준 HEAD는 PR #13 병합 후 `74075fc53c43720ca2b61198b5c8f025f52139ec`다. 실제 세션을 준비할 때는
 아래의 역사적 PR #10 checkout 대신 이 현재 기준으로 폐기용 checkout을 만들고 저장 task/raw/manifest를 다시 확인한다.
 
 ## 확인할 질문
@@ -26,7 +26,7 @@
 
 ## 진행자 준비
 
-1. 별도 임시 사본 또는 폐기 가능한 테스트 checkout을 현재 base HEAD `8b856fd`에서 준비한다. 현재 task ID는 위 World Bank
+1. 별도 임시 사본 또는 폐기 가능한 테스트 checkout을 현재 base HEAD `74075fc`에서 준비한다. 현재 task ID는 위 World Bank
    예제다. catalog는 이 task에 필요한 task/event/artifact/validation record만 담은 폐기용 사본을 사용하고,
    실제 저장소의 DB와 raw를 참가자 checkout에서 격리한다. task가 참조하는
    `data/raw/worldbank/cd9d5a7cf3ae49e88f1bac5f795f1bdc/response.json` 및 `request.json`을 함께 보존한다.
