@@ -99,7 +99,7 @@ flowchart LR
 | 순서 | 다음 작업 | 선행 이유 | 완료 기준 |
 |---|---|---|---|
 | 24 완료 | Cross-platform maintenance check service | pytest 중복과 text/JSON report 차이를 줄인다. | `run_maintenance_qa.py`가 health·pytest·Ruff·CLI·commit whitespace를 구조화 report로 실행한다. `run_checks.ps1`은 wrapper다. CI matrix가 동일 Python entrypoint를 실행한다. [24회차 보고서](ITERATION_24_REPORT.md) |
-| 25 후속 완료 | Analyzer evidence domain, BIS manifest scope adapter, technical/economic requirements | 초기 분석이 합성 시험과 운영 오류를 섞고 BIS flat file identity를 읽지 못했다. | 저장 event 검증으로 fixture와 파일 qualification을 운영 history에서 분리하고, exact BIS raw/manifest 검증으로 기관·dataset을 복구했다. 기술 오류는 concept 없이 같은 engine/version/stage/dataset에서만 검토하며, 경제 의미는 concept이 없으면 제안하지 않는다. [검토 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) |
+| 25 후속 완료 | Analyzer evidence domain, institution scope adapters, technical/economic requirements | 초기 분석이 합성 시험과 운영 오류를 섞고 보존 provider scope 일부를 읽지 못했다. | 저장 event 검증으로 trial 분리, BIS/BLS/Census exact raw/manifest scope 검증, production plan hash 확인을 수행한다. BLS dataset ID는 근거가 없어 unknown으로 남긴다. 기술 오류는 concept 없이 같은 engine/version/stage/dataset에서만 검토하며 경제 의미는 concept이 없으면 제안하지 않는다. [검토 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) |
 | 26 완료 | Isolated updater와 candidate QA handoff | 기존 updater가 현재 branch를 바꾸고 QA를 호출하지 않았다. | `run_improvement.py`는 origin/명시 base에서 isolated worktree를 만들고 경로 allowlist·no-op·동일 SHA QA·조건부 push/PR을 연결한다. CI dry run과 unit tests가 no-op 정리 및 QA 실패 시 무push를 확인한다. 실제 Codex pilot은 27회차에서 확인한다. [보고서](ITERATION_26_REPORT.md) |
 | 27 | Schedule consolidation and supervised pilot | 자동 주기는 통합 흐름이 Windows에서 운영 가능한지 입증한 뒤에만 검토한다. | 먼저 Windows에서 사람이 직접 시작한 pilot 1회로 no-op·failure·success 보고를 검토한다. 실제 Codex 실행은 이 검토 뒤에만 한다. 반복 scheduler는 비활성 상태로 유지하고 중복 실행 방지, 환경·base ref 설정, 로그 보존을 확인한다. 이후 사용하지 않는 launcher를 제거한다. |
 
@@ -116,4 +116,4 @@ flowchart LR
 
 ### 2026-10-27 scope 재점검 정정
 
-근거 부족 7건 재검토와 full-catalog engine×institution 오류 감사를 완료했다. 현재 저장 이력에는 운영 오류가 BIS 2건과 World Bank 1건 있으며, 미상 institution/dataset을 가진 오류 stage는 없다. 성공 stage에서 BLS/Census/large-file-production scope projection 공백 5건이 확인되어 별도 후속으로 남긴다. 표본·전체 조회 범위와 근거는 [scope recovery](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [full-catalog 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 따른다.
+근거 부족 7건 재검토와 full-catalog engine×institution 오류 감사를 완료했다. 현재 저장 이력에는 운영 오류가 BIS 2건과 World Bank 1건 있으며, 미상 institution/dataset을 가진 오류 stage는 없다. 이어 BLS·Census·large-file-production 성공 stage 5건의 projection을 manifest/raw 근거로 보완했다. 재검증 시 institution unknown은 0건이며 dataset unknown 2건은 BLS payload의 명시적 null로 남겼다. 다음은 BLS official series metadata를 확인하는 일이다. 전체 근거와 범위는 [scope recovery](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [full-catalog 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 따른다.

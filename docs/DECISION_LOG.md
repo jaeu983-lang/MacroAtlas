@@ -771,3 +771,17 @@ QA 실패나 timeout이면 push/PR을 하지 않으며, 통과한 경우에만 �
 확인했다. Codex prompt는 실행되지 않았고 worktree는 clean/base HEAD로 확인했다. 사용자 credentials를 읽거나 갱신하지 않고, 해당
 응답은 `CODEX_AUTH_REQUIRED` 및 “Codex CLI에 다시 로그인한 뒤 재실행” action으로 보고한다. 이 상태는 QA 실패, GitHub push 실패,
 provider/API 연결 실패와 구분한다. 상세 실행 증거는 `docs/ITERATION_26_PILOT_BLOCKER_REPORT.md`에 보존한다.
+
+## D-088 — 증거 기반 기관·dataset scope projection 확장
+
+2026-10-27. Full-catalog 감사에서 오류 3건은 모두 institution/dataset이 있었지만, 성공 stage 5건(BLS 2, Census 2,
+large-file production 1)은 projection에 scope가 비어 있었다. BLS/Census는 기관의 exact HTTPS API URL, 보존 request manifest,
+UTC retrieval time, HTTP 200, request/plan 일치, raw path·byte count·SHA 및 JSON 응답을 확인한 경우에만 기관·dataset scope를
+분석 결과에 연결한다. BLS manifest는 기관을 증명하지만 dataset은 명시적으로 null이므로 두 건 모두 dataset unknown으로 남긴다.
+Census는 응답·plan·manifest의 `acs/acs1`이 일치해 dataset을 복구했다. 대용량 BIS production은 plan의 raw/manifest SHA를
+기존 BIS verifier 결과와 대조한다. 어느 adapter도 concept을 유추하거나 task·raw·manifest를 수정하지 않는다.
+
+회귀 검증 후 49 terminal tasks / 57 stages snapshot에서 operational 37 stage, verified scope resolution 7건, 오류 3건,
+institution unknown 0건, dataset unknown 2건을 확인했다. Full-catalog error audit는 [별도 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md),
+회귀 범위는 [scope recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 있다. 다음 BLS metadata 확인 전까지 series ID를 dataset ID로
+승격하지 않는다.

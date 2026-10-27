@@ -41,6 +41,12 @@
 
 전체 69개 task와 저장 stage 57개를 상한 없이 읽은 [full-catalog 감사 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 작성했다. 운영 오류는 3건이며 모두 기관/dataset을 식별했다: BIS `SCHEMA_CHANGED` 2건과 World Bank `TRANSIENT` 1건. World Bank 오류는 같은 task/stage에서 실패 후 성공한 기록을 보존한다. 이 catalog snapshot의 현재 운영 오류에 기관/dataset unknown은 없다.
 
-다만 `bls`, `census`, `large_file_production` 성공 stage 5건은 analyzer scope projection에서 기관/dataset이 unknown이다. 보존 payload/plan에는 BLS·Census source metadata와 BIS production raw/manifest reference가 있으므로, 다음 작업은 이 세 engine의 근거 경로와 scope adapter를 별도로 검증·보완하는 것이다. BLS `dataset_id=null`은 유지하고, 미상 identity를 가진 오류처럼 취급하거나 추정하지 않는다. 해당 scope projection 보완 뒤 전체 audit를 다시 실행해 범위를 확인한다.
+### 2026-10-27 scope projection 보완 결과
+
+초기 감사에서 확인한 BLS·Census·`large_file_production` 성공 stage 5건의 projection 공백을 보완하고 전체 analyzer snapshot을 다시 실행했다. API stage는 exact official URL, 기관 이름, task payload와 plan 요청, UTC manifest, HTTP 200, raw 경로·크기·SHA, JSON response shape가 함께 맞을 때만 scope를 복구한다. Large-file production은 plan의 raw/manifest hash를 기존 BIS provenance verifier 결과와 일치시킨다. 입력 task/event/raw/manifest는 모두 read-only로 유지한다.
+
+재검증 범위는 terminal task 49개·stage 57개이며 truncation 없이 operational stage 37개를 분석했다. verified scope resolution은 총 7건이고 operational error는 3건(BIS 2, World Bank 1)으로 그대로다. 기관 미상은 0건, dataset 미상은 BLS 성공 stage 2건이다. BLS agency는 확인됐지만 provider payload의 `dataset_id=null`을 유지하고, series ID만으로 dataset이나 concept을 추정하지 않았다. Census는 `acs/acs1` 두 건, BIS large-file production 한 건의 기관과 dataset을 증거로 연결했다.
+
+회귀 검증은 BLS 원본 tamper, Census payload/plan dataset 불일치, BIS production plan hash 불일치 시 unknown 처리되는 경우까지 포함한다. 전체 pytest 725개, Ruff, diff 검사가 통과했다. 후속은 BLS official series metadata/catalogue 확인이다. Gate C 자연 원본 변경·자연 장애 후 재개 및 사용자 사용성은 이 분석기 작업과 별도 트랙이다.
 
 이 audit과 adapter 후속은 Gate C 자연 원본 변경·자연 장애 증거 및 사용자 사용성 시험과 별도 트랙으로 관리한다.

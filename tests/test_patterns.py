@@ -1,4 +1,5 @@
 """Iteration 13 bounded pattern analysis contracts."""
+import hashlib
 import io
 import json
 import zipfile
@@ -39,6 +40,32 @@ def add_task(history, task_id, *, scope=None, outcomes=None, task_status="FAILED
 
 def scoped(institution="agency_a", dataset="dataset_1", concept="gdp"):
     return {"institution_id": institution, "dataset_id": dataset, "concept": concept}
+
+
+def save_api_capture(root, *, engine, package_id, source_url, source_agency,
+                     request, response, content_type="application/json"):
+    raw_dir = root / "data" / "raw" / engine / package_id
+    raw_dir.mkdir(parents=True)
+    raw_path = raw_dir / "response.json"
+    raw_bytes = json.dumps(response, separators=(",", ":")).encode()
+    raw_path.write_bytes(raw_bytes)
+    manifest_path = raw_dir / "request.json"
+    manifest_path.write_text(json.dumps({
+        "mode": "live_api", "source_url": source_url,
+        "source_agency": source_agency, "http_status": 200,
+        "content_type": content_type,
+        "retrieved_at": "2026-10-26T09:18:10.929482+00:00",
+        "request": request,
+        "raw_path": f"data/raw/{engine}/{package_id}/response.json",
+        "raw_sha256": hashlib.sha256(raw_bytes).hexdigest(),
+        "byte_count": len(raw_bytes),
+    }), encoding="utf-8")
+    return {
+        "source_url": source_url, "source_agency": source_agency,
+        "raw_path": f"data/raw/{engine}/{package_id}/response.json",
+        "raw_sha256": hashlib.sha256(raw_bytes).hexdigest(),
+        "manifest_path": f"data/raw/{engine}/{package_id}/request.json",
+    }
 
 
 def test_three_distinct_tasks_create_traceable_draft_without_raw_payload(tmp_path):
@@ -453,3 +480,139 @@ def test_bis_scope_projection_requires_matching_saved_manifest(tmp_path, modify_
             f"data/raw/tabular/{package_id}/request.json"
         )
         assert report["summary"]["insufficient_evidence_count"] == 0
+
+
+@pytest.mark.parametrize("modify_raw", [False, True])
+def test_bls_scope_projection_verifies_manifest_and_keeps_dataset_unknown(tmp_path, modify_raw):
+    from macro_data_platform.analysis.scope_evidence import BLS_AGENCY, BLS_API_URL
+
+    history = HistoryStore(Settings(tmp_path))
+    request = {"series_ids": ["CUUR0000SA0"], "start_year": 2024, "end_year": 2024}
+    evidence = save_api_capture(
+        tmp_path, engine="bls", package_id="d" * 32,
+        source_url=BLS_API_URL, source_agency=BLS_AGENCY, request=request,
+        response={"status": "REQUEST_SUCCEEDED", "Results": {"series": [
+            {"seriesID": "CUUR0000SA0", "data": []},
+        ]}},
+    )
+    if modify_raw:
+        (tmp_path / evidence["raw_path"]).write_text('{"tampered":true}', encoding="utf-8")
+    add_task(history, "bls-scope", scope={}, outcomes=[("SUCCEEDED", None)],
+             task_status="COMPLETED")
+    with history.transaction() as connection:
+        document = history.load(connection, "bls-scope")
+        document["plan"][0].update(engine="bls", input_data=request)
+        document["stages"][0]["engine"] = "bls"
+        document["stages"][0]["result"]["payload"].update({
+            **evidence, "dataset_id": None,
+        })
+        history.save(connection, document)
+
+    report = PatternAnalyzer(history).analyze()
+
+    if modify_raw:
+        assert report["summary"]["scope_resolution_count"] == 0
+    else:
+        resolved = report["summary"]["scope_resolution_sample"][0]
+        assert resolved["institution_id"] == "bls"
+        assert resolved["dataset_id"] is None
+        assert resolved["concept_status"] == "unknown_not_inferred_from_file_identity"
+        assert resolved["adapter_id"] == "bls_official_api_manifest_v1"
+
+
+@pytest.mark.parametrize("payload_dataset", ["acs/acs1", "acs/acs5"])
+def test_census_scope_projection_requires_dataset_match_across_plan_payload_manifest(
+        tmp_path, payload_dataset):
+    from macro_data_platform.analysis.scope_evidence import CENSUS_AGENCY
+
+    history = HistoryStore(Settings(tmp_path))
+    request = {
+        "dataset": "acs/acs1", "year": 2022,
+        "variables": ["NAME", "B01001_001E"], "geography": "state:06",
+    }
+    evidence = save_api_capture(
+        tmp_path, engine="census", package_id="e" * 32,
+        source_url="https://api.census.gov/data/2022/acs/acs1",
+        source_agency=CENSUS_AGENCY, request=request,
+        response=[["NAME", "B01001_001E", "state"],
+                  ["California", "39029342", "06"]],
+        content_type="application/json;charset=utf-8",
+    )
+    add_task(history, "census-scope", scope={}, outcomes=[("SUCCEEDED", None)],
+             task_status="COMPLETED")
+    with history.transaction() as connection:
+        document = history.load(connection, "census-scope")
+        document["plan"][0].update(engine="census", input_data=request)
+        document["stages"][0]["engine"] = "census"
+        document["stages"][0]["result"]["payload"].update({
+            **evidence, "dataset_id": payload_dataset,
+        })
+        history.save(connection, document)
+
+    report = PatternAnalyzer(history).analyze()
+
+    if payload_dataset == "acs/acs1":
+        resolved = report["summary"]["scope_resolution_sample"][0]
+        assert resolved["institution_id"] == "census"
+        assert resolved["dataset_id"] == "acs/acs1"
+        assert resolved["adapter_id"] == "census_official_api_manifest_v1"
+    else:
+        assert report["summary"]["scope_resolution_count"] == 0
+
+
+@pytest.mark.parametrize("modify_expected_hash", [False, True])
+def test_large_file_production_scope_reuses_verified_bis_capture(
+        tmp_path, modify_expected_hash):
+    from macro_data_platform.analysis.scope_evidence import BIS_FLAT_AGENCY, BIS_FLAT_URL
+
+    history = HistoryStore(Settings(tmp_path))
+    package_id = "f" * 32
+    package = tmp_path / "data" / "raw" / "tabular" / package_id
+    package.mkdir(parents=True)
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("WS_GLI_csv_flat.csv", "TIME_PERIOD,OBS_VALUE\n2026,1\n")
+    raw_bytes = archive_bytes.getvalue()
+    raw_path = package / "source.zip"
+    raw_path.write_bytes(raw_bytes)
+    manifest_path = package / "request.json"
+    manifest_path.write_text(json.dumps({
+        "package_id": package_id,
+        "request_context": {
+            "source_url": BIS_FLAT_URL, "source_http_status": 200,
+            "source_agency": BIS_FLAT_AGENCY,
+            "source_captured_at": "2026-10-26T09:18:10.929482+00:00", "format": "zip",
+        },
+        "raw": {
+            "path": f"data/raw/tabular/{package_id}/source.zip",
+            "sha256": hashlib.sha256(raw_bytes).hexdigest(), "bytes": len(raw_bytes),
+        },
+    }), encoding="utf-8")
+    manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    add_task(history, "production-bis-scope", scope={}, outcomes=[("SUCCEEDED", None)],
+             task_status="COMPLETED")
+    with history.transaction() as connection:
+        document = history.load(connection, "production-bis-scope")
+        document["plan"][0].update(engine="large_file_production", input_data={
+            "source_url": BIS_FLAT_URL, "source_agency": BIS_FLAT_AGENCY,
+            "raw_path": f"data/raw/tabular/{package_id}/source.zip",
+            "raw_sha256": ("0" * 64 if modify_expected_hash
+                           else hashlib.sha256(raw_bytes).hexdigest()),
+            "request_manifest_path": f"data/raw/tabular/{package_id}/request.json",
+            "request_manifest_sha256": manifest_sha256,
+        })
+        document["stages"][0]["engine"] = "large_file_production"
+        document["stages"][0]["result"]["payload"] = {
+            "production_execution": "COMPLETED",
+        }
+        history.save(connection, document)
+
+    report = PatternAnalyzer(history).analyze()
+
+    if modify_expected_hash:
+        assert report["summary"]["scope_resolution_count"] == 0
+    else:
+        resolved = report["summary"]["scope_resolution_sample"][0]
+        assert resolved["institution_id"] == "bis"
+        assert resolved["dataset_id"] == "WS_GLI_csv_flat"
+        assert resolved["adapter_id"] == "bis_flat_zip_verified_manifest_v1"

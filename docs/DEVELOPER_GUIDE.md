@@ -102,9 +102,11 @@ Gate가 통과되거나 다른 provider를 지원하게 되지 않습니다. Gat
 read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-27 첫 실행의 insufficient-evidence 7개는 재검토 후
 합성 qualification fixture와 manifest가 보존된 BIS 오류로 분리됐습니다. 현재 49 tasks/57 stages snapshot은 fixture 15건,
 보존 파일 qualification trial 5건, operational stage 37건을 구분하고, BIS 두 건의 기관·dataset만 검증 projection으로
-복구합니다. 별도 full-catalog audit은 69 task/57 stage 전체를 읽어 운영 오류 3건(BIS 2, World Bank 1)을 확인했고,
-미상 institution/dataset 오류는 찾지 못했습니다. BLS/Census/large-file-production 성공 stage의 projection 공백 5건은
-다음 adapter 작업으로 남았습니다. 상세 범위와 근거는 [scope 재검토](SCOPE_EVIDENCE_RECOVERY_PLAN.md)와
+복구합니다. 이어 BLS·Census API의 exact manifest/raw 및 large-file production의 plan hash를 확인해 성공 stage의 scope
+projection을 보완했습니다. 재검증에서 institution unknown은 0건이며 BLS 응답 두 건의 dataset은 provider가 null로
+남겨 미상 상태를 유지합니다. 별도 full-catalog audit은 69 task/57 stage 전체를 읽어 운영 오류 3건(BIS 2, World Bank 1)을
+확인했고 미상 institution/dataset 오류는 찾지 못했습니다. 다음 분석기 범위 작업은 BLS official series metadata 검토입니다.
+상세 범위와 근거는 [scope 재검토](SCOPE_EVIDENCE_RECOVERY_PLAN.md)와
 [engine×institution 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 참고하세요.
 
 `python scripts/run_maintenance_qa.py`가 공통 local check entrypoint입니다. 기본 실행은 clean commit을 detached worktree에
