@@ -1,7 +1,7 @@
 # 전체 이력 engine×institution 오류 감사
 
-**감사일:** 2026-10-27  
-**범위:** `data/catalog.sqlite` 전체 저장 이력, read-only  
+**감사일:** 2026-10-27
+**범위:** `data/catalog.sqlite` 전체 저장 이력, read-only
 **목적:** 최근 PatternAnalyzer 표본을 넘어 현재 catalog의 기관·engine별 오류와 scope 식별 공백을 확인한다.
 
 ## 방법과 범위
