@@ -1,6 +1,10 @@
 """Iteration 13 bounded pattern analysis contracts."""
+import io
 import json
+import zipfile
 from datetime import UTC, datetime
+
+import pytest
 
 from macro_data_platform.analysis.patterns import PatternAnalyzer
 from macro_data_platform.config import Settings
@@ -304,3 +308,148 @@ def test_persisted_file_scope_adapter_preserves_unknown_concept():
             assert row == ((source if expected else None), expected, None)
     finally:
         connection.close()
+
+
+def test_technical_errors_allow_unknown_concept_but_meaning_errors_do_not(tmp_path):
+    history = HistoryStore(Settings(tmp_path))
+    scope = {"institution_id": "bis", "dataset_id": "WS_GLI_csv_flat"}
+    for index in range(3):
+        add_task(history, f"technical-{index}", scope=scope)
+        add_task(history, f"meaning-{index}", scope=scope,
+                 outcomes=[("NEEDS_REVIEW", "SEMANTIC_AMBIGUITY")])
+
+    report = PatternAnalyzer(history).analyze()
+
+    technical = [item for item in report["proposals"]
+                 if item["analysis_domain"] == "technical_error"]
+    meaning = [item for item in report["proposals"]
+               if item["analysis_domain"] == "economic_meaning"]
+    assert len(technical) == 1
+    assert technical[0]["scope"]["concept"] is None
+    assert technical[0]["required_dimensions"] == [
+        "institution_id", "engine", "engine_version", "stage_id", "dataset_id",
+    ]
+    assert technical[0]["scope_unknown"] == []
+    assert meaning == []
+    assert report["summary"]["technical_error_missing_concept_count"] == 3
+    assert report["summary"]["economic_meaning_missing_concept_count"] == 3
+    assert report["summary"]["insufficient_evidence_count"] == 3
+
+
+def test_trials_leave_operational_aggregate_only_with_matching_saved_event(tmp_path):
+    history = HistoryStore(Settings(tmp_path))
+
+    def trial_task(task_id, seq, path, event_path):
+        document = add_task(history, task_id, scope={},
+                            outcomes=[("NEEDS_REVIEW", "SCHEMA_CHANGED")])
+        document["trial_only"] = True
+        plan = document["plan"][0]
+        plan["engine"] = "large_file_trial"
+        plan["stage_id"] = "qualify"
+        plan["input_data"].update({
+            "deferral_id": f"deferral-{seq}", "deferral_event_seq": seq,
+            "origin_task_id": f"origin-{seq}",
+            "scope": {"relative_path": path, "format": "csv"},
+        })
+        stage = document["stages"][0]
+        stage["engine"] = "large_file_trial"
+        stage["stage_id"] = "qualify"
+        stage["result"]["payload"] = {
+            "trial_attempted": True, "production_execution": "NOT_EXECUTED",
+            "execution_state": "NOT_EXECUTED", "reason": "ragged_rows",
+        }
+        with history.transaction() as connection:
+            history.save(connection, document)
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS deferred_non_api_events "
+                "(seq INTEGER PRIMARY KEY, id TEXT NOT NULL, document TEXT NOT NULL)"
+            )
+            body = {
+                "id": f"deferral-{seq}", "task_id": f"origin-{seq}",
+                "reason": "qualification_candidate", "status": "inspection_required",
+                "scope": {"relative_path": event_path, "format": "csv"},
+            }
+            connection.execute(
+                "INSERT INTO deferred_non_api_events(seq,id,document) VALUES (?,?,?)",
+                (seq, f"deferral-{seq}", json.dumps(body)),
+            )
+
+    fixture_path = "data/inbox/qualification-fixtures-test/ragged.csv"
+    trial_task("verified-trial", 1, fixture_path, fixture_path)
+    trial_task("unverified-trial", 2, fixture_path, "data/inbox/other.csv")
+
+    report = PatternAnalyzer(history).analyze()
+
+    assert report["metrics"]["qualification_fixture_stage_records_scanned"] == 1
+    assert report["metrics"]["operational_stage_records_scanned"] == 1
+    assert report["summary"]["qualification_fixture_count"] == 1
+    assert report["summary"]["insufficient_evidence_count"] == 1
+    assert report["summary"]["insufficient_evidence_sample"][0]["task_id"] == (
+        "unverified-trial"
+    )
+
+
+@pytest.mark.parametrize("modify_raw", [False, True])
+def test_bis_scope_projection_requires_matching_saved_manifest(tmp_path, modify_raw):
+    import hashlib
+
+    from macro_data_platform.analysis.scope_evidence import BIS_FLAT_AGENCY, BIS_FLAT_URL
+
+    history = HistoryStore(Settings(tmp_path))
+    package_id = "c" * 32
+    package = tmp_path / "data" / "raw" / "tabular" / package_id
+    package.mkdir(parents=True)
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as contents:
+        contents.writestr("WS_GLI_csv_flat.csv", "TIME_PERIOD,OBS_VALUE\n2026,1\n")
+    preserved = archive.getvalue()
+    raw_saved = package / "source.zip"
+    raw_saved.write_bytes(preserved)
+    manifest = package / "request.json"
+    manifest.write_text(json.dumps({
+        "package_id": package_id,
+        "request_context": {
+            "source_url": BIS_FLAT_URL, "source_http_status": 200,
+            "source_agency": BIS_FLAT_AGENCY,
+            "source_captured_at": "2026-10-26T09:18:10.929482+00:00", "format": "zip",
+        },
+        "raw": {
+            "path": f"data/raw/tabular/{package_id}/source.zip",
+            "sha256": hashlib.sha256(preserved).hexdigest(), "bytes": len(preserved),
+        },
+    }), encoding="utf-8")
+    inbox = tmp_path / "data" / "inbox"
+    inbox.mkdir(parents=True)
+    raw_inbox = inbox / "bis-flat.zip"
+    raw_inbox.write_bytes(b"tampered archive" if modify_raw else preserved)
+
+    add_task(history, "bis-scope", scope={}, outcomes=[("NEEDS_REVIEW", "SCHEMA_CHANGED")])
+    with history.transaction() as connection:
+        document = history.load(connection, "bis-scope")
+        document["plan"][0].update(engine="tabular_file", input_data={
+            "format": "zip", "relative_path": "data/inbox/bis-flat.zip",
+            "source_url": BIS_FLAT_URL, "source_agency": BIS_FLAT_AGENCY,
+        })
+        document["stages"][0]["engine"] = "tabular_file"
+        history.save(connection, document)
+
+    report = PatternAnalyzer(history).analyze()
+
+    if modify_raw:
+        assert report["summary"]["scope_resolution_count"] == 0
+        assert report["summary"]["insufficient_evidence_count"] == 1
+        assert report["summary"]["insufficient_evidence_sample"][0]["unknown_dimensions"] == [
+            "institution_id", "dataset_id",
+        ]
+    else:
+        assert report["summary"]["scope_resolution_count"] == 1
+        evidence = report["summary"]["scope_resolution_sample"][0]
+        assert evidence["institution_id"] == "bis"
+        assert evidence["dataset_id"] == "WS_GLI_csv_flat"
+        assert evidence["concept"] is None
+        assert evidence["concept_status"] == "unknown_not_inferred_from_file_identity"
+        assert evidence["raw_sha256"] == hashlib.sha256(preserved).hexdigest()
+        assert evidence["request_manifest_path"] == (
+            f"data/raw/tabular/{package_id}/request.json"
+        )
+        assert report["summary"]["insufficient_evidence_count"] == 0

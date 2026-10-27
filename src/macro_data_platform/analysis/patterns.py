@@ -6,6 +6,7 @@ import sqlite3
 import unicodedata
 from collections import defaultdict
 
+from macro_data_platform.analysis.scope_evidence import resolve_bis_flat_scope
 from macro_data_platform.config import Settings
 from macro_data_platform.contracts import ErrorCode
 from macro_data_platform.storage.history import HistoryStore
@@ -20,6 +21,14 @@ _STAGE_OUTCOMES = (
 )
 _FAILURES = {"FAILED_RETRYABLE", "FAILED_TERMINAL", "NEEDS_REVIEW"}
 _ERROR_CODES = {item.value for item in ErrorCode}
+_TECHNICAL_ERROR_CODES = {
+    ErrorCode.TRANSIENT.value, ErrorCode.AUTH_ACCESS.value, ErrorCode.SITE_CHANGED.value,
+    ErrorCode.SCHEMA_CHANGED.value, ErrorCode.LICENSE_SECURITY.value,
+    ErrorCode.INTERNAL_BUG.value,
+}
+_ECONOMIC_MEANING_ERROR_CODES = {
+    ErrorCode.SEMANTIC_AMBIGUITY.value, ErrorCode.QUALITY_FAILURE.value,
+}
 _FEEDBACK_CATEGORIES = {
     "candidate_group", "question_order", "output_preference", "source_method",
     "statistical_definition", "other",
@@ -65,8 +74,10 @@ def _distinct_unknowns(fingerprint, task_id, required_fields=()):
     """Make each missing scope dimension task-local so unknowns never merge cases."""
     key = dict(fingerprint)
     unknown = []
-    for field in ("institution_id", "engine", "engine_version", "stage_id",
-                  "dataset_id", "concept", *required_fields):
+    fields = ["institution_id", "engine", "engine_version", "stage_id", "dataset_id"]
+    if fingerprint.get("analysis_domain") != "technical_error":
+        fields.append("concept")
+    for field in (*fields, *required_fields):
         if key.get(field) is None:
             key[field] = {"unknown_for_task": task_id}
             unknown.append(field)
@@ -116,15 +127,21 @@ class PatternAnalyzer:
 
     def __init__(self, history: HistoryStore | Settings):
         if isinstance(history, HistoryStore):
+            self.project_root = history.settings.project_root
+            self.data_dir = history.settings.data_dir
             self.database_path = history.settings.database_path
         elif isinstance(history, Settings):
+            self.project_root = history.project_root
+            self.data_dir = history.data_dir
             self.database_path = history.database_path
         else:
             raise TypeError("expected HistoryStore or Settings")
 
     def _connect_read_only(self):
         uri = self.database_path.as_uri() + "?mode=ro"
-        return sqlite3.connect(uri, uri=True, timeout=5)
+        connection = sqlite3.connect(uri, uri=True, timeout=5)
+        connection.row_factory = sqlite3.Row
+        return connection
 
     def analyze(self) -> dict:
         """Read only terminal metadata and accepted user instructions within fixed limits."""
@@ -167,6 +184,25 @@ class PatternAnalyzer:
                     {_stage_scope_sql(
                         'concept', 'scope.concept', 'concept',
                         '$.workflow_context.confirmation.offer.request.concept')}
+                    ,json_extract(t.document, '$.trial_only')
+                    ,json_extract(p.value, '$.engine')
+                    ,json_extract(p.value, '$.input_data.deferral_id')
+                    ,json_extract(p.value, '$.input_data.deferral_event_seq')
+                    ,json_extract(p.value, '$.input_data.origin_task_id')
+                    ,json_extract(p.value, '$.input_data.scope.relative_path')
+                    ,json_extract(p.value, '$.input_data.scope.format')
+                    ,json_extract(p.value, '$.input_data.scope.source_url')
+                    ,json_extract(p.value, '$.input_data.scope.source_agency')
+                    ,json_extract(p.value, '$.input_data.source_url')
+                    ,json_extract(p.value, '$.input_data.source_agency')
+                    ,json_extract(p.value, '$.input_data.relative_path')
+                    ,json_extract(p.value, '$.input_data.url')
+                    ,json_extract(s.value, '$.result.payload.raw_path')
+                    ,json_extract(s.value, '$.result.payload.request_manifest_path')
+                    ,json_extract(s.value, '$.result.payload.trial_attempted')
+                    ,json_extract(s.value, '$.result.payload.production_execution')
+                    ,json_extract(s.value, '$.result.payload.execution_state')
+                    ,json_extract(s.value, '$.result.payload.reason')
                 FROM tasks AS t
                 JOIN json_each(t.document, '$.stages') AS s
                 LEFT JOIN json_each(t.document, '$.plan') AS p
@@ -195,6 +231,8 @@ class PatternAnalyzer:
                     ).fetchone() is not None
             stage_count = len(stage_rows)
             logical_bytes += sum(_size(value) for row in stage_rows for value in row)
+
+            trial_domains = self._verified_trial_domains(connection, stage_rows)
 
             remaining = max(0, MAX_RECORDS - stage_count)
             feedback_rows = []
@@ -239,7 +277,17 @@ class PatternAnalyzer:
             feedback_count = len(feedback_rows)
             logical_bytes += sum(_size(value) for row in feedback_rows for value in row)
 
-        outcomes, stage_by_id = self._stage_observations(stage_rows, task_meta)
+        outcomes, stage_by_id, qualification_observations, scope_resolutions = self._stage_observations(
+            stage_rows, task_meta, trial_domains,
+        )
+        fixture_observations = [
+            item for item in qualification_observations
+            if item["evidence_domain"] == "verified_qualification_fixture"
+        ]
+        qualified_source_trials = [
+            item for item in qualification_observations
+            if item["evidence_domain"] == "verified_qualification_trial"
+        ]
         (feedback, unsafe_feedback_count, invalid_feedback_count,
          missing_stage_feedback_count) = self._feedback_observations(
             feedback_rows, task_meta, stage_by_id,
@@ -264,6 +312,9 @@ class PatternAnalyzer:
                        "evidence_per_proposal": MAX_EVIDENCE_PER_PROPOSAL},
             "metrics": {
                 "tasks_scanned": len(task_rows), "stage_records_scanned": stage_count,
+                "operational_stage_records_scanned": stage_count - len(qualification_observations),
+                "qualification_fixture_stage_records_scanned": len(fixture_observations),
+                "qualification_trial_stage_records_scanned": len(qualified_source_trials),
                 "feedback_records_scanned": feedback_count,
                 "records_scanned": stage_count + feedback_count,
                 "logical_bytes_read": logical_bytes,
@@ -271,6 +322,7 @@ class PatternAnalyzer:
                 "scope_complete_candidate_count": sum(
                     not item["scope_unknown"] for item in candidates
                 ),
+                "verified_scope_resolution_count": len(scope_resolutions),
             },
             "truncation": {
                 "tasks": task_truncated, "records": stage_truncated or feedback_truncated,
@@ -284,9 +336,32 @@ class PatternAnalyzer:
                 "unsafe_feedback_excluded": unsafe_feedback_count,
                 "invalid_feedback_excluded": invalid_feedback_count,
                 "feedback_stage_link_missing": missing_stage_feedback_count,
+                "technical_error_count": sum(
+                    item["analysis_domain"] == "technical_error" for item in outcomes
+                ),
+                "economic_meaning_error_count": sum(
+                    item["analysis_domain"] == "economic_meaning" for item in outcomes
+                ),
+                "unclassified_error_count": sum(
+                    item["analysis_domain"] == "unclassified_error" for item in outcomes
+                ),
+                "technical_error_missing_concept_count": sum(
+                    item["analysis_domain"] == "technical_error" and item["concept"] is None
+                    for item in outcomes
+                ),
+                "economic_meaning_missing_concept_count": sum(
+                    item["analysis_domain"] == "economic_meaning" and item["concept"] is None
+                    for item in outcomes
+                ),
+                "qualification_fixture_count": len(fixture_observations),
+                "qualification_trial_count": len(qualified_source_trials),
+                "scope_resolution_count": len(scope_resolutions),
                 "one_off_sample": one_offs[:10],
                 "insufficient_evidence_sample": insufficient[:10],
                 "possible_conflicts": possible_conflicts[:10],
+                "qualification_fixture_sample": fixture_observations[:10],
+                "qualification_trial_sample": qualified_source_trials[:10],
+                "scope_resolution_sample": scope_resolutions[:10],
             },
             "proposals": proposals,
         }
@@ -299,29 +374,151 @@ class PatternAnalyzer:
                        "proposals": MAX_PROPOSALS,
                        "evidence_per_proposal": MAX_EVIDENCE_PER_PROPOSAL},
             "metrics": {"tasks_scanned": 0, "stage_records_scanned": 0,
+                        "operational_stage_records_scanned": 0,
+                        "qualification_fixture_stage_records_scanned": 0,
+                        "qualification_trial_stage_records_scanned": 0,
                         "feedback_records_scanned": 0, "records_scanned": 0,
                         "logical_bytes_read": 0, "candidate_count": 0,
-                        "proposal_count": 0, "scope_complete_candidate_count": 0},
+                        "proposal_count": 0, "scope_complete_candidate_count": 0,
+                        "verified_scope_resolution_count": 0},
             "truncation": {"tasks": False, "records": False, "proposals": False},
             "summary": {"one_off_count": 0, "insufficient_evidence_count": 0,
                         "possible_conflict_count": 0, "unsafe_feedback_excluded": 0,
                         "invalid_feedback_excluded": 0,
                         "feedback_stage_link_missing": 0,
+                        "technical_error_count": 0, "economic_meaning_error_count": 0,
+                        "unclassified_error_count": 0,
+                        "technical_error_missing_concept_count": 0,
+                        "economic_meaning_missing_concept_count": 0,
+                        "qualification_fixture_count": 0, "qualification_trial_count": 0,
+                        "scope_resolution_count": 0,
                         "one_off_sample": [], "insufficient_evidence_sample": [],
-                        "possible_conflicts": []},
+                        "possible_conflicts": [], "qualification_fixture_sample": [],
+                        "qualification_trial_sample": [], "scope_resolution_sample": []},
             "proposals": [],
         }
 
     @staticmethod
-    def _stage_observations(rows, task_meta):
+    def _verified_trial_domains(connection, rows):
+        """Classify non-production qualification tasks only with a matching saved event."""
+        if not rows:
+            return set()
+        has_events = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='deferred_non_api_events'",
+        ).fetchone() is not None
+        if not has_events:
+            return set()
+        candidates = {}
+        for row in rows:
+            if (row[13] != 1 or row[14] != "large_file_trial" or row[4] != "large_file_trial"
+                    or row[3] != "qualify" or not isinstance(row[15], str)
+                    or type(row[16]) is not int or not isinstance(row[17], str)
+                    or not isinstance(row[18], str) or not isinstance(row[19], str)
+                    or row[29] != "NOT_EXECUTED"
+                    or not ((row[30] == "NOT_EXECUTED" and row[31] in {
+                                 "ragged_rows", "input_budget", "output_budget",
+                                 "memory_budget", "wall_time_budget"})
+                             or row[30] == "TRIAL_PASSED")):
+                continue
+            candidates.setdefault(row[0], []).append(row)
+        if not candidates:
+            return set()
+        seqs = sorted({row[16] for task_rows in candidates.values() for row in task_rows
+                       if type(row[16]) is int})
+        if not seqs:
+            return set()
+        placeholders = ",".join("?" for _ in seqs)
+        events = connection.execute(
+            f"SELECT seq, id, document FROM deferred_non_api_events "
+            f"WHERE seq IN ({placeholders}) LIMIT ?",
+            (*seqs, MAX_RECORDS),
+        ).fetchall()
+        event_by_seq = {}
+        for event in events:
+            try:
+                document = json.loads(event["document"])
+            except (TypeError, ValueError):
+                continue
+            event_by_seq[event["seq"]] = (event["id"], document)
+        proven = {}
+        for task_id, task_rows in candidates.items():
+            for row in task_rows:
+                event = event_by_seq.get(row[16])
+                if event is None:
+                    continue
+                event_id, document = event
+                scope = document.get("scope") if isinstance(document, dict) else None
+                relative_path = row[18]
+                if (event_id == row[15] and document.get("task_id") == row[17]
+                        and isinstance(document.get("reason"), str)
+                        and document.get("reason")
+                        and document.get("status") in {"inspection_required", "deferred"}
+                        and isinstance(scope, dict)
+                        and scope.get("relative_path") == relative_path
+                        and scope.get("format") == row[19]
+                        and isinstance(relative_path, str)):
+                    is_fixture = (document.get("reason") == "qualification_candidate"
+                                  and relative_path.startswith(
+                                      "data/inbox/qualification-fixtures-"))
+                    is_deferred_trial = (document.get("status") == "deferred"
+                                         and not relative_path.startswith(
+                                             "data/inbox/qualification-fixtures-"))
+                    if is_fixture:
+                        proven[task_id] = "verified_qualification_fixture"
+                    elif is_deferred_trial:
+                        proven[task_id] = "verified_qualification_trial"
+                    break
+        return proven
+
+    def _stage_observations(self, rows, task_meta, trial_domains):
         observations = []
+        fixture_observations = []
+        scope_resolutions = []
         by_stage_id = {}
         for row in rows:
             (task_id, _created, stage_run_id, stage_id, engine, engine_version, status,
-             error_code, started_at, finished_at, institution, dataset, concept) = row
+             error_code, started_at, finished_at, institution, dataset, concept) = row[:13]
+            if task_id in trial_domains:
+                fixture_observations.append({"task_id": task_id, "evidence_id": stage_run_id,
+                                             "engine": engine, "stage_id": stage_id,
+                                             "status": status,
+                                             "evidence_domain": trial_domains[task_id]})
+                continue
+            (_plan_engine, _deferral_id, _deferral_seq, _origin_task_id, _fixture_path,
+             _fixture_format, scope_url, scope_agency, input_url, input_agency,
+             input_path, legacy_url, raw_path, manifest_path, _trial_attempted,
+             _production_execution, _execution_state, _trial_reason) = row[14:]
             institution = _safe_scope(institution, institution=True)
             dataset = _safe_scope(dataset)
             concept = _safe_scope(concept)
+            source_url = scope_url or input_url or legacy_url
+            source_agency = scope_agency or input_agency
+            candidate_raw_path = raw_path or input_path or _fixture_path
+            scope_resolution = resolve_bis_flat_scope(
+                self.project_root, self.data_dir,
+                source_url=source_url, source_agency=source_agency,
+                source_raw_path=candidate_raw_path,
+                request_manifest_path=manifest_path,
+            )
+            if scope_resolution is not None:
+                institution = scope_resolution["institution_id"]
+                dataset = scope_resolution["dataset_id"]
+                scope_resolutions.append({
+                    "task_id": task_id, "evidence_id": stage_run_id,
+                    "institution_id": institution, "dataset_id": dataset,
+                    "concept": None,
+                    "concept_status": "unknown_not_inferred_from_file_identity",
+                    "adapter_id": scope_resolution["adapter_id"],
+                    **scope_resolution["source_evidence"],
+                })
+            if status in _FAILURES and error_code in _TECHNICAL_ERROR_CODES:
+                analysis_domain = "technical_error"
+            elif status in _FAILURES and error_code in _ECONOMIC_MEANING_ERROR_CODES:
+                analysis_domain = "economic_meaning"
+            elif status in _FAILURES:
+                analysis_domain = "unclassified_error"
+            else:
+                analysis_domain = "stage_outcome"
             item = {
                 "type": "stage_error" if status in _FAILURES else "stage_outcome",
                 "task_id": task_id, "evidence_id": stage_run_id,
@@ -330,12 +527,13 @@ class PatternAnalyzer:
                 "error_category": (error_code if error_code in _ERROR_CODES else
                                    status if status == "NEEDS_REVIEW" and error_code is None else None),
                 "institution_id": institution, "dataset_id": dataset, "concept": concept,
+                "analysis_domain": analysis_domain,
                 "observed_at": finished_at or started_at or task_meta[task_id]["created_at"],
             }
             observations.append(item)
             if stage_run_id:
                 by_stage_id[stage_run_id] = item
-        return observations, by_stage_id
+        return observations, by_stage_id, fixture_observations, scope_resolutions
 
     @staticmethod
     def _feedback_observations(rows, task_meta, stage_by_id):
@@ -376,6 +574,8 @@ class PatternAnalyzer:
                 "engine_version": engine_version, "stage_id": stage_id,
                 "error_category": "feedback:" + str(category), "status": "ACCEPTED",
                 "institution_id": institution, "dataset_id": dataset, "concept": concept,
+                "analysis_domain": ("economic_meaning" if category == "statistical_definition"
+                                    else "user_instruction"),
                 "observed_at": recorded_at or task_meta[task_id]["created_at"],
                 "content_fingerprint": hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
             })
@@ -391,7 +591,7 @@ class PatternAnalyzer:
         for item in observations:
             fields = [
                 "type", "institution_id", "engine", "engine_version", "stage_id",
-                "dataset_id", "concept", "content_fingerprint",
+                "dataset_id", "concept", "content_fingerprint", "analysis_domain",
             ]
             if item["type"] != "stage_outcome":
                 fields.append("error_category")
@@ -473,6 +673,11 @@ class PatternAnalyzer:
                                  else "recurring_stage_error",
                 "review_status": "draft", "promotion_status": "not_promoted",
                 "fingerprint": exemplar["fingerprint"],
+                "analysis_domain": exemplar["analysis_domain"],
+                "required_dimensions": ["institution_id", "engine", "engine_version",
+                                        "stage_id", "dataset_id"] + (
+                                            [] if exemplar["analysis_domain"] == "technical_error"
+                                            else ["concept"]),
                 "scope": {name: exemplar.get(name) for name in (
                     "institution_id", "dataset_id", "concept")},
                 "scope_unknown": unknown_names,

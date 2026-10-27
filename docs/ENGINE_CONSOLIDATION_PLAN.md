@@ -33,7 +33,7 @@ MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
 
 `run_improvement.ps1`은 `run_improvement.py`의 Windows wrapper다. updater는 원래 checkout을 전환하지 않고, Git에 저장된 base만 별도 worktree로 가져온다. allowlist 검사와 동일 candidate SHA QA가 통과한 경우에만 push하고 review PR을 연다. merge와 publish는 자동화하지 않는다. 실제 Codex task 실행 pilot과 예약 작업 경계는 별도 확인 대상이다.
 
-2026-10-27의 read-only pattern 분석은 task 47개와 stage record 55개를 읽었고 proposal 0개, insufficient-evidence 항목 7개를 반환했다. 일곱 항목은 source-less qualification fixture 5개, 기관/scope가 없는 파일 검사 1개, legacy probe 1개였다. 이 항목을 추측으로 채우지 않았다. TIC/BIS/BOJ 및 workflow-selected 범위에는 adapter가 있지만, 현 표본의 미상 범위는 여전히 안전한 자동 제안 대상이 아니다.
+2026-10-27 첫 read-only pattern 분석은 47 tasks/55 stages에서 insufficient-evidence 7개를 반환했다. 재검증에서는 다섯 fixture 오류와 BIS 오류 둘의 성격이 달랐다. 보존 event와 manifest를 연결한 후 현 snapshot은 49 tasks/57 stages 중 synthetic qualification fixture 15건, 보존 파일 qualification trial 5건, operational stage 37건으로 분리된다. operational insufficient-evidence는 0, BIS manifest-backed scope 복구는 2건, technical error는 3건이다. BIS 두 건의 경제 concept은 미상으로 남고, 세 건 모두 단발이라 proposal은 0이다. 근거와 상한은 [scope evidence recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 둔다. engine×institution 전체 이력 audit은 별도 후속으로 남아 있으며, 이 snapshot만으로 기관별 오류가 이 두 BIS 건뿐이라고 결론 내리지 않는다.
 
 ## 목표 구성
 
@@ -99,7 +99,7 @@ flowchart LR
 | 순서 | 다음 작업 | 선행 이유 | 완료 기준 |
 |---|---|---|---|
 | 24 완료 | Cross-platform maintenance check service | pytest 중복과 text/JSON report 차이를 줄인다. | `run_maintenance_qa.py`가 health·pytest·Ruff·CLI·commit whitespace를 구조화 report로 실행한다. `run_checks.ps1`은 wrapper다. CI matrix가 동일 Python entrypoint를 실행한다. [24회차 보고서](ITERATION_24_REPORT.md) |
-| 25 부분 완료 | Analyzer scope adapter와 proposal evidence | 최근 분석의 7개 insufficient-evidence는 실제 source/scope 근거가 없다. | TIC/BIS/BOJ 및 workflow-selected 범위를 검증해 연결했다. 현 7개 미상 fixture를 잘못 추론하지 않으며, 반복 후보는 표본 증거가 충분할 때만 제안한다. |
+| 25 후속 완료 | Analyzer evidence domain, BIS manifest scope adapter, technical/economic requirements | 초기 분석이 합성 시험과 운영 오류를 섞고 BIS flat file identity를 읽지 못했다. | 저장 event 검증으로 fixture와 파일 qualification을 운영 history에서 분리하고, exact BIS raw/manifest 검증으로 기관·dataset을 복구했다. 기술 오류는 concept 없이 같은 engine/version/stage/dataset에서만 검토하며, 경제 의미는 concept이 없으면 제안하지 않는다. [검토 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) |
 | 26 완료 | Isolated updater와 candidate QA handoff | 기존 updater가 현재 branch를 바꾸고 QA를 호출하지 않았다. | `run_improvement.py`는 origin/명시 base에서 isolated worktree를 만들고 경로 allowlist·no-op·동일 SHA QA·조건부 push/PR을 연결한다. CI dry run과 unit tests가 no-op 정리 및 QA 실패 시 무push를 확인한다. 실제 Codex pilot은 27회차에서 확인한다. [보고서](ITERATION_26_REPORT.md) |
 | 27 | Schedule consolidation and supervised pilot | 자동 주기는 통합 흐름이 Windows에서 운영 가능한지 입증한 뒤에만 검토한다. | 먼저 Windows에서 사람이 직접 시작한 pilot 1회로 no-op·failure·success 보고를 검토한다. 실제 Codex 실행은 이 검토 뒤에만 한다. 반복 scheduler는 비활성 상태로 유지하고 중복 실행 방지, 환경·base ref 설정, 로그 보존을 확인한다. 이후 사용하지 않는 launcher를 제거한다. |
 
@@ -113,3 +113,7 @@ flowchart LR
 - commit/push는 통과 candidate branch에만 허용한다. merge, deploy, publish, 보호 정책 변경은 범위 밖이다.
 - Windows 예약 실행은 현재 사용자의 sign-in/권한/작업 경로를 확인하고 실제 Windows dry run을 통과하기 전까지 켜지 않는다.
 - 공통 code utility를 만들 때 source별 분기 대신 typed contract와 adapter를 사용한다. 공통화로 source-specific timeout, schema guard, capacity budget이 약해지는지 회귀 검사한다.
+
+### 2026-10-27 scope 재점검 정정
+
+근거 부족 7건 재검토를 구현했다. task/event/manifest에 근거한 domain 분리, exact BIS flat ZIP의 기관·dataset projection, technical error와 economic-meaning 요구 분리를 적용했고 저장 task/raw를 수정하지 않았다. 다음 후속은 [scope 근거 복구 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 명시한 engine×institution 전체 이력 audit이다. 현재 snapshot만으로 “BIS 두 사례가 전부”라고 단정하지 않는다.
