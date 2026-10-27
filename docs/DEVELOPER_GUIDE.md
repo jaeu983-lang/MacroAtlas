@@ -124,6 +124,16 @@ updater가 candidate QA와 PR handoff에 성공했습니다. Windows 사용자 �
 실제 설치는 별도 운영 결정이며 현재 예약 task는 등록하지 않았습니다. 최신 상태와 다음 조건은
 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)를 참고하세요.
 
+### Windows에서 Codex CLI shim이 차단될 때
+
+npm으로 설치한 Codex CLI의 `codex.ps1`을 불러올 때 `PSSecurityException`이 나면 PowerShell이 shim 실행을 차단한 것입니다. 이 오류만으로 Codex 로그아웃을 뜻하지는 않습니다. 프로세스 범위에서 로그인 상태를 확인하려면 다음을 실행하세요. 이 명령은 영구 실행 정책을 바꾸지 않습니다.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "codex login status"
+```
+
+계속 차단되면 `Get-Command codex -All`로 명령 경로를 확인하고, 실행 정책을 바꾸거나 소프트웨어를 재설치하기 전에 멈춰 원인을 확인하세요. Codex와 GitHub CLI 인증은 별도이며, `gh auth status`는 GitHub CLI 인증 상태를 확인합니다. 토큰을 출력하거나 공유하지 마세요.
+
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
 완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint, candidate SHA QA, 격리 updater 및 QA 성공 시
