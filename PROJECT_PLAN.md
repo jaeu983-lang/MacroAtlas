@@ -63,7 +63,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
 | 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용 | 자동 사례 생성·코드 수정·공통 규칙 승격 없음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
-| 평가 사례 | versioned development/validation/holdout 형식·누수 및 frozen hash 검사기 | 현재 세 set이 비어 있음. 후보 엔진 실행·점수·승격은 아직 없음 |
+| 평가 사례 | versioned development/validation/holdout 형식·누수 및 frozen hash 검사기, split별 provenance 집계 | 세 set에 synthetic 준비 사례 6개가 있으며 선언된 reviewed-feedback split coverage는 none. 후보 엔진 실행·점수·승격은 아직 없음 |
 
 Gate A와 D는 해당 범위에서 통과했다. Gate B/C/E는 제한 범위 판정이다. Gate 판정의 상세 evidence는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)와 각 회차 보고서를 따른다.
 
@@ -162,7 +162,7 @@ flowchart LR
 - 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.
 - raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
 
-현재 feedback log와 명시적 knowledge reuse는 구현돼 있다. evaluation case schema/split validator는 추가됐지만 세 set이 비어 있다. 후보 engine output을 공통 형식으로 실행·점수화하는 비교기와 rule promotion/rollback registry는 아직 구현되지 않았다. 따라서 지금은 평가나 승격 완료라고 부를 수 없다. 사용법과 schema는 [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)를 따른다.
+현재 feedback log와 명시적 knowledge reuse는 구현돼 있다. evaluation validator는 세 set의 사례 6개를 구조 검증하고 provenance별 개수와 선언된 reviewed-feedback split coverage를 따로 보고한다. 현재 사례는 모두 synthetic이므로 구조 준비 상태만 `READY`이며 coverage는 `none`이다. provenance 선언은 실제 feedback log와 대조 검증되지 않는다. 후보 engine output을 공통 형식으로 실행·점수화하는 비교기와 rule promotion/rollback registry는 아직 구현되지 않았다. 따라서 지금은 실데이터 일반화 평가나 승격 완료라고 부를 수 없다. 사용법과 schema는 [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)를 따른다.
 
 ## 8. 지식 검색과 제한적 재사용
 

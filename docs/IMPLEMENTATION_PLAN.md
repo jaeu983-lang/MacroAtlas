@@ -9,7 +9,8 @@
 
 > **현재 통합 상태 (2026-10-27):** PR #52에서 TIC/BIS 반복 감시 자동화를 중지했고, PR #53
 > (`a4d22e9`)에서 평가 사례 형식·development/validation/holdout 분리·누수 및 frozen hash 검증기를
-> 합쳤다. 세 평가 set은 비어 있어 엔진 후보 비교나 규칙 승격을 통과한 것은 아니다. 해당 PR들의 CI는
+> 합쳤다. 이후 작업 branch에서 각 split 두 건씩 synthetic 준비 사례와 provenance/선언된 feedback coverage 보고를 추가했다.
+> 현재 구조 검증은 통과하지만 세 split 모두 synthetic이어서 실제 user evidence나 엔진 후보 비교·규칙 승격은 통과하지 않았다. 해당 PR들의 CI는
 > Ubuntu/Windows × Python 3.11/3.12 8개 job 모두 통과했다. 남은 순서는 통합 기획서 §11을 따른다.
 
 > **엔진 시간 계측 상태:** 공통 runner는 stage의 UTC 시작·종료 시각을 보존하지만 monotonic elapsed time이나

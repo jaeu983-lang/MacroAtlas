@@ -876,10 +876,11 @@ raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변�
 최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
 engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
 
-## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+## D-099 — synthetic 평가 scaffold와 user-evidence gate를 분리
 
-2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
-성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
-가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
-최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
-engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
+2026-10-27. 실제 사용 피드백 사례가 아직 없으므로, A/B corpus plumbing을 검증하기 위해 각 split에
+두 건씩 synthetic 계약 사례를 추가한다. 사례는 author self-review이며 private user data나 live provider 결과를
+포함한다고 주장하지 않는다. Validator는 provenance별 case count와 선언된 `reviewed_feedback_split_coverage`를
+별도로 보고한다. 이 coverage는 feedback ID를 SQLite 로그와 대조 검증하지 않는다. `READY`는 구조·분리·hash
+준비만 뜻하며 user-evidence 일반화 평가 완료를 뜻하지 않는다. validation/holdout은 set version 2와 계산된
+SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 anti-overfitting 보증이 아니다.

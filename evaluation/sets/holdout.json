@@ -1,6 +1,125 @@
 {
   "schema_version": 1,
   "split": "holdout",
-  "set_version": 1,
-  "cases": []
+  "set_version": 2,
+  "cases": [
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-mixed-frequency-xlsx-raw",
+      "case_version": 1,
+      "split": "holdout",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": null,
+      "question": {
+        "canonical": "연간 World Bank GDP와 일간 BOJ FXERD01 원자료를 한 Excel 파일에 전달하되 호환되지 않는 series는 분리해줘.",
+        "variants": [
+          "GDP 연도별 자료와 달러/엔 일별 자료를 원본 주기 그대로 엑셀로 내보내고 한 시계열처럼 합치지 마."
+        ]
+      },
+      "expected": {
+        "state": "ANSWERABLE",
+        "entities": [
+          {
+            "source_agency": "World Bank",
+            "dataset_id": "2",
+            "series_id": "NY.GDP.MKTP.CD",
+            "field": "GDP (current US$)"
+          },
+          {
+            "source_agency": "Bank of Japan",
+            "dataset_id": "FM08",
+            "series_id": "FXERD01",
+            "field": "US.Dollar/Yen Spot Rate at 9:00 in JST, Tokyo Market"
+          }
+        ]
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "merge_incompatible_series",
+        "overwrite_overlap_conflict",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "separate_incompatible_series",
+        "missing_value": "blank",
+        "overlap_conflict": "preserve_separately",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-unknown-frequency-blocks-freshness",
+      "case_version": 1,
+      "split": "holdout",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": null,
+      "question": {
+        "canonical": "이 파일 시계열의 주기와 관측기간을 확인할 수 없는데 월별이라고 가정해 최신성 판정 후 엑셀로 내보내줘.",
+        "variants": [
+          "frequency와 latest observation date가 없는 값을 추측해서 최신 자료로 표시하고 export해줘."
+        ]
+      },
+      "expected": {
+        "state": "NEEDS_REVIEW",
+        "entities": []
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "guess_frequency",
+        "assume_freshness",
+        "export_unverified_series",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "not_applicable",
+        "missing_value": "not_applicable",
+        "overlap_conflict": "not_applicable",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    }
+  ]
 }
