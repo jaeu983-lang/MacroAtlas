@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.0 | 기준일: 2026-10-27
+> 문서 ID: MDP-PLAN-002 | 버전: 2.1 | 기준일: 2026-10-27
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -116,6 +116,7 @@ flowchart LR
 | 공식 파일 intake/watch | 지정한 TIC/BIS 파일의 범위·출처를 기록하고 허용된 단발 작업을 수행한다. | 필요 시 사용자 요청으로만 사용. 반복 변경 감시 자동화는 중지. |
 | Large-file trial/production worker | 자원·시간·범위를 제한해 대용량 원본을 분리 처리하고 결과를 전달한다. | trial/production 경로가 분리됨. 보존한 BIS GLI flat ZIP 1건의 승인형 Linux 구조 보존 경로만 확인. |
 | Orchestrator·task history | 저장된 plan을 stage로 실행하고 상태, attempt, 실패, 명시적 resume 이력을 관리한다. | 공통 lifecycle이 구현됨. provider 전체의 runner composition은 아직 전역 단일 registry로 통합되지 않음. |
+| Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | 일반 stage는 UTC 시작·종료 시각만 저장하며 phase timing·공통 성능 보고가 없다. 대용량 worker에만 별도 elapsed 측정이 있다. 실제 engine별 기준선은 미구현. |
 | Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
 | Evaluation·rule review | 사례 split에서 baseline/candidate를 비교하고 통과한 변경의 근거·리뷰·rollback을 남긴다. | 사례 schema 및 split/hash validator만 구현됐고 세 set은 비어 있음. 실행 비교기·promotion registry는 미구현. |
@@ -203,12 +204,13 @@ flowchart LR
 | 4 | 시계열 모델 | 공통 typed Series/ObservationBatch를 설계하고 World Bank·BOJ 고정 경로에 먼저 연결한다. | source identity, field, currency/unit, frequency/calendar, period, override, raw/source provenance와 unknown 보존; 기존 raw/hash 계약 유지 |
 | 5 | 원자료 출력 | 개별 호환 series의 XLSX 원자료 출력 및 provenance를 구현한다. | 파일 경계/no-overwrite 검증, source 값과 결측 보존, stale/unverified 차단, 지원 connector별 fixture와 실제 저장 task 확인 |
 | 6 | 비교 출력 | 다중 series worksheet 분리와 alignment sheet를 구현한다. | compatibility rule, date/calendar, 집계/변환식, 결측 빈칸, overlap 충돌 보존/검토, 보간·forward-fill 금지를 회귀 테스트 |
-| 7 | 엔진 조립 | provider별 mapping을 더 쉽게 검토·등록할 공통 composition registry를 보완한다. | 같은 Orchestrator lifecycle에서 source-specific adapters를 등록하고 plan/version 검증과 resume가 회귀 없이 동작. 현재 provider 전체를 무리하게 통합하지 않음 |
-| 8 | 유지보수 | Windows changed-candidate/handoff 및 failure-recovery pilot을 실측한다. | candidate SHA, 동일 SHA QA, allowlist, 실패/no-push, cleanup 및 handoff report 확인 |
-| 9 | 유지보수 | scheduler invocation은 정책을 확인한 뒤 별도 검증한다. | 등록 여부와 무관하게 우선 정적/dry-run 검증. 명시 승인 전까지 예약 작업은 비활성으로 유지하고 실제 invocation을 임의로 주장하지 않음 |
-| 10 | 유지보수 | 실행 시간 추정과 statistical metadata/quality를 실제 승인 작업에서 보정한다. | operation별 paired forecast가 3건 쌓인 후 error 재평가. 선택된 실제 series의 정의·단위·주기·calendar·revision evidence를 확인 |
-| 11 | 확장 | 반복 실수요가 확인된 provider/file format 하나를 선정해 qualification한다. | 공식 source contract, 예산, cancel/orphan recovery, 단위 정상/실패 evidence를 하나의 범위에서 통과. 전 기관 지원으로 일반화하지 않음 |
-| 12 | 사용자 검증 | 실제 분석가 1–2명이 저장 결과→파일 전달 흐름을 수행하는 23회차 관찰 | 참여자 동의·익명 기록, 업무 성공/실패·오해·수동 시간·재사용 여부를 기록. 참가자 evidence 없이 usability 통과 선언 금지. **모든 기술 workstream 뒤 마지막 순서** |
+| 7 | 성능 계측 | 공통 Orchestrator의 stage wall time을 monotonic clock으로 기록하고, 가능한 엔진은 network, raw/write, parse, quality, SQLite/export/worker 하위시간을 구분한다. | 엔진/version/stage/status/시도·코드 SHA·환경·입력 크기를 개인정보 없이 저장하고 읽기 전용 성능 보고에서 p50/p95·처리량·표본 수를 보여준다. engine/version/작업크기별 20개 미만이면 p95를 확정하지 않고 `INSUFFICIENT_SAMPLE`로 표시한다. fixture·synthetic·live 증거를 구분하며 표본을 위해 live 요청을 만들지 않는다. |
+| 8 | 엔진 조립 | 측정 기준을 보존하면서 provider별 mapping을 더 쉽게 검토·등록할 공통 composition registry를 보완한다. | 같은 Orchestrator lifecycle에서 source-specific adapters를 등록하고 plan/version 검증과 resume가 회귀 없이 동작. 출처 adapter를 합치지 않으며 성능 개선은 계측 결과가 근거일 때만 수행 |
+| 9 | 유지보수 | Windows changed-candidate/handoff 및 failure-recovery pilot을 실측한다. | candidate SHA, 동일 SHA QA, allowlist, 실패/no-push, cleanup 및 handoff report 확인 |
+| 10 | 유지보수 | scheduler invocation은 정책을 확인한 뒤 별도 검증한다. | 등록 여부와 무관하게 우선 정적/dry-run 검증. 명시 승인 전까지 예약 작업은 비활성으로 유지하고 실제 invocation을 임의로 주장하지 않음 |
+| 11 | 유지보수 | 실행 시간 추정과 statistical metadata/quality를 실제 승인 작업에서 보정한다. | operation별 paired forecast가 3건 쌓인 후 error 재평가. 선택된 실제 series의 정의·단위·주기·calendar·revision evidence를 확인 |
+| 12 | 확장 | 반복 실수요가 확인된 provider/file format 하나를 선정해 qualification한다. | 공식 source contract, 예산, cancel/orphan recovery, 단위 정상/실패 evidence를 하나의 범위에서 통과. 전 기관 지원으로 일반화하지 않음 |
+| 13 / 23회차 | 사용자 검증 | 실제 분석가 1–2명이 저장 결과→파일 전달 흐름을 수행하는 관찰 | 참여자 동의·익명 기록, 업무 성공/실패·오해·수동 시간·재사용 여부를 기록. 참가자 evidence 없이 usability 통과 선언 금지. **모든 기술 workstream 뒤 마지막 순서** |
 
 회차 한 번에는 하나의 번호가 붙은 High scope만 구현한다. 현재 gate가 실패하면 의존하는 다음 구현을 통과 처리하지 않는다. 순서를 바꿀 때는 영향·이유·새 수용 기준을 기록하고 미통과 gate는 그대로 남긴다.
 

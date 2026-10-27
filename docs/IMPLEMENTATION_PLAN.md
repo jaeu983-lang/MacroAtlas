@@ -12,6 +12,11 @@
 > 합쳤다. 세 평가 set은 비어 있어 엔진 후보 비교나 규칙 승격을 통과한 것은 아니다. 해당 PR들의 CI는
 > Ubuntu/Windows × Python 3.11/3.12 8개 job 모두 통과했다. 남은 순서는 통합 기획서 §11을 따른다.
 
+> **엔진 시간 계측 상태:** 공통 runner는 stage의 UTC 시작·종료 시각을 보존하지만 monotonic elapsed time이나
+> HTTP·raw 저장·parse·quality·SQLite·export별 하위 시간을 내지 않는다. 대용량 worker의 실행시간/메모리와
+> knowledge query의 행·byte/cache 지표는 별도 경로에만 있다. 현재 workspace에는 task DB도 없어 connector별 실제
+> stage history를 재분석할 수 없다. 따라서 공통 engine 성능 baseline은 미수집이며 통합 기획서 §11 순서 7의 작업이다.
+
 ## 현재 상태 — 2026-10-27
 
 19회차 BIS flat 대용량 production handoff는 PR #6으로 통합되어 보존 원본 1건에서 실제 실행됐다. 이 실행은

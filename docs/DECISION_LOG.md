@@ -867,3 +867,19 @@ raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변�
 원초 문서는 `PROJECT_PLAN_ORIGINAL_2026_10_24.md`에 보존한다. 세부 기능 계약과 과거 회차 보고서는 근거·설계 이력으로 남기며,
 구현 상태와 검증 결과는 `IMPLEMENTATION_PLAN.md` 및 회차 evidence가 담당한다. `ROADMAP_2026_10_26.md`는 통합 기획의 요약이고,
 이전 상세 로드맵은 snapshot으로 보존한다. 이 문서 통합 자체는 코드 기능의 구현 또는 Gate 통과를 뜻하지 않는다.
+
+## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+
+2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
+성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
+가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
+최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
+engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
+
+## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+
+2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
+성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
+가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
+최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
+engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
