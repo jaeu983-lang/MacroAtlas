@@ -1,6 +1,6 @@
 # MacroAtlas 개발자 안내서
 
-기준일: 2026-10-26. 사용자가 실행하는 기능은 [사용자 안내서](USER_GUIDE.md), 구현 순서는
+기준일: 2026-10-27. 사용자가 실행하는 기능은 [사용자 안내서](USER_GUIDE.md), 구현 순서는
 [제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를
 참조합니다. 과거 보고서의 상태 문구를 현재 구현 여부로 사용하지 않습니다.
 
@@ -37,6 +37,7 @@ py -3 -m venv .venv
 | `ingestion/csv_export.py` | 완료된 World Bank/BOJ task와 저장 원본을 읽기 전용 검증한 뒤 CSV/provenance 파일 생성 |
 | `discovery/` | 근거가 붙은 제한 후보 찾기와 명시 선택 보조 |
 | `analysis/` | 기록을 읽는 pattern 분석. 결과는 검토 후보이지 자동 지식이나 코드가 아님 |
+| `evaluation/` | 검토 사례와 development/validation/holdout split 형식 및 hash 검증기. 사례 채점·규칙 승격은 제공하지 않음 |
 | `tests/` | offline fixture, 계약, 상태 전이, 제한된 live 관련 단위 검증 |
 | `docs/` | 제품 범위, 실제 상태, 개발 설계, 날짜가 붙은 증거 |
 
@@ -79,8 +80,11 @@ manifest 필드를 대조하고 해당 한계를 sidecar provenance에 기록합
 ```bash
 python -m pytest
 python -m ruff check src tests
+macro-eval validate
 git diff --check
 ```
+
+`macro-eval validate`가 `VALID_BUT_EMPTY`를 내면 set 문법은 맞지만 실제 평가 사례가 없어 아직 평가할 수 없다는 뜻입니다.
 
 개별 테스트는 해당 테스트 모듈/이름으로 좁힌 뒤 마지막에 전체 suite를 실행합니다. 새 테스트는 사용자에게
 보이는 결과 계약, 상태 전이, 안전 경계를 검증해야 합니다. 구현 코드를 그대로 반복하는 테스트만 추가하지 않습니다.

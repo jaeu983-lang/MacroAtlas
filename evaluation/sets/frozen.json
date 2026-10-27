@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "frozen_splits": {
+    "validation": {
+      "set_version": 1,
+      "sha256": "74cf4fbbdf9891731b81c1855994422e5d36f4a040e1feaf3c6cf55fbd8cb650"
+    },
+    "holdout": {
+      "set_version": 1,
+      "sha256": "b82dae5dcf49eea5aef7c8940ad58484d1c76af296a9945c259aa66129469241"
+    }
+  }
+}
