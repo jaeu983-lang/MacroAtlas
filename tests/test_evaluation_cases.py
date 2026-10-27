@@ -229,3 +229,33 @@ def test_unreviewed_official_near_match_draft_stays_outside_fixed_corpus():
     assert len(corpus.cases) == 9
     assert case.case_id not in {item.case_id for item in corpus.cases}
     assert candidate.candidate_id not in {item.candidate_id for item in corpus.candidates}
+
+
+def test_unreviewed_gdp_total_vs_per_capita_draft_stays_outside_fixed_corpus():
+    draft_path = ROOT / "tests/fixtures/evaluation/drafts/worldbank_gdp_total_vs_per_capita_near_match.json"
+    draft = json.loads(draft_path.read_text(encoding="utf-8"))
+    assert draft["draft_status"] == "independent_review_pending"
+    assert draft["authorship"] == {
+        "origin": "assistant_simulated",
+        "human_observed": False,
+        "independent_review_completed": False,
+    }
+
+    case = EvaluationCase.from_dict(draft["case"])
+    candidate = Candidate.from_dict(draft["candidate"])
+    assert case.case_type == "near_match"
+    assert "worldbank:2:USA:NY.GDP.MKTP.CD" in case.relevant_candidate_ids
+    assert case.forbidden_candidate_ids == ("worldbank:2:USA:NY.GDP.PCAP.CD",)
+    assert candidate.candidate_id in case.forbidden_candidate_ids
+    assert candidate.support_status == "unsupported"
+    for evidence in case.required_evidence:
+        evidence_path = ROOT / evidence["local_ref"]
+        assert hashlib.sha256(evidence_path.read_bytes()).hexdigest() == evidence["sha256"]
+    for evidence in candidate.evidence:
+        evidence_path = ROOT / evidence.original_ref.split(":", 1)[0]
+        assert evidence_path.is_file()
+
+    corpus = load_corpus(CORPUS)
+    assert len(corpus.cases) == 9
+    assert case.case_id not in {item.case_id for item in corpus.cases}
+    assert candidate.candidate_id not in {item.candidate_id for item in corpus.candidates}
