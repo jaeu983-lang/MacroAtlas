@@ -14,7 +14,7 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 
 - 사용자는 [사용자 안내서](docs/USER_GUIDE.md)를 확인하세요.
 - 개발자는 [개발자 안내서](docs/DEVELOPER_GUIDE.md)와 [개발 환경 설치](docs/INSTALLATION.md)를 따르세요.
-- 다음 제품 우선순위는 [로드맵](docs/ROADMAP_2026_10_26.md), 목표 구조는
+- 통합 제품 범위와 우선순위는 [제품 기획](PROJECT_PLAN.md), 요약 순서는 [로드맵](docs/ROADMAP_2026_10_26.md), 목표 구조는
   [제품 및 시스템 아키텍처](docs/PRODUCT_ARCHITECTURE.md)를 보세요.
 - 현재 Gate와 실제 검증 상태는 [구현 상태](docs/IMPLEMENTATION_PLAN.md), 미해결 원인 분류는
   [미해결 항목](docs/UNRESOLVED_ITEMS.md)를 기준으로 합니다.

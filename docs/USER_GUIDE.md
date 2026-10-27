@@ -2,8 +2,9 @@
 
 기준일: **2026-10-27**, 20회차 World Bank/BOJ CSV 전달 및 TIC/BIS 감시 범위 변경 반영. 제품의 현재 지원 범위 안내서.
 
-다음 작업 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 제품 가설과 목표 구조는
-[제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 개발 절차는 별도
+제품 범위·현재 우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 짧은 순서 요약은
+[제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를
+참조합니다. 개발 절차는 별도
 [개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 날짜가 붙은 회차 보고서는 당시 결과를 보존한 증거입니다.
 
 MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일

@@ -23,13 +23,15 @@
 
 검증은 `tests/test_evaluation_cases.py`의 빈 set, 준비 완료 set, split 누수, 개인정보 확인, feedback 참조, frozen hash 변경 사례를 대상으로 한다. 상세 필드와 사용법은 [평가 사례 규약](EVALUATION_CASES.md)을 따른다.
 
-## 다음 구현 순서
+## 통합 기획서의 미완료 조건 대조
+
+아래 항목은 통합 순서를 새로 정하지 않는다. 작업 우선순위와 완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따른다.
 
 1. 사용자가 명시적으로 검토한 피드백 또는 공개 근거에서 개인정보를 제거한 사례를 개발 세트에 추가한다. 유사하지만 정답이 다른 질문은 같은 contrast group에 넣는다. 검토 전 피드백은 옮기지 않는다.
 2. 실제 engine output을 사례 기준으로 정규화하는 outcome adapter와 기준안/후보안 비교기(C)를 만든다. validation·holdout 결과, false-confirmation 0건, forbidden action 0건이 확인되기 전에는 규칙을 반영하지 않는다.
 3. 규칙 승격 기록(D)을 case version, 데이터 지표, reviewer, candidate commit, rollback commit과 결합한다.
 4. 공통 typed series/batch 계약(E)을 설계하고 우선 World Bank와 BOJ에 연결한 뒤, 호환성 증명 없이 provider들을 합치지 않는다.
 5. 같은 series의 원자료 출력(F)을 XLSX로 추가하고, 이후에만 여러 series 정렬·가공 출력(G)을 별도 기능으로 구현한다. 결측은 기본 빈칸이며 보간/forward-fill은 명시 근거 없이는 금지한다.
-6. 실제 분석가 1–2명 관찰(23회차)은 위의 기술 기반 다음, 로드맵의 마지막 순서로 유지한다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
+6. 실제 분석가 1–2명 관찰(23회차)은 위의 기술 기반 다음, [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11의 마지막 순서로 유지한다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
 
 따라서 엔진 통합과 freshness/feedback 기반은 일부 동작하지만, 전체 평가-승격 루프 및 다중 시계열 Excel 흐름은 아직 완료되지 않았다.

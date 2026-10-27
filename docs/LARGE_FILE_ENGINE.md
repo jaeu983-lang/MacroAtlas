@@ -2,7 +2,7 @@
 
 2026-10-26. 범위: **비API 로컬 파일의 qualification과 제한된 BIS flat 구조 보존 production 경로**.
 일반 대용량 수집·정규화는 지원하지 않는다. 이 문서는 qualification 정책을 기록한다. BIS handoff의
-지원 범위와 현재 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 목표 경계는
+지원 범위와 우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 목표 경계는
 [제품 아키텍처](PRODUCT_ARCHITECTURE.md)를 따른다.
 
 ## 공식 사례 조사와 선택

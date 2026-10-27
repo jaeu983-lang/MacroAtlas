@@ -2,10 +2,15 @@
 
 > 2026-10-27 갱신: updater 기본 코드는 PR #34 commit `543c719be506350ce57fd14358173e54ede812b3`에 들어갔다. PR #23–#26에서 evidence domain, provider scope, BLS metadata 한계를 정리했고 PR #28은 malformed task plan의 CSV export 차단을 추가했다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup pilot은 통과했다. Windows installer dry-run, updater no-op 및 교차 프로세스 lock 경합도 통과했다. Windows pilot base `aefd320`에서 no-op, cleanup, retention report도 재확인됐다. 기준 HEAD `7fbd67e`의 Actions run [40464384575](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40464384575) 및 merge commit `fb37234`의 run [40465191814](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40465191814)은 4개 job 모두 step 실행 전에 실패해 CI 검증 결과를 제공하지 않는다. candidate/failure 경로는 남긴다. Gate C 자연 증거와 updater pilot 범위는 각각 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md), [미해결 항목](UNRESOLVED_ITEMS.md)를 따른다.
 
-> **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
-> [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
+> **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 요구사항·우선순위는
+> [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 요약 순서는 [제품 로드맵](ROADMAP_2026_10_26.md),
 > 역사 보고서는 당시의 증거, [`DECISION_LOG.md`](DECISION_LOG.md)는 설계 선택의 이력을 담는다.
 > 기본 규칙은 한 task에 한 회차이며, 실패하거나 관측되지 않은 증거를 통과로 취급하지 않는다.
+
+> **현재 통합 상태 (2026-10-27):** PR #52에서 TIC/BIS 반복 감시 자동화를 중지했고, PR #53
+> (`a4d22e9`)에서 평가 사례 형식·development/validation/holdout 분리·누수 및 frozen hash 검증기를
+> 합쳤다. 세 평가 set은 비어 있어 엔진 후보 비교나 규칙 승격을 통과한 것은 아니다. 해당 PR들의 CI는
+> Ubuntu/Windows × Python 3.11/3.12 8개 job 모두 통과했다. 남은 순서는 통합 기획서 §11을 따른다.
 
 ## 현재 상태 — 2026-10-27
 
@@ -165,13 +170,11 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
 [source watch](GATE_C_SOURCE_WATCH.md), [BOJ 실측](BOJ_LIVE_RECHECK_2026_10_26.md).
 
-## 다음 작업 순서
+## 통합 기획서로 이어지는 현재 미완료 조건
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
+현행 우선순위와 완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따릅니다. 이 문서는 실행 순서를 독립적으로 재정의하지 않습니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
 공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows installer dry-run, updater no-op/cleanup, OS lock 경합 pilot 및 base `f8693f0`의 updater·retention 테스트 34개가 통과했다. 최신 base `e25d944`에서 Windows updater 실제 run은 `NO_ACTIONABLE_CHANGE`와 cleanup 성공을 기록했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub Actions는 계정 사용 한도로 runner가 시작되지 않았다. Windows 사용자 세션 candidate/handoff와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
-20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
-완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
-현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
+20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도 완료했다. 23회차 분석가 관찰은 참가자와 검증 환경이 필요하며 통합 기획서에서 마지막 단계로 유지한다.
 
 TIC/BIS 자료 변경상태 확인은 현재 사용자 요구 범위에서 제외했고 관련 반복 감시를 중지했습니다.
 과거 미관측 기록은 Gate C 상태를 확대하지 않으며, 나중에 사용자가 다시 요청하면 단발 확인의 범위와 목적을 정합니다.
@@ -185,10 +188,10 @@ A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
 
 ## 문서 사용 순서
 
-1. [`USER_GUIDE.md`](USER_GUIDE.md) / [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md): 사용자·개발자 안내.
-2. [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md): 다음 작업 순서.
-3. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 제품 장기 요구사항.
-4. 이 문서와 링크된 회차 보고서: 현재 게이트 및 당시 증거.
+1. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 통합 요구사항·범위·우선순위.
+2. [`USER_GUIDE.md`](USER_GUIDE.md) / [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md): 사용자·개발자 안내.
+3. 이 문서와 링크된 회차 보고서: 구현 현황·Gate 및 실행 증거.
+4. [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md): 통합 순서의 짧은 요약.
 5. [`DECISION_LOG.md`](DECISION_LOG.md), `AGENTS.md`, `GUIDELINES.md`: 결정·작업·보안 규칙.
 
 아래 01~14 절은 회차의 상세 범위 및 이력이다. 위 현재 상태 표와 충돌해 보이면 보고서와
@@ -439,7 +442,7 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
 #### 14 | 격리 수정·검증·인간 승인·릴리스
 - 구현: 격리된 Git 브랜치에서 코드 변경 후보와 회귀 테스트; diff, 결과, 롤백 경로, 승인 게이트. 승인 전 main 병합/배포 금지.
 - 완료(Gate E): A~H 중 환경에서 지원 가능한 대표 시나리오 실행 결과·비지원 목록·복구 테스트·보안/비용 검토 포함한 v1 릴리스 보고서.
-- 최종 안내 산출물: PROJECT_PLAN.md §10.3에 따라 `docs/USER_GUIDE.md`와
+- 최종 안내 산출물: 통합 PROJECT_PLAN.md §12에 따라 `docs/USER_GUIDE.md`와
   `docs/MacroAtlas_User_Guide.pptx`를 실제 완성된 기능 기준으로 작성한다.
   실행 방법, 기관별 선택적 API 키 설정, 수집 결과 확인, 오류·한계를 포함한다.
   설명서의 대표 절차 재현 결과와 PPT 표시·내용 일치 검수를 완료 보고에 기록한다.

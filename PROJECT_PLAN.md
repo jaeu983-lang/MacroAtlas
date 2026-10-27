@@ -1,583 +1,232 @@
-# 국제금융 데이터 탐색·수집 및 경험 개선 플랫폼 — 최종 제품 기획서
+# MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-001 | 버전: 1.0 | 기준일: 2026-10-24 | 상태: 구현 착수용 High-Level 기준안<br>
-> 프로젝트 대상: Windows + Python + Git + Codex 기반, 공공 국제금융·거시경제 통계 데이터
-> **문서 역할:** 본 문서는 장기 제품 요구사항 원장이다. 현재 지원 범위는 `docs/USER_GUIDE.md`, 구현·Gate 증거는
-> `docs/IMPLEMENTATION_PLAN.md`, 우선순위는 `docs/ROADMAP_2026_10_26.md`, 자료 처리 원칙은 `GUIDELINES.md`,
-> 작업 규칙은 `AGENTS.md`를 따른다. 보안·접근권한 규칙은 항상 더 엄격한 정책이 우선한다.
+> 문서 ID: MDP-PLAN-002 | 버전: 2.0 | 기준일: 2026-10-27
+> 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
-## 0. 이 문서를 읽는 순서 및 구현 전제
+## 0. 문서 권위와 읽는 법
 
-- 신규 참여자는 **사용자/개발자 안내서 → 제품 로드맵 → 이 요구사항 원장 → 관련 증거·코드·테스트** 순서로 읽는다.
-- `PROJECT_PLAN.md`는 **무엇을 만들지**에 관한 기준이며, 그 자체로 코드나 자동화가 실행되는 것은 아니다.
-- 현재 구현·검증 현황은 `docs/IMPLEMENTATION_PLAN.md`와 연결된 회차별 보고서에서 확인한다. Gate 통과는 해당 경로 범위에만 적용하며 제품 전체 구현을 뜻하지 않는다.
-- 한 번의 Codex High 작업은 가급적 **한 회차만** 실행한다. 회차 시작 전 저장소 상태와 테스트를 점검한다.
-- 본 문서의 기관 정보는 **공식 문서 기반 사전 조사**이며, 실제 API 호출·수집 성공을 보증하지 않는다.
+`PROJECT_PLAN.md`가 제품 목표, 현재 범위, 완료 기준, 남은 구현의 유일한 기준이다. 이 문서와 다른 계획 파일이 충돌하면 이 문서를 먼저 갱신하고, 변경 이유를 `docs/DECISION_LOG.md`에 기록한다.
 
-## 1. 제품 개요와 비전
-
-이 문서는 장기 요구사항을 넓게 기록한다. 그 목록 전체를 초기 제품 약속으로 삼지 않는다. 2026-10-26의
-실행 전략은 모든 기관을 다루는 에이전트보다, 검증할 수 있는 좁은 공식 데이터 업무를 원본·이력·검증과 함께
-완성하는 것이다. 사용자 가설, 엔진 경계와 확장 기준은 [`docs/PRODUCT_ARCHITECTURE.md`](docs/PRODUCT_ARCHITECTURE.md),
-실행 우선순위는 [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md)를 참고한다.
-
-### 1.1 문제 정의
-
-국제금융·거시경제 통계는 IMF/BIS 같은 국제기구, 미국·유럽·일본·중국의 중앙은행, 재무부·통계기관에 분산돼 있다. 기관마다 사이트·이용 안내·검색 규칙·메타데이터 구조·데이터셋 식별 방식·수집 경로가 다르며, 데이터 개념이 유사해 보여도 통계 범위·단위·주기·개정 여부가 다른 문제가 있다. 기존 수작업은 새 기관 조사와 이전 실패 경험을 반복한다.
-
-### 1.2 제품 한 문장 정의
-
-**사용자가 요청한 국제금융 데이터를 공식 출처에서 발견하고, 통계적 의미를 확인해 실제 데이터를 수집·검증하며, 매 실행의 기관 지식·오류·사용자 피드백을 축적해 후속 작업의 정확성과 효율을 높이는 로컬 우선 데이터 에이전트 플랫폼.**
-
-### 1.3 핵심 가치
-
-1. 데이터의 위치뿐 아니라 **어떤 통계인지** 확인하고 근거 제시.
-2. API와 파일·웹표·아카이브를 동일한 업무 흐름으로 처리.
-3. 기관별 지식, 메타데이터, 실제 데이터, 사용 이력 분리 저장·재사용.
-4. 실패한 정확한 단계를 기록하고 적절히 재시작.
-5. 사용자의 교정 지시를 기억하되 **검증 없이 공통 규칙·코드에 자동 확산하지 않음**.
-
-### 1.4 대상 사용자와 작업
-
-- 주요 사용자: 국제금융·거시경제 리서처/분석가, 반복 시계열 수집 담당자.
-- 주요 작업: 통계 출처 찾기, 시계열 후보 비교, 기존 통계표 갱신, 수집 실패 복구, 과거 탐색·수정 지시 재사용.
-- 목표 인터페이스는 Windows 로컬의 구조화된 요청이다. `macroatlas` CLI가 고정 World Bank GDP,
-  단일 BOJ FXERD01 월별, TIC/BIS 지정 파일 intake 경로를 제공한다. TIC/BIS 자료 변경상태의 반복 확인은
-  2026-10-27 사용자 요청으로 현재 범위에서 제외했으며, `watch`는 추후 명시 요청이 있을 때 단발 실행에만 쓴다.
-  일반 자연어 parsing, 대화형 UI, 임의 기관 선택과 전체 제품 흐름은 별도 작업이며 검색/수집 엔진 완료나 Gate B 조건에
-  암묵적으로 포함하지 않는다.
-
-## 2. 범위, 비범위, 기본 가정
-
-**범위(In scope):** 공식 기관·통계 사이트 탐색; 이용 안내·API 문서·코드북 발견; 메타데이터 검색/해석; 데이터셋·시계열 탐색; API/CSV/TSV/TXT/XLS/XLSX/ZIP/JSON/XML/HTML 표 접근; PDF 설명서 탐색 및 제한적 추출; 원본 보존; 정규화·통계 의미 검증; 증분 갱신; 실행·오류·피드백 기록; 개선 제안·격리 테스트.
-
-**초기 비범위(Out of scope):** 임의 웹사이트 로그인 자동화·CAPTCHA 우회; 사용권한이 없는 유료 DB 수집; 금융 거래·주문; 보고서 투자판단 자동작성; 의미가 불확실한 값의 자동 보정; 무인 코드 병합·배포; 모든 세계 기관의 일괄 지원; PDF 고난도 스캔의 완전 자동 정확 추출.
-
-**운영 가정:** 외부 네트워크·기관 API가 가능한 환경에서만 실제 수집 가능하며, 조직 보안 규정·허용 도메인·라이선스·호출 제한을 준수한다. 로컬 프로젝트의 데이터가 ChatGPT 대화 내용과 자동 동기화된다고 가정하지 않는다.
-
-### 2.1 기관별 API 키 선택 등록 정책
-
-- 사용자는 **필요한 기관의 API 키만 선택적으로 등록**한다. 전체 기관의 키를
-  채우는 것을 설치·실행 조건으로 삼지 않으며, 등록하지 않은 기관은 미설정 상태로 둔다.
-- 기획서·기관 조사대장에는 실제 키 대신 기관/접근 경로별 인증 필요 여부와
-  환경변수 이름만 기록한다. **실제 키 값은 Git에서 제외되는 로컬 `.env` 또는
-  실행 환경변수에 보관**한다. 일반 TXT·문서·소스·테스트·로그·프롬프트에는 넣지 않는다.
-- 인증 정책은 기관 전체를 하나로 단정하지 않고 API/접근 경로별로 관리한다.
-  `auth_requirement = none | optional | required | unknown`, `credential_env_var`
-  (키 불필요 시 null), 공식 인증 안내 URL 및 확인일을 기록한다.
-  설정 상태와 실제 인증 성공 여부는 별도로 구분하며 키가 있다는 이유로 유효하다고 표시하지 않는다.
-
-| 선택한 접근 경로의 인증 정책 | 키가 없는 경우 |
+| 문서 | 역할 |
 |---|---|
-| none: 키 불필요 | 키 없이 이용하며 다른 기관의 키 설정을 요구하지 않음 |
-| optional: 키 선택 | 공식 안내가 허용하는 익명 접근과 그 호출 제한으로 이용 |
-| required: 키 필수 | 해당 경로만 AUTH_ACCESS / NEEDS_REVIEW로 중단하고 필요한 환경변수 이름 안내 |
-| unknown: 미확인 | 키 필요 여부를 추정하지 않고 공식 안내 확인 필요로 표시 |
+| 이 문서 | 제품 요구사항, 엔진 경계, 데이터·품질 정책, 현재 범위, 통합 실행 순서 |
+| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | 구현·Gate 상태와 검증 증거의 현황표. 요구사항이나 우선순위를 새로 만들지 않음 |
+| [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md) | 이 문서에서 파생한 짧은 실행 순서. 독립 기준이 아님 |
+| [`docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md`](docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md) | 엔진·피드백·평가·최신성·출력 항목별 구현 대조 |
+| [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md), [`docs/KNOWLEDGE_ENGINE_PLAN.md`](docs/KNOWLEDGE_ENGINE_PLAN.md), [`docs/SERIES_FRESHNESS.md`](docs/SERIES_FRESHNESS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md), [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md) | 해당 하위 기능의 상세 계약. 현재 우선순위와 완료 여부는 이 문서 및 구현 증거를 따름 |
+| `docs/ITERATION_*_PLAN.md`, `docs/*_REPORT.md`, Gate·live 기록 | 과거 범위·실행·검증 증거. 과거 계획을 현재 구현으로 간주하지 않음 |
 
-- 공백·빈 문자열은 미설정으로 처리한다. 필수 키가 없는 기관 때문에 관련 없는
-  기관의 탐색·수집까지 막지 않는다. 인증 오류 시 키 값을 출력하거나 다른 기관의 키로 대체하지 않는다.
-- 기존에 키를 적어 둔 TXT가 있더라도 자동 검색·일괄 읽기는 하지 않는다. 사용자가
-  직접 해당 기관의 로컬 설정으로 옮긴다. 키가 포함된 요청 URL·헤더·응답의 저장과
-  로그는 비밀값을 제거해야 하며, 비밀값이 없는 원자료·수집 근거는 별도로 보존한다.
-- 후속 커넥터 구현의 검수에는 키 불필요/선택/필수·누락/빈 값/인증 실패/미확인,
-  기관 간 설정 독립성 및 키 비노출을 가짜 키와 mocked HTTP로 검증한다.
-  실제 키 등록·인증 성공 검증과 `.env` 로딩 기능은 이번 문서 변경에서 구현하지 않는다.
+구현 상태는 **완료**, **제한 범위**, **부분 구현**, **미구현**, **미관측**, **현재 범위 제외**를 구별한다. 계획에 적힌 기능, fixture 성공, 자동 테스트 통과만으로 live 지원이나 Gate 통과를 주장하지 않는다.
 
-## 3. 제품 성공 기준과 완료 정의
+## 1. 제품 목적과 설계 기준
 
-### 3.1 제품 수준 성공 조건
+MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식 출처에서 찾고, 통계적 의미를 확인해 수집·검증·보존·전달하는 로컬 우선 Python 도구다. 결과에는 출처와 수집 조건, 원본 및 검증 이력을 연결한다.
 
-- **발견 가능성:** 사용자가 요구한 통계를 대표 기관 중 적합한 공식 출처·후보군까지 추적할 수 있다.
-- **의미 정확성:** 찾은 데이터가 요구한 경제적 개념과 부합하는 근거 또는 불확실성/불일치 이유를 명시한다.
-- **추적 가능성:** 각 결과에 기관·원URL·데이터셋/시계열 ID·수집 시각·원본 해시·주기·단위·수정 상태(가능할 때)를 남긴다.
-- **재현 가능성:** 저장된 수집 경로로 다시 시도할 수 있고 이전 실행 결과와 비교할 수 있다.
-- **복구 가능성:** 중단된 단계부터 안전하게 재개하며, 위험한 자동 변경 없이 실패 사유를 보고한다.
-- **학습 가능성:** 사용자 피드백을 해당 작업·기관·단계에 연결하고 재사용하며, 반복 개선 후보를 추출한다.
+먼저 제한된 공식 경로를 끝까지 재현 가능하게 만든다. 모든 기관을 자동으로 찾는 챗봇, 투자판단 도구, 무인 데이터 보정 시스템을 현재 제품 목표로 삼지 않는다. 지원되지 않거나 의미가 불확실한 요청은 추정으로 완성하지 않고 이유와 다음 선택지를 보고한다.
 
-### 3.2 품질 기준
+기본 원칙은 다음과 같다.
 
-모든 회차는 (1) 지정된 입출력, (2) 정상·실패 테스트, (3) 변경 파일 명세, (4) 기획서 대비 미완료 목록, (5) 사용자 검토 필요 사항을 제출해야 완료. 네트워크로 확인하지 않은 사항은 '검증 완료'가 아니라 '추가 확인 필요'로 보고한다.
+- 기관·dataset·series의 식별자와 공식 근거를 보존한다. 이름이 비슷하다는 이유로 통계 의미나 기관 간 동등성을 확정하지 않는다.
+- 원본 응답과 정규화 결과를 분리한다. 원본을 덮어쓰지 않고 결측을 0으로 바꾸거나 값을 묵시적으로 보간하지 않는다.
+- 전송, 구조, 의미, 품질, 요청 정합성을 별도로 검증한다. 확인되지 않은 필드는 `unknown`으로 남긴다.
+- 사용자의 현재 지시는 이전 설정이나 과거 지식보다 우선한다. 한 작업의 교정을 다른 기관·개념의 공통 규칙으로 자동 확산하지 않는다.
+- 비용·시간·요청 횟수·파일 크기는 실행 전에 제한한다. 실패는 정확한 task/stage에 기록하고 명시적으로 재개한다.
+- 검증 범위와 증거 종류를 명시한다. 공식 문서 확인, fixture, live API, 실제 수집은 서로 다른 증거다.
 
-## 4. 사용자 여정과 핵심 실행 루프
+## 2. 사용자와 핵심 작업 흐름
 
-```
-사용자 요청/추가 지시
-       ↓
-[Orchestrator] 의도·제약 추출, 작업 계획, 기존 지식 조회
-       ↓
-① 기관·사이트 탐색: 공식 사이트, 통계 포털, 이용 안내 및 문서
-       ↓
-② 메타데이터 탐색: 통계 목록, 정의, 차원, 코드, 주기, 단위
-       ↓
-③ 실제 데이터 검색: 데이터셋 후보, 시계열 키/ID, 다운로드 경로
-       ↓
-선택·조건 확정: 원하는 통계인지, 대상·기간·출력 형식 확인(미확정 시 수집 대기)
-       ↓
-④ 수집·파싱·검증: API 또는 파일 다운로드, 원본 보존, 품질 검사
-       ↓
-결과 제시: 데이터·출처·정의·검증 결과·불확실성·재수집 경로
-       ↓
-⑤ 경험 기록·피드백 → 공통 개선 후보 → 테스트 후 승인된 규칙/코드 반영
+주요 사용자는 국제금융·거시경제 분석가와 반복 시계열을 다루는 연구자다. 핵심 작업은 공식 통계 출처·정의 찾기, 후보 비교, 확정된 범위 수집, 원본과 검증 결과 확인, CSV·Excel 분석 자료 전달, 과거 작업 실패 복구다.
+
+제품의 목표 흐름은 다음 순서를 따른다.
+
+1. 요청의 통계 개념, 국가/지역, 기간, 주기, 출력 요구를 확인한다.
+2. 허용된 공식 근거와 저장 지식을 제한적으로 조회해 기관·dataset·series 후보를 찾는다. 후보별 정의·식별자·단위·주기·범위·불확실성을 구분한다.
+3. 의미나 접근 경로가 모호하면 수집 전에 질문하거나 `NEEDS_REVIEW`로 중단한다. 후보 선택과 출력 조건을 버전이 연결된 확인 기록으로 저장한다.
+4. 확정된 계획을 task/stage로 저장한 뒤 지원 connector를 실행한다. 원본·manifest·해시·요청 시각을 보존한다.
+5. 정규화·품질·최신성을 확인한다. `STALE` 또는 `FRESHNESS_UNVERIFIED` 값은 성공 결과나 export에 내보내지 않는다.
+6. 검증된 결과에 출처·단위·주기·결측·제한사항을 붙여 전달한다. 수집 성공, 링크 제공, 파일 생성은 각각 구분한다.
+7. 사용자가 오류나 선호를 교정하면 task/stage에 연결한 피드백 기록으로 남긴다. 그 피드백만으로 코드나 전역 규칙을 바꾸지 않는다.
+
+일반 자연어 UI, 대화형 앱, 전 기관 자동 검색은 현재 구현 범위가 아니다. 현재 입력은 고정·구조화 CLI와 Python API다.
+
+## 3. 현재 지원 기준과 비범위
+
+### 3.1 실제 구현 범위
+
+| 경로 | 현재 지원 | 한계·판정 |
+|---|---|---|
+| World Bank WDI | 미국 GDP `NY.GDP.MKTP.CD`, source 2, 1–10개 연도 수집 | 고정된 annual 경로. 일반 지표·국가 탐색으로 확대하지 않음 |
+| BOJ | FM08/FXERD01 한 달 수집 | 단일 시리즈·월 범위. 다른 series·기간은 미지원/미검증 |
+| BLS/Census | 제한 Python API connector 경로 | 일반 CLI 검색·기관 전반 series catalog로 확장하지 않음 |
+| TIC/BIS 지정 파일 | 필요할 때 사용자가 요청하는 제한 파일 intake/watch 명령 | 자료 변경의 반복·예약 확인은 현재 필요 범위에서 제외했고 자동 감시는 중지함. 과거 `unchanged` 및 natural revision 미관측 상태는 기록으로 보존. Gate C는 승격하지 않음 |
+| CSV 전달 | 완료·품질 통과 World Bank GDP와 BOJ FXERD01 task | 로컬 저장값 재검증 후 CSV와 provenance sidecar 작성. XLSX·다중 series 비교는 미지원 |
+| BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
+| 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용 | 자동 사례 생성·코드 수정·공통 규칙 승격 없음 |
+| 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
+| 평가 사례 | versioned development/validation/holdout 형식·누수 및 frozen hash 검사기 | 현재 세 set이 비어 있음. 후보 엔진 실행·점수·승격은 아직 없음 |
+
+Gate A와 D는 해당 범위에서 통과했다. Gate B/C/E는 제한 범위 판정이다. Gate 판정의 상세 evidence는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)와 각 회차 보고서를 따른다.
+
+### 3.2 현재 범위에서 제외
+
+- TIC/BIS 자료 변경상태의 반복·예약 확인. Vantage 또는 별도 유료 시장데이터 공급자 연동.
+- 일반 자연어 검색·전체 기관 자동 탐색·근거 없는 기관/series 대체.
+- 호환성 검증이 없는 단위·통화·주기 변환, 자동 보간·forward-fill, cross-source 의미 매핑.
+- 범용 XLSX 출력과 여러 시계열을 한 표로 자동 결합하는 기능(향후 구현 목표는 §9).
+- 사용자의 일상 대화 자동 수집, 피드백으로 자동 규칙 승격, 무인 코드 병합·배포.
+- 무제한 대용량 파일 처리, 인증·CAPTCHA·접근 제한 우회, 투자 조언.
+
+기관·파일 형식 확대는 반복된 실제 요청, 공식 source contract, 수용 테스트가 정해진 경우에만 하나씩 진행한다.
+
+## 4. 엔진 구조와 통합 원칙
+
+제품 데이터 처리와 개발자 코드 유지보수는 서로 다른 권한·상태를 가진다. 하나의 범용 거대 엔진이나 기관마다 독립 agent를 만드는 방식은 목표가 아니다.
+아래 그림은 이 책임 경계의 논리 구성이며, 모든 상자를 현재 통합 완료로 뜻하지 않는다. 현재 구현 상태는 이어지는 표와 §3을 따른다.
+
+```mermaid
+flowchart LR
+  U[CLI / Python API] --> O[공통 Orchestrator]
+  O --> P[저장된 TaskPlan · stage history · retry/resume]
+  O --> R[provider별 runner composition<br/>통합 registry는 보완 필요]
+  R --> A[API source adapters]
+  R --> F[공식 파일·tabular adapter]
+  R --> L[승인된 대용량 worker]
+  R --> X[검증된 exporter]
+  A --> S[원본·manifest·정규화·품질 evidence]
+  F --> S
+  L --> S
+  X --> S
+  S --> H[SQLite history · feedback · knowledge]
+  M[maintenance controller] --> W[격리 branch/worktree updater]
+  W --> Q[candidate SHA QA]
+  Q --> PR[사람 검토 PR]
 ```
 
-중간 산출물을 저장해 재활용한다. 예: 기관 탐색 성공·수집 실패 시, 최신성 확인 후 기관 탐색을 생략하고 수집 단계부터 재개. 이미 알려진 시계열을 갱신할 때는 전체 검색을 다시 수행하지 않는다.
+- **공통 실행 계층:** `Engine`, `StageInput`, `StageResult`, `TaskPlan` 계약과 `Orchestrator`가 stage lifecycle·attempt·상태·resume·이력을 관리한다. provider별 runner factory와 CLI mapping은 아직 각 진입점에 나뉘어 있고, 전역 engine/version registry는 구현되지 않았다.
+- **출처별 adapter:** 기관 API endpoint, 인증, paging, response schema와 파일 parser는 각 connector/engine adapter가 책임진다. 이 차이를 없애려고 하나의 거대한 source engine으로 합치지 않는다.
+- **공유 서비스:** transport 공통 처리, raw/artifact store, metadata projection, freshness evaluator, duration estimator 등 반복되는 정책을 typed service로 둔다. 독립 권한·수명이 없는 부품을 또 다른 “엔진”으로 부르지 않는다.
+- **대용량 worker:** 작은 tabular parser와 다른 memory/time/checkpoint 경계를 가진다. qualification 통과는 production 승인이 아니다.
+- **개발자 maintenance:** 분석 proposal → 격리 수정 → candidate SHA QA → branch/PR까지만 지원할 수 있다. 제품 task·원본·credential과 분리하며 자동 merge·배포하지 않는다.
+- **현재 통합 공백:** 실행 계약은 공통이지만 provider별 runner factory와 CLI dispatch의 engine mapping 생성은 완전히 한곳으로 모이지 않았다. 새 source를 추가하기 전에 공통 composition/registry 경계를 보완한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
 
-### 4.0 사용자 관점의 두 작업과 조건 확정
-
-사용자는 “원하는 데이터”만 말하거나 “특정 기관의 원하는 데이터”를 지정할 수 있다.
-두 입력 모두 다음 흐름을 따른다. 이 사용자 작업 1/2는 개발 회차 01/02와 다르다.
-
-1. **작업 1 — 후보 탐색·제안:** 공식 근거를 확인하며 적합한 기관·데이터셋·시계열
-   후보를 1개 또는 여러 개 제안한다. 후보가 없으면 미확인·불일치 사유를 보고한다.
-   메타데이터 탐색은 내부에서 수행하며 사용자가 별도 엔진 명령을 줄 필요는 없다.
-   후보에는 정의·단위·주기·지역·가용 기간·추천 이유·불확실성·인증/수집 지원 상태를 표시한다.
-   기관 지정 시 다른 출처로 조용히 대체하지 않는다. 후보 가설과 확인된 식별자를 구분한다.
-2. **조건 확정:** 선택한 후보와 통계 의미, 국가/차원, 기간, 주기·단위/변환 정책,
-   출력 형식·저장 위치, 최신/특정 개정판 요구를 확인한다. 누락된 필수 조건과 의미의
-   모호함은 한 번에 묻고, 이미 명시한 조건과 수집 지시는 반복 확인하지 않는다.
-   미확정·미지원 조건을 임의 기본값이나 전체 범위로 대체하지 않는다.
-3. **작업 2 — 수집·결과 제공:** 확정된 후보·조건과 현재 접근 가능성을 검증한 뒤
-   수집한다. 결과 파일·원본·출처·실제 범위·검증 결과·실패/미실행 범위를 제공한다.
-   선택 이후 정의·식별자·가용성이 달라졌으면 재확인하며 다른 통계로 자동 대체하지 않는다.
-
-이미 후보를 아는 요청은 전체 탐색을 반복하지 않고 조건 확인부터 시작할 수 있다.
-후보 발견이 실제 커넥터 지원이나 다운로드 성공을 뜻하지 않는다. 조건 확정은 네트워크·
-인증 권한을 부여하지 않으며, 시스템의 검토 상태 재개 플래그로 사용자 선택을 대신하지 않는다.
-
-탐색 결과·선택 후보·확정 조건의 스냅샷과 연결 근거를 보존한다. 고정된 탐색 계획은
-수집 계획으로 덮어쓰지 않고 연결된 새 수집 작업을 생성한다. 재시도는 같은 수집 작업의
-새 시도이며, 선택/조건 변경은 새로운 확인 기록·수집 작업으로 구별한다.
-
-상세 설명·프롬프트 예시는 docs/USER_WORKFLOW_REVIEW.md, 01~03회차의 최소 보완 명세는
-docs/WORKFLOW_ALIGNMENT_PLAN.md를 따른다. 이 정책의 기획 반영은 구현 완료를 뜻하지 않는다.
-
-### 4.1 작업 상태
-
-전역 상태: `CREATED → PLANNED → RUNNING → {COMPLETED | PARTIAL | NEEDS_REVIEW | FAILED | CANCELLED}`. 재시도 시 동일 요청 ID 아래 새 시도 기록을 생성하며 단계별 시도·근거를 보존한다.
-
-단계 상태: `PENDING | RUNNING | SUCCEEDED | FAILED_RETRYABLE | FAILED_TERMINAL | NEEDS_REVIEW | SKIPPED_REUSED`.
-
-### 4.2 인간 검토가 필요한 판단
-
-- '미국 국채 보유잔액' 대 '국채 순매입 거래액'처럼 통계 개념이 일치하지 않는 경우.
-- 시계열 정의·단위·계절조정·잔액/유량·평가방식·모집단·수정/잠정치가 모호한 경우.
-- 같은 개념을 다룬 여러 원출처가 상충해 임의 선정이 위험한 경우.
-- 계정 인증·사용권·라이선스·개인정보·외부 연결 승인이 필요한 경우.
-- 코드 변경·구조 개선·대량 파일 삭제 등 돌이키기 어려운 작업.
-
-## 5. High-Level 아키텍처
-
-### 5.1 전체 구성
-
-1. **User Interface / Instruction Intake:** 작업 지시, 조건 확인, 피드백 수집, 상태·결과 표시.
-2. **Orchestrator:** 작업 계획, 엔진 호출, 의존성, 저장된 지식 재사용, 상태, 예외 분기, 재시도, 중단·재개.
-3. **Institution/Site Discovery Engine:** 기관 검색, 공식 사이트 검증, 메뉴·통계 포털·이용 안내 탐색, 검색 전략 결정.
-4. **Metadata Discovery & Interpretation Engine:** SDMX 구조, 데이터 카탈로그, API 가이드, 코드북, 스프레드시트, 웹/문서에서 통계 정의 수집·표준화.
-5. **Dataset/Series Discovery Engine:** 실제 데이터셋/시계열 ID·변수 조합·가능 기간·다운로드/API 경로 검색, 후보 비교.
-6. **Ingestion & Validation Engine:** API/파일 연결, 재시도, 파싱, 원본 저장, 정규화, 품질 검사·개정 비교.
-7. **Shared Knowledge & History Store:** 기관 프로필, 원본 메타데이터, 검색 인덱스, 결과, 원본 파일, 오류/피드백, 실행 이력.
-8. **Institution & Concept Knowledge Engine(추가 요구, 미구현):** 기관·경제 개념·분류/포괄범위
-   지식의 등록·검증 상태·버전 관리와 관련 지식의 제한 조회. 사용자 설명·공식 근거·추론 가설을
-   구분하고, 요청 처리의 조회 경로와 지식 확장 작업을 분리한다. 공유 저장소를 사용한다.
-9. **Developer Maintenance Workflow (기존 명칭: Improvement Engine):** 반복 사례 집계, 근거 기반 개선 후보 생성, 격리된 코드 수정·검사, review package 생성, 승인·되돌리기. 제품 source engine을 실행하는 data plane과 분리한다.
-
-**원칙:** 중앙 제어 + 독립 엔진 + 공통 저장소 + 비동기 개선 제안. 개별 기관 특수 로직은 코어 내부 조건문이 아니라 기관 프로필/전략/어댑터로 수용한다.
-
-**용어 경계:** Improvement Engine은 독립된 source engine이 아니라 개발자 유지보수 workflow의 과거 기획 명칭이다. 현재 목표 경계와 중복 실행기 정리 순서는 [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md)에 둔다.
-
-**데이터 링크 탐색 경로(추가 요구, 미구현):** discovery 아래에 링크 발견·검증 모듈을 두고
-후보/메타데이터 확인과 독립적으로 진행 가능한 공식 링크 조사를 병행한다. 기관별 링크
-규칙은 어댑터로 분리한다. 병행은 제품 내부 작업 구성에 관한 요구이며 현재 순차
-Orchestrator가 병렬 실행을 지원한다는 뜻은 아니다. 권한·호출 예산 안에서 수행하고,
-최종 제안은 같은 후보 ID·조건·근거 개정에 연결된 결과만 합친다.
-
-### 5.2 엔진 계약(개념 수준)
-
-| 엔진 | 입력 | 핵심 출력 | 실패 조건 |
-|---|---|---|---|
-| Orchestrator | 자연어/구조화 요청, 이력 | TaskPlan, TaskStatus, TaskResult | 요청 모호, 필수 정보 누락 |
-| 기관·사이트 탐색 | 기관/주제/지역 힌트 | InstitutionProfile, SourceGuide, DiscoveryTrace | 공식 근거 불명, 사이트 구조 변경 |
-| 메타데이터 탐색 | 기관 프로필, 통계 주제 | MetadataEvidence, NormalizedMetadata | 카탈로그 부재, 코드 해석 불가 |
-| 데이터 검색 | 통계 요구·메타데이터 | DatasetCandidate[], SeriesCandidate[], AccessPath | 후보 없음, 의미 불일치 |
-| 기관·개념 지식 | 기관/주제/데이터셋/분류 버전·조회 예산, 명시적 교정 | 관련 지식·근거 참조·충돌/미확인·갱신 후보 | 예산 초과, 근거 만료/충돌, 범위 불일치 |
-| 수집·검증 | 승인/선택된 후보와 경로 | RawArtifact, Observations, QualityReport | 접근 거부, 형식 변경, 품질 불일치 |
-| 개선 엔진 | TaskEvent, Feedback, Incident | ImprovementProposal, TestEvidence | 효과 미검증, 회귀 위험 |
-
-공통 반환 규칙: `{status, payload, evidence_refs, warnings, error_code, retry_hint}`. 불확실한 값은 추정치로 표시하고 임의 완성하지 않는다.
-
-## 6. 기관별 탐색 전략 및 메타데이터 정책
-
-### 6.1 탐색 순서
-
-기존 기관 지식 → 공식 통계 포털 및 공식 이용 안내 → 기관 내 검색/카탈로그 → API 구조 질의·코드북 → 공식 자료의 연결 페이지 → 승인된 외부 검색 수단. 모든 주장에 공식 URL/문서/검색 경로를 보존한다.
-
-### 6.2 탐색 전략 유형
-
-- SDMX: dataflow → DSD → concept/codelist → 데이터 가용성 → series key → observations.
-- 카탈로그/API: dataset list → parameter list/values → series identification → data request.
-- 파일/웹표: 통계 목록 → 파일/웹표·각주 → 시트/표·헤더 → 데이터 추출.
-- 기관 간 연결: 공식 발표기관과 실제 시계열 저장기관을 함께 기록(예: 재무성 통계표 → 중앙은행 검색 포털).
-- 문서형: PDF 가이드·통계 해설은 **근거**로 우선 사용하고, 관측치 추출은 정확성 확인 후 제한적으로 채택.
-
-### 6.3 메타데이터 두 층
-
-**Original Layer:** 원본 설명 텍스트, 원문 언어, 페이지/표/셀, 원URL, 원본 파일 해시, 추출 방식, 수집 시각.
-
-**Normalized Layer:** 기관, 통계명, series ID, 개념, 국가/지역, 통화, 주기, 단위·배율, 계절조정, 가격/명목 구분, stock/flow, 평가기준, 변환·갱신 규칙, 자료의 상태, 매핑 신뢰도.
-
-동일한 이름이라도 통계적 동등성은 자동 확정하지 않는다. 후보는 근거와 매칭 점수·불일치 요소를 함께 반환한다.
-
-### 6.4 유사 후보의 묶음과 확인 질문 (값 계약 구현, 자동 묶음·질문 미구현)
-
-같은 경제적 개념의 후보는 원문 정의·대상·방법론 근거를 확인해 그룹으로 제시하고,
-계절조정/비조정, 명목/실질·기준년, 수준/증감률, 주기, 단위·배율, 잠정/확정·개정판
-등의 차이를 그룹 안의 변형/차이표로 보여준다. 이름만으로 묶거나 서로 대체 가능한
-데이터로 판정하지 않는다. 잔액/거래액처럼 개념이 다른 자료는 별도 그룹으로 구별한다.
-
-변형이 많고 선택에 따라 의미가 크게 달라지면 후보를 나열하기 전에 중요한 구분을
-묻는다. 비교/전부 보기를 원하면 그룹과 차이를 먼저 보여준다. 계절조정 여부가 알려지지
-않았으면 미상으로 표시하고 비조정으로 간주하지 않는다. 모든 변형을 자동 선택하거나 합산하지 않는다.
-질문 순서·묶음 표현은 현재 지시와 작업 목적에 맞게 조정하되 중요한 의미를 임의 확정하지 않는다.
-사용자의 교정은 작업/기관/통계 개념별 범위와 근거를 기록해 조건부 재사용하며,
-현재 명시 지시가 우선이고 검증 없이 다른 기관·개념의 공통 규칙으로 승격하지 않는다.
-
-### 6.5 통계 개념·분류체계·포괄범위의 불확실성 (추가 요구, 미구현)
-
-사용자의 경제적 개념과 기관의 조작적 정의를 구분한다. 발행/보유 주체·산업·기업 규모
-등의 분류 축, 분류 버전·유효 시점, 포함/제외 범위와 근거를 보존한다.
-범주 관계는 포함/중첩/상호배타/미확인으로 표현하며 완전한 상하위 트리·상호배타성·
-전체 포괄성이나 합산 가능성을 전제하지 않는다. 기관 간 같은 명칭도 같은 범주로 확정하지 않는다.
-사용자 의도의 모호함은 질문으로 좁히고, 원통계 자체의 불확실성은 추가 조사하거나 남긴다.
-사용자 선택만으로 원통계의 미확인이 해소됐다고 처리하지 않는다.
-
-## 7. 데이터·지식·이력 모델
-
-핵심 엔터티: `Institution`, `SourceGuide`, `DiscoveryStrategy`, `MetadataArtifact`, `Dataset`, `Series`, `AccessPath`, `RawArtifact`, `ObservationBatch`, `QualityReport`, `Task`, `StageRun`, `Incident`, `Feedback`, `Rule`, `ImprovementProposal`.
-
-### 7.1 최소 필드
-
-- `Institution`: institution_id, name, jurisdiction, source_domain, languages, source_types, verified_at, status.
-- `Dataset/Series`: institution_id, dataset_id, series_id, original_label, definition, dimension_codes, unit, frequency, adjustment, stock_flow, source_ref, confidence.
-- `RawArtifact`: source_url, accessed_at, file_path, sha256, response_format, source_version/vintage(있다면), license_note.
-- `Task/StageRun`: request, plan, engine, input_refs, output_refs, status, started/finished_at, attempt_no, error_class, evidence_refs.
-- `Feedback`: feedback_id, task_id, institution_id, stage, instruction, rationale, scope, verification, status, superseded_by.
-- `ImprovementProposal`: incident_refs, recurrence, severity, proposed_change, test_plan, regression_risks, reviewer_decision, applied_commit.
-
-### 7.2 저장 방식
-
-MVP는 **SQLite(메타데이터·작업 이력·피드백) + 디렉터리(원본·정규화 관측치·증빙·보고)**로 시작. 규모가 확인되면 Parquet/컬럼 저장소·검색 인덱스 등을 추가한다. 초기부터 대형 DB·벡터 DB 도입을 필수 전제로 두지 않는다. 모든 관측치 변환은 추적 가능한 별도 레이어로 처리하고 원본 파일은 묵시적으로 덮어쓰지 않는다.
-
-### 7.3 사용자 요청·선택·출력 계약 (값 계약·확인 서비스·World Bank 제한 실행 연결 구현)
-
-추적 가능한 요청 조건, 후보/근거 스냅샷, 선택/확인 기록, 출력 설정을 공통 계약으로
-관리한다. 이들은 원본 통계 메타데이터 및 Task/Stage 실행 상태와 구분한다.
-확인 기록은 후보와 조건의 정확한 버전을 가리켜야 하며, 이후 변경을 자동 승인하지 않는다.
-원본 보존과 사용자 출력 형식은 별개이고, 지원하지 않는 출력은 수집 전에 알린다.
-일반 CSV/XLSX 내보내기·단위/주기 변환은 실제 구현·검증된 경우에만 제공한다.
-01~03회차의 보완은 이 계약과 기존 실행 기반의 연결만 다룬다. 전체 자동 추천·탐색은
-05~08회차, 출력 확대·대규모 처리는 04/09~10회차의 관련 범위와 게이트를 따른다.
-
-보완 01에서 값 계약과 JSON/확인 스냅샷 검증만 구현했다(ALIGNMENT_01_REPORT.md).
-보완 02에서 구조화 질문·명시 확인·SQLite 상태 보존·새 작업 연결을 구현했다
-(docs/ALIGNMENT_02_REPORT.md). 서비스는 제공된 후보/근거를 사용하며 자연어 UI가 아니다.
-보완 03에서 World Bank USA/source 2/GDP의 file/link/both를 제한 연결했다
-(docs/ALIGNMENT_03_REPORT.md). 파일은 기존 원본 JSON/manifest만 지원하며 링크는
-제공된 확인 근거의 고정 API URL만 전달한다. 04회차 Gate A에서는 같은 고정 file 경로의
-원본 hash·manifest·관측치와 검증·피드백 이력을 확인했다. 실제 범위와 미검증 항목은
-`docs/ITERATION_04_REPORT.md`를 따른다. Gate A 통과는 자동 기관 검색이나 재배포 허가를 뜻하지 않는다.
-
-## 8. 데이터 검증 및 오류·복구 정책
-
-### 8.1 검증 층위
-
-1. **전송 무결성:** HTTP 코드, 크기, 파일 해시, 정상 압축 여부.
-2. **구조 유효성:** 시트/열/시계열 키·차원·기간 해석 성공 여부.
-3. **통계 유효성:** 단위·배율·주기·국가·통화·조정·stock/flow 확인.
-4. **시계열 품질:** 결측, 중복, 단절, 수정/잠정치, 비정상적 변경(자동 삭제·대체 금지).
-5. **요청 정합성:** 요청한 개념·기간·대상과 실제 수집 데이터가 일치하는지.
-
-### 8.2 오류 클래스·기본 정책
-
-| 종류 | 예 | 기본 처리 |
+| 엔진/계층 | 맡는 일 | 현재 상태 |
 |---|---|---|
-| TRANSIENT | 타임아웃·429·일시 5xx | 호출당 요청 1회. `Retry-After`가 있으면 명시적 resume를 최소 대기시간 전까지 차단하고, 그 외에는 운영자가 상태를 확인한 뒤 제한된 횟수로 resume |
-| AUTH_ACCESS | API 키 누락, 401/403, 이용조건 | 중단 후 승인·설정 요청; 우회 금지 |
-| SITE_CHANGED | 링크·DOM·API 버전 변경 | 해당 단계 재탐색·프로필 재검증 |
-| SCHEMA_CHANGED | 파일 열·SDMX 코드 변화 | 원본 보존·파서 진단·검토 필요 |
-| SEMANTIC_AMBIGUITY | 유사한 통계·단위·재고/흐름 혼동 | 후보와 근거 보고, 사용자 선택/검토 |
-| QUALITY_FAILURE | 누락·중복·급격한 단절 | 격리하고 원자료와 비교, 자동 보정 금지 |
-| LICENSE_SECURITY | 차단·약관 제한·민감정보 | 접근 중단, 담당자 승인 요청 |
-| INTERNAL_BUG | 프로그램 예외·테스트 실패 | 이슈 기록, 격리 환경에서 수정·테스트 |
+| Discovery·후보 선택 | 공식 출처 근거와 제한된 dataset/series 후보를 찾고 수집 계획의 근거를 만든다. | 구조화 요청과 일부 제한 경로만 지원. 일반 자연어 및 전 기관 자동 탐색은 제외. |
+| Source connector/adapter | World Bank·BOJ·BLS·Census API별 인증, 요청, paging, 응답 해석을 수행한다. | 출처별 adapter로 유지하며 일부 경로만 실제 수집 검증. 기관을 독립 agent로 쪼개지 않는다. |
+| 공식 파일 intake/watch | 지정한 TIC/BIS 파일의 범위·출처를 기록하고 허용된 단발 작업을 수행한다. | 필요 시 사용자 요청으로만 사용. 반복 변경 감시 자동화는 중지. |
+| Large-file trial/production worker | 자원·시간·범위를 제한해 대용량 원본을 분리 처리하고 결과를 전달한다. | trial/production 경로가 분리됨. 보존한 BIS GLI flat ZIP 1건의 승인형 Linux 구조 보존 경로만 확인. |
+| Orchestrator·task history | 저장된 plan을 stage로 실행하고 상태, attempt, 실패, 명시적 resume 이력을 관리한다. | 공통 lifecycle이 구현됨. provider 전체의 runner composition은 아직 전역 단일 registry로 통합되지 않음. |
+| Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
+| Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
+| Evaluation·rule review | 사례 split에서 baseline/candidate를 비교하고 통과한 변경의 근거·리뷰·rollback을 남긴다. | 사례 schema 및 split/hash validator만 구현됐고 세 set은 비어 있음. 실행 비교기·promotion registry는 미구현. |
+| Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
+| Developer maintenance workflow | 저장소 개선 후보를 격리 branch/worktree에서 수정·검증해 사람이 검토할 PR로 만든다. | 제품 데이터 Orchestrator와 별도 control plane. 일부 QA/updater 흐름은 있으나 자동 merge·배포는 없음. |
 
-재시도 상한·시간·비용을 설정한다. 실패 이후 단계 재개는 **동일성·최신성·의존성**이 확인된 산출물에만 허용한다.
-현재 Orchestrator 정책은 한 단계 호출에서 자동 재전송하지 않는다. 서버 `Retry-After`는 초 또는 HTTP-date 형식으로 읽어 실패 이력에 저장하고, 명시적 resume 시 최소 대기시간을 강제한다. 헤더가 없으면 운영자가 일시 장애 해소를 확인한 뒤 resume한다. 단계별 `max_attempts`는 전체 호출 횟수 상한이다. 자동 지수 backoff는 향후 별도 요청 예산과 큐 실행 정책이 승인된 경우에만 도입한다.
+현재 코드 대조와 남은 공백은 [`docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md`](docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md), 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)를 따른다.
 
-### 8.3 대규모 데이터 작업
+## 5. 원본·메타데이터·정규화 시계열 계약
 
-다기관·다국가·다지표·장기 요청에는 본 수집 전 별도 실행 계획을 제공한다.
-예상 요청 수·용량·시간을 알 수 없으면 미상으로 표시하고, 먼저 작은 샘플 계획으로
-정의와 출력 형태를 확인한다. 확정한 범위와 시간·호출·용량 예산 안에서 국가/지표/기간별
-작업 단위를 나누며 공식 bulk 경로·기관별 호출 제한을 따른다.
-성공·실패·미실행 단위와 저장 파일 목록을 구분하고 유효한 성공분을 보존해 재개한다.
-큰 자료를 한 파일로 강제 병합하거나 정의·단위가 다른 시계열을 임의 결합하지 않는다.
-분할·예산·부분 성공의 구현/검수는 09~10회차에서 구체화한다. 현재 03회차의 고정
-USA/GDP·1~10년·1페이지·1 MiB 제한은 유지하며 보완 작업에서 해제하지 않는다.
+수집과 분석이 공통으로 이해할 목표 record는 다음을 연결한다.
 
-## 9. 사용자 피드백, 규칙 승격, 공통 개선
+- **식별:** source agency, dataset/dataflow ID, series ID 및 차원 key, 사용자가 요청한 field/concept.
+- **의미:** 원문 정의와 언어, normalized definition, unit·scale, currency, frequency, calendar, seasonal/price adjustment, stock/flow, coverage, revision/vintage.
+- **관측:** source period, period start/end, 원래 값, missing/suppressed 상태. `0`, `null`, 결측·미공개·비해당을 섞지 않는다.
+- **출처와 재현성:** source URL, retrieval timestamp(UTC), raw path/hash, request manifest/hash, parser/engine version, freshness policy와 series override.
+- **검증:** 구조·의미·quality·freshness 상태와 근거, 검토 시점, 확인되지 않은 필드.
 
-### 9.1 피드백 포착
+원본 payload를 불변으로 보존하고 정규화·변환은 버전이 붙은 별도 산출물로 만든다. source metadata가 없으면 추측하지 말고 `unknown`으로 남긴다. 공통 typed series/batch 계약은 아직 부분 구현이며, 먼저 World Bank와 BOJ의 현재 제한 경로를 연결해 다른 provider를 건드리지 않고 검증한다.
 
-초기에는 CLI `feedback add` 또는 작업 결과에 대한 명시적 피드백 등록을 지원한다. '일상적인 ChatGPT 대화가 로컬 프로젝트에 자동 기록된다'는 전제는 두지 않는다. 장래 챗 UI·연결 모듈이 있는 경우 명시적 수집·동의·권한 범위 하에 연동.
+## 6. 최신성·품질·복구 정책
 
-### 9.2 피드백 구분
+최신성은 수집 시각이나 metadata update가 아니라 가장 최신 **관측 period**를 사용해 평가한다. 현재 기본 허용일은 daily 7, weekly 21, monthly 120, quarterly 240, semiannual 183, annual 730일이다. 정확한 series ID 또는 canonical series key override가 기본 frequency를 대체할 수 있다. policy ID/hash, frequency 근거, 최신 period, age, 허용 일수, 평가 시각을 결과 evidence에 기록한다.
 
-- **기관별 지식:** 해당 기관/특정 데이터셋 접근 방법·예외.
-- **공통 실행 규칙:** 여러 기관·형식에서 반복적으로 확인된 처리 패턴.
-- **구조 개선 후보:** 엔진 분리, 저장 모델 변경, 새 어댑터 패턴 등의 제안.
+이 값은 초기 operational defaults다. 기관별 release calendar와 series-specific publication lag를 검증한 값은 아니다. latest period가 없거나 frequency/period가 불명확하거나 미래 period면 `FRESHNESS_UNVERIFIED`, 허용일을 넘으면 `STALE`이다. 두 상태의 관측값은 normalized result 및 export에서 제외하고 원본만 검토용으로 유지한다.
 
-피드백은 등록 → 분류 → 재현/근거 확인 → 제한적 적용 → 테스트 → 검증 → 반영/거부/보류로 이동. **반복 횟수만으로 공통 규칙이 되지 않으며**, 심각도·재현성·영향 범위를 함께 판단한다.
+검증 층위는 전송·압축 무결성 → 구조/series 식별 → 통계 의미/단위/차원 → 결측·중복·단절/개정 → 요청 범위 일치다. 이상치나 원본 값은 자동 수정·삭제하지 않는다.
 
-### 9.3 코드 개선 정책
-
-일상적인 수집 작업은 코드 자체를 고치지 않는다. 개선 엔진은 반복 실패를 집계해 **개선안**을 만들며, 코드는 별도 Git 브랜치에서 수정·테스트한 뒤 사람이 승인한다. 회귀 테스트 실패 시 적용하지 않고 되돌릴 수 있어야 한다. 통계 정의와 기관 출처를 바꾸는 개선은 언제나 검토 대상.
+호출당 기본 요청은 한 번이며 hidden retry를 하지 않는다. 저장된 `Retry-After`가 있으면 최소 대기 전 resume를 차단한다. 장애 해소 후 같은 task/stage를 명시적으로 재개한다. 터미널 실패나 의미 검토는 자동 재시도하지 않는다. 대용량은 사전 계획·메모리/시간/byte/cell budget·고정 승인 범위 안에서만 처리한다.
 
-### 9.4 기관·개념 지식 엔진과 조회 효율 (추가 요구, 미구현)
-
-저장 용량 최소화보다 **요청당 지연·메모리·연산량의 통제**를 우선한다. 원본/이력은
-보존하되 매 요청마다 전체 DB·원본·기관/개념 그래프를 읽거나 전부 프롬프트에 넣지 않는다.
-기관·데이터셋·개념·분류 축/버전·검증 상태·유효 시점으로 색인한 조회용 현재 기록을 사용하고,
-필요한 근거 본문만 제한적으로 불러온다. 처음에는 SQLite 기반 색인으로 시작한다.
-
-요청 경로에서는 관련 지식을 제한 조회하고 이번에 명시한 교정을 짧게 기록한다.
-검증된 사실, 범위가 있는 사용자 설명, 검증되지 않은 추론을 분리하며 추론은 기본 사실 조회에서
-제외한다. 필수 정의가 만료/충돌하면 해당 부분만 재확인하거나 검토 필요로 보고한다.
-일반화·인접 개념 추론·대량 재검증·색인 재구축은 결과 제공을 막지 않는 별도 갱신 작업으로 둔다.
-후속 작업은 명시적으로 실행·관리하며 백그라운드 실행기나 스케줄러가 이미 있다고 가정하지 않는다.
-
-조회는 작업/기관/데이터셋 범위 → 관련 개념 범위 → 필요한 다른 기관의 근거 순으로 제한 확장한다.
-기관 미지정도 주제/지역/기간 등으로 먼저 후보 범위를 좁힌다. 후보 수·행/근거 바이트·관계
-탐색 깊이·시간·동시 작업·캐시에 상한을 두고, 단계적으로 읽는다. 캐시는 기관/개념/분류 버전·
-검증 상태·유효 시점을 키에 포함하고 교정·개정·만료 시 무효화한다.
-
-동일 범위의 반증/상충 근거는 관련 항목과 함께 조회한다. 상한 때문에 다 못 봤으면 조회 범위와
-남은 불확실성을 보고하고 완전한 검토로 표시하지 않는다. 속도를 위해 중요한 충돌을 숨기지 않는다.
-시점 지정 요청에서는 현재 기록을 과거 지식 대신 사용하지 않는다. 원본을 자동 삭제하거나 관측치를
-수정하지 않으며 사용자 교정을 검증 없이 전기관 사실로 승격하지 않는다.
-
-11회차는 지식 입력/근거/범위·버전, 12회차는 색인 조회·재사용·캐시·갱신 분리와 성능 검수,
-13회차는 격리된 추론/일반화 후보를 맡는다. 기준 환경·자료 규모·작업 부하와 지연/메모리 예산을
-구현 시 확정하고, 저장량이 증가하는 시험에서 p50/p95 지연·최대 메모리·조회량·충돌 발견 여부를
-측정한다. 아직 속도 수치나 성능 통과를 주장하지 않는다. 상세는 docs/KNOWLEDGE_ENGINE_PLAN.md 참조.
-
-## 10. 사용자 인터페이스 및 결과물
-
-### 10.1 초기 명령형 작업
-
-- `search`: 자연어 또는 구조화 조건으로 기관·데이터셋·시계열 탐색.
-- `collect`: 확인된 데이터 경로에서 수집.
-- `refresh`: 기존 series_id의 재수집·비교.
-- `inspect`: 통계 정의·원본 근거·이력 확인.
-- `resume`: 허용된 중단 지점에서 재개.
-- `feedback`: 잘못된 검색·정의·처리 방식 교정 등록.
-- `status`: 단계별 상태·오류·승인 필요 항목 확인.
-
-명령 이름은 사용자 경험의 논리적 요구사항이며 CLI 문법은 1~4회 구현 과정에서 최종 결정한다.
-
-사용자는 §4.0의 작업 목표로 요청하며 메타데이터 엔진별 호출을 직접 조합하지 않는다.
-search는 후보/근거와 필요한 확인 항목을, collect는 확정 조건으로 실제 결과를 제공한다.
-이 두 작업의 예시와 대규모 요청 예시는 docs/USER_WORKFLOW_REVIEW.md §8에 있다.
-이 예시는 목표 제품 흐름이며 현재 자연어 CLI나 채팅 연동이 구현됐다는 뜻은 아니다.
-
-### 10.2 표준 사용자 출력
-
-`검색 결과 후보 + 선택 근거 + 원본 링크/해시 + 통계 정의 + 수집 상태 + 정규화 데이터 경로 + 검증 보고서 + 제한사항 + 다음 작업 제안`. 결과를 찾지 못한 경우에도 어디까지 탐색했고 왜 중단됐는지 보고한다.
-
-### 10.3 최종 사용자 설명서 및 PPT
-
-**작성 시점:** 14회차 최종 통합·검증 단계에서 실제 완성된 기능과 실행 결과를
-기준으로 작성한다. 14회차에서 제작·검수했으며, 최신 상태와 한계는 `docs/GATE_REAUDIT_AFTER_ITERATION_16.md`를 따른다.
-
-**최종 산출물:** `docs/USER_GUIDE.md` 사용자 설명서와
-`docs/MacroAtlas_User_Guide.pptx` 사용자 안내 PPT. 설명서는 재현 가능한 상세 절차를,
-PPT는 전체 구조와 주요 사용 흐름을 요약한다.
-
-두 자료는 다음 내용을 포함하고 동일한 최종 버전의 동작을 설명한다.
-
-1. **실행 방법:** 설치·실행 환경, 프로젝트 위치, 실제 실행 명령과 사용 예시,
-   성공/실패 확인 방법. CLI 직접 실행과 Codex 채팅에서 실행을 요청하는 방식을
-   구분하며 프로그램 자체의 대화형 기능은 구현된 경우에만 안내한다.
-2. **기관별 API 키 설정:** 지원 기관/접근 경로별 인증 필요 여부, 환경변수 이름과
-   로컬 설정 위치, 필요한 기관만 선택 등록하는 절차, 키 불필요·미설정·인증 실패 처리.
-   실제 키 대신 자리표시자만 사용하고 문서·화면 예시에 비밀정보를 포함하지 않는다.
-3. **수집 결과 확인:** 실제 저장 폴더와 파일 형식, 원본/정규화 데이터 구분,
-   출처·수집 시각·해시·단위·검증 보고서 및 작업 상태를 확인하는 방법.
-4. **문제 해결 및 한계:** 오류·재시도·검토 필요 상태, 안전한 재개 절차,
-   지원/미지원 기관·기능과 fixture/live 검증 범위.
-
-**검수:** 설명서의 대표 실행→선택적 키 설정→수집→결과 확인 절차를 최종 환경에서
-재현하고 결과를 기록한다. 실제 호출이 불가능한 항목은 미검증으로 표시한다.
-PPT의 화면·명령·경로가 설명서 및 구현과 일치하는지, 모든 슬라이드가 정상 표시되는지
-확인한다. 문서 작성이 완료되어도 자동 배포·병합 승인을 뜻하지 않는다.
-
-### 10.4 결과 전달 방식과 데이터 링크 (값·확인·고정 경로 전달 구현, 자동 링크 탐색 미구현)
-
-파일 생성과 링크 전달을 구분한다. 전달 방식은 파일/링크/둘 다이며, 파일일 때는
-지원 형식(XLSX/CSV 등)과 저장 위치를 추가로 확인한다. **현재 요청에 전달 방식 지시가
-없으면 사용 가능한 선택지를 보여주고 반드시 묻는다.** 이전 선호만으로 출력을 만들거나
-링크로 자동 대체하지 않는다. 이미 명시한 지시는 반복 확인하지 않는다.
-
-데이터 링크는 실제 선택 데이터로 연결되는 검증된 공식 다운로드·API 요청·데이터 뷰어를
-유형별로 제시한다. 일반 홈페이지/설명서 링크는 출처 근거로만 제공하며 데이터 링크로
-가장하지 않는다. 링크만 요청했다면 불필요한 전체 다운로드나 파일 생성을 하지 않는다.
-기간·차원 필터가 링크에 반영되는지, 수동 선택이 필요한지, 최신성·권한 제한을 알린다.
-링크 전달 성공은 실제 데이터 다운로드·파싱·품질 검증 성공과 별도로 기록한다.
-
-| 링크 상태 | 출력 선택 처리 |
-|---|---|
-| available | 선택 후보/조건에 연결되는 공식 데이터 링크를 확인했을 때만 링크 선택 제공 |
-| unavailable | 확인한 범위에서 제공 가능한 링크가 없음을 명시하고 링크 선택 제외 |
-| unknown | 아직 확인 못함을 표시하며 unavailable로 단정하거나 유효 링크로 제시하지 않음 |
-| blocked | 인증/권한/공유 제한 때문에 제공 불가함을 명시하고 해당 링크 선택 제외 |
-
-없거나 차단된 방식은 파일 생성으로 조용히 대체하지 않는다. 사용 가능한 파일 형식도
-없으면 미지원 사유를 알린다. 둘 다 요청했는데 한쪽이 불가능하면 확인된 부분과 부족한
-부분을 구분해 대안을 묻는다. 인증 토큰·키가 든 URL이나 만료된 임시 URL을 공유하지 않는다.
-
-링크 발견·검증은 05~08회차, 출력 확대는 09회차, 만료/권한/오류 재검증은 10회차,
-표현 방식 피드백의 저장·재사용은 11~12회차의 관련 범위에서 검수한다.
-보완 01 확장에서 기존 단일 후보/파일 v1 JSON과 fingerprint를 보존한 채, 별도 wrapper로
-전달 모드·선언된 링크 상태/만료·후보 그룹/변형과 확정 값을 구현했다. 실제 URL 조사,
-일반 출력 생성·표현 선호 저장은 미구현이다. 보완 02의 구조화 질문 서비스와 보완 03의
-고정 World Bank 전달 연결은 구현했다. 자연어 질문 UI와 일반 링크 발견은 미구현이다.
-보완 01 확장 당시 호환/검증 결과는
-docs/ALIGNMENT_01_EXTENSION_REPORT.md를 따르며 기존 241개 테스트 기준은 유지한다.
-상세 규칙과 예시는 docs/OUTPUT_AND_VARIANT_POLICY.md를 따른다.
-
-## 11. 기관 사전 조사와 표준 시나리오
-
-- 초기 기관·서비스 조사 대상: **IMF, BIS, OECD, World Bank; Fed Board, FRED, Treasury TIC, BEA, BLS, Census; ECB, Eurostat, Bundesbank, BoE, INSEE; BOJ, 일본 MOF, e-Stat; 중국 PBOC, SAFE, NBS**. 해당 목록은 자동 수집 지원 완료 목록이 아니라 조사 범위다.
-- 실증 테스트: `docs/REFERENCE_SCENARIOS.md`의 A~H를 참조. API·SDMX·파일/HTML·기관 간 경로·다국어·개정 데이터가 최소 한 번씩 등장하도록 설계.
-- 기관별 공식 출처·검증 상태·접근 방식·미확인 사항은 `docs/INSTITUTION_CATALOG.md`가 상세 기준.
-- **TIC 주의:** 공식 안내는 CSV/TXT/HTML/PDF 등 활용을 설명하며, 현행 TIC 통계를 '공식 Excel 파일 제공'으로 일반화하지 않는다. 파서는 Excel도 지원하되 TIC 대표 검증은 웹/파일로 설계.
-- 기관 사이트나 API 개편은 통상 장애가 아니라 **재발견·시계열 ID 매핑·후방 호환성** 기능을 검증하는 실제 사례다.
-
-## 12. 14회 High 구현 순서와 게이트
-
-| 회차 | 단일 구현 목표 | 통과 조건(요약) |
-|---|---|---|
-| 01 | 기준 문서·모듈 경계·공통 모델 | 기존 코드 분석, 계약·테스트 골격, 계획 확정 |
-| 02 | Orchestrator·Task/Stage 상태 | 단계 상태 저장·재개 결정 테스트 |
-| 03 | 공식 기관 1곳의 실제 데이터 수집 | 로컬 또는 승인된 네트워크에서 원본 확보 |
-| 04 | 원본·정규화·검증·오류·피드백 기록 | 한 작업 E2E 및 실패 경로 통과 **[Gate A]** |
-| 05 | 기관 사이트·공식 출처 탐색 | 공식성 근거와 프로필 생성 |
-| 06 | 이용 안내·기관별 검색 전략 | 가이드 탐색 및 재사용 |
-| 07 | 메타데이터 추출·표준화 | 원본·표준화 메타데이터 검증 |
-| 08 | 데이터셋·시계열 검색과 수집 연결 | 구조화 요청→근거 후보→명시 선택→지원 collector **[Gate B]** |
-| 09 | 다중 수집 형식·파서 확대 | API 및 실제 파일 사례 처리 |
-| 10 | 품질·진단·복구·변경 감지 | 주요 오류 클래스별 테스트 **[Gate C]** |
-| 11 | 대화/수동 피드백의 구조화 | 피드백 등록·출처·작업 연계 |
-| 12 | 기관/공통 지식 검색·적용 | 재사용 성공 및 잘못된 승격 방지 **[Gate D]** |
-| 13 | 반복 오류 분석·개선안 도출 | 서로 다른 task에서 재현된 범위별 패턴을 evidence-backed review-only 제안으로 생성; 자동 승격·코드 변경 없음 |
-| 14 | 격리 코드 변경·검증·승인·최종 통합 | 회귀 테스트·롤백·릴리스 보고 **[Gate E]** |
-
-각 회차의 상세 선행조건·변경 범위·입출력·검수는 `docs/IMPLEMENTATION_PLAN.md` 참조. 기본적으로 앞 회차의 게이트가 실패하면 다음 의존 작업으로 넘어가지 않는다. 사용자가 명시적으로 순서 진행을 지시한 예외 작업은 진행할 수 있지만, 실패 게이트는 계속 미통과로 기록하고 게이트 의존 기능·출시 판정을 보류한다. 14회는 초기 통합 v1 계획이지 모든 기관의 자동 지원을 보장하는 작업 횟수는 아니다.
-
-현재 상태(2026-10-26): 13회차 구현·로컬 검증 완료 (`docs/ITERATION_13_REPORT.md`). 14회차 Gate E는
-문서화된 제한 범위 로컬 v1 검토에서 통과했다 (`docs/ITERATION_14_REPORT.md`). 자연 TIC/BIS 원자료 개정과
-자연 provider 장애 후 재개는 확대 검증에서 `NOT_RUN`이며, 이 결과는 일반 기관 지원이나 배포 승인이 아니다.
-
-### Gate C 제한 범위 판정 정책 (2026-10-26)
-
-Gate C는 실제로 연결·검증된 provider 경로의 **제한 범위 통과**를 허용한다. 판정 증거는
-(1) 선택된 공식 live capture의 원본·manifest 무결성 및 정확한 요청 범위, (2) 그 live raw의 복사본에
-통제된 변경을 가해 실제 ingestion guard가 `changed`/`NEEDS_REVIEW`, 원본 양쪽 보존, 새 normalized
-출력 차단을 보이는 결정적 시험, (3) provider HTTP 경로를 통제된 503 fixture로 한 번 실패시킨 뒤
-Orchestrator task를 저장·재개해 같은 task가 성공하는 통합 시험이다. 두 fixture 결과는 각각
-`controlled source mutation`, `simulated provider failure`로 표시한다.
-
-이 제한 판정은 자연 발생한 live source revision 또는 실제 provider 장애·복구를 입증하지 않는다.
-검증한 기관·경로만 통과 범위에 넣는다. BOJ는 직접 API smoke에서 응답이 확인됐지만 재사용 collector가
-없어 수집 통합은 미지원/미검증으로 남긴다. 그 밖의 기관도 개별 근거 없이 지원을 확대하지 않는다.
-통제된 fixture를 live event로 보고하거나 일반 기관 전반으로 확대 해석하지 않는다. 범위와 잔여
-live 증거는 `docs/GATE_C_REVIEW_2026_10_26.md`에 기록한다.
-
-현재 구현 상태와 Gate 증거는 `docs/IMPLEMENTATION_PLAN.md`, 다음 작업 순서는
-`docs/ROADMAP_2026_10_26.md`를 기준으로 한다. 이 문서는 제품 목표와 요구사항을 정의하며 현재 구현률을
-반복 기록하지 않는다. 과거 구현의
-증거는 회차별 보고서, 변경 이유는 `docs/DECISION_LOG.md`를 따른다. 요구사항 추가는 구현 완료나
-다음 작업 자동 실행을 뜻하지 않는다.
-
-## 13. 실행 조직·의사결정 및 변경 관리
-
-### 13.1 책임
-
-- **Product Owner(사용자):** 범위, 우선순위, 통계적 정당성, 승인 판단.
-- **Codex 구현 에이전트:** 한 회차 범위 내 코드·테스트·작업 보고.
-- **검증 프로세스(테스트/수동 점검):** 재현성·통계 정의·출처·보안 검증.
-- **Developer Maintenance Workflow(Phase 5 이후):** 반복 패턴 분석 및 개선 후보 생성·검증(자율 병합 권한 없음).
-
-### 13.2 변경 통제
-
-기획 변경은 변경 이유·영향받는 모듈·회차·리스크·승인 결과를 `docs/DECISION_LOG.md`에 기록. 요구사항과 충돌 시 에이전트는 자체적으로 방향을 바꾸기보다 충돌을 보고한다. 모든 회차에서 테스트와 보고서를 남기고 Git 체크포인트로 복귀 가능하도록 한다.
-
-### 13.3 리스크
-
-- 기관 API 변경·폐지 → 공식 안내 재검증·기관 프로필 유효기간.
-- 잘못된 통계 매핑 → 개념 필드/원문 근거/사람 검토.
-- 무한 검색·높은 비용 → 시간·호출·데이터 크기 예산.
-- 재수집 시 원자료 변형 → 원본 해시·버전 보존.
-- 보안/약관 위반 → 승인된 출처·계정·도메인만 사용.
-- 자동 개선으로 기존 기능 훼손 → 별도 브랜치·회귀 테스트·승인.
-
-## 14. 첫 구현 착수 지시 및 릴리스 정의
-
-### 14.1 1회차 착수 시점
-
-이 절은 새로 프로젝트를 부트스트랩할 때의 역사적 절차다. 현재 체크아웃에서 다음 작업을
-정할 때는 `docs/IMPLEMENTATION_PLAN.md`의 게이트와 실행 순서를 따른다.
-
-1. 현재 Git 상태, 프로젝트 구조, 기존 테스트를 점검한다.
-2. 이 기획안과 지원 문서 간 충돌·미정 정책을 식별한다.
-3. **회차 01 범위만** 구현하고 과도한 전체 기능을 미리 만들지 않는다.
-4. 새 엔진은 독립 테스트 가능한 인터페이스/스텁으로만 준비한다.
-5. 수정 파일·테스트 결과·결정할 문제·2회차 선행조건을 보고한다.
-
-### 14.2 v1 출시 기준(Gate E)
-
-대표 정상·실패·변경·피드백 시나리오를 실행할 수 있고, 지원 완료한 접근 방식의 한계가 명시되며, 수집 결과의 공식 출처와 경제적 의미를 확인할 수 있고, 오류 후 안전 재개 및 사람 승인 기반 개선 절차가 검증된 상태. 지원하지 않는 기관에 대해서는 실패나 미확인 사실을 정확히 보고한다.
-
-§10.3의 사용자 설명서와 PPT 작성·검수를 최종 산출물 완료 조건에 포함한다.
-
----
-
-**구성 문서:** `docs/INSTALLATION.md`, `docs/INSTITUTION_CATALOG.md`, `docs/REFERENCE_SCENARIOS.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISION_LOG.md`.
-
-## 추가 요구: 비API 대용량 분리
-
-비API 파일은 사전 검사 및 제한된 탐색에서 용량·압축 해제량·행·열·셀 수 등의 임계 조건에
-해당하면 현재 엔진에서 추가 처리를 중단한다. 원본을 보존하고 이유·측정값·출처·task 참조를
-영속 인계 목록에 모아 별도 대용량 엔진 대상으로 관리한다. 구체 기준과 경계 수용 조건은
-`docs/ITERATION_16_PLAN.md`를 따른다. 등록 자체를 수집 성공으로 처리하지 않는다.
-
-## 엔진 연결 기준
-
-현재 호출 경로와 후속 연결은 `docs/ENGINE_CONNECTIONS.md`를 따른다. 공통 Orchestrator·StageResult·
-HistoryStore를 사용하고 transport/parser/storage를 내부 부품으로 둔다. 대용량 인계는 불변 판정 event와
-원본 snapshot을 선택해 명시적인 자식 task로 연결한다. 큰 본문 대신 검증된 파일·manifest 참조를 전달한다.
-
-## 추가 요구: 대용량 시험 기반 실행 정책
-
-공식 streaming/out-of-core 사례와 실제 용량 시험에 근거해 범위를 정한다. 애매한 자료는 후보로 보존해
-명시적으로 격리 시험한다. 자원·형식·환경 문제로 처리할 수 없으면 본 실행을 포기하고 미실행 사유를 반환한다.
-시험 scratch만 정리하고 원본과 이력은 보존한다. 시험 통과가 본 실행 승인을 대신하지 않는다.
-17회차의 범위·실측 예산은 `docs/LARGE_FILE_ENGINE.md`와 `docs/ITERATION_17_REPORT.md`를 따른다.
-
-## 추가 요구: 비API 대용량 실행 시간 예측
-
-qualification과 승인형 production/resume는 worker를 시작하기 전에 예상 stage 시간·범위·신뢰도·유사 실측 수·worker 상한을
-보여준다. 사용자는 실행 없이 read-only preview도 조회할 수 있다. 입력 분석은 bounded 표본을 쓰고 원문 값은 보존하지
-않는다. 실제 완료 stage 시간으로 baseline과 workload 유사 모델을 shadow 비교해 예측을 보정한다. 예측은 승인·자원 상한·
-실행 가능 판정을 바꾸지 않는다. 상세 계약과 검수 결과는 `docs/ITERATION_22_PLAN.md`, `docs/ITERATION_22_REPORT.md`,
-`docs/LARGE_FILE_ENGINE.md`를 따른다.
-시험 parent와 child는 task 실행 시작부터 workspace lock을 공유한다. 강제 종료로 결과가 저장되지 않으면,
-worker 종료를 확인한 뒤 `resume`으로 unknown trial과 `NOT_EXECUTED`를 남기며 시험을 같은 task에서 반복하지 않는다.
+세부 freshness 정의와 현재 connector 한계는 [`docs/SERIES_FRESHNESS.md`](docs/SERIES_FRESHNESS.md), 오류 유형과 시험 policy는 구현 상태 및 대용량 엔진 문서를 따른다.
+
+## 7. 피드백, 사례 평가, 규칙 반영
+
+개선 흐름은 다음 순서로 분리한다.
+
+**task 연결 피드백 로그 → 사람 검토·분류 → 비식별화한 versioned 사례 → development/validation/holdout 회귀 비교 → 심사 기록 → 별도 branch의 명시 변경·QA·PR**
+
+- 피드백은 task, stage, scope, category, knowledge kind, evidence와 append-only revision으로 저장한다. 사용자가 남긴 피드백은 자동으로 엔진 코드나 전역 지식으로 반영하지 않는다.
+- 사례는 원 질문과 변형, 기대 state와 기관/dataset/series/field, 필수 근거, 금지 동작, Excel 기대 정책, provenance/reviewer/privacy clearance를 가진다.
+- 비슷하지만 기대 답이 다른 질문은 같은 contrast group에 둔다. development, validation, holdout은 별도 파일로 관리한다. validation/holdout 변경은 의도적 리뷰와 version/hash 변경을 같은 PR에 남긴다.
+- baseline과 candidate는 동일한 case version에서 실행한다. 유형별 state/target accuracy, candidate ranking, false confirmation, 금지 동작을 비교한다. promotion gate는 목표 유형 개선, 다른 유형 퇴행 없음, false confirmation 0건, 금지 동작 0건이다.
+- 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.
+- raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
+
+현재 feedback log와 명시적 knowledge reuse는 구현돼 있다. evaluation case schema/split validator는 추가됐지만 세 set이 비어 있다. 후보 engine output을 공통 형식으로 실행·점수화하는 비교기와 rule promotion/rollback registry는 아직 구현되지 않았다. 따라서 지금은 평가나 승격 완료라고 부를 수 없다. 사용법과 schema는 [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)를 따른다.
+
+## 8. 지식 검색과 제한적 재사용
+
+이력 전체와 raw payload를 매 요청마다 읽지 않는다. SQLite projection/index에서 기관·dataset·concept·분류/버전·유효 시점·verification state로 범위를 좁혀 관련 근거만 bounded lookup한다. 근거 만료·충돌·unknown은 숨기지 않는다.
+
+명시적으로 검토된 사실과 사용자의 scope-bound instruction을 분리한다. 사용자 instruction reuse는 적용할 stage/category를 확인하고 현재 지시가 우선한다. unreviewed feedback과 inference는 기본 재사용에서 제외한다. index stale, pending update, scope mismatch는 선택한 stage skip이나 실행을 허용하지 않는다. 이 지식 계층은 source collection engine과 별도의 중앙 control plane이다.
+
+상세 query budget·index lifecycle 및 11–13회 구현 근거는 [`docs/KNOWLEDGE_ENGINE_PLAN.md`](docs/KNOWLEDGE_ENGINE_PLAN.md), [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)에 있다.
+
+## 9. CSV·Excel·다중 시계열 출력 기준
+
+출력 계약은 원본 전달과 비교/가공을 분리한다.
+
+1. **개별 원자료 전달:** 검증된 series의 source period, 원래 값·상태, 단위·통화·주기, 기관/dataset/series, 조회 시각, URL, raw/manifest hash를 함께 제공한다. Excel 원자료 출력은 아직 구현되지 않았다.
+2. **여러 원자료 series:** 의미·calendar·frequency·unit·currency·revision contract가 호환됨을 확인한 series만 같은 sheet에 둔다. 호환되지 않으면 별도 sheet로 분리한다. 겹치는 날짜의 값이 다르면 덮어쓰지 않고 양쪽을 보존하거나 `NEEDS_REVIEW`로 보낸다.
+3. **정렬/가공 비교:** 원자료 시트와 분리된 alignment sheet를 만든다. 날짜 기준, timezone/calendar, 집계·주기 변환, 단위 변환, 정렬 방식과 결측 처리를 provenance에 명시한다.
+4. **결측과 변환:** 기본 missing output은 빈 셀이다. 자동 보간과 forward-fill은 금지한다. 계산/정렬에 필요한 변환은 사용자가 확인한 명시 정책으로만 수행하고 식·원본 값을 보존한다.
+
+현재 지원은 완료·quality-passed World Bank/BOJ task의 CSV와 provenance sidecar다. XLSX exporter, multi-series workbook, alignment sheet는 미구현이다. 저장 task CSV를 Excel 또는 비교 워크북 완료로 간주하지 않는다. 상세 출력/variant 정책은 [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md)를 따른다.
+
+## 10. 보안·외부 접근·운영
+
+- 필요한 기관/경로의 API credential만 선택적으로 설정한다. 키는 환경변수/로컬 비추적 설정에 두고 코드·URL·문서·fixture·로그에 기록하지 않는다. 다른 기관 자격 증명으로 대체하거나 인증·접근 제한을 우회하지 않는다.
+- 허용된 공식 source와 문서화된 API만 사용한다. 호출 제한·라이선스·attribution을 확인하고 live GET은 목적·범위가 분명할 때 실행한다.
+- task 계획과 예산을 네트워크 요청 전 저장한다. request, stage, attempt, raw, manifest, normalized artifact 및 hash를 연결한다.
+- 파일 output은 project 경계·no-overwrite·symlink/path 가드를 지킨다. 대용량 worker는 fixed source, resource cap, source/hash check, explicit approval을 요구한다.
+- maintenance updater는 clean base 또는 지정 base의 격리 worktree에서 허용 경로를 수정하고 동일 candidate SHA를 QA한다. 자동 merge/publish는 하지 않는다.
+- Windows Task Scheduler는 정적/dry-run 검증과 실제 사용자 동작을 구분한다. 예약 등록·활성화는 현재 계획상 비활성이며, 실제 invocation을 확인하기 전에 사용 중이라 주장하지 않는다.
+
+## 11. 통합 실행 순서와 완료 조건
+
+아래 순서는 제품 작업 간 의존성과 현재 미완료 상태를 통합한 기준이다. 데이터 파이프라인과 maintenance tool은 서로 다른 workstream으로 관리한다. 사용자 관찰 23회차는 명시적으로 마지막 단계다.
+
+| 순서 | Workstream | 작업 | 완료 조건 |
+|---:|---|---|---|
+| 1 | 평가 | 검토·비식별화된 사례를 development set에 추가하고 contrast group을 검토한다. Validation/holdout은 사례 근거와 review/hash update가 함께 있을 때만 고정한다. | 세 set이 실제 사례를 포함하고 structural/leakage/hash 검증에 통과. Synthetic 사례는 `synthetic`으로만 표시하고 사용자 evidence로 세지 않음 |
+| 2 | 평가 | 공통 EngineOutcome adapter와 baseline/candidate runner를 구현한다. | 동일 case version의 state/target/ranking/근거/금지 동작 비교, 유형별 결과 및 false confirmation 집계 재현 |
+| 3 | 규칙 | explicit promotion record와 rollback 추적을 구현한다. | 검증/holdout 및 금지 동작·false confirmation gate 통과, reviewer·applied commit·rollback 기록 완료 전에는 미승격 |
+| 4 | 시계열 모델 | 공통 typed Series/ObservationBatch를 설계하고 World Bank·BOJ 고정 경로에 먼저 연결한다. | source identity, field, currency/unit, frequency/calendar, period, override, raw/source provenance와 unknown 보존; 기존 raw/hash 계약 유지 |
+| 5 | 원자료 출력 | 개별 호환 series의 XLSX 원자료 출력 및 provenance를 구현한다. | 파일 경계/no-overwrite 검증, source 값과 결측 보존, stale/unverified 차단, 지원 connector별 fixture와 실제 저장 task 확인 |
+| 6 | 비교 출력 | 다중 series worksheet 분리와 alignment sheet를 구현한다. | compatibility rule, date/calendar, 집계/변환식, 결측 빈칸, overlap 충돌 보존/검토, 보간·forward-fill 금지를 회귀 테스트 |
+| 7 | 엔진 조립 | provider별 mapping을 더 쉽게 검토·등록할 공통 composition registry를 보완한다. | 같은 Orchestrator lifecycle에서 source-specific adapters를 등록하고 plan/version 검증과 resume가 회귀 없이 동작. 현재 provider 전체를 무리하게 통합하지 않음 |
+| 8 | 유지보수 | Windows changed-candidate/handoff 및 failure-recovery pilot을 실측한다. | candidate SHA, 동일 SHA QA, allowlist, 실패/no-push, cleanup 및 handoff report 확인 |
+| 9 | 유지보수 | scheduler invocation은 정책을 확인한 뒤 별도 검증한다. | 등록 여부와 무관하게 우선 정적/dry-run 검증. 명시 승인 전까지 예약 작업은 비활성으로 유지하고 실제 invocation을 임의로 주장하지 않음 |
+| 10 | 유지보수 | 실행 시간 추정과 statistical metadata/quality를 실제 승인 작업에서 보정한다. | operation별 paired forecast가 3건 쌓인 후 error 재평가. 선택된 실제 series의 정의·단위·주기·calendar·revision evidence를 확인 |
+| 11 | 확장 | 반복 실수요가 확인된 provider/file format 하나를 선정해 qualification한다. | 공식 source contract, 예산, cancel/orphan recovery, 단위 정상/실패 evidence를 하나의 범위에서 통과. 전 기관 지원으로 일반화하지 않음 |
+| 12 | 사용자 검증 | 실제 분석가 1–2명이 저장 결과→파일 전달 흐름을 수행하는 23회차 관찰 | 참여자 동의·익명 기록, 업무 성공/실패·오해·수동 시간·재사용 여부를 기록. 참가자 evidence 없이 usability 통과 선언 금지. **모든 기술 workstream 뒤 마지막 순서** |
+
+회차 한 번에는 하나의 번호가 붙은 High scope만 구현한다. 현재 gate가 실패하면 의존하는 다음 구현을 통과 처리하지 않는다. 순서를 바꿀 때는 영향·이유·새 수용 기준을 기록하고 미통과 gate는 그대로 남긴다.
+
+### 별도 유지보수 상태
+
+PR #34 이후 공통 maintenance QA, isolated updater, candidate SHA handoff, Windows installer dry-run/no-op/cleanup/lock 경로는 일부 확인됐다. 아직 실제 Windows changed candidate와 failure recovery, 실제 scheduler invocation은 확인되지 않았다. updater scheduler는 비활성이다. 시간 예측은 qualification 15건·production 1건의 과거 catalog 표본과 paired forecast 0건으로 낮은 신뢰도다. 최신 수치와 실행 근거는 구현 상태·27회차 보고서를 참조한다.
+
+## 12. 완료·검토 규칙
+
+각 변경은 문제와 사용자 영향, 입출력 contract, 최소 정상·실패 사례, 데이터 완전성·보안 영향, 회귀 검증, 남은 한계를 포함한다. Tests, lint, diff 검사와 필요 CI를 실행한다. Fixture, synthetic, live evidence를 구분한다. 코드나 문서에 “완료”라고 적으려면 현재 branch/base에서 해당 범위에 맞는 증거가 있어야 한다.
+
+외부 데이터 변경, 의미 판단, 새 credential, 라이선스·접근권, 원본 덮어쓰기, 자동 promotion/merge/publish는 명시된 안전 경계와 검토 승인을 따라야 한다. 정상적인 reversible 코드·문서 변경은 전용 branch에서 진행하고 human review PR로 제공한다.
+
+## 13. 관련 증거·설계 자료
+
+- 실행 가능 범위: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), [`README.md`](README.md)
+- 현재 Gate·상태: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), [`docs/UNRESOLVED_ITEMS.md`](docs/UNRESOLVED_ITEMS.md)
+- 통합/유지보수 설계: [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md), [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)
+- 사용자 흐름·출력: [`docs/WORKFLOW_ALIGNMENT_PLAN.md`](docs/WORKFLOW_ALIGNMENT_PLAN.md), [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)
+- scenario/evaluation: [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
+- 과거 실행 결과·변경 이유: `docs/ITERATION_*_REPORT.md`, [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md)

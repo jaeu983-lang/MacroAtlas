@@ -87,7 +87,7 @@ Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 
 
 ## 다음 작업 우선순위
 
-현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
+현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [통합 제품 기획](../PROJECT_PLAN.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
 1. **완료:** 기능 구현과 기록된 pilot 증거가 통합됐다. updater 코드 기준은 `543c719be506350ce57fd14358173e54ede812b3`; 최신 Windows no-op run의 base는 `aefd320a67d0abb5779393b90d32f6d149efa77e`. Linux updater candidate path와 Windows no-op/cleanup/lock contention은 통과했으며 Gate C 자연 원자료 변경은 별도로 남아 있다.

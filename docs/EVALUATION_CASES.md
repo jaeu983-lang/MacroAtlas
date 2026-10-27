@@ -4,6 +4,8 @@ This directory defines versioned case records and split hygiene. It is a
 reviewed test corpus, not an automatic learner. `macro-feedback` keeps the
 append-only runtime feedback log; accepted feedback does not enter these files
 unless a reviewer writes and privacy-clears a case explicitly.
+The complete feedback→evaluation→promotion contract and priority order are in
+[`PROJECT_PLAN.md`](../PROJECT_PLAN.md), §7 and §11.
 
 ## Current state
 
