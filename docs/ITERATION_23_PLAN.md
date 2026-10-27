@@ -1,10 +1,17 @@
 # 23회차 기획 — 목표 사용자 업무 관찰
 
-기준일: 2026-10-27. PR #10 통합 뒤 준비한 다음 제품 단계로 분석가 1–2명의 status→CSV 업무 흐름을 관찰한다.
-이 문서는 세션 준비안이다. 참가자를 구하거나 관찰 세션을 실행한 것은 아니다.
+기준일: 2026-10-27. PR #10 통합 뒤 준비했으나, 사용자 우선순위 변경에 따라 이 회차를 최종 제품 검증으로 둔다. 분석가 1–2명의
+세션은 A–G 평가·엔진·시계열·Excel 선행 작업이 끝난 뒤 실행한다. 참가자 모집이나 관찰 세션은 아직 이뤄지지 않았다.
 
-현재 기준 HEAD는 PR #14 병합 후 `d89054038ba4c2573c4b201e0bab616ead0ecd5e`다. 실제 세션을 준비할 때는
-아래의 역사적 PR #10 checkout 대신 이 현재 기준으로 폐기용 checkout을 만들고 저장 task/raw/manifest를 다시 확인한다.
+## 실행 선행 조건
+
+`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 A–G가 구현·검증되기 전에는 이 회차의 참가자 세션을 시작하지 않는다. 현재 문서의 World Bank
+status→CSV 과제는 저장 task와 기본 CLI 사용성을 위한 준비 시나리오로 보존한다. 최종 관찰 전에는 완성된 원본/비교 workbook을 다루는
+시나리오로 갱신하고, 성공·실패 조건과 기대 Excel 정책을 평가 사례와 일치시킨다. holdout 사례는 참가자에게 공개하지 않는다.
+
+문서 작성 시점의 base 브랜치 `codex/iteration-04-gate-a`는 PR #47 병합 결과
+`72faf484181cb7a3b0813d5207f638f6b005c38f`를 가리킨다. 이 SHA는 계획 작성 당시의 참고점이다. 실제 세션을
+준비할 때는 항상 base 브랜치의 최신 commit SHA를 확인해 폐기용 checkout을 만들고 저장 task/raw/manifest를 다시 확인한다.
 
 ## 확인할 질문
 
@@ -26,8 +33,9 @@
 
 ## 진행자 준비
 
-1. 별도 임시 사본 또는 폐기 가능한 테스트 checkout을 현재 base HEAD `d890540`에서 준비한다. 현재 task ID는 위 World Bank
-   예제다. catalog는 이 task에 필요한 task/event/artifact/validation record만 담은 폐기용 사본을 사용하고,
+1. 별도 임시 사본 또는 폐기 가능한 테스트 checkout을 세션 준비 당일의 최신 base 브랜치에서 만든다. 계획에 적힌 과거 SHA를
+   checkout 기준으로 재사용하지 않는다. 현재 task ID는 위 World Bank 예제다. catalog는 이 task에 필요한
+   task/event/artifact/validation record만 담은 폐기용 사본을 사용하고,
    실제 저장소의 DB와 raw를 참가자 checkout에서 격리한다. task가 참조하는
    `data/raw/worldbank/cd9d5a7cf3ae49e88f1bac5f795f1bdc/response.json` 및 `request.json`을 함께 보존한다.
    원본과 manifest의 해시 및 `status`/`export` 결과를 세션 직전에 다시 확인한다. task record를 만들거나 baseline을

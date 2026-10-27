@@ -840,3 +840,15 @@ push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 reten
 그러나 response의 structured `unit` 값은 빈 문자열이고 frequency/periodicity field가 없다. 따라서 이 결과는
 indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
 원본 manifest, 과거 quality report는 변경하지 않고 unit/frequency unknown을 유지한다.
+
+## D-095 — 23회차 분석가 관찰을 A–G 구현 이후 최종 검증으로 이동
+
+2026-10-27. 사용자는 준비된 분석가 1–2명 관찰을 다음 단계에서 실행하지 않고 맨 마지막으로 옮기도록 요청했다.
+따라서 23회차 참가자 세션은 A–D 사례 평가·holdout·규칙 승격 gate, E 공통 시계열과 source adapter 통합,
+F/G 원본·비교 workbook 구현 및 검증 뒤에만 실행한다. 현재 World Bank CSV 시나리오는 준비 자산으로 보존하되,
+최종 세션 전 완성된 Excel 흐름을 검증하도록 갱신한다. 자연 Gate C 이벤트와 유지보수 pilot은 별도 증거 흐름으로
+계속하며 제품 일정의 차단 조건으로 삼지 않는다. 신규 provider와 UI 범위는 세션 후 관찰 결과로 정한다.
+
+- 영향 문서: `docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`, `docs/ROADMAP_2026_10_26.md`,
+  `docs/IMPLEMENTATION_PLAN.md`, `docs/ITERATION_23_PLAN.md`, `docs/ENGINE_CONSOLIDATION_PLAN.md`.
+- 영향 범위: 계획 순서 변경만 해당한다. 이 결정은 A–G 기능 구현, 사용자 연구 실행, 지원 범위 확대를 뜻하지 않는다.

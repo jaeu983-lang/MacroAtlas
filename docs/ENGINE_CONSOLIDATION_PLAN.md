@@ -117,7 +117,9 @@ PR #38 병합 후 사용자는 최신 base `aefd320a67d0abb5779393b90d32f6d149ef
 
 같은 날 최신 base `e25d944af1b789b47d712707c0e180757b749bfb`에서 Windows updater run `20261027T084854Z-00b29eb9`가 실행됐다. Codex exit code 0, `NO_ACTIONABLE_CHANGE`, cleanup `PASSED`, retention `scanned=7/removed=0/preserved=7`을 기록했다. 이는 정상 no-op 실측이며 candidate QA/handoff나 실제 scheduled invocation은 아니다.
 
-이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
+이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 사용자 요청에 따라 제품 사용자 관찰은 참가자 확보만으로 병행하지 않고,
+[제품 평가·엔진 통합·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)의 A–G가 끝난 뒤 최종 검증으로 진행한다. 유지보수 실행 결과는
+제품 사용성이나 Gate 증거로 세지 않는다.
 
 ## 안전 조건과 미결 설계 결정
 
