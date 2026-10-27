@@ -105,7 +105,7 @@ flowchart LR
 
 2026-10-27 상태: PR #26 뒤 첫 Linux updater 시도는 token refresh `401`로 실패했지만 device-code 재인증 후 재실행은 candidate QA/PR handoff에 성공해 PR #28로 병합됐다. Windows 첫 수동 run은 no-op 후 cleanup이 실패했으며, PR #31에서 오류 기록과 빈 orphan cleanup을 보완했다. 후속 Windows run은 `NO_ACTIONABLE_CHANGE`와 `cleanup=PASSED`로 끝났다. Scheduler 정적 검토에서는 명시 base ref, 교차 실행 lock, report 보존 정책이 없는 점을 확인했다. read-only Windows 확인에서도 MacroAtlas 예약 작업은 등록되지 않았다. 가드와 Windows candidate/failure 경로를 검증하기 전까지 scheduler를 활성화하지 않는다. 자세한 실행 근거는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
 
-2026-10-27 후속 구현은 installer에 명시 base branch·Python 경로·현재 사용자의 `Interactive`/`Limited` principal을 추가했다. Updater OS file lock은 manual/scheduled invocation을 직렬화하고, 이미 실행 중이면 `ALREADY_RUNNING`으로 기록한다. 90일 retention은 정상 no-op updater와 정상 일상 QA report에만 적용하며 candidate, 실패, cleanup 미완료, 예상 밖 파일은 보존한다. Windows CI installer dry-run과 Linux/Windows matrix가 코드 수준 준비를 확인한다. 실제 Windows changed/failure pilot, 실제 scheduler principal 확인, 작업 등록은 미완료이며 task는 계속 비활성이다.
+2026-10-27 PR #34에서 installer에 명시 base branch·Python 경로·현재 사용자의 `Interactive`/`Limited` principal을 추가했다. Updater OS file lock은 manual/scheduled invocation을 직렬화하고, 이미 실행 중이면 `ALREADY_RUNNING`으로 기록한다. 90일 retention은 정상 no-op updater와 정상 일상 QA report에만 적용하며 candidate, 실패, cleanup 미완료, 예상 밖 파일은 보존한다. 로컬 733개 테스트와 Ruff는 통과했으나 GitHub Actions가 계정 결제/사용 한도 문제로 runner를 시작하지 않아 Windows dry-run은 미검증이다. 실제 Windows changed/failure pilot, 실제 scheduler principal 확인, 작업 등록은 미완료이며 task는 계속 비활성이다.
 
 이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
 
