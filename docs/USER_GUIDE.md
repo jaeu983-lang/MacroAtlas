@@ -158,13 +158,18 @@ provider 장애가 발생하지 않으면 해당 live 증거는 미확인으로 
 먼저 task가 있어야 task에 연결된 피드백을 기록할 수 있습니다. 모듈 명령은 `python -m`으로 실행할 수
 있습니다.
 
+피드백은 별도 `.txt`/`feedback_log` 파일이 아니라 프로젝트의 `data/catalog.sqlite`에 task/stage와 연결되어
+저장됩니다. `feedback_current`는 현재 revision을, `feedback_revisions`는 변경·검토 이력을 보존합니다. DB는
+task/feedback 저장 작업이 실제 실행될 때 생성됩니다. 이 대화에서 말한 내용이나 다른 저장소의 feedback이
+MacroAtlas로 자동 복사되지는 않습니다.
+
 ```text
 python -m macro_data_platform.feedback_cli --project-root . add --task-id <TASK_ID> --text "이 범위에서는 확인한 World Bank source method를 사용" --category source_method --knowledge-kind user_instruction --scope-json '{"institution_id":"worldbank","dataset_id":"2"}'
 python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK_ID>
 ```
 
-새 피드백은 자동 승인되지 않습니다. 출력된 feedback ID를 검토한 뒤 필요할 때 revision을 지정해
-승인·거부·철회합니다.
+새 피드백은 자동 승인되지 않고 평가 사례나 엔진 규칙에도 자동 반영되지 않습니다. 출력된 feedback ID를 검토한 뒤
+필요할 때 revision을 지정해 승인·거부·철회합니다. 승인된 feedback도 코드 규칙 변경 승인과 같지 않습니다.
 
 ```text
 python -m macro_data_platform.feedback_cli --project-root . review --feedback-id <FEEDBACK_ID> --expected-revision 1 --status accepted --note "범위와 근거를 확인함"

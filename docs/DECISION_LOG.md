@@ -864,3 +864,14 @@ F/G 원본·비교 workbook 구현 및 검증 뒤에만 실행한다. 현재 Wor
   `docs/IMPLEMENTATION_PLAN.md`, `docs/UNRESOLVED_ITEMS.md`, `docs/ITERATION_23_PLAN.md`,
   `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`.
 - 영향 범위: 실행 계획과 v1 요구사항 구체화만 해당한다. 코드·evaluation corpus·XLSX 기능·사용자 관찰은 이번 변경에서 구현/실행되지 않았다.
+
+## D-097 — 피드백은 수동 검토 사례로 연결하고 최신성은 series별 Python 정책으로 판정
+
+2026-10-27. 사용자는 피드백이 엔진 코드를 자동 수정하는 방식이 아니며, 피드백 로그→검토 사례→유사/비유사 질문 회귀 평가→통과 규칙의 명시적 반영 흐름을 기준으로 계획을 보완하도록 요청했다. 붙여넣은 BloombergSearchAgent 설명은 참고 요구사항이지 MacroAtlas의 현재 상태로 간주하지 않는다. MacroAtlas에는 이미 task/stage 연결 SQLite `FeedbackStore`와 revision/review 기록이 있다. 별도 평문 `feedback_log`는 추가하지 않는다. accepted feedback도 정답이나 승격이 아니며, 익명화·근거 확인·사람의 case 승인 후 development set에만 추가한다. 엔진 기본 규칙 변경은 C/D 평가, PR 검토, `RulePromotionRecord`와 rollback 기록을 거쳐야 한다. 자동 코드 수정은 금지한다.
+
+최신성은 공통 고정 `stale_days`가 아니라 frequency/calendar와 per-series source release policy/검토된 override로 판정한다. Python `FreshnessAssessmentEngine`은 UTC `clock`을 주입받는 deterministic pure-Python 로직으로 둔다. 초기 provisional fallback은 daily/business calendar 5 periods, daily/calendar-day 7 days, weekly 2, monthly 3, quarterly 2, annual 1 period이며 source-defined schedule이 우선한다. observation date가 없으면 값을 내지 않는다. latest/current intent에서 freshness가 `STALE` 또는 `FRESHNESS_UNVERIFIED`면 값 반환과 CSV/XLSX export를 막고 상태·근거만 남긴다. 명시 historical range는 오래된 연도라는 이유만으로 stale 처리하지 않는다. freshness 구현을 33회차에 앞당기고 실제 분석가 관찰을 40회차로 이동했다.
+
+- 영향 문서: `docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`, `docs/ROADMAP_2026_10_26.md`,
+  `docs/IMPLEMENTATION_PLAN.md`, `docs/ITERATION_23_PLAN.md`, `docs/UNRESOLVED_ITEMS.md`,
+  `docs/USER_GUIDE.md`, `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`.
+- 영향 범위: 계획 변경만 해당한다. 이번 변경은 FeedbackStore, freshness 판정기, case bridge, engine rule 또는 export 동작을 구현하지 않는다.

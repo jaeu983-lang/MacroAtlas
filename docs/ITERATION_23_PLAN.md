@@ -5,9 +5,9 @@
 
 ## 실행 선행 조건
 
-`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 28–38회차 gate가 모두 통과되기 전에는 이 회차의 참가자 세션을 시작하지 않는다.
-실행은 계획상 마지막 39회차다. 현재 문서의 World Bank status→CSV 과제는 준비 자산으로 보존한다. 최종 관찰 전에 원본 workbook 저장과
-비교 workbook의 날짜 정렬·호환성·결측 정책을 다루는 두 과제로 갱신한다. 각 과제는 정확한 task/series ID, 완성 CLI 명령, expected sheet,
+`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 28–39회차 gate가 모두 통과되기 전에는 이 회차의 참가자 세션을 시작하지 않는다.
+실행은 계획상 마지막 40회차다. 현재 문서의 World Bank status→CSV 과제는 준비 자산으로 보존한다. 최종 관찰 전에 원본 workbook 저장과
+비교 workbook의 날짜 정렬·호환성·결측·frequency별 freshness 경고, 별도 feedback 기록 절차를 다루는 과제로 갱신한다. 각 과제는 정확한 task/series ID, 완성 CLI 명령, expected sheet,
 경고, 금지 동작, 성공·중단 조건을 고정 사례 버전과 맞춘다. holdout 사례와 정답지는 참가자에게 공개하지 않는다. 시나리오에 사용할 검증된
 동일 frequency/calendar의 복수 series가 준비되지 않으면 비교 과제를 위해 의미를 추정하거나 임의 데이터를 섞지 말고 세션을 연기한다.
 

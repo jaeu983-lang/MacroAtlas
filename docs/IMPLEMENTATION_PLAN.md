@@ -32,7 +32,8 @@ Python 3.11/3.12 checks도 8/8 성공했다. 실제 read-only preview와 한계�
 
 23회차 분석가 관찰 절차는 준비했지만, 2026-10-27 사용자 우선순위 변경에 따라 마지막 제품 검증으로 미뤘다.
 실행 가능한 구현 순서와 회차별 코드/test 범위는 [평가·엔진·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)의
-28–39회차 표를 따른다. 28–38 gate와 세션 시나리오 갱신 전에는 참가자 세션을 실행하지 않는다. 이 문서 작성은
+28–40회차 표를 따른다. feedback log는 이미 있으나 자동 case/code 반영은 없으며, 수동 case review를 29회차에 추가한다.
+series별 freshness gate는 33회차부터 구현한다. 28–39 gate와 세션 시나리오 갱신 전에는 참가자 세션을 실행하지 않는다. 이 문서 작성은
 평가·엔진·workbook 구현 완료를 뜻하지 않는다.
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
@@ -110,7 +111,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 19 (완료) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회; PR #6 통합·4조합 CI·보존 원본 production run 완료 | 다른 provider/format, Windows resource worker, semantic normalization, World Bank/BOJ CSV export |
 | 20 | 완료·품질 통과 World Bank/BOJ task의 UTF-8 CSV/provenance 전달, read-only revalidation, no-overwrite/path guard; PR #9 merge 및 4조합 CI 완료 | XLSX, BIS flat JSONL export, arbitrary provider, 독립 사용자 검증 |
 | 22 | 비API qualification과 BIS production/resume 전에 실행 시간·범위·신뢰도를 표시하고 실측 history로 shadow forecast를 계산; PR #10 통합 | 현재 catalog 표본 qualification 15, production 1, paired forecast 0. 예측 정확도는 낮은 신뢰도 상태 |
-| 23 | 저장 결과→CSV 관찰 protocol·시나리오·동의·익명 기록 절차 준비; PR #11 통합 | 실제 세션은 마지막 39회차로 보류. 28–38 gate 후 workbook scenario로 갱신해 실행 |
+| 23 | 저장 결과→CSV 관찰 protocol·시나리오·동의·익명 기록 절차 준비; PR #11 통합 | 실제 세션은 마지막 40회차로 보류. 28–39 gate 후 workbook/freshness/feedback scenario로 갱신해 실행 |
 | 24 | pytest/Ruff/diff/CLI/health를 공통 Python runner로 통합, Windows wrapper 및 report/log artifacts; PR #12 통합 | read-only analyzer와 updater→candidate QA handoff는 엔진 통합 계획의 후속 단계 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
@@ -154,7 +155,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
 4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff, 20회차 CSV 전달.
 5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 당시에는 실제 목표 사용자
-   관찰을 다음 제안으로 적었으나 D-095/D-096에서 순서를 변경했다. 현재 실제 관찰은 A–G를 마친 39회차로 보류한다.
+   관찰을 다음 제안으로 적었으나 D-095–D-097에서 순서를 변경했다. 현재 실제 관찰은 A–G, feedback bridge와 freshness gate를 마친 40회차로 보류한다.
 6. World Bank 자연 retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 여전히 미관측이며,
    해당 pair가 생기면 exact scope, 양쪽 raw 보존, `changed/NEEDS_REVIEW`, 새 normalization 차단을 재검토한다.
    현재 D-067 제한 범위를 확대하지 않는다.
@@ -166,8 +167,8 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
 공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows installer dry-run, updater no-op/cleanup, OS lock 경합 pilot 및 base `f8693f0`의 updater·retention 테스트 34개가 통과했다. 최신 base `e25d944`에서 Windows updater 실제 run은 `NO_ACTIONABLE_CHANGE`와 cleanup 성공을 기록했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub Actions는 계정 사용 한도로 runner가 시작되지 않았다. Windows 사용자 세션 candidate/handoff와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
-20회차 CSV 전달과 작성자 내부 dry run은 완료했다. 다음 제품 순서는 A–D 평가(28–31), E 공통 시계열·adapter(32–36),
-F/G workbook(37–38)이다. 실제 분석가 관찰은 마지막 39회차다. 이 문서와 로드맵이 달라 보이면 현재 증거는 이 문서,
+20회차 CSV 전달과 작성자 내부 dry run은 완료했다. 다음 제품 순서는 A–D와 수동 feedback-to-case(28–32),
+E 공통 시계열·frequency별 freshness·adapter(33–37), F/G workbook(38–39)이다. 실제 분석가 관찰은 마지막 40회차다. 이 문서와 로드맵이 달라 보이면 현재 증거는 이 문서,
 실행 순서는 로드맵과 [회차별 실행 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)을 따른다.
 
 자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.
