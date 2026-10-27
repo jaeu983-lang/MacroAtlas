@@ -1,87 +1,146 @@
-# 제품 평가·시계열 엔진 통합·Excel 계획
+# 제품 평가·시계열 엔진 통합·Excel 실행 계획
 
-기준일: 2026-10-27. 분석가 사용 관찰(23회차)은 이 계획의 마지막 사용자 검증으로 둔다. 사용자 요청에 따라 먼저 A–G의 사례 평가,
-엔진 경계, 시계열 모델, Excel 출력까지 구현·검증한다. 자연 Gate C 증거와 유지보수 pilot은 별도 흐름으로 계속 기록하며,
-자연 이벤트가 생기지 않았다는 이유로 최종 제품 관찰을 무기한 막지 않는다.
+기준일: 2026-10-27. 이 문서는 A–G를 실제 구현·검증하고 분석가 1–2명 관찰까지 끝낼 수 있도록 범위, 코드 경계, 순서, 완료 조건을 고정한다. 현재 상태는 **실행 전 계획**이다. 문서만으로 기능이 구현됐거나 사용자 관찰이 실행된 것은 아니다.
 
-현재 상태는 **기획**이다. 이 문서 작성으로 엔진 통합·평가 세트·Excel 기능이 구현된 것은 아니다. 한 번의 구현 작업은 기존 규칙에 따라
-하나의 회차 범위만 처리한다.
+## 1. 목표와 현재 범위
 
-## 대상 범위
+최종 목표는 지원되는 공식 자료를 찾고, 사용자가 명시적으로 선택한 자료를 원본·정의·단위·주기·출처와 함께 검증하며, 서로 호환되는 series의 원본 workbook과 날짜 정렬 workbook을 재현 가능하게 내보내는 것이다. 검색이 불확실하면 후보를 확정하지 않고, unknown을 추측으로 채우지 않으며, missing 값을 보간하지 않는다.
 
-기존 지원 어댑터(World Bank, BLS, Census, BOJ, TIC/BIS 파일)로 한정한다. 신규 기관을 늘리는 작업은 포함하지 않는다. 기관별 endpoint,
-인증, 요청 파라미터, 원본 파서와 소스별 특수 검증은 어댑터 안에 남긴다. 공통화할 대상은 수집·정규화·검증·내보내기의 업무 흐름과
-데이터 계약이다.
+이번 제품 범위는 현재 지원된 World Bank, BOJ, BLS, Census API 경로와 제한된 공식 파일 경로다. 신규 기관을 추가하거나 범용 자연어 agent/UI를 만드는 일은 포함하지 않는다. TIC/BIS 감시와 대용량 worker는 서로 다른 운영·보안 목적의 경로이므로 공통 관측값 모델에 억지로 넣지 않는다.
 
-`Orchestrator`와 `Engine.run(StageInput) -> StageResult`는 이미 공통이다. 새 상위 만능 엔진을 추가하지 않는다. 현재 기관별 ingestion
-클래스의 공통 lifecycle을 단계별 엔진으로 옮기고, 기관별 클래스는 그 단계에 주입되는 `SourceAdapter` 구현으로 줄인다.
+한 번의 구현 task는 저장소 규칙대로 하나의 번호가 붙은 High 회차만 다룬다. 각 회차는 독립 PR, 테스트 결과, 현재 상태, 미완료 항목을 기록하고 gate가 실패하면 다음 회차로 넘어가지 않는다. 평가 코퍼스와 모든 실행은 로컬 fixture를 기본으로 하며, 평가는 네트워크·API key·task DB 쓰기·수집·제품 CSV/XLSX export를 하지 않는다. 필요할 때만 `.gitignore`된 `reports/evaluation/` 아래에 deterministic evaluation report를 쓴다.
+
+## 2. 지금 있는 것과 없는 것
+
+| 현재 코드 | 확인된 책임 | 남은 단절과 이번 계획의 경계 |
+|---|---|---|
+| `discovery/series_search.py`: `CandidateSearchEngine`, `rank_candidates`, `SelectionReceiptEngine` | 구조화 `DataRequest`로 로컬 근거 후보를 lexical ranking하고, 명시 선택을 수집 계획으로 전달 | 평가 사례·split·Top-1/MRR report·규칙 전후 비교·승격 기록은 없다. ranking은 동등성 판정이 아니다. |
+| `workflow_contracts.py`: `DataRequest`, `Candidate`, `CandidateProposal`, `ConfirmedSelection` | 요청, 후보, 선택 상태를 검증하고 직렬화 | 시간축 관측값, canonical series identity, compatibility 계약은 없다. |
+| `orchestration/runner.py`, `orchestration/models.py`, `contracts.py` | 공통 `Orchestrator`, `(engine, version)` 등록, `StageInput → StageResult`, attempt/history | 실행기는 이미 공통이다. 이를 대체할 새 최상위 만능 엔진은 추가하지 않는다. provider 작업 단계와 보존 정책을 차례로 공통화한다. |
+| `connectors/{worldbank,boj,bls,census}.py`, `ingestion/{worldbank,boj,bls,census}.py` | source별 요청·HTTP·응답 확인·파싱과 기존 stage 저장 | source 클래스를 제거하지 않는다. protocol 차이는 어댑터에 두고 공통 실행 lifecycle 중복을 shared service로 옮긴다. |
+| `ingestion/metadata.py`, `metadata/normalize.py`, `metadata/sdmx.py` | 일부 BLS/Census/BOJ/SDMX metadata 취득과 `known/unknown/conflict` 보존 | metadata normalized model과 observation model은 별개다. field 미제공은 unknown으로 유지한다. |
+| `ingestion/csv_export.py` | 완료·검증된 World Bank/BOJ task의 CSV와 provenance sidecar, read-only revalidation, 경로·덮어쓰기 방어 | XLSX 생성은 없다. `openpyxl`은 입력 XLSX parsing에 사용 중이며 프로젝트 의존성이다. |
+| `connectors/tabular_files.py`, `ingestion/tabular_files.py`, `ingestion/gate_c_watch.py`, large-file trial/production | 작은 표의 구조 parsing, Gate C 파일 변경 감시, BIS flat 제한 worker | 표 parsing은 경제적 series 의미를 판정하지 않는다. Gate C 감시·대용량 worker의 안전 lifecycle은 exporter/normalizer와 합치지 않는다. |
+
+구현 시작 시 최신 base와 작업 branch 상태를 다시 확인한다. 이 계획은 PR #49 변경을 포함할 브랜치에서 작성됐으며, 실제 구현 회차는 이 계획이 통합된 최신 base를 기준으로 새 branch/worktree를 만든다. 이전 task의 stage engine/version은 기존 resume 호환 기간 동안 registry에서 유지하고, 새 plan에만 새 engine version을 고정한다.
+
+## 3. 목표 엔진 경계
 
 ```mermaid
 flowchart LR
-    CASE[평가 사례·구조화 요청] --> SEARCH[공통 검색·명시 선택]
-    SEARCH --> PLAN[버전 고정 TaskPlan]
-    PLAN --> META[메타데이터 엔진]
-    META --> OBS[관측값 수집 엔진]
-    META -. source adapter .-> A[World Bank / BLS / Census / BOJ / 파일]
-    OBS -. source adapter .-> A
-    OBS --> NORM[공통 시계열 정규화]
-    NORM --> QA[품질·규칙 검증]
-    QA --> ORIG[원본 Excel]
-    QA --> COMP[정렬·가공 Excel]
-    CASE --> EVAL[동일 사례 버전 평가기]
-    EVAL --> GATE[규칙 반영 심사·롤백 기록]
+    CASE[EvaluationCase / DataRequest] --> SEARCH[CandidateSearchEngine]
+    SEARCH --> SELECT[명시적 사용자 선택]
+    SELECT --> PLAN[버전 고정 TaskPlan]
+    PLAN --> META[공통 MetadataCollectionEngine]
+    PLAN --> COLLECT[공통 ObservationCollectionEngine]
+    META --> ADAPTER[명시 등록된 SourceAdapter]
+    COLLECT --> ADAPTER
+    ADAPTER --> RAW[불변 raw + request manifest]
+    RAW --> NORMALIZE[공통 NormalizationEngine]
+    NORMALIZE --> QA[공통 QualityValidationEngine]
+    QA --> ORIGINAL[OriginalWorkbookExporter]
+    QA --> ALIGNED[ComparisonWorkbookExporter]
+    CASE --> EVAL[동일 코퍼스 평가기]
+    EVAL --> PROMOTION[RulePromotionRecord / PR 심사]
 ```
 
-## 엔진 경계
+공통 엔진은 공통 policy와 artifact lifecycle을 소유한다. source adapter는 공식 endpoint/method, 인증 방식, 요청 직렬화, 페이지 규칙, 응답 parsing, source-specific schema invariant, source metadata field mapping을 소유한다. `source_id -> adapter`는 명시 registry/capability로 등록하고, core에 provider 이름을 따라 분기하는 거대한 `if/else`를 만들지 않는다.
 
-| 공통 엔진·계약 | 기관/형식 어댑터의 책임 | 현행 구현 이전 방향 |
+처음부터 모든 provider를 같은 stage 구성으로 바꾸지 않는다. 기존 task plan의 stage 순서·입출력을 보존하는 World Bank 수직 slice를 먼저 만든 뒤 provider별로 옮긴다. BOJ metadata/data가 분리된 단계, World Bank collect/validate 단계 등 source에서 필요한 의존성은 adapter capability와 명시 TaskPlan에서 나타낸다. 일반 DAG, 분산 queue, exactly-once 외부 실행은 이 작업의 요구가 아니다.
+
+`LargeFileTrialEngine`, `LargeFileProductionEngine`, `GateCFileEngine`은 실행 격리·승인·원본 감시의 서로 다른 trust boundary라 별도 유지한다. 보통 파일 parser는 `UninterpretedTableArtifact` 같은 구조 보존 결과를 반환할 수 있으나, 공식 정의·단위·주기가 검증되지 않은 파일을 canonical economic `TimeSeries`라고 선언하지 않는다.
+
+## 4. 데이터 계약
+
+### 4.1 평가 사례와 세트
+
+`EvaluationCase` v1은 다음을 필수로 갖는다.
+
+| 필드 | 의미 |
+|---|---|
+| `case_id`, `case_version`, `case_family_id`, `split` | 불변 식별·버전·누수 방지 그룹·development/validation/holdout 구분 |
+| `case_type` | `rankable`, `near_match`, `insufficient_evidence`, `unrelated` 중 하나; `expected_state`와 별개로 평가 유형을 고정 |
+| `request` | 실제 `DataRequest` 직렬화 값 |
+| `query_variants` | 의미가 보존되는 질문 표현; 각 변형은 원 case의 같은 family에 속함 |
+| `expected_state` | `candidate_found`, `review_required`, `unmatched` 중 하나. 검색 결과·검토 필요·후보 없음의 안전한 기대 상태 |
+| `relevant_candidate_ids`, `forbidden_candidate_ids` | 정답 후보 집합과 선택·추천하면 안 되는 후보 |
+| `expected_match_status` | 채점 대상 후보별 기대 `exact/comparable/related/review_required` 상태. 근거가 부족하면 review_required를 기대 |
+| `expected_fields` | 기관, series/dataset 식별자, geography/dimensions, 단위, 통화, 주기, 기간, 정의, override의 기대값 또는 `unknown` |
+| `required_evidence` | 공식 근거 URI, 로컬 fixture/raw pointer, retrieval date/hash와 해당 근거가 뒷받침하는 claim |
+| `prohibited_actions` | 자동 후보 선택, unknown 보정, 비선택 후보 수집, raw overwrite, export 등의 금지 행동 |
+| `excel_policy` | series grouping 기대, 충돌 정책, 정렬 period, 집계/변환 명세, 결측 정책 |
+
+파일은 `tests/fixtures/evaluation/v1/`에 저장한다. 사례는 JSONL UTF-8, schema/serializer는 버전 고정하고, split manifest에 파일 SHA-256 및 schema version을 기록한다. 초기 코퍼스는 **36 case, split별 12 case, 각 split의 case_type별 3개**로 고정한다. case family는 동일 request intent의 paraphrase/near-duplicate 묶음이며 family는 통째로 한 split에만 배치한다. 독립된 요청이면 같은 catalog candidate ID가 여러 split의 정답으로 재사용될 수 있지만, 같은 intent의 변형 질문을 쪼개지 않는다. 36개를 공식 근거로 채울 수 없으면 가짜 정답을 만들지 말고, 실제 확보 수와 비어 있는 유형을 기록한 뒤 B gate를 보류한다. 이 초기 표본은 해당 catalog snapshot에 대한 회귀 gate이며 전체 통계 검색 정확도나 일반화의 증명이 아니다.
+
+schema validator는 cross-field 조건도 검사한다. `rankable`은 relevant candidate가 하나 이상이고 expected state가 `candidate_found`여야 한다. `near_match`는 relevant candidate와 최소 하나의 forbidden distractor가 있어야 하며 expected state는 `candidate_found` 또는 `review_required`다. `insufficient_evidence`는 expected state `review_required`, `unrelated`는 `unmatched`이며 둘 다 relevant candidate를 갖지 않는다. expected `unknown/conflict` field는 case 근거가 있어야 하고, 필요한 후보의 expected match status가 review_required여야 한다.
+
+v1 검색 평가 후보는 고정 catalog snapshot으로부터 읽으며 World Bank seed와 검증된 BLS/Census metadata fixture를 포함한다. 후보가 없는 BOJ/파일 요청은 `unmatched`나 `review_required` 기대 사례가 될 수 있지만, 미등록 source를 지원한다고 채점하지 않는다. snapshot 출처·adapter version을 같이 고정한다. 유사 표현, 동일한 source/concept·period를 가진 paraphrase는 family가 같으므로 다른 split으로 나누지 않는다. Workbook pilot용 2-series target은 WDI 미국 GDP current US$ (`NY.GDP.MKTP.CD`)와 GDP growth (`NY.GDP.MKTP.KD.ZG`), 같은 연도 범위다. 이 indicator ID와 frequency는 32회차 전에 official source로 확인한다. 구조화 metadata가 unit을 비우거나 노출하지 않으면 D-094에 따라 `unit=unknown`을 유지하며, label이나 indicator ID만 보고 정규화 unit을 채우지 않는다. 확인 전에는 알려진 값처럼 case fixture에 넣지 않는다.
+
+### 4.2 공통 시계열 v1
+
+`TimeSeries`는 정의/식별과 observation을 분리한다. 직렬화 schema는 `timeseries-v1`로 고정하며 최소 필드는 다음과 같다.
+
+| 영역 | 필수 값 |
+|---|---|
+| 요청·정체성 | 원 `DataRequest`/선택 receipt 참조, `source_id`, dataset/series ID와 source key, geography와 dimension codes |
+| 정의 | 원 label/definition, metadata source refs, `known/unknown/conflict` state, common concept link와 link evidence/status |
+| 비교 조건 | frequency, period convention/calendar, currency, unit, seasonal adjustment, price basis, 각 field의 state와 source ref |
+| 관측값 | source period token, 검증된 정렬 key(있을 때만), source value decimal text, `value_status`, 원 status/token/reference |
+| 변경 계보 | override와 transform의 입력 hash, operation/formula/version, 적용 이유·승인·생성 시점. 미변경은 빈 lineage로 명시 |
+| 근거·검증 | raw/manifest 상대 경로와 SHA-256, source/document URL, request fingerprint, retrieved_at UTC, task/stage/run IDs, parser/adapter/engine/rule version, quality result |
+
+`value_status`는 최소 `observed`, `missing`, `suppressed`, `not_applicable`, `unavailable`, `unknown`, `conflict`를 지원한다. source가 세부 원인을 말하지 않으면 빈값을 `missing`이나 0으로 단정하지 않고 `unknown`과 원문 token을 보존한다. 값은 binary float로 canonicalize하지 않고 decimal text와 원본 pointer/hash를 남긴다. 날짜는 source period token을 보존하며 frequency/calendar adapter가 검증한 뒤에만 sortable key를 부여한다.
+
+두 series의 **원본 배치 호환 서명**은 검증된 frequency, calendar/period convention, unit, currency, seasonal adjustment, price basis 및 정의/차원 적합성을 포함한다. 핵심 field 중 하나라도 `unknown`, `conflict`, source-only 의미면 자동 공동 배치를 허용하지 않고 각 series를 분리한다. 이름이나 label 유사성만으로 공통 concept·통계적 호환성을 만들지 않는다. 비교 workbook의 side-by-side 정렬은 같은 주기/calendar가 확인돼야 하며, 같은 행에 배치했다고 개념 동등성을 뜻하지 않는다는 경고와 metadata를 출력한다.
+
+### 4.3 Workbook 계약
+
+- 기존 `macroatlas export ... --format csv` 계약은 유지한다. 새 CLI는 `macroatlas workbook {original,compare} --series TASK_ID:SERIES_KEY` 반복 입력과 새 `--output data/exports/name.xlsx` 경로를 받는다. `SERIES_KEY`는 source adapter가 versioned `TimeSeries`에서 발급한 canonical stable identity다. 동일 task의 복수 series도 정확한 key로 명시한다. task/series를 추측하지 않는다.
+- 입력 task는 완료·quality-passed여야 하고 export 시 현행 CSV exporter와 같은 방식으로 task/audit/raw/manifest를 read-only 재검증한다. unsupported provider, conflict, source changed, unknown period alignment, malformed lineage면 파일을 게시하지 않고 명시 사유로 멈춘다.
+- 출력은 `data/exports/` 아래만 허용하고 symlink/path traversal/덮어쓰기를 차단한다. 임시 파일 생성 후 no-overwrite 방식으로 최종 이름을 게시한다. DB/raw/history에는 쓰지 않는다.
+- 원본 workbook은 `Readme`, series/compatibility-group별 `Data_*`, `Series_Metadata`, `Provenance`, 필요 시 `Conflicts` sheet를 둔다. 서로 호환되는 series만 같은 Data sheet에 열로 놓는다. 다른 단위·통화·주기·calendar·의미는 별도 sheet로 둔다. 동일 series/date conflict는 해당 출력값을 빈칸으로 두고 양쪽 원문/출처를 Conflicts에 보존하며 workbook에 review 상태를 표시한다.
+- 모든 Data sheet는 날짜/period와 값 옆의 상태를 보존한다. 빈 셀을 숫자 0으로 표현하지 않는다. source decimal text를 보존하고 Excel 15자리 정밀도를 넘거나 숫자로 안전 변환할 수 없는 값은 정확한 text로 기록해 근사값을 숨기지 않는다.
+- 비교 workbook은 원본 series reference와 metadata를 유지한 `Aligned_Data` 및 `Comparison_Policy` sheet를 추가한다. v1에서 허용할 변환은 `identity`, 동일 series의 인접한 검증 period 간 `difference`, `percent_change`로 제한한다. formula/version과 base/lag period 규칙을 기록하고, 중간 period 누락·unknown/suppressed input·0 분모는 빈 결과와 status로 남긴다. 집계는 v1에서 `none`만 지원하고 다른 집계/통화 환산/보간 요청은 거부한다. 서로 다른 frequency/calendar는 자동 변환하지 않는다.
+- 출력 크기·행·series 수 한도를 코드 상수로 선언하고 경계 테스트한다. exporter는 write-only XLSX 생성으로 메모리 사용을 제한한다. 초과하면 partial workbook을 남기지 않고 명시적 거부한다.
+
+## 5. 순차 실행 계획
+
+아래 번호는 27회차 뒤에 제안하는 다음 구현 회차다. 이 계획과 PR #49가 검토·통합되기 전에는 28회차 구현을 시작하지 않는다. PR 병합 전이라도 작업이 필요하면 현재 PR과 섞지 않는 후속 branch를 쓴다.
+
+| 회차 | 범위와 주요 산출물 | 필수 검증·통과 gate |
 |---|---|---|
-| `CatalogEngine`·`CandidateSearchEngine` | 공식 카탈로그 접근, provider 고유 ID와 정의 해석 | `InstitutionDiscoveryEngine`와 metadata reader 결과를 공통 카탈로그 입력으로 연결. 현재 lexical rank는 평가 대상 정책으로 유지하며 의미 동등성을 주장하지 않음 |
-| `MetadataCollectionEngine` | metadata endpoint, 인증, 응답 포맷·페이지 방식 | `BLSMetadataEngine`, `CensusVariableMetadataEngine`, `BOJMetadataEngine`의 수집·저장 반복을 공통화. Codebook/SDMX 파서는 제공된 입력용 어댑터로 유지 |
-| `ObservationCollectionEngine` | URL/HTTP method, 요청/인증, provider 응답 파싱 | `WorldBankGDPEngine`, `BLSEngine`, `CensusEngine`, `BOJObservationEngine`의 단계 lifecycle 통합. 기관별 connector는 별도 어댑터 |
-| `FileCollectionEngine`·shared parser | TIC/BIS의 고정 URL, archive/member, 구분자·헤더 | `GateCFileEngine`와 `TabularFileEngine`의 source watch와 공통 원본 보존 경계를 분리. 형식별 parser는 유지 |
-| `NormalizationEngine` | source field와 코드의 의미 매핑 | `WorldBankValidation` 등 provider별 정규화를 공통 `TimeSeries` 출력 계약에 맞춤. 필드가 없으면 unknown으로 둠 |
-| `QualityValidationEngine` | source-specific 허용 범위, API schema invariants | 중복·기간·차원 검증은 공통 rule protocol로, provider schema 확인은 adapter rule로 분리. 규칙은 독립 버전과 근거를 가짐 |
-| `OriginalWorkbookExporter` | 없음 | CSV-only exporter를 원본 provenance를 포함한 XLSX 원본 출력으로 확장 |
-| `ComparisonWorkbookExporter` | 없음 | 날짜 정렬·명시적 변환을 위한 별도 비교 시트 생성 |
-| 격리 trial/production worker | 위험한 파일의 실행·자원 경계 | `LargeFileTrialEngine`과 `LargeFileProductionEngine`은 시험과 승인형 처리의 trust boundary가 달라 별도 유지 |
+| 28 | A/B: evaluation package schema/reader, JSONL 36 cases, family-grouped split manifest, snapshot/version hash | schema/manifest deterministic check; malformed/duplicate/leakage cases 거부; fixture-only. 필요한 유형이나 공식 근거가 모자라면 다음 단계 중단 |
+| 29 | C: offline evaluator와 현행 `rank_candidates` baseline report; Top-1/MRR, specified-field exactness, abstention/false-exact, forbidden action 및 분모별 유형 표. CLI 예: `python scripts/evaluate_search.py --split validation --policy search-rules-v1 --report reports/evaluation/search-rules-v1-abc123-validation.json`; `--split`은 development/validation 중 선택 | 같은 request/catalog snapshot 반복 report 본문이 byte-identical; missing evidence·unknown을 무단 채점/추정하지 않음; 네트워크·API key·DB/raw/product-export side effect 없음. report는 input/case/catalog/policy SHA를 기록 |
+| 30 | C: ranking policy를 명시 `SearchPolicy`/version으로 주입하고 기존/후보 version 비교 실행·JSON report 작성 | 동일 case/schema/candidate snapshot; 유형별 Top-1/MRR 비교; 목표 유형에서 최소 1개 고정 사례 개선, 미목표 유형 regression 0, false-exact/금지 행동 0. 이 조건이 안 되면 규칙 미승격 |
+| 31 | D: `RulePromotionRecord`와 review 절차/저장 포맷; from/to policy, case/split/catalog SHA, reports, 공식 근거, reviewer, 적용 PR commit, rollback version | holdout은 frozen candidate가 validation gate 통과한 때 한 번 확인. holdout 실패 후 같은 holdout으로 튜닝 금지. 승인·rollback 없는 policy 기본값 변경을 거부하는 테스트 |
+| 32 | E: typed `TimeSeries`/`Observation`, compatibility signature, lineage·serialization; World Bank collect/quality/export를 공통 model로 변환하는 vertical slice. 공식 metadata 확인 후 위의 GDP current US$ / GDP growth 2-indicator allowlist를 workbook pilot 범위로 고정 | 보존 World Bank fixture에서 source identity, 3 period, null, unknown unit/frequency, raw/manifest hash를 lossless 비교; 두 indicator의 official definition·frequency를 확인하고 unit state는 source field를 그대로 반영; 별도 fixture; arbitrary indicator/country 요청 거부; task 재개·기존 CSV 동작 regression 없음 |
+| 33 | E: BOJ metadata/data adapter를 공통 stage lifecycle에 연결 | 기존 FM08/FXERD01 fixture와 30 observations/11 null 의미가 유지; unit/frequency는 검증 metadata에서만 known; 이전 saved task resume fixture 유지 |
+| 34 | E: BLS data/series metadata adapter 연결 | period token M/Q/A/S, original value, credential redaction, unit/frequency unknown 상태 보존; prior task format fixture 호환 |
+| 35 | E: Census variable metadata/data adapter 연결 | geography/table/variable key, source null, query year, credential-free URL와 raw lineage 보존; unknown unit/frequency 강제 추정 금지 |
+| 36 | E: `UninterpretedTableArtifact`와 공식 file adapter lifecycle 경계 문서·등록 연결. Gate C watch 및 large-file worker는 별도 유지 | TIC/BIS/table parser의 기존 watch, trust boundary, structural-only semantics 동일; 의미 mapping 없는 파일이 `TimeSeries`/CSV/XLSX series로 진입하지 않음 |
+| 37 | F: read-only original XLSX exporter, workbook command, provenance/metadata/compatibility/conflict sheets | World Bank·BOJ 보존 task와 BLS/Census fixture; known-compatible grouping, unknown 분리, duplicate conflict 보존, null/zero, decimal precision, no-overwrite/path/symlink, DB/raw 불변 |
+| 38 | G: aligned comparison workbook과 허용 변환, period alignment/status 처리 | 같은 주기·calendar만 정렬; missing blank, no interpolation/forward-fill, gap/zero denominator status, transform formula/version 기록, unsupported aggregation/frequency mismatch 거부 |
+| 39 | 최종 사용자 검증: 기존 “23회차” 프로토콜을 완성 workbook workflow로 갱신하고 분석가 1–2명 관찰 | 28–38 gate 통과, frozen scenario/expected sheet, 최신 base의 격리 checkout, 독립 참가자 동의·익명 기록 완료. 작은 표본은 사용성 관찰일 뿐 전체 사용자 성공률/시장 증거로 과장하지 않음 |
 
-기관별 어댑터는 사라지지 않는다. 다만 `BLSEngine` 같은 클래스가 HTTP·parse·저장·검증·출력 정책을 모두 소유하지 않게 한다.
-등록표가 `source_id -> SourceAdapter`를 제공하고, 공통 단계 엔진이 adapter capability와 버전을 확인해 호출한다. source ID, adapter version,
-engine version, rule-set version은 작업 fingerprint와 산출 manifest에 기록한다. 예전 task 재개가 새로운 의미로 실행되지 않도록 기존 엔진
-버전 등록은 호환 기간 동안 보존한다.
+각 회차 branch는 회차 하나만 포함한다. 최소 검사 명령은 `pytest`, `ruff check src tests scripts`, `git diff --check`, 관련 CLI help/smoke test 및 해당 provider의 전체 regression subset이다. 28–39회차 구현 시작 전 최신 base에서 전체 suite/Ruff를 baseline으로 한 번 실행하고 결과를 회차 28 보고서에 기록한다. 각 회차 report에는 base/candidate SHA, Python/OS, fixture와 live evidence의 구분, 변경 파일, 검사별 정확한 결과, 실패/미실행 이유를 기록한다. GitHub Actions가 계정 결제/사용 한도로 step 시작 전 차단되면 CI 통과로 쓰지 않는다. 로컬 검증 결과와 CI 미실행 상태를 각각 기록하고, project PR 정책상 필요한 사람 검토 전에는 gate를 통과 처리하지 않는다.
 
-## A–G 구현과 완료 조건
+## 6. 공통 판정 규칙
 
-| 순서 | 범위 | 완료 기준 |
-|---|---|---|
-| A | 사례 형식 | `EvaluationCase`가 원 질문·변형 질문·기대 후보/종목/필드·필수 근거·금지 동작·Excel 정책·근거 URI/해시·사례 버전을 담고, 실패 이유를 판정할 수 있음 |
-| B | 세트 분리 | 개발·고정 회귀·holdout을 분리하고, 유사 질문/비슷하지만 다른 정답/비관련 입력을 포함. 같은 개념의 near-duplicate가 서로 다른 split으로 새지 않게 관리 |
-| C | 변경 전후 평가 | 기존 규칙과 후보 규칙을 같은 고정 사례 버전에서 실행. 유형별 후보 정확도·Top-1/MRR 순위 지표·필드 정확도·오확정·금지 동작을 보고. 목표 유형 개선, 허용된 비퇴행 조건 통과, 오확정·금지 동작 0건이어야 함 |
-| D | 규칙 반영 심사 | 실패 유형, 사례·공식 근거, 평가 데이터/규칙 버전, 고정·holdout 지표, 승인자, 롤백 대상 버전을 `RulePromotionRecord`로 남김. holdout 확인 전 채택 금지 |
-| E | 공통 시계열 모델 | 요청 조건, series identity, country/dimensions, currency와 unit, frequency와 calendar, revisions, source codes, override/transform lineage, 관측값 상태, provenance와 검증 시점을 추적 |
-| F | 원본 Excel | 호환 정의는 같은 sheet에 두고, 주기·통화·단위·의미·calendar가 다르면 분리. 같은 series/date의 값이 충돌하면 덮어쓰지 않고 충돌 자료를 보존해 검토 표시 |
-| G | 비교 Excel | 날짜 정렬 시트에 원본 series link, 날짜 기준, 집계, 변환식, 결측 정책을 명시. 기본 결측은 빈칸. 자동 보간/forward-fill 금지. 변환 결과와 수식/정책 버전을 manifest에 기록 |
+검색 후보 품질과 사용자 선택은 분리한다. `Top-1`은 첫 후보가 relevant ID인지, `MRR`은 첫 relevant ID 순위 역수의 평균이다. `field exactness`는 case에서 기대 state가 명시된 필드만 채점하고 unknown은 정확한 unknown-state여야 맞다. `false_exact`는 expected state가 `review_required/unmatched`이거나 해당 후보의 expected match status가 review_required인데 `exact`로 판정하는 사건, 또는 evidence 부족 후보를 자동 선택/수집하는 사건이다. `prohibited_action`은 case에 열거한 금지 행위와 부작용을 각각 센다. report에 전체 및 case type별 분자/분모를 항상 표시하고 denominator 0이면 0%가 아니라 `N/A`로 표시한다.
 
-평가 수치는 모호한 정답을 억지로 만들지 않는다. 출처 근거가 부족한 필드는 expected value 대신 expected state를 `unknown/review_required`로
-정의할 수 있어야 한다. holdout은 후보 규칙 선택에 사용하지 않고, 채택 전 고정된 평가 버전에서 한 번 확인한다. 규칙이 바뀌면 개발 세트에
-반영하되 기존 고정 세트와 holdout은 사례 버전을 올리지 않는 한 수정하지 않는다.
+고정 validation 통과 조건은 30회차 표의 기준 그대로다. holdout은 candidate policy/code/corpus version과 report schema가 고정된 후에만 실행한다. holdout은 채택 판정 자료이며 조정용 데이터가 아니다. 규칙 수정은 새 candidate 버전으로 개발/validation에서 재실행한 뒤 새로운 승인된 holdout version이 준비될 때까지 채택하지 않는다. 하나라도 false-exact 또는 prohibited-action이 있으면 다른 평균 점수와 무관하게 실패다.
 
-## 단계별 일정
+공통 엔진 migration은 이전·신규 path를 동일 fixture와 같은 request fingerprint로 실행해 canonical `TimeSeries` 직렬화, quality result, provenance, StageStatus가 일치하는지 비교한다. 차이는 허용 목록에 없는 한 실패다. source adapter의 version 변경, rule version, normalizer version, calendar/value mapping version은 TaskPlan fingerprint 및 artifact manifest에 포함한다. 이전 task는 고정된 과거 engine/version으로 재개한다.
 
-1. **A+B — 평가 사례와 분리 세트:** 사례 schema, 공식 근거 포인터, split manifest를 만든다. 기존 unit tests를 이 사례 평가로 간주하지 않는다.
-2. **C+D — 기준 평가기와 승격 게이트:** 현행 search/rule 동작의 baseline을 만든 뒤, 변경 후보 비교와 사람 승인/rollback 기록을 추가한다. 이 단계 전에는 검색·매핑 규칙을 목표 지표에 맞춰 조정하지 않는다.
-3. **E — 공통 시계열 계약과 공통 단계 엔진:** 현재 World Bank 경로로 계약과 lossless 변환을 검증하고, 이어 BOJ/BLS/Census를 adapter 단위로 이전한다. 단계마다 기존·신규 path를 동일 fixture/case로 비교한다.
-4. **F — 원본 workbook:** 먼저 한 provider/한 series 원본 경로와 provenance를 검증하고, 이어 호환 가능한 다중 series 배치와 충돌 보존을 추가한다.
-5. **G — 비교 workbook:** 날짜 정렬, 호환성 검사, 명시적 집계/변환, blank missing 기본을 구현한다. 임의 자동변환은 제공하지 않는다.
-6. **23회차 — 최종 분석가 관찰:** A–G가 고정 사례에서 통과하고 실제 최종 workflow가 사용 가능한 상태가 된 뒤에만 진행한다. 현재 World Bank CSV 시나리오는 준비 자료로 남기되, 최종 관찰은 완성된 Excel 기능과 실제로 비교 가능한 series 사례를 검증하도록 참가자 모집 전에 갱신한다. holdout 사례를 사용자 교육 자료로 노출하지 않는다.
+## 7. 최종 분석가 관찰의 준비·판정
 
-자연 source revision, provider 장애, Windows updater candidate는 이 제품 선행순서의 일부가 아니라 별도 증거 흐름이다. 발생 시 같은 scope의 증거를
-계속 기록하되, 발생 여부가 A–G의 구현이나 23회차 착수를 막지는 않는다. 신규 기관 추가는 최종 관찰 결과를 보고 별도 계획한다.
+기존 [23회차 계획](ITERATION_23_PLAN.md)은 관찰 프로토콜의 이력으로 보존한다. 실제 관찰은 순차 계획의 마지막 회차(39)에서만 진행하고, 이 실행 전에 시나리오를 37/38회차의 명령과 산출물에 맞게 다시 쓴다. 기본 scenario target은 공식 근거를 확인해 저장한 World Bank USA GDP current US$와 annual GDP growth series다. 1인 과제로 각 값을 원본 workbook에 저장하고 unit/frequency/source warning을 설명하게 한다. comparison 과제는 날짜 정렬·서로 다른 단위/정의의 sheet와 열 표시·결측 처리를 설명하게 하며, 서로 다른 개념의 값을 빼거나 환산하도록 요구하지 않는다. 해당 두 series의 조건이나 보존 task가 준비되지 않으면 참가자 세션을 진행하지 않고 필요한 source/series scope를 별도 결정으로 남긴다. 참가자에게 정답/holdout case는 보여주지 않는다.
 
-## 보류 사항
+진행자는 최신 base SHA의 폐기 가능한 checkout, 고정된 저장 task/raw/manifest, 빈 `data/exports/`, no-network·no-credentials 환경, 기대 결과 sheet와 중단 조건을 사전 확인한다. 동의 후 익명으로 명령 실수·도움 요청·완료/미완료·시간·unknown/blank/conflict 오해·사후 발언을 기록한다. 녹화는 별도 동의가 없으면 하지 않는다. 완료 여부는 사례별 관찰로 남기며 1–2명의 결과로 시장 수요나 통계적 성공률을 추정하지 않는다. 관찰 후 다음 투자(provider/UI/자연어) 한 가지를 결정 기록으로 남긴다.
 
-- 실제 사례의 정답·필수 근거는 공식 원문과 검증된 observation을 대조해 확정한다. 빈 unit/frequency 같은 unknown을 임의 채우지 않는다.
-- XLSX 의존성과 호환 정의의 구체적인 signature는 exporter 회차의 선행 설계에서 확정한다.
-- 보간·환율 환산·주기 변환은 명시적인 사용자 조건, 공식 calendar, 재현 가능한 수식, 품질 규칙과 사례가 생기기 전까지 자동 지원하지 않는다.
-- 이 문서는 계획이다. 실제 채택은 해당 회차의 테스트·평가 결과와 PR 리뷰가 완료된 경우에만 기록한다.
+## 8. 이번 문서에서 미리 결정하지 않는 것
+
+- 새로운 common-concept mapping의 경제적 정답은 공식 정의와 검증된 metadata를 확인해 각 evaluation case에서 확정한다. 이름이 같다는 이유만으로 매핑하지 않는다.
+- 원본 series의 동시 배치 가능성은 source별 known metadata가 충족할 때 결정한다. Unknown 필드는 임시 기본값으로 대체하지 않는다.
+- 통화 환산, 주기 변환, aggregation은 v1에서 비지원이다. 나중에 추가하려면 정확한 입력 단위·calendar·source evidence, deterministic formula/version, 기대 workbook, 부작용/실패 case를 새 결정과 회차 범위에 기록한다.
+- 실제 참여자 모집과 세션은 28–38 gate 이전에 진행하지 않는다. 자연 Gate C 이벤트와 updater candidate pilot은 별도 운영 evidence 흐름이며 이 계획의 차단 조건이 아니다.

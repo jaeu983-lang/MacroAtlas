@@ -5,9 +5,11 @@
 
 ## 실행 선행 조건
 
-`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 A–G가 구현·검증되기 전에는 이 회차의 참가자 세션을 시작하지 않는다. 현재 문서의 World Bank
-status→CSV 과제는 저장 task와 기본 CLI 사용성을 위한 준비 시나리오로 보존한다. 최종 관찰 전에는 완성된 원본/비교 workbook을 다루는
-시나리오로 갱신하고, 성공·실패 조건과 기대 Excel 정책을 평가 사례와 일치시킨다. holdout 사례는 참가자에게 공개하지 않는다.
+`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 28–38회차 gate가 모두 통과되기 전에는 이 회차의 참가자 세션을 시작하지 않는다.
+실행은 계획상 마지막 39회차다. 현재 문서의 World Bank status→CSV 과제는 준비 자산으로 보존한다. 최종 관찰 전에 원본 workbook 저장과
+비교 workbook의 날짜 정렬·호환성·결측 정책을 다루는 두 과제로 갱신한다. 각 과제는 정확한 task/series ID, 완성 CLI 명령, expected sheet,
+경고, 금지 동작, 성공·중단 조건을 고정 사례 버전과 맞춘다. holdout 사례와 정답지는 참가자에게 공개하지 않는다. 시나리오에 사용할 검증된
+동일 frequency/calendar의 복수 series가 준비되지 않으면 비교 과제를 위해 의미를 추정하거나 임의 데이터를 섞지 말고 세션을 연기한다.
 
 문서 작성 시점의 base 브랜치 `codex/iteration-04-gate-a`는 PR #47 병합 결과
 `72faf484181cb7a3b0813d5207f638f6b005c38f`를 가리킨다. 이 SHA는 계획 작성 당시의 참고점이다. 실제 세션을

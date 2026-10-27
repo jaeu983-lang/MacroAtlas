@@ -850,5 +850,17 @@ F/G 원본·비교 workbook 구현 및 검증 뒤에만 실행한다. 현재 Wor
 계속하며 제품 일정의 차단 조건으로 삼지 않는다. 신규 provider와 UI 범위는 세션 후 관찰 결과로 정한다.
 
 - 영향 문서: `docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`, `docs/ROADMAP_2026_10_26.md`,
-  `docs/IMPLEMENTATION_PLAN.md`, `docs/ITERATION_23_PLAN.md`, `docs/ENGINE_CONSOLIDATION_PLAN.md`.
+  `docs/IMPLEMENTATION_PLAN.md`, `docs/ITERATION_23_PLAN.md`, `docs/ENGINE_CONSOLIDATION_PLAN.md`,
+  `docs/README.md`, `docs/UNRESOLVED_ITEMS.md`, `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`.
 - 영향 범위: 계획 순서 변경만 해당한다. 이 결정은 A–G 기능 구현, 사용자 연구 실행, 지원 범위 확대를 뜻하지 않는다.
+
+## D-096 — A–G 제품 작업을 회차별 구현·검증 계획으로 구체화
+
+2026-10-27. 사용자는 제품 계획을 시작부터 끝까지 실제 시행할 수 있도록 구체적으로 수정하도록 요청했다. 따라서 초기 범위를 현재 지원된 World Bank, BOJ, BLS, Census 및 제한 파일 경로로 고정하고, 28–39회차별 산출물·코드 경계·검증·승격 조건을 추가했다. A/B는 36개 JSONL 사례와 case-family 단위 분리, C/D는 deterministic baseline·candidate 평가·사람 승인 기록, E는 source adapter와 공통 시계열 계약, F/G는 read-only 원본/비교 XLSX 및 결측·충돌·단위 정책으로 순서화했다. 최종 workbook pilot은 official metadata 확인을 전제로 WDI 미국 GDP current US$와 GDP growth 두 series로 지정했다.
+
+공통 Orchestrator는 유지하고 provider별 endpoint·인증·parser는 adapter로 둔다. Gate C 감시와 large-file trial/production은 trust boundary가 달라 별도 유지한다. Unknown metadata와 source status를 추정으로 채우지 않으며, v1 comparison aggregation·currency conversion·interpolation은 지원하지 않는다. 초기 36-case corpus를 근거 있는 source로 채우지 못하면 사례를 만들어 내지 않고 평가 gate를 보류한다. 실제 분석가 관찰은 마지막 39회차로 둔다.
+
+- 영향 문서: `docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`, `docs/ROADMAP_2026_10_26.md`,
+  `docs/IMPLEMENTATION_PLAN.md`, `docs/UNRESOLVED_ITEMS.md`, `docs/ITERATION_23_PLAN.md`,
+  `docs/USER_WORKFLOW_DRY_RUN_2026_10_26.md`.
+- 영향 범위: 실행 계획과 v1 요구사항 구체화만 해당한다. 코드·evaluation corpus·XLSX 기능·사용자 관찰은 이번 변경에서 구현/실행되지 않았다.
