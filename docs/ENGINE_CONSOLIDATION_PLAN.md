@@ -115,6 +115,8 @@ PR #38 병합 후 사용자는 최신 base `aefd320a67d0abb5779393b90d32f6d149ef
 
 2026-10-27 후속 Windows 검증에서 사용자는 checkout `f8693f0`의 `test_run_improvement.py`와 `test_maintenance_retention.py`를 Anaconda Python으로 실행해 34개를 모두 통과했다. 이 suite는 Windows에서 updater lock/no-op cleanup/retention 및 candidate QA 결과에 따른 push 차단·순서를 검증한다. 실제 Codex changed-candidate handoff와 scheduled invocation은 여전히 관측되지 않았으며 예약 task는 비활성이다.
 
+같은 날 최신 base `e25d944af1b789b47d712707c0e180757b749bfb`에서 Windows updater run `20261027T084854Z-00b29eb9`가 실행됐다. Codex exit code 0, `NO_ACTIONABLE_CHANGE`, cleanup `PASSED`, retention `scanned=7/removed=0/preserved=7`을 기록했다. 이는 정상 no-op 실측이며 candidate QA/handoff나 실제 scheduled invocation은 아니다.
+
 이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
 
 ## 안전 조건과 미결 설계 결정
