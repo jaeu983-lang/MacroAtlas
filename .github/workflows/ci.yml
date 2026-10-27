@@ -29,12 +29,31 @@ jobs:
       - name: Run shared maintenance checks through Windows wrapper
         if: runner.os == 'Windows'
         shell: powershell
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CANDIDATE_SHA: ${{ github.sha }}
         run: |
           $PythonPath = (Get-Command python).Source
-          & .\scripts\run_checks.ps1 -PythonPath $PythonPath
+          if ($env:EVENT_NAME -eq "pull_request") {
+              $Base = $env:PR_BASE_SHA
+          } else {
+              $Base = (git rev-parse "${env:CANDIDATE_SHA}^").Trim()
+          }
+          & .\scripts\run_checks.ps1 -PythonPath $PythonPath -Base $Base -Candidate $env:CANDIDATE_SHA
       - name: Run shared maintenance checks on Linux
         if: runner.os != 'Windows'
-        run: python scripts/run_maintenance_qa.py
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            BASE_SHA="$PR_BASE_SHA"
+          else
+            BASE_SHA="$(git rev-parse "${CANDIDATE_SHA}^")"
+          fi
+          python scripts/run_maintenance_qa.py --project-root . --base "$BASE_SHA" --candidate "$CANDIDATE_SHA"
       - name: Upload maintenance QA report and logs
         if: always()
         uses: actions/upload-artifact@v4

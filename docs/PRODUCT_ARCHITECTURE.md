@@ -42,9 +42,10 @@ MacroAtlas가 풀려는 일은 “기관 이름을 검색하는 것” 자체가
 로그는 task와 artifact 참조를 사용하고 API secret이나 불필요한 원본 본문을 복제하지 않습니다.
 
 유지보수 analyzer는 운영 source data path와 별도입니다. 기본은 read-only 분석이며, 제안 검토·구현·검증·push는
-명시된 개발 작업으로 분리합니다. analyzer가 만든 제안은 코드 변경·승인·merge가 아닙니다. 현행 `pattern_cli`,
-`run_improvement.ps1`, `run_maintenance_qa.py`, `run_checks.ps1`은 하나의 완결된 updater가 아니며, 목표 통합 구조와
-도입 순서는 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 둡니다.
+명시된 개발 작업으로 분리합니다. analyzer가 만든 제안은 코드 변경·승인·merge가 아닙니다. `run_maintenance_qa.py`는
+기본 HEAD 또는 명시된 base/candidate SHA를 detached worktree에서 검사하고, Windows wrapper도 동일 인자를 지원합니다.
+`pattern_cli`, `run_improvement.ps1`, QA runner는 아직 updater부터 검증 PR까지 연결된 완결된 흐름이 아닙니다. 목표 통합 구조와
+남은 단절은 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 둡니다.
 
 ## 3. 목표 구조: 제어면·자료면·증거면
 

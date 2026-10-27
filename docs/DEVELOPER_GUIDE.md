@@ -99,20 +99,23 @@ Gate가 통과되거나 다른 provider를 지원하게 되지 않습니다. Gat
 ## 유지보수 분석·업데이트·QA 흐름
 
 현재 `python -m macro_data_platform.pattern_cli --project-root .`는 SQLite 이력을 읽는 제한된 분석기입니다.
-read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-26의 한 실행은 proposal 0개와 insufficient-evidence
-7개를 반환했고, 표본에서 기관·dataset·concept scope를 알 수 없어 분석기가 반복 개선을 만들 수 없는 공백을 드러냈습니다.
+read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-27의 한 실행은 47 tasks와 55 stages를 읽어 proposal 0개,
+insufficient-evidence 7개를 반환했습니다. 항목은 source 없는 qualification fixture 5개, 기관/scope 없는 파일 검사 1개,
+legacy probe 1개였습니다. 이 범위는 근거가 없어 unknown으로 유지하며 임의로 보완하지 않습니다.
 
-`python scripts/run_maintenance_qa.py`가 공통 local check entrypoint입니다. clean commit을 detached worktree에
+`python scripts/run_maintenance_qa.py`가 공통 local check entrypoint입니다. 기본 실행은 clean commit을 detached worktree에
 checkout해 pytest, Ruff, commit whitespace, Python/installed CLI help, health 검사를 실행하고 check별 log와 JSON report를
-남깁니다. Windows의 `scripts/run_checks.ps1`은 이 entrypoint를 부르는 얇은 wrapper입니다. 저장소 업데이트 script
-`scripts/run_improvement.ps1`은 아직 이 검사 workflow와 candidate 수정 결과를 연결하지 않습니다. 자동 업데이트는 수정
-시도까지만 수행하며, candidate 격리 QA·조건부 push·PR 생성을 한 번에 보장하지 않습니다.
+남깁니다. 수정 candidate는 `python scripts/run_maintenance_qa.py --base <full-sha> --candidate <full-sha>`로 검사할 수
+있습니다. 이 모드는 base가 candidate의 조상인지 확인하고 같은 candidate SHA를 detached worktree에서 검사하므로 원
+checkout이 dirty여도 결과가 섞이지 않습니다. Windows의 `scripts/run_checks.ps1`도 `-Base`와 `-Candidate` 인자를 전달합니다.
+저장소 업데이트 script `scripts/run_improvement.ps1`은 아직 별도 updater worktree, candidate commit, QA 호출, 통과 시
+push/PR handoff까지 연결하지 않습니다.
 
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
-완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint, scope-aware 분석, 격리 updater,
-candidate SHA QA를 단계별로 도입합니다. 자동화가 만들 수 있는 최종 결과는 사람 검토용 branch/PR이고 merge/publish가
-아닙니다.
+완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint와 candidate SHA QA는 구현됐고, scope-aware 분석의
+미상 범위는 계속 보수적으로 차단합니다. 격리 updater 및 push/PR handoff는 남았습니다. 자동화가 만들 수 있는 최종 결과는
+사람 검토용 branch/PR이고 merge/publish가 아닙니다.
 
 ## 변경 작업과 문서
 

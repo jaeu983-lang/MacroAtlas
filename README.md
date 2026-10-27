@@ -31,9 +31,9 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 - 비API 대용량 qualification과 BIS production 실행은 worker 시작 직전에 예상 시간·범위·신뢰도·실측 수를 표시합니다.
   `large-estimate` preview는 task를 만들거나 실행하지 않고 예측만 확인합니다.
 
-Gate A/D는 해당 범위에서 통과, Gate B/C와 E는 제한 범위 판정입니다. TIC/BIS 자연 원자료 개정 및
-자연 provider 장애 뒤 같은 task의 durable resume은 아직 실측 증거가 없습니다. 이 문구는 현재 검증한
-범위를 뜻하며 다른 기관의 서버 상태를 진단하는 말이 아닙니다.
+Gate A/D는 해당 범위에서 통과, Gate B/C와 E는 제한 범위 판정입니다. World Bank API에서는 자연 transient
+실패를 저장한 뒤 같은 task/stage를 재개해 성공한 증거가 있습니다. TIC/BIS file watch의 자연 retryable 실패와
+원자료 개정 쌍은 별도 미관측 상태이며, 이 문구는 다른 기관의 서버 상태를 진단하지 않습니다.
 
 ## 설치와 첫 명령
 

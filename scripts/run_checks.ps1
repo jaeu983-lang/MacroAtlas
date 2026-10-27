@@ -1,5 +1,7 @@
 param(
-    [string]$PythonPath
+    [string]$PythonPath,
+    [string]$Candidate,
+    [string]$Base
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,5 +18,12 @@ if (-not $Python) {
 }
 
 $Runner = Join-Path $ProjectRoot "scripts\run_maintenance_qa.py"
-& $Python $Runner --project-root $ProjectRoot
+$RunnerArguments = @("--project-root", $ProjectRoot)
+if ($Candidate) {
+    if (-not $Base) { throw "Base commit SHA is required with a candidate SHA." }
+    $RunnerArguments += @("--candidate", $Candidate, "--base", $Base)
+} elseif ($Base) {
+    throw "Candidate commit SHA is required with a base SHA."
+}
+& $Python $Runner @RunnerArguments
 exit $LASTEXITCODE
