@@ -99,9 +99,11 @@ Gate가 통과되거나 다른 provider를 지원하게 되지 않습니다. Gat
 ## 유지보수 분석·업데이트·QA 흐름
 
 현재 `python -m macro_data_platform.pattern_cli --project-root .`는 SQLite 이력을 읽는 제한된 분석기입니다.
-read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-27의 한 실행은 47 tasks와 55 stages를 읽어 proposal 0개,
-insufficient-evidence 7개를 반환했습니다. 항목은 source 없는 qualification fixture 5개, 기관/scope 없는 파일 검사 1개,
-legacy probe 1개였습니다. 이 범위는 근거가 없어 unknown으로 유지하며 임의로 보완하지 않습니다.
+read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-27 첫 실행의 insufficient-evidence 7개는 재검토 후
+합성 qualification fixture와 manifest가 보존된 BIS 오류로 분리됐습니다. 현재 49 tasks/57 stages snapshot은 fixture 15건,
+보존 파일 qualification trial 5건, operational stage 37건을 구분하고, BIS 두 건의 기관·dataset만 검증 projection으로
+복구합니다. 경제 concept은 추측하지 않으며, 모든 engine/기관의 오류 범위를 확인한 것도 아닙니다. 실행 한계와 다음 전체
+engine×institution audit은 [근거 재검토 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)을 참고하세요.
 
 `python scripts/run_maintenance_qa.py`가 공통 local check entrypoint입니다. 기본 실행은 clean commit을 detached worktree에
 checkout해 pytest, Ruff, commit whitespace, Python/installed CLI help, health 검사를 실행하고 check별 log와 JSON report를
