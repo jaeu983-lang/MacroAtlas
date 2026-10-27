@@ -2,7 +2,7 @@
 
 > 2026-10-27 갱신: 이 maintenance follow-up의 base에는 PR #1–#16이 병합돼 있었고 HEAD는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`였다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 PR #4의 worker 복구도 `25f3c87`로 통합됐다. 고정 World Bank GDP에 음수값 격리 및 indicator title/identity 검사를 추가했다. 이 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
 
-후속 상태: PR #17–#19도 병합됐다. 격리 updater→candidate QA→review PR handoff와 Codex CLI 옵션 호환성을 통합했고, 실제 updater 시도에서 확인한 Codex `401`을 `CODEX_AUTH_REQUIRED`와 재로그인 안내로 보고한다. 최신 pilot 및 CI 결과는 [차단 보고서](ITERATION_26_PILOT_BLOCKER_REPORT.md)를 참조한다. 이 기능의 실제 pilot은 Codex CLI 재로그인 후 이어갈 수 있다.
+후속 상태: PR #17–#21도 병합됐다. 격리 updater→candidate QA→review PR handoff와 Codex CLI 옵션 호환성을 통합했고, 실제 updater 시도에서 확인한 Codex `401`을 `CODEX_AUTH_REQUIRED`와 재로그인 안내로 보고한다. PR #20은 현행 후속 상태를 계획 문서에 맞췄고, PR #21은 TIC/BIS watcher parser scope를 보존 baseline에 맞췄다. 최신 pilot 및 CI 결과는 [차단 보고서](ITERATION_26_PILOT_BLOCKER_REPORT.md)를 참조한다. 실제 updater pilot은 Codex CLI 재로그인 후 이어갈 수 있다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -89,7 +89,7 @@ Linux에서 첫 updater 시작은 Codex CLI의 approval 옵션 순서 오류로 
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#19 병합. 이번 maintenance follow-up의 시작 base는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이며 PR #17–#19는 updater handoff와 인증 차단 보고를 추가했다.
+1. **완료:** PR #1~#21 병합. 이번 maintenance follow-up의 시작 base는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다. PR #17–#19는 updater handoff와 인증 차단 보고, PR #20은 현행 상태 문서 정합성, PR #21은 Gate C watcher baseline scope 복구를 추가했다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
