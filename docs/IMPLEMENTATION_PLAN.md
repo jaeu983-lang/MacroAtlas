@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-26 갱신: PR #9가 병합돼 통합 HEAD는 `7723afe95d6c5edb6a28bcf52bd08518ad5ca381`이다. CSV exporter와 CI 증거는 [20회차 보고서](ITERATION_20_REPORT.md), 내부 사용 경로 dry run은 [사용 흐름 검토](USER_WORKFLOW_DRY_RUN_2026_10_26.md)에 기록한다. 실제 목표 사용자 검증과 Gate C 자연 증거는 아직 대기 중이다.
+> 2026-10-26 갱신: PR #10 병합 HEAD는 `1a00c1854a077d5e38ee6db77f523c13ebee4aae`다. CSV 전달은 [20회차 보고서](ITERATION_20_REPORT.md), 대용량 시간 예측은 [22회차 보고서](ITERATION_22_REPORT.md)에 기록한다. 내부 사용 흐름 검토와 실제 분석가 세션 준비는 각각 [dry run](USER_WORKFLOW_DRY_RUN_2026_10_26.md), [23회차 진행안](ITERATION_23_PLAN.md)에 있으며, 참가자 관찰과 Gate C 자연 증거는 아직 대기 중이다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -23,11 +23,15 @@ hash와 DB 불변성을 확인했다. PR #9의 merge commit은 `7723afe`이며 U
 표시를 확인했다. 작성자에 의한 오프라인 검토여서 목표 사용자 연구로 계산하지 않는다. 실제 참여자 확인 전
 다음 사용자 인터페이스·provider 범위를 정하지 않는다. [검토 기록](USER_WORKFLOW_DRY_RUN_2026_10_26.md).
 
-22회차에서는 비API qualification과 BIS flat production/resume의 실행 전 시간 예측을 구현했다. 최대 256 KiB의
+22회차에서는 비API qualification과 BIS flat production/resume의 실행 전 시간 예측을 구현하고 PR #10으로 통합했다.
+통합 HEAD는 `1a00c18`이다. 최대 256 KiB의
 bounded profile과 엔진별 성공 task wall-time history로 범위·신뢰도·shadow model을 계산하고, 무실행 preview를
 제공한다. 전체 **675개 테스트**, Ruff, diff 검사가 통과했다. 현지 catalog에서 확인한 qualification 기록은 15건,
-production 기록은 1건이고 새 paired forecast는 0건이므로 초기 보정 상태는 낮은 신뢰도다. 실제 read-only preview와
-한계는 [22회차 보고서](ITERATION_22_REPORT.md)에 둔다. PR #10 review branch로 제출하며 merge 전 사람 검토를 기다린다.
+production 기록은 1건이고 새 paired forecast는 0건이므로 초기 보정 상태는 낮은 신뢰도다. 원격 Ubuntu/Windows ×
+Python 3.11/3.12 checks도 8/8 성공했다. 실제 read-only preview와 한계는 [22회차 보고서](ITERATION_22_REPORT.md)에 둔다.
+
+다음은 실제 분석가 1–2명의 저장 결과→CSV 관찰이다. 23회차 세션 절차와 관찰표는 준비했지만 참가자가 없어 세션을
+실행하지 않았다. 사용성 통과나 다음 provider/UI 범위를 아직 선언하지 않는다.
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
