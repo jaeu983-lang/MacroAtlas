@@ -104,6 +104,29 @@ def test_codex_cli_preflight_rejects_unsupported_options(monkeypatch, tmp_path):
         maintenance._validate_codex_cli(tmp_path, "/fake/codex")
 
 
+def test_authentication_failure_is_reported_as_user_action_without_pushing(
+    monkeypatch, tmp_path
+):
+    _initialize_repository(tmp_path)
+    monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
+    monkeypatch.setattr(maintenance, "_validate_codex_cli", lambda *args: None)
+
+    def fake_codex(worktree, prompt, log_path, timeout):
+        log_path.write_text(
+            "401 Unauthorized: access token could not be refreshed", encoding="utf-8"
+        )
+        return subprocess.CompletedProcess(["codex"], 1)
+
+    monkeypatch.setattr(maintenance, "_run_codex", fake_codex)
+    report, _ = maintenance.run(tmp_path, timeout=30)
+
+    assert report["status"] == "CODEX_AUTH_REQUIRED"
+    assert report["failure_kind"] == "AUTHENTICATION_REQUIRED"
+    assert "Sign in to Codex CLI again" in report["user_action_required"]
+    assert report["push_status"] == "NOT_RUN"
+    assert Path(report["worktree"]).is_dir()
+
+
 def _initialize_repository(root):
     subprocess.run(["git", "init", "--quiet", "--initial-branch=main"], cwd=root, check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=root, check=True)

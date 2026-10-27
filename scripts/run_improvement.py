@@ -130,6 +130,16 @@ def _validate_codex_cli(root, codex):
         raise ValueError("installed Codex CLI does not support the configured safe exec options")
 
 
+def _codex_failure_kind(log_path):
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace").lower()
+    auth_markers = (
+        "401 unauthorized",
+        "access token could not be refreshed",
+        "could not parse your authentication token",
+    )
+    return "AUTHENTICATION_REQUIRED" if any(marker in log_text for marker in auth_markers) else None
+
+
 def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
         timeout=3600, dry_run=False):
     root = Path(root).resolve()
@@ -193,7 +203,15 @@ def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
             return report, report_path
         report["codex_exit_code"] = codex_result.returncode
         if codex_result.returncode:
-            report["status"] = "CODEX_FAILED"
+            failure_kind = _codex_failure_kind(run_dir / "codex.log")
+            if failure_kind == "AUTHENTICATION_REQUIRED":
+                report["status"] = "CODEX_AUTH_REQUIRED"
+                report["failure_kind"] = failure_kind
+                report["user_action_required"] = (
+                    "Sign in to Codex CLI again, then rerun the maintenance updater."
+                )
+            else:
+                report["status"] = "CODEX_FAILED"
             return report, report_path
 
         if _git(worktree, "rev-parse", "HEAD").stdout.strip() != base_sha:

@@ -764,3 +764,10 @@ symlink·`.github` 등 보호 경로 변경은 거부한다. 실행 결과와 �
 QA 실패나 timeout이면 push/PR을 하지 않으며, 통과한 경우에만 원격 branch를 push하고 review PR을 생성한다. 자동 merge와 publish는
 없다. Unit tests는 no-op 정리, allowlist, QA 실패 시 무push, 성공 시 QA→push→PR 순서를 검증하고 CI dry-run은 Linux/Windows wrapper를
 확인한다. 상세 구현 근거는 `docs/ITERATION_26_REPORT.md`에 둔다. 실제 Windows Codex pilot, scheduler 운영 및 동시성은 아직 검증하지 않았다.
+
+## D-087 — Codex CLI 인증 실패의 사용자 조치 상태
+
+2026-10-27 감독 updater run에서 설치된 CLI 인자 문법 오류를 바로잡은 뒤 service `401 Unauthorized`와 token refresh 실패를
+확인했다. Codex prompt는 실행되지 않았고 worktree는 clean/base HEAD로 확인했다. 사용자 credentials를 읽거나 갱신하지 않고, 해당
+응답은 `CODEX_AUTH_REQUIRED` 및 “Codex CLI에 다시 로그인한 뒤 재실행” action으로 보고한다. 이 상태는 QA 실패, GitHub push 실패,
+provider/API 연결 실패와 구분한다. 상세 실행 증거는 `docs/ITERATION_26_PILOT_BLOCKER_REPORT.md`에 보존한다.
