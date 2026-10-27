@@ -799,3 +799,11 @@ Task Scheduler에 등록하지 않는다. Updater manual/scheduled 실행은 rep
 때만 정리한다. 정상 non-candidate maintenance check report도 같은 기간 뒤 정리할 수 있지만 candidate QA, 실패, cleanup 미완료,
 손상·예상 밖 내용을 포함한 report는 자동 삭제하지 않는다. 이 정책은 Windows changed/failure 사용자 pilot을 대신하지 않으며
 예약 task는 해당 pilot 전까지 설치·활성화하지 않는다.
+
+## D-090 — Windows stale-checkout installer 실행 복구
+
+2026-10-27. 사용자가 `git fetch`만 한 checkout `8fc22c8`에서 아직 `-DryRun`을 지원하지 않는 이전 installer를 실행해,
+`MacroData-HealthCheck`와 `MacroData-AgentImprovement`가 실제 등록됐다. 읽기 전용 action 조회에서 두 task가 사용자 저장소를
+가리키는 것을 확인한 뒤 unregister했고, 후속 task 조회에서 둘 다 없음을 확인했다. 최신 base `a7f7a1f`로 fast-forward한 다음
+installer dry-run은 base SHA, Anaconda Python 경로, 현재 user principal, `Interactive`/`Limited` 및 두 action을 출력하면서
+`registered=false`를 반환했다. 이 실측은 installer 계획 검증에 한정하며 actual scheduled execution을 의미하지 않는다.

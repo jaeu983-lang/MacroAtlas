@@ -1,6 +1,6 @@
-# 27회차 updater pilot 상태 — 운영 가드 구현, Windows scheduler 실측 대기
+# 27회차 updater pilot 상태 — installer dry-run 통과, updater/scheduler 실측 대기
 
-> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff는 통과했다. Windows CI는 계정 결제/사용 한도 문제로 runner가 시작되지 않아 installer dry-run은 아직 관측되지 않았다. 예약 task는 설치하거나 활성화하지 않았다.
+> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff가 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 사용자가 Windows에서 최신 installer의 dry-run을 실행해 `DRY_RUN`/`registered=false`를 확인했다. 구버전 checkout으로 실수 등록된 두 task는 제거됐고 후속 조회에서 남은 task가 없었다.
 
 기준일: 2026-10-27. PR #26 이후 Linux에서 updater를 두 차례, Windows에서 no-op 경로를 두 차례 수동 실행했다. Linux 첫 시도는 Codex token refresh `401 Unauthorized`로 막혔고, 기기 코드 재인증 뒤 두 번째 시도는 candidate QA와 PR handoff까지 성공했다. 첫 Windows 시도는 cleanup이 실패했지만 PR #31 수정 후 재실행에서 no-op cleanup까지 통과했다.
 
@@ -56,9 +56,16 @@ Windows no-op 실행과 cleanup은 검증됐다. Windows read-only `Get-Schedule
 ## 운영 준비 보완 — 2026-10-27
 
 - `install_tasks.ps1`은 `-BaseRef`를 필수로 받고, 설치 시 선택한 Python executable을 두 task action에 고정한다. 기준 ref는 현재 checkout에서 local/remote branch로 resolve돼야 한다. task principal은 현재 로그인한 사용자, `Interactive`, `Limited` 권한으로 명시한다.
-- `-DryRun`은 trigger/action/settings/principal을 구성해 JSON으로 내보내고 `Register-ScheduledTask`를 호출하지 않는다. Windows CI에 dry-run 검사를 추가했으나 job이 계정 결제/사용 한도 문제로 시작되지 않았다.
+- `-DryRun`은 trigger/action/settings/principal을 구성해 JSON으로 내보내고 `Register-ScheduledTask`를 호출하지 않는다. CI runner는 계정 결제/사용 한도 문제로 시작되지 않았으나, 사용자의 최신 Windows checkout에서 수동 dry-run이 통과해 base SHA와 principal 구성 및 `registered=false`를 확인했다.
 - updater는 `reports/.run_improvement.lock`의 OS 파일 잠금으로 manual/scheduled 호출을 직렬화한다. 점유 중인 호출은 네트워크나 worktree 작업 없이 `ALREADY_RUNNING` report를 남긴다. dry-run은 기존처럼 파일을 만들지 않는다.
 - 90일 지난 `NO_ACTIONABLE_CHANGE` + `cleanup=PASSED` updater report는 checkout이 없고 Git worktree 등록 및 local branch가 모두 없으며 예상된 파일만 있을 때 정리한다. 90일 지난 `mode=check`, `status=PASSED` QA report만 같은 방식으로 정리한다. candidate QA, 실패, cleanup 문제, 예상 밖 파일, 손상된 report는 보존한다.
-- 변경 candidate·Codex 실패와 실제 Task Scheduler 실행은 Windows에서 아직 확인하지 않았다. `Get-ScheduledTask`에서 등록된 MacroAtlas task가 없다는 기존 확인은 유지되며 scheduler는 비활성이다. 사용자의 Windows pilot에서 installer dry-run과 updater changed/failure 경로를 검증하기 전까지 예약 등록을 보류한다.
+- 사용자가 처음에는 `8fc22c8` checkout에서 아직 지원하지 않는 `-DryRun`을 넘겨 구버전 설치기의 등록 경로를 실행했다. 조회된 `MacroData-HealthCheck`와 `MacroData-AgentImprovement`는 저장소 경로를 가리켰고, 두 task를 unregister한 뒤 다시 조회해 남은 task가 없음을 확인했다. 이어 branch를 `a7f7a1f`까지 fast-forward하고 최신 installer에서 `DRY_RUN`, `registered=false`를 확인했다. 이력은 아래에 기록한다.
+- 변경 candidate·Codex 실패 및 실제 Task Scheduler 실행은 아직 Windows에서 확인하지 않았다. 예약 작업은 현재 등록돼 있지 않으며 scheduler는 비활성이다. 설치 없는 dry-run 검증만으로 예약 등록을 진행하지 않는다.
+
+## 구버전 installer 오실행 복구 및 최신 dry-run — 2026-10-27
+
+- `git fetch`만 실행한 뒤 local checkout은 `8fc22c8`에 남아 있었다. 이 버전의 `install_tasks.ps1`에는 `-DryRun`이 없어서 명령이 실제 등록 경로를 실행했다.
+- 사용자가 읽기 전용 조회에서 `MacroData-HealthCheck`와 `MacroData-AgentImprovement`를 확인했고, 두 작업 모두 `C:\Projects\MacroAtlas`의 script action을 참조했다. `Unregister-ScheduledTask`로 두 작업을 제거했으며 후속 조회에서 두 task 모두 없음을 확인했다.
+- `git pull --ff-only` 후 local HEAD는 `a7f7a1f8a63d7e4531d38a7062f3c532fe553515`가 됐다. 새 installer dry-run은 같은 base SHA, 현재 signed-in user, `Interactive`/`Limited` principal, Python 경로와 두 action을 JSON에 기록하고 `registered=false`를 반환했다. 작업은 등록되지 않았다.
 
 이 updater 작업은 MacroAtlas provider 접속이나 Gate C 원자료 증거와 별도다.
