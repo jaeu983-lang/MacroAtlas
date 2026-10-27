@@ -113,3 +113,7 @@ flowchart LR
 - commit/push는 통과 candidate branch에만 허용한다. merge, deploy, publish, 보호 정책 변경은 범위 밖이다.
 - Windows 예약 실행은 현재 사용자의 sign-in/권한/작업 경로를 확인하고 실제 Windows dry run을 통과하기 전까지 켜지 않는다.
 - 공통 code utility를 만들 때 source별 분기 대신 typed contract와 adapter를 사용한다. 공통화로 source-specific timeout, schema guard, capacity budget이 약해지는지 회귀 검사한다.
+
+### 2026-10-27 scope 재점검 정정
+
+근거 부족 7건을 재조회한 결과 qualification fixture 5건과 달리 BIS 관련 2건에는 공식 flat ZIP URL이 저장돼 있었다. 기관·dataset adapter 누락과 실제 concept 미상을 분리해야 한다. 다음 25회차 후속은 [scope 근거 복구 계획](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 따라 domain 분리 → 검증된 BIS 식별 projection → technical pattern의 concept 요구 분리 순서로 진행한다. 과거 task는 수정하지 않는다.
