@@ -119,14 +119,18 @@ checkout이 dirty여도 결과가 섞이지 않습니다. Windows의 `scripts/ru
 Git worktree에서 실행됩니다. 변경 경로 allowlist를 통과한 candidate만 commit하며, 동일 SHA QA 실패 시 push하지 않습니다.
 QA가 통과하면 원격 branch와 검토 PR을 생성하지만 자동 merge/publish는 하지 않습니다. `-DryRun`은 Codex 없이 base와 prompt만
 확인하며 worktree나 report를 만들지 않습니다. 2026-10-27 첫 Linux 재시도는 token refresh `401`로 막혔지만, device-code 재인증 뒤
-updater가 candidate QA와 PR handoff에 성공했습니다. Windows Codex CLI wrapper와 사용자 세션의 수동 pilot은 별도로 수행해야 합니다.
-최신 상태와 다음 조건은 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)를 참고하세요.
+updater가 candidate QA와 PR handoff에 성공했습니다. Windows 사용자 세션의 no-op/cleanup도 통과했습니다. Scheduler installer는
+`-BaseRef <branch> -PythonPath <python.exe> -DryRun`으로 설치 없이 action·trigger·principal을 확인할 수 있습니다.
+실제 설치는 별도 운영 결정이며 현재 예약 task는 등록하지 않았습니다. 최신 상태와 다음 조건은
+[27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)를 참고하세요.
 
 이 경로를 통합하면서 제품 runtime engine은 전문 adapter로 분리 유지하는 목표, 안전 경계, 24–27회차 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 정리했습니다. 구현 전까지는 기존 스크립트가 서로 연결된
 완성형 자동 업데이트 엔진이라고 간주하지 않습니다. 공통 check entrypoint, candidate SHA QA, 격리 updater 및 QA 성공 시
-push/PR handoff는 구현됐습니다. scope-aware 분석의 미상 범위는 보수적으로 차단하며, 실제 Windows Codex pilot과 scheduler
-검토는 남았습니다. 자동화가 만들 수 있는 최종 결과는 사람 검토용 branch/PR이고 merge/publish가 아닙니다.
+push/PR handoff는 구현됐습니다. scope-aware 분석의 미상 범위는 보수적으로 차단하며, Windows changed/failure pilot은
+남았습니다. Updater는 같은 repository에서 동시에 실행되지 않으며 완료된 일반 no-op/check 결과만 90일 뒤 정리합니다.
+후보 QA와 실패·불완전 정리 증거는 보존합니다. 자동화가 만들 수 있는 최종 결과는 사람 검토용 branch/PR이고
+merge/publish가 아닙니다.
 
 ## 변경 작업과 문서
 

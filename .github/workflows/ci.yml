@@ -41,6 +41,29 @@ jobs:
           }
           $PythonPath = (Get-Command python).Source
           & .\scripts\run_improvement.ps1 -PythonPath $PythonPath -BaseRef $Base -DryRun
+      - name: Validate scheduled-task installer dry-run on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          if ($env:EVENT_NAME -eq "pull_request") {
+              $Base = $env:PR_BASE_SHA
+          } else {
+              $Base = (git rev-parse "${env:CANDIDATE_SHA}^").Trim()
+          }
+          $BaseBranch = "codex-updater-installer-ci-base"
+          git branch --force $BaseBranch $Base
+          if ($LASTEXITCODE -ne 0) { throw "Could not create installer test base branch." }
+          $PythonPath = (Get-Command python).Source
+          $PlanText = & .\scripts\install_tasks.ps1 -BaseRef $BaseBranch -PythonPath $PythonPath -DryRun
+          if ($LASTEXITCODE -ne 0) { throw "Scheduled-task installer dry-run failed." }
+          $Plan = $PlanText | ConvertFrom-Json
+          if ($Plan.status -ne "DRY_RUN" -or $Plan.registered -ne $false) {
+              throw "Installer dry-run did not return an unregistered plan."
+          }
       - name: Validate isolated updater planning entrypoint on Linux
         if: runner.os != 'Windows'
         env:

@@ -787,3 +787,15 @@ series catalogue가 없으며 registered API v2의 description/catalog 지원은
 `CU`는 CPI-U series type을 구분하지만 MacroAtlas dataset ID를 단독으로 증명하지는 않는다. 등록 metadata가 보존된 정상 수집 응답이
 생기기 전까지 BLS `dataset_id=null`을 유지하고 series ID를 dataset으로 승격하지 않는다. Full-catalog error audit는 [별도 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md),
 회귀 범위는 [scope recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 있다.
+
+## D-089 — Updater scheduler 가드와 보수적 report retention
+
+2026-10-27. Windows installer는 PR handoff가 가능한 명시 local/remote branch, 선택된 Python executable, 현재 로그인 사용자의
+`Interactive`/`Limited` principal을 task action에 고정한다. `-DryRun`은 action·trigger·settings·principal 계획을 출력하고
+Task Scheduler에 등록하지 않는다. Updater manual/scheduled 실행은 reports 디렉터리의 OS advisory lock을 공유하며 lock 점유 시
+수정·네트워크 작업 없이 `ALREADY_RUNNING` report만 남긴다.
+
+90일이 지난 정상 `NO_ACTIONABLE_CHANGE` updater report는 cleanup 성공, checkout 미존재, git worktree/branch 부재, 허용 파일만 존재할
+때만 정리한다. 정상 non-candidate maintenance check report도 같은 기간 뒤 정리할 수 있지만 candidate QA, 실패, cleanup 미완료,
+손상·예상 밖 내용을 포함한 report는 자동 삭제하지 않는다. 이 정책은 Windows changed/failure 사용자 pilot을 대신하지 않으며
+예약 task는 해당 pilot 전까지 설치·활성화하지 않는다.

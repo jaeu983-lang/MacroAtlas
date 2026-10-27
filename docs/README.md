@@ -75,7 +75,7 @@ World Bank API에서 자연 transient failure를 보존한 same-task resume은 �
 개발자 측 analyzer와 Codex updater는 서로 다른 control plane으로 유지합니다. 목표 구조와 구현 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 24회차 공통 QA와 26회차 isolated updater→candidate
 QA→review PR handoff까지 구현했으며, 실제 Windows Codex pilot과 예약 실행 검토는 남아 있습니다. 세부 근거는
-[26회차 보고서](ITERATION_26_REPORT.md)와 [27회차 pilot 상태](ITERATION_27_PILOT_REPORT.md)를 보세요. device-code 재인증 뒤 Linux updater 경로는 통과했으며 Windows pilot과 scheduler 검토가 남아 있습니다.
+[26회차 보고서](ITERATION_26_REPORT.md)와 [27회차 pilot 상태](ITERATION_27_PILOT_REPORT.md)를 보세요. Linux candidate handoff와 Windows no-op/cleanup은 확인했습니다. Scheduler용 base ref, principal, 중복 실행 lock, report retention 및 설치 없는 dry-run도 구현하고 CI로 검증하며, Windows changed/failure pilot은 남아 있어 task는 등록되지 않았습니다.
 
 다음 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. 계획 문서는 참가자
 세션을 수행했다는 증거가 아닙니다.
