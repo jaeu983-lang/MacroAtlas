@@ -1,5 +1,6 @@
 """Selected WDI GDP retrieval engine, independently testable with a fixture transport."""
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import Protocol
 
 from macro_data_platform.config import Settings
@@ -11,6 +12,12 @@ from macro_data_platform.connectors.worldbank import (
     parse_gdp,
 )
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.raw_downloads import save_worldbank_download
 
@@ -20,9 +27,16 @@ class GDPTransport(Protocol):
 
 
 class WorldBankGDPEngine:
-    def __init__(self, settings: Settings, transport: GDPTransport | None = None):
+    def __init__(self, settings: Settings, transport: GDPTransport | None = None, *,
+                 clock=lambda: datetime.now(UTC),
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+                 check_freshness: bool = True):
         self.settings = settings
         self.transport = transport if transport is not None else WorldBankTransport(settings)
+        self.clock, self.freshness_policy = clock, freshness_policy
+        if type(check_freshness) is not bool:
+            raise ValueError("check_freshness must be a boolean")
+        self.check_freshness = check_freshness
 
     def run(self, request: StageInput) -> StageResult[dict]:
         # Whitelist fields: keys, arbitrary URLs and unrelated inputs must not enter history/files.
@@ -54,5 +68,28 @@ class WorldBankGDPEngine:
                                {**paths, "source_url": query.url}, refs,
                                ("Local response preservation failed; existing files retained.",),
                                ErrorCode.INTERNAL_BUG)
-        return StageResult(StageStatus.SUCCEEDED, {**parsed, **paths, "mode": download.kind.value},
-                           refs, ("Minimal parsing only; full quality validation is not implemented.",))
+        payload = {**parsed, **paths, "mode": download.kind.value}
+        if not self.check_freshness:
+            return StageResult(
+                StageStatus.SUCCEEDED, payload, refs,
+                ("Source bytes preserved; freshness is evaluated in the validation stage.",),
+            )
+        freshness = assess_freshness(
+            [row["date"] for row in parsed["observations"]],
+            frequency=parsed.get("frequency"), period_format=parsed.get("period_format"),
+            series_id=parsed.get("series_id"), series_key=parsed.get("series_key"),
+            as_of=self.clock(), policy=self.freshness_policy,
+        )
+        quality_issue = (
+            "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
+            "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
+        )
+        payload["quality"] = {"status": "failed" if quality_issue else "passed",
+                               "issues": [quality_issue] if quality_issue else [],
+                               "freshness": freshness}
+        if quality_issue:
+            payload["withheld_observation_count"] = len(payload["observations"])
+            payload["observations"] = []
+            return StageResult(StageStatus.NEEDS_REVIEW, payload, refs,
+                               (quality_issue, freshness["status"]), ErrorCode.QUALITY_FAILURE)
+        return StageResult(StageStatus.SUCCEEDED, payload, refs)

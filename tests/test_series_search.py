@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 from test_worldbank import FIXTURE, FixtureTransport, fixture_download
 
 from macro_data_platform.config import Settings
@@ -182,7 +183,8 @@ def test_confirmed_candidate_builds_audited_search_to_worldbank_collection_e2e(t
 
     transport = FixtureTransport(fixture_download())
     runner = Orchestrator(HistoryStore(settings), candidate_collection_engines(
-        settings, worldbank_transport=transport,
+        settings, worldbank_transport=transport, clock=lambda: AT + timedelta(minutes=2),
+        freshness_policy=HISTORICAL_FIXTURE_POLICY,
     ), clock=lambda: AT + timedelta(minutes=2))
     task = runner.create(request.text)
     runner.plan(task.task_id, plan)

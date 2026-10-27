@@ -1,18 +1,70 @@
 """Conservative quality summaries for source-preserving statistical API results."""
 from collections import Counter
 
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 
-def validate_bls_result(parsed: dict, source_change_status: str) -> dict:
+
+def _bls_periods(series: dict) -> tuple[list[str], str | None]:
+    rows = series.get("data", [])
+    coded = [(row.get("year"), row.get("period")) for row in rows]
+    monthly = [(year, period) for year, period in coded
+               if isinstance(period, str) and period.startswith("M") and period != "M13"]
+    if monthly:
+        return [f"{year}-{period[1:]}" for year, period in monthly], "YYYY-MM"
+    for prefix, period_format, transform in (
+        ("Q", "YYYY-Qn", lambda year, number: f"{year}-Q{number}"),
+        ("S", "YYYY-Hn", lambda year, number: f"{year}-H{number}"),
+    ):
+        selected = [(year, period) for year, period in coded
+                    if isinstance(period, str) and period.startswith(prefix)]
+        if selected:
+            return [transform(year, period[1:]) for year, period in selected], period_format
+    annual = [(year, period) for year, period in coded
+              if period == "A01" or period == "M13"]
+    if annual:
+        return [year for year, _ in annual], "YYYY"
+    return [], None
+
+
+def _freshness_issue(freshness: list[dict]) -> str | None:
+    if any(row["status"] == FreshnessStatus.STALE for row in freshness):
+        return "stale_observations"
+    if any(row["status"] != FreshnessStatus.FRESH for row in freshness):
+        return "freshness_unverified"
+    return None
+
+
+def validate_bls_result(
+    parsed: dict,
+    source_change_status: str,
+    *,
+    as_of=None,
+    freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+) -> dict:
     """Check visible period keys without guessing a series' frequency or unit."""
     issues = []
     warnings = []
     duplicate_period_count = 0
     empty_value_count = 0
+    freshness = []
     for series in parsed["observations"]:
         rows = series["data"]
         counts = Counter((row["year"], row["period"]) for row in rows)
         duplicate_period_count += sum(count - 1 for count in counts.values() if count > 1)
         empty_value_count += sum(row["value"] == "" for row in rows)
+        periods, period_format = _bls_periods(series)
+        freshness.append(assess_freshness(
+            periods, frequency=parsed.get("frequency"), period_format=period_format,
+            series_id=series.get("seriesID"), as_of=as_of, policy=freshness_policy,
+        ))
+    freshness_issue = _freshness_issue(freshness)
+    if freshness_issue:
+        issues.append(freshness_issue)
     if duplicate_period_count:
         issues.append("duplicate_series_periods")
     if empty_value_count:
@@ -34,13 +86,20 @@ def validate_bls_result(parsed: dict, source_change_status: str) -> dict:
         "empty_value_count": empty_value_count,
         "unit": "unknown" if parsed.get("unit") is None else "known_from_source",
         "frequency": "unknown" if parsed.get("frequency") is None else "known_from_source",
+        "freshness": freshness,
         "source_change_status": source_change_status,
         "not_checked": ["economic_outliers", "full_period_coverage", "revision_vintage",
                          "cross_source_equivalence"],
     }
 
 
-def validate_census_result(parsed: dict, source_change_status: str) -> dict:
+def validate_census_result(
+    parsed: dict,
+    source_change_status: str,
+    *,
+    as_of=None,
+    freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+) -> dict:
     """Check selected geography keys and duplicates without assigning ACS semantics."""
     issues = []
     warnings = []
@@ -69,6 +128,15 @@ def validate_census_result(parsed: dict, source_change_status: str) -> dict:
         warnings.append("revision_vintage_unknown")
     if parsed.get("metadata_status") != "verified":
         warnings.append("variable_metadata_unverified")
+    freshness = [assess_freshness(
+        [str(parsed["year"])], frequency=parsed.get("frequency"), period_format="YYYY",
+        series_key={"dataset": parsed["dataset_id"], "variable": variable,
+                    "geography": parsed["geography"]},
+        as_of=as_of, policy=freshness_policy,
+    ) for variable in source_variables]
+    freshness_issue = _freshness_issue(freshness)
+    if freshness_issue:
+        issues.append(freshness_issue)
     _append_source_change(issues, warnings, source_change_status)
     return {
         "status": "failed" if issues else "passed", "issues": issues,
@@ -77,6 +145,7 @@ def validate_census_result(parsed: dict, source_change_status: str) -> dict:
         "missing_value_count": missing_value_count,
         "unit": "unknown" if parsed.get("unit") is None else "known_from_source",
         "frequency": "unknown" if parsed.get("frequency") is None else "known_from_source",
+        "freshness": freshness,
         "source_change_status": source_change_status,
         "not_checked": ["variable_definitions", "margins_of_error", "geographic_coverage",
                          "revision_vintage", "cross_source_equivalence"],

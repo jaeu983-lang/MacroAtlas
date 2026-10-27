@@ -7,6 +7,8 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
+from freshness_support import HISTORICAL_FIXTURE_POLICY
+
 from macro_data_platform.cli import _worldbank_task, build_parser, dispatch, main
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.boj import DATA_ENDPOINT, METADATA_ENDPOINT
@@ -74,7 +76,10 @@ class StructuredCLITests(unittest.TestCase):
             args = build_parser().parse_args([
                 "--project-root", directory, "collect", "boj-fxer", "--month", "202609", "--live",
             ])
-            status, result = dispatch(args, boj_transport=BOJFixture())
+            status, result = dispatch(
+                args, boj_transport=BOJFixture(),
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
             self.assertEqual(status, 0)
             self.assertEqual(result["status"], "COMPLETED")
             self.assertEqual(result["observation_count"], 1)
@@ -101,7 +106,10 @@ class StructuredCLITests(unittest.TestCase):
                 "--project-root", directory, "collect", "worldbank-gdp",
                 "--start-year", "2020", "--end-year", "2022", "--live",
             ])
-            status, result = dispatch(args, worldbank_transport=WorldBankFixture())
+            status, result = dispatch(
+                args, worldbank_transport=WorldBankFixture(),
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
             self.assertEqual(status, 0)
             self.assertEqual(result["status"], "COMPLETED")
             self.assertEqual([stage["status"] for stage in result["stages"]],

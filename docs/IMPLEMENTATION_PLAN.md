@@ -370,6 +370,13 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
   목록과 재개를 검증한다. 정의/단위가 다른 자료를 자동 병합하지 않는다.
 - 링크 재검증: 만료·권한 제한·조건 불일치·키 포함 URL을 재현해 공유를 중단하고,
   링크 제공 완료와 실제 수집/검증 완료를 다른 실행 근거로 기록한다.
+- 2026-10-27 제한 후속 구현: 주기별 최대 허용 일수와 정확한 시계열 override를 갖는
+  freshness gate를 World Bank/BLS/Census/BOJ 수집 검증에 연결했다. 가장 최근 관측기간
+  끝을 기준으로 `FRESH`/`STALE`/`FRESHNESS_UNVERIFIED`를 기록하며, 비신선 또는 판정 불가
+  관측값은 정규화 반환과 지원되는 CSV 출력에서 보류한다. CSV는 내보내기 시 재평가한다.
+  기본 허용일은 운영상 설정값이며 기관별 발표 일정 검증을 뜻하지 않는다. 세부 정책과
+  범위는 [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md). 로컬 fixture 회귀는 통과했으나
+  이 변경 자체의 live freshness 검증은 수행하지 않았다. Gate C 상태는 변경하지 않는다.
 
 ### Phase 4 — 피드백의 지식화 (11~12)
 
