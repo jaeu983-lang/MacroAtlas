@@ -10,5 +10,6 @@ token을 갱신할 수 없고 재로그인이 필요하다는 안내가 나왔�
 Updater는 같은 인증 응답을 `CODEX_AUTH_REQUIRED`와 사용자 조치로 표시하도록 개선한다. pilot을 계속하려면 Codex CLI 계정에 다시
 로그인한 다음 새 run을 시작해야 한다. 이는 Gate C provider 접속 문제나 원자료 수집 장애가 아니다.
 
-분류 회귀 검증은 전체 **712 tests**, updater 전용 **27 tests** 통과, Ruff·Python compile·`git diff --check` 통과다. CI 결과는
-후속 수정 PR 검토 뒤 기록한다.
+분류 회귀 검증은 전체 **712 tests**, updater 전용 **27 tests** 통과, Ruff·Python compile·`git diff --check` 통과다.
+후속 PR #19의 Ubuntu/Windows × Python 3.11/3.12 CI도 모두 통과해 merge commit
+`dda32b1821404a93c198f88a4a23054835caba67`로 병합됐다. 실제 Codex pilot은 계정 재로그인 전까지 차단 상태다.
