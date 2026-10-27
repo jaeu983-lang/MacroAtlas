@@ -47,6 +47,12 @@
 
 재검증 범위는 terminal task 49개·stage 57개이며 truncation 없이 operational stage 37개를 분석했다. verified scope resolution은 총 7건이고 operational error는 3건(BIS 2, World Bank 1)으로 그대로다. 기관 미상은 0건, dataset 미상은 BLS 성공 stage 2건이다. BLS agency는 확인됐지만 provider payload의 `dataset_id=null`을 유지하고, series ID만으로 dataset이나 concept을 추정하지 않았다. Census는 `acs/acs1` 두 건, BIS large-file production 한 건의 기관과 dataset을 증거로 연결했다.
 
-회귀 검증은 BLS 원본 tamper, Census payload/plan dataset 불일치, BIS production plan hash 불일치 시 unknown 처리되는 경우까지 포함한다. 전체 pytest 725개, Ruff, diff 검사가 통과했다. 후속은 BLS official series metadata/catalogue 확인이다. Gate C 자연 원본 변경·자연 장애 후 재개 및 사용자 사용성은 이 분석기 작업과 별도 트랙이다.
+회귀 검증은 BLS 원본 tamper, Census payload/plan dataset 불일치, BIS production plan hash 불일치 시 unknown 처리되는 경우까지 포함한다. 전체 pytest 725개, Ruff, diff 검사가 통과했다. 후속은 등록 API key와 해당 survey catalog 응답이 정상 BLS 수집 과정에서 보존될 때 dataset 매핑을 재검토하는 일이다. Gate C 자연 원본 변경·자연 장애 후 재개 및 사용자 사용성은 이 분석기 작업과 별도 트랙이다.
+
+### BLS metadata feasibility review
+
+2026-10-27 공식 BLS 문서를 확인했다. BLS API FAQ는 registered API v2에 series descriptive information이 있으며 전체 BLS series catalogue는 현재 제공하지 않는다고 밝힌다. `catalog=true` 응답은 일부 survey에 한정된다. 공식 API signature는 catalog flag를 optional parameter로 설명한다. CPI series ID 안내는 `CUUR0000SA0`의 `CU`가 CPI-U를 뜻한다고 해석하지만, 이는 series type이며 MacroAtlas가 쓰는 dataset identity라고 자동으로 간주하지 않는다. ([API FAQ](https://www.bls.gov/developers/api_FAQs.htm), [API v2 signature](https://www.bls.gov/developers/api_signature_v2.htm), [CPI series IDs](https://www.bls.gov/cpi/factsheets/cpi-series-ids.htm))
+
+따라서 BLS 두 stage의 `dataset_id=null`은 현재 근거에 맞는 상태다. 이 검토에서는 BLS API를 새로 호출하지 않았고 저장 raw/manifest를 수정하지 않았다. 후속으로 등록 API key와 해당 survey의 catalog 지원이 있는 정상 수집 요청에서 provider metadata가 보존되면 exact request/raw/manifest를 검증해 매핑을 다시 검토한다. 그 증거 전에는 series ID, 코드 접두사, concept을 dataset ID로 대체하지 않는다.
 
 이 audit과 adapter 후속은 Gate C 자연 원본 변경·자연 장애 증거 및 사용자 사용성 시험과 별도 트랙으로 관리한다.

@@ -42,7 +42,7 @@ World Bank task는 attempt 1에서 `FAILED_RETRYABLE/TRANSIENT`, attempt 2에서
 
 ## 다음 우선 작업
 
-1. BLS의 official series metadata/catalogue를 별도 검토해 `CUUR0000SA0`에 provider가 명시한 dataset identity가 있는지 확인한다. 이를 확인하기 전에는 `dataset_id=null`을 유지하고, series ID를 dataset으로 승격하지 않는다.
+1. BLS 문서 검토 결과, registered API v2는 series description을 제공하지만 complete series catalogue는 없고 `catalog`도 일부 survey만 지원한다. CPI 공식 code 표의 `CU`는 CPI-U를 뜻하지만 이는 series type이고 MacroAtlas `dataset_id`라고 단정할 근거는 아니다. 보존 task는 `dataset_id=null`로 유지한다. 이후 등록 metadata가 자연 수집 응답에 저장되면 다시 매핑을 검토한다. ([BLS API FAQ](https://www.bls.gov/developers/api_FAQs.htm), [API v2 signature](https://www.bls.gov/developers/api_signature_v2.htm), [CPI series ID codes](https://www.bls.gov/cpi/factsheets/cpi-series-ids.htm))
 2. 새 운영 이력이 쌓일 때 같은 full-catalog 방식으로 기관·dataset·engine/version·stage·error category를 재감사한다. 운영 오류 수와 Gate C 자연 증거 판정은 계속 분리한다.
 
 이 결과는 2026-10-27 당시 local catalog 전체의 감사다. 다른 catalog, 이후 task, 또는 모든 기관이 오류가 없다는 뜻은 아니다. TIC/BIS Gate C의 자연 변경과 해당 watch scope의 자연 장애 후 재개 조건도 별도로 남아 있다.

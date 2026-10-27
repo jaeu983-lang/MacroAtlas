@@ -782,6 +782,8 @@ Census는 응답·plan·manifest의 `acs/acs1`이 일치해 dataset을 복구했
 기존 BIS verifier 결과와 대조한다. 어느 adapter도 concept을 유추하거나 task·raw·manifest를 수정하지 않는다.
 
 회귀 검증 후 49 terminal tasks / 57 stages snapshot에서 operational 37 stage, verified scope resolution 7건, 오류 3건,
-institution unknown 0건, dataset unknown 2건을 확인했다. Full-catalog error audit는 [별도 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md),
-회귀 범위는 [scope recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 있다. 다음 BLS metadata 확인 전까지 series ID를 dataset ID로
-승격하지 않는다.
+institution unknown 0건, dataset unknown 2건을 확인했다. 후속으로 확인한 [BLS API FAQ](https://www.bls.gov/developers/api_FAQs.htm)는 전체
+series catalogue가 없으며 registered API v2의 description/catalog 지원은 한정적이라고 명시한다. [CPI code 문서](https://www.bls.gov/cpi/factsheets/cpi-series-ids.htm)의
+`CU`는 CPI-U series type을 구분하지만 MacroAtlas dataset ID를 단독으로 증명하지는 않는다. 등록 metadata가 보존된 정상 수집 응답이
+생기기 전까지 BLS `dataset_id=null`을 유지하고 series ID를 dataset으로 승격하지 않는다. Full-catalog error audit는 [별도 보고서](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md),
+회귀 범위는 [scope recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md)에 있다.

@@ -105,7 +105,7 @@ read-only 결과는 코드 변경이나 품질 승인이 아닙니다. 2026-10-2
 복구합니다. 이어 BLS·Census API의 exact manifest/raw 및 large-file production의 plan hash를 확인해 성공 stage의 scope
 projection을 보완했습니다. 재검증에서 institution unknown은 0건이며 BLS 응답 두 건의 dataset은 provider가 null로
 남겨 미상 상태를 유지합니다. 별도 full-catalog audit은 69 task/57 stage 전체를 읽어 운영 오류 3건(BIS 2, World Bank 1)을
-확인했고 미상 institution/dataset 오류는 찾지 못했습니다. 다음 분석기 범위 작업은 BLS official series metadata 검토입니다.
+확인했고 미상 institution/dataset 오류는 찾지 못했습니다. BLS 공식 문서상 registered API v2의 series description과 일부 survey catalog가 있지만 전체 series catalogue는 없습니다. 다음 재검토는 등록 metadata가 보존된 정상 수집 응답이 생길 때이며, 그전에는 `dataset_id=null`을 유지합니다.
 상세 범위와 근거는 [scope 재검토](SCOPE_EVIDENCE_RECOVERY_PLAN.md)와
 [engine×institution 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 참고하세요.
 
