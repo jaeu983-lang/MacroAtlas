@@ -32,6 +32,7 @@
 - [대용량 엔진](LARGE_FILE_ENGINE.md): 비API 대용량 자료의 조사, 용량 시험, 미실행 규칙과 BIS flat 한 건의 승인 구조 보존 처리.
 - [엔진 연결](ENGINE_CONNECTIONS.md): 현재 호출 경로와 대용량 엔진으로 넘어가는 계약.
 - [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md): 통합·feedback·freshness·평가·시계열 출력 항목별 구현 여부.
+- [엔진 성능 기준선](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md): offline fixture/stored 표본의 환경, p50/p95와 해석 한계.
 - [평가 사례 규약](EVALUATION_CASES.md): 사례 필드, split 격리, frozen validation/holdout 관리. 현재 set은 비어 있음.
 - [기관 카탈로그](INSTITUTION_CATALOG.md), [`connectors/`](connectors/): 조사한 공식 자료와 connector별 확인 범위.
 - [출력·변형 정책](OUTPUT_AND_VARIANT_POLICY.md), [시나리오](REFERENCE_SCENARIOS.md): 사용자 선택과 수용 사례.

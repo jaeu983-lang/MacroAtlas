@@ -17,7 +17,9 @@
 > API·raw·parse·quality·SQLite·CSV export의 가능한 하위 시간을 별도 `data/performance.sqlite`에 저장하고,
 > knowledge query는 latency와 cache hit/miss를 보고한다. `macro-perf report`는 privacy-safe 집계를 읽기 전용으로
 > 출력한다. live API 표본을 임의 생성하지 않았으며, source별 자연 기준선은 승인된 요청의 표본을 기다린다.
-> 세부 phase가 없는 Discovery/일반 tabular와 기존 대용량 worker 자료는 별도 scope다. 측정 전 최적화나 registry 통합은 하지 않는다.
+> 세부 phase가 없는 Discovery와 기존 대용량 worker 자료는 별도 scope다. 161개의 fixture/stored 반복 결과는
+> [오프라인 기준선](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)에 기록했으며 실제 API 지연을 나타내지 않는다.
+> 측정 전 최적화나 registry 통합은 하지 않는다.
 
 ## 현재 상태 — 2026-10-27
 
