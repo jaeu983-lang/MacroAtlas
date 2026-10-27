@@ -74,7 +74,9 @@ World Bank Indicators API를 BIS bulk 대신 선정했다. 공식 문서에 키 
 확인하고 원본 행 순서와 필드를 그대로 반환한다. null과 0, unit 빈 문자열, obs_status,
 decimal 및 추가 필드를 보존하며 결측·단위·스케일을 보정하지 않는다.
 
-명시적 series ID/주기/단위/불변 vintage를 응답이 제공하지 않으면 정규화 필드는 None이다.
+고정 indicator code와 `GDP (current US$)` 표시명이 함께 일치하는지 확인한다. 둘 중 하나라도
+바뀌면 raw를 보존하고 `SCHEMA_CHANGED`로 중단한다. 명시적 series ID/주기/단위/불변 vintage를
+응답이 제공하지 않으면 정규화 필드는 None이다.
 조합은 series_id를 만들어내지 않고 series_key로 표기한다. YYYY 기간 형식과 원본 지표
 명칭은 별도로 보존한다. lastupdated는 source_last_updated이며 불변 source_version은 아니다.
 

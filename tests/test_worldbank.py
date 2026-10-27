@@ -136,7 +136,8 @@ def test_http_failures_retain_raw_and_do_not_claim_success(tmp_path, status, sta
 
 
 @pytest.mark.parametrize("change", ["envelope", "api_error", "empty", "pagination", "total",
-                                    "country", "indicator", "date", "missing_value", "numeric",
+                                    "country", "indicator", "indicator_label", "date",
+                                    "missing_value", "numeric",
                                     "source", "row", "boolean_page", "nonstandard_nan"])
 def test_schema_and_request_mismatches_are_rejected_without_discarding_raw(tmp_path, change):
     content = json.loads(FIXTURE.read_bytes())
@@ -155,6 +156,8 @@ def test_schema_and_request_mismatches_are_rejected_without_discarding_raw(tmp_p
         content[1][0]["countryiso3code"] = "JPN"
     elif change == "indicator":
         content[1][0]["indicator"]["id"] = "SP.POP.TOTL"
+    elif change == "indicator_label":
+        content[1][0]["indicator"]["value"] = "GDP (constant 2015 US$)"
     elif change == "date":
         content[1][0]["date"] = "2019"
     elif change == "missing_value":

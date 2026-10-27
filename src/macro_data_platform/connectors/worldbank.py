@@ -14,6 +14,7 @@ from macro_data_platform.config import Settings
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus, utc
 
 INDICATOR = "NY.GDP.MKTP.CD"
+INDICATOR_LABEL = "GDP (current US$)"
 SOURCE = "2"
 API_DOCS = "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392"
 TERMS_URL = "https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets"
@@ -179,8 +180,10 @@ def parse_gdp(download: Download, query: GDPQuery) -> dict[str, Any]:
     for row in rows:
         if not isinstance(row, dict) or not isinstance(row.get("indicator"), dict):
             raise schema_failure("Observation structure changed.")
-        if row["indicator"].get("id") != INDICATOR or row.get("countryiso3code") != "USA":
-            raise schema_failure("Observation country or indicator differs from the request.")
+        if (row["indicator"].get("id") != INDICATOR
+                or row["indicator"].get("value") != INDICATOR_LABEL
+                or row.get("countryiso3code") != "USA"):
+            raise schema_failure("Observation country or indicator definition differs from the request.")
         year = row.get("date")
         if (not isinstance(year, str) or len(year) != 4 or not year.isascii()
                 or not year.isdecimal() or not query.start_year <= int(year) <= query.end_year):

@@ -19,6 +19,7 @@ from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, 
 from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
 
 NORMALIZATION_VERSION = "worldbank_gate_a_v2"
+PARSER_VERSION = "worldbank_gdp_parser_v2"
 
 
 def _read(settings, relative, limit):
@@ -138,7 +139,8 @@ def normalize_worldbank(parsed, query, source_change_status="first_observation")
         "missing_periods": missing, "row_count": len(rows), "missing_value_count": nulls,
         "negative_gdp_value_count": negative_values,
         "source_change_status": source_change_status,
-        "normalization_version": NORMALIZATION_VERSION, "page_metadata": parsed["page_metadata"],
+        "normalization_version": NORMALIZATION_VERSION, "parser_version": PARSER_VERSION,
+        "page_metadata": parsed["page_metadata"],
         "scope": "raw integrity, identity, period coverage, duplicates, finite numbers, unit consistency, and nonnegative GDP values",
         "not_checked": ["economic_outliers_beyond_nonnegative_check", "revision_history",
                         "cross_source_equivalence", "unit_frequency_metadata_resolution"],
@@ -275,6 +277,8 @@ def reusable(audit, spec, stage):
         if report["artifact_id"] != artifact["record_id"] or report["status"] != "passed":
             return False
         if report.get("normalization_version") != NORMALIZATION_VERSION:
+            return False
+        if report.get("parser_version") != PARSER_VERSION:
             return False
         audit.observations(report["record_id"])
     return True

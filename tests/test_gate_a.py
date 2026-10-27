@@ -15,6 +15,7 @@ from macro_data_platform.connectors.worldbank import GDPQuery
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, StageStatus
 from macro_data_platform.ingestion.worldbank_quality import (
     NORMALIZATION_VERSION,
+    PARSER_VERSION,
     WorldBankValidation,
     reusable,
     verified_download,
@@ -84,6 +85,7 @@ def test_request_to_quality_observations_and_feedback_survives_restart(setup, mo
     assert rows[0]["source_version"] is None and rows[0]["source_last_updated"] == "2026-01-01"
     assert data["quality"]["status"] == "passed" and data["quality"]["missing_value_count"] == 1
     assert data["quality"]["normalization_version"] == NORMALIZATION_VERSION
+    assert data["quality"]["parser_version"] == PARSER_VERSION
     feedback = audit.add_feedback(task["task_id"], text="Check source status flag before analysis.",
                                   category="problem", record_id=data["validation_id"],
                                   idempotency_key="feedback-1")
@@ -409,7 +411,8 @@ def test_valid_collection_reused_after_retryable_validation_interruption(setup, 
     assert any(row["status"] == "SKIPPED_REUSED" for row in final["stages"])
 
 
-def test_validation_from_an_older_quality_policy_is_not_reused(setup):
+@pytest.mark.parametrize("legacy_field", ["normalization_version", "parser_version"])
+def test_validation_from_an_older_quality_policy_is_not_reused(setup, legacy_field):
     _, store, _, service = setup
     task = child(service, supplied(service))
     dispatch = handler(setup, FixtureTransport(fixture_download()))
@@ -421,7 +424,10 @@ def test_validation_from_an_older_quality_policy_is_not_reused(setup):
             (validation["record_id"],),
         ).fetchone()[0]
         report = json.loads(encoded)
-        report["normalization_version"] = "worldbank_gate_a_v1"
+        if legacy_field == "normalization_version":
+            report[legacy_field] = "worldbank_gate_a_v1"
+        else:
+            report.pop(legacy_field)
         connection.execute(
             "UPDATE gate_a_records SET document=? WHERE record_id=?",
             (json.dumps(report), validation["record_id"]),
