@@ -55,13 +55,15 @@ v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`�
 Gate C의 D-067 제한 범위는 바뀌지 않았다. 당시 exact-scope live watch에서 TIC와 BIS 원본은 모두
 `unchanged`였으며 그 실행 중 natural provider failure는 발생하지 않았다. 통제 변경과 simulated 503 재개는
 자동 시험으로 확인했다. 이후 World Bank API에서 natural failure→persist→same-task resume은 확인됐지만
-TIC/BIS source revision과 해당 file-watch scope의 retryable failure→resume은 별도 증거 대기다.
+TIC/BIS source revision과 해당 file-watch scope의 retryable failure→resume은 검증되지 않았다. 2026-10-27 사용자
+요청으로 TIC/BIS 변경상태 확인은 현재 필요 범위에서 제외했고 관련 반복 감시 자동화 두 개를 중지했다.
+Gate C 판정과 과거 증거는 그대로 보존하며 새 변경·복구를 검증했다고 간주하지 않는다.
 현재 watcher는 요청·stage를 네트워크 전송 전에 저장한다. 판정 범위와 실제 원본 증거는
 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [source watch 기록](GATE_C_SOURCE_WATCH.md)을 따른다.
 최신 반복 감시 task `2733c6a3-abb8-4201-9735-b3354fd32bd9` (TIC)와
 `30786cba-1024-4d8b-a599-51942bd91c63` (BIS)도 모두 unchanged여서 Gate C 판정 변화가 없다.
 
-후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
+당시 계획한 후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
 (3) bounded structured `macroatlas` CLI 및 같은 task의 status/resume, (4) Linux/Windows CI 검증이다.
 BOJ collector는 실제 metadata/data HTTP 200과 30행·11 null 값을 확인했지만 해당 시리즈·한 달에만
 적용된다. 일반 자연어 또는 기관 전반 지원으로 확대하지 않는다.
@@ -73,6 +75,10 @@ BOJ collector는 실제 metadata/data HTTP 200과 30행·11 null 값을 확인�
 | C / 10 | **제한 범위 통과** | live capture/hash, TIC controlled-copy guard, simulated 503→대기→재개 E2E, exact-scope TIC/BIS live watch를 확인. 자연 revision/recovery는 미검증. BOJ는 후속에서 FM08/FXERD01 한 달만 연결했다. [재검토](GATE_C_REVIEW_2026_10_26.md) |
 | D / 12 | **통과** | 동일 BLS/CPI task 흐름에서 명시 선택한 accepted, exact-scope `source_method`로 search stage를 생략해 반복 stage 실행을 2→1로 줄였다. 다른 기관, broader scope, conflict, inference, unreviewed, stale index는 차단; current instruction 우선. 30회 local E2E 측정은 [12회차 보고서](ITERATION_12_REPORT.md). |
 | E / 14 | **제한 범위 통과** | A–H/X01–X09 matrix, World Bank 대표 live 경로, simulated 복구, 보안 검토, 사용자 안내서/PPT를 검수했다. 미지원·미검증 경로를 별도 공개한다. [보고서](ITERATION_14_REPORT.md) |
+
+현재 범위 정정(2026-10-27): 사용자가 TIC/BIS 자료 변경상태 확인은 필요하지 않다고 지정했다.
+관련 반복 감시 자동화는 중지했고, 자연 변경 미관측 기록과 Gate C 제한 범위 판정은 그대로 둔다.
+이 항목은 현재 작업 완료 조건이나 정기 감시 대상이 아니다.
 
 후속 15회차는 코드·문서 및 Windows CI를 검증해 별도 review branch로 push한다. 이 작업은 실행 환경에
 publish하지 않는다.
@@ -102,7 +108,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
-| 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
+| 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume은 과거 미검증이며 현재 변경 확인 요구사항에서 제외. 일반 자연어·전체 기관 지원, environment publish |
 | 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험; 후속 보완에서 worker lock 상속·중단 결과 UNKNOWN 복구 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 자연 revision/recovery; 일반 CSV 전달은 후속 exporter 범위 |
 | 19 (완료) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회; PR #6 통합·4조합 CI·보존 원본 production run 완료 | 다른 provider/format, Windows resource worker, semantic normalization, World Bank/BOJ CSV export |
@@ -138,24 +144,23 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
 | World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
 | BIS flat CSV ZIP | cells=500010으로 정상 deferred. PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 raw를 한 번 처리해 24,378×21 구조 보존 JSONL 생성. raw·request manifest 불변과 manifest/chunk 해시 확인 | 해당 BIS flat profile은 완료. 새 기관·포맷 및 의미 정규화는 별도 qualification/승인 후 계획 | 완료: 동일 raw/event provenance, child attempt/stage, `handed_off/resolved`, output hash 확인. Gate C natural change/resume과 분리 |
-| TIC/BIS watcher baseline scope | 2026-10-27 audit에서 profile drift를 발견해 복구. TIC는 TSV/header row 6, BIS는 `WS_GLI_csv_col.csv` 단일 member로 보존 baseline scope에 맞춤 | 제공된 exact baseline SHA만 비교 기준으로 사용 | profile 회귀 테스트 통과 후 one-shot live result를 별도 기록. 이 설정 수정만으로 natural revision 증거가 되지 않음 |
+| TIC/BIS watcher baseline scope | 2026-10-27 audit에서 profile drift를 발견해 복구. TIC는 TSV/header row 6, BIS는 `WS_GLI_csv_col.csv` 단일 member로 보존 baseline scope에 맞춤 | 자동 감시는 중지. 변경 확인이 다시 필요해질 때만 사용자가 요청한 단발 실행에 사용 | 기존 profile과 과거 검증을 보존. 이번 설정 수정이나 과거 `unchanged`는 새 변경 확인 또는 Gate C 승격을 뜻하지 않음 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
-| TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 문서화된 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
-| 자연 장애 후 durable resume | World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT`를 저장했고 2026-10-27 같은 task attempt 2에서 collect·validate 성공. 최초 `Retry-After` 없음, max_attempts 3 중 1회 사용 | 이 evidence는 World Bank API scope에 한정. TIC/BIS watch scope에서 자연 transient failure는 미관측 | 자연 failure와 same-task/stage success, 두 attempt와 event 이력이 보존됨. TIC/BIS source revision은 별도 충족 필요 |
+| TIC/BIS 실제 원본 개정 | 과거 exact-scope 결과는 둘 다 unchanged; 실제 변경 쌍은 미관측(`NOT_RUN`) | 사용자가 현재 확인을 불필요하다고 지정해 반복·수동 감시 계획에서 제외 | 활성 완료 조건이 아님. 과거 미관측 상태와 제한 Gate C 판정을 보존 |
+| 자연 장애 후 durable resume | World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT`를 저장했고 2026-10-27 같은 task attempt 2에서 collect·validate 성공. 최초 `Retry-After` 없음, max_attempts 3 중 1회 사용 | 이 evidence는 World Bank API scope에 한정. TIC/BIS watch scope의 자연 transient failure는 미관측이며, 주기 watch를 중지함 | World Bank 자연 same-task resume는 확인됨. 향후 사용자가 요청한 TIC/BIS task가 실패하면 해당 task를 보존·재개할 수 있으나 현재 추가 감시는 필요하지 않음 |
 | BOJ 다른 series·기간, 범용 검색/자연어, 일반 Windows 사용자 workflow | 미지원·미검증 범위. 현재 고정 CLI 성공으로 전체 지원을 주장할 수 없음 | 다음 제품 회차에서 한 가지 사용자 흐름과 수용 기준을 정해 구현 | 범위별 정상·오류·실사용 검증 및 지원 문서 갱신 |
 
 ### 실행 순서와 판정 규칙
 
 1. 완료: PR #1~#16의 검토·병합. 이 maintenance follow-up의 base HEAD는 `5ade536`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
-3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
-   남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
+3. TIC/BIS 변경상태 확인은 사용자 요청으로 현재 불필요하다고 정리했다. 관련 condition-watch 자동화 두 개는
+   중지했으며 정기 요청을 보내지 않는다. 과거 결과와 미관측 기록은 그대로 보존한다.
 4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff, 20회차 CSV 전달.
 5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 실제 목표 사용자
    관찰과 다음 제품 범위 결정은 참여자 확보 후 수행한다.
-6. World Bank 자연 retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 여전히 미관측이며,
-   해당 pair가 생기면 exact scope, 양쪽 raw 보존, `changed/NEEDS_REVIEW`, 새 normalization 차단을 재검토한다.
-   현재 D-067 제한 범위를 확대하지 않는다.
+6. World Bank natural retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 과거 미관측으로
+   기록돼 있으나 현재 요구사항에서 제외됐으며, 관련 감시 자동화도 중지했다. Gate C D-067 제한 범위는 유지한다.
 
 근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
 [source watch](GATE_C_SOURCE_WATCH.md), [BOJ 실측](BOJ_LIVE_RECHECK_2026_10_26.md).
@@ -168,9 +173,9 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 
-자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.
-이 미관측 항목은 Gate C 제한 범위를 전체 통과로 올리거나 고정 CLI·BOJ 검증을 막지 않습니다. 자연 감시는
-작업 순서와 별도로 계속합니다. A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
+TIC/BIS 자료 변경상태 확인은 현재 사용자 요구 범위에서 제외했고 관련 반복 감시를 중지했습니다.
+과거 미관측 기록은 Gate C 상태를 확대하지 않으며, 나중에 사용자가 다시 요청하면 단발 확인의 범위와 목적을 정합니다.
+A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
 
 ## 저장소·배포 추적성
 

@@ -852,3 +852,12 @@ indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 �
 BLS, Census, BOJ 경로 및 World Bank/BOJ CSV 재검증에 연결했다. fixture 기반 테스트는
 실행했으나 이 변경의 live freshness 동작은 검증하지 않았다. Gate C는 통과 처리하지 않는다.
 세부 정책과 현재 범위는 [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md).
+
+## D-096 — TIC/BIS 자료 변경상태 반복 확인 제외
+
+2026-10-27. 사용자가 TIC/BIS 원자료 변경상태를 확인하는 작업은 현재 필요하지 않다고 지정했다.
+이에 `Gate C 자연 증거 감시`와 `Gate C Source Watch` 두 반복 자동화를 중지했고, 로드맵의 활성 작업에서
+정기 TIC/BIS 변경 확인을 제외했다. 기존 live `unchanged` 결과, 미관측 natural revision/recovery 기록,
+raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변경 감지 CLI와 기준본은 보존하며,
+사용자가 나중에 다시 요청할 때만 단발 범위·목적을 새로 확인한다. 이는 TIC/BIS 서버 오류나 데이터 손상이
+없음을 새로 검증한 결정이 아니며 Gate C 통과 범위를 확대하지 않는다.
