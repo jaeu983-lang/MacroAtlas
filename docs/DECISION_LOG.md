@@ -876,6 +876,15 @@ raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변�
 최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
 engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
 
+## D-101 — 계측 후 provider 실행 조립을 공통 registry로 연결
+
+2026-10-27. 성능 계측 PR #56에서 161개의 fixture/stored 표본과 privacy-safe 보고 경로를 먼저 구현했다.
+이 표본은 live network나 production 저장 병목을 증명하지 않아 catalog cache, task 저장, raw write의 성능 최적화는 보류한다.
+이후 사용자의 명시적 효율화 지시에 따라 통합 기획 §11 순서 8의 구조 정리를 진행한다. `EngineRegistry`가 saved
+`(engine, version)` plan으로 공통 Orchestrator를 조립하고 재개하며 World Bank·BOJ·BLS·Census/Gate C의 transport와
+response/parser/quality adapter는 유지한다. World Bank confirmation은 dispatcher가 실행 전 재검사하며 대용량 trial/production은
+worker lock·checkpoint recovery 때문에 전용 runner로 남긴다. Registry 변경 자체를 성능 개선 측정으로 표현하지 않는다.
+
 ## D-099 — synthetic 평가 scaffold와 user-evidence gate를 분리
 
 2026-10-27. 실제 사용 피드백 사례가 아직 없으므로, A/B corpus plumbing을 검증하기 위해 각 split에

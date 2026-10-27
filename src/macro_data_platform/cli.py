@@ -22,7 +22,7 @@ from macro_data_platform.ingestion.gate_c_watch import (
     make_gate_c_watch_orchestrator,
 )
 from macro_data_platform.ingestion.worldbank_request import WorldBankRequestDispatcher
-from macro_data_platform.orchestration import WorkflowService
+from macro_data_platform.orchestration import WorkflowService, build_engine_registry
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.workflow_contracts import (
     Candidate,
@@ -529,7 +529,6 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             )
             resumed = dispatcher.resume(args.task_id, approved=args.approve_review)
         else:
-            engines = {spec["engine"] for spec in doc.get("plan", [])}
             if doc.get("trial_only"):
                 from macro_data_platform.ingestion.large_file_trial import (
                     interrupted_trial_result,
@@ -551,6 +550,7 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                             args.task_id, "trial_recovery_unavailable", status="RUNNING",
                         )
                     return _exit_code(recovered), _summary(recovered)
+                resumed = runner.resume(args.task_id, approved=args.approve_review)
             elif doc.get("production_handoff"):
                 from macro_data_platform.ingestion.large_file_production import (
                     make_large_file_production_orchestrator,
@@ -570,16 +570,14 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
                     return 0, _summary(doc)
                 resumed = runner.resume(args.task_id, approved=args.approve_review)
                 return _exit_code(resumed), _summary(resumed)
-            elif engines <= {"boj_metadata", "boj_observations"}:
-                runner = make_boj_orchestrator(
-                    store, settings, boj_transport, clock=clock,
-                    freshness_policy=freshness_policy,
+            else:
+                registry = build_engine_registry(
+                    settings, store, worldbank_transport=worldbank_transport,
+                    boj_transport=boj_transport, file_transport=file_transport,
+                    clock=clock, freshness_policy=freshness_policy, gate_a=True,
                 )
-            elif engines == {"gate_c_file_watch"}:
-                runner = make_gate_c_watch_orchestrator(store, settings, file_transport)
-            elif not doc.get("trial_only"):
-                raise ValueError("task plan is not supported by this CLI")
-            resumed = runner.resume(args.task_id, approved=args.approve_review)
+                runner = registry.orchestrator_for_task(args.task_id)
+                resumed = runner.resume(args.task_id, approved=args.approve_review)
         return _exit_code(resumed), _summary(resumed)
     raise ValueError("unsupported MacroAtlas CLI command")
 
