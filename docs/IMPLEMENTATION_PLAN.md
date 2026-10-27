@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-27 갱신: PR #1–#12가 병합됐고 현재 기준 HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`다. PR #9의 `7723afe`와 PR #10의 `1a00c18`은 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
+> 2026-10-27 갱신: PR #1–#13이 병합됐고 현재 기준 HEAD는 `74075fc53c43720ca2b61198b5c8f025f52139ec`다. PR #9의 `7723afe`, PR #10의 `1a00c18`, PR #13의 `74075fc`는 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을, PR #13에서 evidence 상태와 official-file timeout 수정을 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -145,7 +145,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ### 실행 순서와 판정 규칙
 
-1. 완료: PR #1~#12의 검토·병합. 현재 base HEAD `8b856fd`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
+1. 완료: PR #1~#13의 검토·병합. 현재 base HEAD `74075fc`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
@@ -161,7 +161,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#12와
+현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#13과
 유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.

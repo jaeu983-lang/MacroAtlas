@@ -104,6 +104,11 @@ SQLite schema version 2를 유지하면서 검증 보고서·관측치·incident
 단위·주기 추론, 경제적 이상치, 개정 이력, 다른 기관과의 동등성 및 전체 H 시나리오는
 검증하지 않았다. 데이터셋별 이용 조건을 별도로 확인해야 하며 이 결과는 재배포 승인이 아니다.
 
+Gate A의 current-dollar GDP 검증은 이제 음수 값을 `negative_gdp_values` 품질 이슈로 격리한다.
+원본은 보존하고 정규화 결과는 발행하지 않는다. 0과 결측은 기존처럼 서로 다른 상태로 보존한다.
+이 단일 고정 지표 검사는 다른 series에 일반화하지 않으며, 단위·빈도 metadata나 더 넓은
+economic outlier/revision 검증을 제공하지 않는다.
+
 ## 보완 03의 요청·전달 연결 — 2026-10-24
 
 ingestion/worldbank_request.py의 WorldBankRequestDispatcher가 보완 02의 연결된 자식 작업을

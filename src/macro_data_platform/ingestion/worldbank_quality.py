@@ -18,6 +18,8 @@ from macro_data_platform.connectors.worldbank import (
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, StageStatus
 from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
 
+NORMALIZATION_VERSION = "worldbank_gate_a_v2"
+
 
 def _read(settings, relative, limit):
     path = settings._inside(relative)
@@ -101,6 +103,9 @@ def normalize_worldbank(parsed, query, source_change_status="first_observation")
     if any(row.get("unit") is not None and not isinstance(row["unit"], str) for row in rows):
         issues.append("invalid_source_unit")
     nulls = sum(row["value"] is None for row in rows)
+    negative_values = sum(row["value"] is not None and row["value"] < 0 for row in rows)
+    if negative_values:
+        issues.append("negative_gdp_values")
     if nulls:
         warnings.append("missing_values_preserved")
     if any(row.get("obs_status") for row in rows):
@@ -131,10 +136,12 @@ def normalize_worldbank(parsed, query, source_change_status="first_observation")
         "status": "failed" if issues else "passed", "issues": issues, "warnings": warnings,
         "requested_periods": sorted(expected), "observed_periods": sorted(counts),
         "missing_periods": missing, "row_count": len(rows), "missing_value_count": nulls,
+        "negative_gdp_value_count": negative_values,
         "source_change_status": source_change_status,
-        "normalization_version": "worldbank_gate_a_v1", "page_metadata": parsed["page_metadata"],
-        "scope": "raw integrity, identity, period coverage, duplicates, finite numbers and unit consistency",
-        "not_checked": ["economic_outliers", "revision_history", "cross_source_equivalence"],
+        "normalization_version": NORMALIZATION_VERSION, "page_metadata": parsed["page_metadata"],
+        "scope": "raw integrity, identity, period coverage, duplicates, finite numbers, unit consistency, and nonnegative GDP values",
+        "not_checked": ["economic_outliers_beyond_nonnegative_check", "revision_history",
+                        "cross_source_equivalence", "unit_frequency_metadata_resolution"],
     }
     return report, normalized
 
@@ -266,6 +273,8 @@ def reusable(audit, spec, stage):
     if spec.engine == "worldbank_validate":
         report = audit.get(payload["validation_id"], kind="validation")
         if report["artifact_id"] != artifact["record_id"] or report["status"] != "passed":
+            return False
+        if report.get("normalization_version") != NORMALIZATION_VERSION:
             return False
         audit.observations(report["record_id"])
     return True
