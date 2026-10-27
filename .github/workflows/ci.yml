@@ -2,6 +2,8 @@ name: MacroAtlas tests
 
 on:
   push:
+    branches:
+      - codex/iteration-04-gate-a
   pull_request:
   workflow_dispatch:
 
