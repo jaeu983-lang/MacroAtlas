@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-27 갱신: PR #1–#34가 병합됐으며 기준 HEAD는 `543c719be506350ce57fd14358173e54ede812b3`다. PR #23–#26에서 evidence domain, provider scope, BLS metadata 한계를 정리했고 PR #28은 malformed task plan의 CSV export 차단을 추가했다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup pilot은 통과했다. PR #34의 Windows installer dry-run은 최신 사용자 checkout에서 `DRY_RUN`/`registered=false`로 통과했다. GitHub Actions runner는 계정 결제/사용 한도 문제로 시작하지 못했으며 실제 changed/failure pilot은 남긴다. Gate C 자연 증거와 updater pilot 범위는 각각 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md), [미해결 항목](UNRESOLVED_ITEMS.md)를 따른다.
+> 2026-10-27 갱신: PR #1–#36이 병합됐다. updater 코드 기준은 PR #34 commit `543c719be506350ce57fd14358173e54ede812b3`이며 PR #35–#36은 pilot 상태 문서화다. PR #23–#26에서 evidence domain, provider scope, BLS metadata 한계를 정리했고 PR #28은 malformed task plan의 CSV export 차단을 추가했다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup pilot은 통과했다. 최신 Windows installer dry-run 및 updater no-op도 통과했다. GitHub Actions runner는 계정 결제/사용 한도 문제로 시작하지 못했으며 candidate/failure 경로는 남긴다. Gate C 자연 증거와 updater pilot 범위는 각각 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md), [미해결 항목](UNRESOLVED_ITEMS.md)를 따른다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -162,8 +162,8 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#28이 통합됐고,
-공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup pilot을 완료했다. PR #34에서 scheduler 운영 가드를 구현했고 최신 Windows installer dry-run도 통과했다. GitHub CI는 결제/사용 한도 문제로 runner가 시작되지 않았다. Windows changed/failure updater pilot과 사용자 세션 scheduler 검토 전까지 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
+현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#36이 통합됐고,
+공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows 최신 installer dry-run 및 updater no-op/cleanup pilot을 완료했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub CI는 결제/사용 한도 문제로 runner가 시작되지 않았다. Windows candidate/failure 경로와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.

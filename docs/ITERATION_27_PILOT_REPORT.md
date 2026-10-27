@@ -1,6 +1,6 @@
-# 27회차 updater pilot 상태 — installer dry-run 통과, updater/scheduler 실측 대기
+# 27회차 updater pilot 상태 — 최신 Windows no-op 통과, scheduler 비활성
 
-> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff가 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 사용자가 Windows에서 최신 installer의 dry-run을 실행해 `DRY_RUN`/`registered=false`를 확인했다. 구버전 checkout으로 실수 등록된 두 task는 제거됐고 후속 조회에서 남은 task가 없었다.
+> 최신 후속 구현(PR #34): installer에 기준 branch·Python 경로·현재 대화형 사용자 principal을 명시했고, updater에 교차 프로세스 lock과 `ALREADY_RUNNING` 상태를 추가했다. 90일 지난 정상 no-op/일상 QA report만 제한적으로 정리하며 candidate·실패·cleanup 미완료 기록은 보존한다. 로컬 733개 테스트와 Ruff가 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 사용자가 Windows에서 최신 installer dry-run(`registered=false`)과 최신 updater no-op/cleanup 경로를 직접 확인했다. 구버전 checkout으로 실수 등록됐던 두 task는 제거됐고 후속 조회에서 남은 task가 없었다.
 
 기준일: 2026-10-27. PR #26 이후 Linux에서 updater를 두 차례, Windows에서 no-op 경로를 두 차례 수동 실행했다. Linux 첫 시도는 Codex token refresh `401 Unauthorized`로 막혔고, 기기 코드 재인증 뒤 두 번째 시도는 candidate QA와 PR handoff까지 성공했다. 첫 Windows 시도는 cleanup이 실패했지만 PR #31 수정 후 재실행에서 no-op cleanup까지 통과했다.
 
@@ -67,5 +67,12 @@ Windows no-op 실행과 cleanup은 검증됐다. Windows read-only `Get-Schedule
 - `git fetch`만 실행한 뒤 local checkout은 `8fc22c8`에 남아 있었다. 이 버전의 `install_tasks.ps1`에는 `-DryRun`이 없어서 명령이 실제 등록 경로를 실행했다.
 - 사용자가 읽기 전용 조회에서 `MacroData-HealthCheck`와 `MacroData-AgentImprovement`를 확인했고, 두 작업 모두 `C:\Projects\MacroAtlas`의 script action을 참조했다. `Unregister-ScheduledTask`로 두 작업을 제거했으며 후속 조회에서 두 task 모두 없음을 확인했다.
 - `git pull --ff-only` 후 local HEAD는 `a7f7a1f8a63d7e4531d38a7062f3c532fe553515`가 됐다. 새 installer dry-run은 같은 base SHA, 현재 signed-in user, `Interactive`/`Limited` principal, Python 경로와 두 action을 JSON에 기록하고 `registered=false`를 반환했다. 작업은 등록되지 않았다.
+
+## 운영 가드 적용 후 Windows 수동 updater no-op — 2026-10-27
+
+- 사용자가 최신 코드 기준 `run_improvement.ps1`을 한 번 실행했다. run `20261027T062202Z-a897a292`, base `origin/codex/iteration-04-gate-a` / `689cd1b14dd15c50987893ac9cd25dbe9c6aab62`에서 Codex exit code 0, `NO_ACTIONABLE_CHANGE`, `changed_paths=[]`로 끝났다.
+- `cleanup=PASSED`; 생성 worktree와 branch가 제거됐다. `candidate_commit=null`, QA/push/PR은 실행되지 않았고 `network_requested=false`였다.
+- retention report는 90일 정책, `scanned=3`, `removed=[]`, `preserved=3`을 기록했다. 이 실행은 안전한 no-op 및 cleanup 경로를 입증하며 경쟁 lock, candidate handoff, 실패 복구 또는 scheduler 실행을 입증하지 않는다.
+- Windows 예약 작업은 등록되지 않은 상태다. GitHub Actions runner도 계정 결제/사용 한도 문제로 여전히 시작되지 않았다.
 
 이 updater 작업은 MacroAtlas provider 접속이나 Gate C 원자료 증거와 별도다.
