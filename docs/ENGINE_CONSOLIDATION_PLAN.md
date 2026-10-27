@@ -94,7 +94,7 @@ flowchart LR
 
 ## 도입 순서와 완료 기준
 
-한 회차에 아래 항목 중 하나씩 진행한다. 24회차 공통 검사 경로, 25회차 검증된 scope adapter, 26회차 candidate SHA QA와 updater handoff 구현이 끝났다. Windows 수동 pilot은 no-op 실행 뒤 cleanup 보완을 검증해야 하며, scheduler 정적 설정 검토는 완료했지만 실제 Windows task principal과 실행 조건 확인은 남아 있다. 예약 설정을 실행하거나 활성화하지 않았다.
+한 회차에 아래 항목 중 하나씩 진행한다. 24회차 공통 검사 경로, 25회차 검증된 scope adapter, 26회차 candidate SHA QA와 updater handoff 구현이 끝났다. Windows 수동 no-op과 cleanup은 통과했다. Scheduler 정적 설정 검토는 완료했지만 실제 Windows task principal과 실행 조건 확인은 남아 있다. 예약 설정을 실행하거나 활성화하지 않았다.
 
 | 순서 | 다음 작업 | 선행 이유 | 완료 기준 |
 |---|---|---|---|
@@ -103,7 +103,7 @@ flowchart LR
 | 26 완료 | Isolated updater와 candidate QA handoff | 기존 updater가 현재 branch를 바꾸고 QA를 호출하지 않았다. | `run_improvement.py`는 origin/명시 base에서 isolated worktree를 만들고 경로 allowlist·no-op·동일 SHA QA·조건부 push/PR을 연결한다. CI dry run과 unit tests가 no-op 정리 및 QA 실패 시 무push를 확인한다. 실제 Codex pilot은 27회차에서 확인한다. [보고서](ITERATION_26_REPORT.md) |
 | 27 | Schedule consolidation and supervised pilot | 자동 주기는 통합 흐름이 Windows에서 운영 가능한지 입증한 뒤에만 검토한다. | 먼저 Windows에서 사람이 직접 시작한 pilot 1회로 no-op·failure·success 보고를 검토한다. 실제 Codex 실행은 이 검토 뒤에만 한다. 반복 scheduler는 비활성 상태로 유지하고 중복 실행 방지, 환경·base ref 설정, 로그 보존을 확인한다. 이후 사용하지 않는 launcher를 제거한다. |
 
-2026-10-27 상태: PR #26 뒤 첫 Linux updater 시도는 token refresh `401`로 실패했지만 device-code 재인증 후 재실행은 candidate QA/PR handoff에 성공해 PR #28로 병합됐다. Windows의 첫 수동 run은 dry-run과 Codex 호출까지 도달했으나 변경 없이 `CLEANUP_FAILED`로 끝났다. cleanup stderr를 보존하고 등록 해제된 빈 worktree 잔여물만 정리하도록 보완 중이다. Scheduler 정적 검토에서는 명시 base ref, 교차 실행 lock, report 보존 정책이 없는 점을 확인했다. Windows cleanup 재검증과 task principal 확인 전까지 scheduler를 활성화하지 않는다. 자세한 실행 근거는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
+2026-10-27 상태: PR #26 뒤 첫 Linux updater 시도는 token refresh `401`로 실패했지만 device-code 재인증 후 재실행은 candidate QA/PR handoff에 성공해 PR #28로 병합됐다. Windows 첫 수동 run은 no-op 후 cleanup이 실패했으며, PR #31에서 오류 기록과 빈 orphan cleanup을 보완했다. 후속 Windows run은 `NO_ACTIONABLE_CHANGE`와 `cleanup=PASSED`로 끝났다. Scheduler 정적 검토에서는 명시 base ref, 교차 실행 lock, report 보존 정책이 없는 점을 확인했다. Windows task principal 확인과 운영 가드 보완 전까지 scheduler를 활성화하지 않는다. 자세한 실행 근거는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
 
 이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
 
