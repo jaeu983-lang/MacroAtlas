@@ -64,6 +64,61 @@ def test_all_shared_checks_pass_and_are_recorded(tmp_path, monkeypatch):
     assert any(command[:3] == ['git', 'show', '--check'] for command in calls)
 
 
+def test_candidate_mode_checks_exact_sha_without_requiring_a_clean_source_checkout(
+        tmp_path, monkeypatch):
+    base = 'a' * 40
+    candidate = 'b' * 40
+    source_head = 'c' * 40
+    monkeypatch.setattr(qa.subprocess, 'check_output', lambda args, **kw: {
+        ('git', 'rev-parse', 'HEAD'): source_head,
+        ('git', 'status', '--porcelain'): ' M scripts/run_improvement.ps1',
+        ('git', 'rev-parse', '--verify', f'{candidate}^{{commit}}'): candidate,
+        ('git', 'rev-parse', '--verify', f'{base}^{{commit}}'): base,
+        ('git', 'merge-base', base, candidate): base,
+        ('git', 'diff', '--name-only', f'{base}..{candidate}'): 'src/fix.py\n',
+    }[tuple(args)])
+    calls = []
+
+    def execute(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(qa.subprocess, 'run', execute)
+    report, path = qa.run(tmp_path, candidate=candidate, base=base)
+
+    assert report['status'] == 'PASSED'
+    assert report['mode'] == 'qa_candidate'
+    assert report['source_head'] == source_head
+    assert report['source_checkout_clean'] is False
+    assert report['base_commit'] == base
+    assert report['candidate_commit'] == candidate
+    assert report['changed_paths'] == ['src/fix.py']
+    worktree_add = next(command for command, _ in calls
+                        if command[:3] == ['git', 'worktree', 'add'])
+    assert worktree_add[-1] == candidate
+    diff_check = next(command for command, _ in calls
+                      if command[:3] == ['git', 'diff', '--check'])
+    assert diff_check == ['git', 'diff', '--check', f'{base}..{candidate}']
+    assert json.loads(path.read_text())['candidate_commit'] == candidate
+
+
+def test_candidate_mode_requires_full_shas_and_ancestor_base(tmp_path, monkeypatch):
+    with pytest.raises(ValueError, match='full commit SHA'):
+        qa.run(tmp_path, candidate='HEAD', base='main')
+
+    base, candidate = 'a' * 40, 'b' * 40
+    monkeypatch.setattr(qa.subprocess, 'check_output', lambda args, **kw: {
+        ('git', 'rev-parse', 'HEAD'): 'c' * 40,
+        ('git', 'status', '--porcelain'): '',
+        ('git', 'rev-parse', '--verify', f'{candidate}^{{commit}}'): candidate,
+        ('git', 'rev-parse', '--verify', f'{base}^{{commit}}'): base,
+        ('git', 'merge-base', base, candidate): 'd' * 40,
+    }[tuple(args)])
+    with pytest.raises(ValueError, match='ancestor'):
+        qa.run(tmp_path, candidate=candidate, base=base)
+    assert not (tmp_path / 'reports').exists()
+
+
 def test_missing_check_command_is_recorded_and_later_checks_continue(tmp_path, monkeypatch):
     monkeypatch.setattr(qa.subprocess, 'check_output',
                         lambda args, **kw: '' if 'status' in args else 'abc123')
@@ -110,6 +165,10 @@ def test_cleanup_exception_fails_run_and_is_recorded(tmp_path, monkeypatch):
 def test_cli_prints_failed_check_summary(tmp_path, monkeypatch, capsys):
     report = {
         'status': 'FAILED',
+        'mode': 'check',
+        'base_commit': 'abc123',
+        'candidate_commit': 'abc123',
+        'changed_paths': [],
         'checks': [
             {'name': 'pytest', 'status': 'FAILED', 'exit_code': 1},
             {'name': 'ruff', 'status': 'PASSED', 'exit_code': 0},

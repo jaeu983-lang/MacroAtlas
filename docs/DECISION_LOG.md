@@ -741,3 +741,14 @@ pytest, Ruff, commit whitespace, CLI module/entrypoint help, project health를 c
 
 이 결정은 `run_improvement.ps1`의 코드 수정 경로, PatternAnalyzer의 근거 부족, candidate SHA 검증·PR 생성, Windows
 예약 설정을 연결 완료 처리하지 않는다. 이 잔여 범위는 D-083에서 정한 25–27회차 순서를 따른다.
+
+## D-085 — immutable candidate SHA 기반 유지보수 QA
+
+2026-10-27 후속 구현에서 공통 QA runner에 `--base <full-sha> --candidate <full-sha>` 입력을 추가한다. runner는 두 commit이
+현재 repository object store에서 전체 SHA로 resolve되는지, base가 candidate의 조상인지 확인한 다음 candidate SHA를 detached
+worktree에 checkout한다. 원 checkout이 dirty여도 검사 대상은 candidate commit으로 고정되며 report에는 source checkout 상태,
+두 SHA와 변경 파일을 기록한다. CI의 Ubuntu/Windows × Python 3.11/3.12 matrix는 PR base와 candidate SHA를 넘겨 이 모드와
+PowerShell wrapper를 함께 검증한다.
+
+QA runner는 변경을 commit/push하거나 PR을 만들지 않는다. `run_improvement.ps1`의 별도 updater worktree·수정 범위 allowlist·
+candidate commit·QA·성공 조건부 push/PR handoff와 scheduler pilot은 아직 후속 단계이며, merge/publish는 사람 검토로 남긴다.

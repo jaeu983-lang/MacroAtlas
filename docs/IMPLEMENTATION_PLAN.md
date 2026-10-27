@@ -1,6 +1,6 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-27 갱신: PR #1–#14가 병합됐고 현재 기준 HEAD는 `d89054038ba4c2573c4b201e0bab616ead0ecd5e`다. PR #9의 `7723afe`, PR #10의 `1a00c18`, PR #13의 `74075fc`, PR #14의 `d890540`는 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을, PR #13에서 source timeout·evidence 상태를, PR #14에서 고정 World Bank GDP의 음수값 검토를 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
+> 2026-10-27 갱신: 이 후속 작업의 base에는 PR #1–#15가 병합돼 있었고 HEAD는 `dec763fe1da1e35b42eb47257eb9ee365bb60d5a`였다. PR #9의 `7723afe`, PR #10의 `1a00c18`, PR #13의 `74075fc`, PR #14의 `d890540`, PR #15의 `dec763f`는 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을, PR #13에서 source timeout·evidence 상태를, PR #14/#15에서 고정 World Bank GDP의 value/indicator 검사를 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
@@ -52,9 +52,10 @@ v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`�
 병합 checkout에서 592개 테스트, Ruff, `git diff --check`, World Bank live 검증을 다시 통과했다.
 후속 네 갈래는 별도 브랜치의 [15회차 보고서](ITERATION_15_REPORT.md)에 기록한다.
 
-Gate C의 D-067 제한 범위는 바뀌지 않았다. 이번 exact-scope live watch에서 TIC와 BIS 원본은 모두
-`unchanged`였으며 natural provider failure는 발생하지 않았다. 통제 변경과 simulated 503 재개는
-자동 시험으로 확인했지만 natural live revision과 failure→persist→resume은 여전히 `NOT_RUN`이다.
+Gate C의 D-067 제한 범위는 바뀌지 않았다. 당시 exact-scope live watch에서 TIC와 BIS 원본은 모두
+`unchanged`였으며 그 실행 중 natural provider failure는 발생하지 않았다. 통제 변경과 simulated 503 재개는
+자동 시험으로 확인했다. 이후 World Bank API에서 natural failure→persist→same-task resume은 확인됐지만
+TIC/BIS source revision과 해당 file-watch scope의 retryable failure→resume은 별도 증거 대기다.
 현재 watcher는 요청·stage를 네트워크 전송 전에 저장한다. 판정 범위와 실제 원본 증거는
 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [source watch 기록](GATE_C_SOURCE_WATCH.md)을 따른다.
 최신 반복 감시 task `2733c6a3-abb8-4201-9735-b3354fd32bd9` (TIC)와
@@ -145,7 +146,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ### 실행 순서와 판정 규칙
 
-1. 완료: PR #1~#14의 검토·병합. 현재 base HEAD `d890540`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
+1. 완료: PR #1~#15의 검토·병합. 이 후속 변경의 base HEAD는 `dec763f`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
@@ -161,8 +162,9 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#14와
-유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
+현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#15와
+공통 유지보수 검사 경로는 통합 완료됐고 candidate SHA QA도 추가됐다. updater-to-QA/push/PR handoff는 남아 있다.
+20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
 

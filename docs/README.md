@@ -55,11 +55,11 @@
 
 ## 지금 기억할 상태
 
-2026-10-26 기준 제품은 고정된 구조화 CLI와 Python API 중심입니다. 전체 기관 탐색·대화형 UI,
-일반 대용량 정규화·범용 CSV/XLSX 변환, 자연 TIC/BIS 개정 및 자연 provider 장애 후 durable resume은
-완료된 제품 기능이나 증거로 표시하지 않습니다. 완료된 World Bank/BOJ task의 제한 CSV 전달은 20회차에서
-추가했습니다. 변경될 때 `USER_GUIDE.md`, `IMPLEMENTATION_PLAN.md`,
-로드맵의 상태를 함께 갱신합니다.
+2026-10-27 기준 제품은 고정된 구조화 CLI와 Python API 중심입니다. 전체 기관 탐색·대화형 UI,
+일반 대용량 정규화·범용 CSV/XLSX 변환, 자연 TIC/BIS 개정은 완료된 제품 기능이나 증거로 표시하지 않습니다.
+World Bank API에서 자연 transient failure를 보존한 same-task resume은 실측됐지만 TIC/BIS file-watch 범위의 자연
+장애 재개는 별도 미관측입니다. 완료된 World Bank/BOJ task의 제한 CSV 전달은 20회차에서 추가했습니다.
+변경될 때 `USER_GUIDE.md`, `IMPLEMENTATION_PLAN.md`, 로드맵의 상태를 함께 갱신합니다.
 
 19회차는 보존된 BIS GLI flat ZIP 한 건을 명시 승인 아래 Linux worker에서 JSONL로 구조 보존 처리했습니다.
 이 결과는 경제 의미 정규화도, 일반 파일 지원도, Gate C 자연 증거도 아닙니다.

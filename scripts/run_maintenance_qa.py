@@ -1,8 +1,9 @@
-"""Run the shared offline maintenance checks in a clean, detached checkout."""
+"""Run shared offline maintenance checks in an immutable detached checkout."""
 import argparse
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import sysconfig
@@ -10,16 +11,45 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+_COMMIT_SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 
-def run(root, *, timeout=600):
+
+def run(root, *, timeout=600, candidate=None, base=None):
     root = Path(root).resolve()
     if timeout <= 0:
         raise ValueError('timeout must be positive')
+    if candidate is None and base is not None:
+        raise ValueError('--base requires --candidate')
+    if candidate is not None:
+        if base is None:
+            raise ValueError('--base is required with --candidate')
+        candidate, base = candidate.lower(), base.lower()
+        if not _COMMIT_SHA.fullmatch(candidate) or not _COMMIT_SHA.fullmatch(base):
+            raise ValueError('candidate and base must be full commit SHA values')
+
     def git(*args):
         return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
-    if git('status', '--porcelain'):
-        raise ValueError('working tree must be clean; commit changes before QA')
-    commit = git('rev-parse', 'HEAD')
+
+    source_head = git('rev-parse', 'HEAD')
+    source_clean = not git('status', '--porcelain')
+    if candidate is None:
+        if not source_clean:
+            raise ValueError('working tree must be clean; commit changes before QA')
+        mode = 'check'
+        base_commit = source_head
+        candidate_commit = source_head
+        changed_paths = []
+    else:
+        candidate_commit = git('rev-parse', '--verify', f'{candidate}^{{commit}}')
+        base_commit = git('rev-parse', '--verify', f'{base}^{{commit}}')
+        if candidate_commit != candidate or base_commit != base:
+            raise ValueError('candidate and base must resolve to the supplied full commit SHA')
+        if git('merge-base', base_commit, candidate_commit) != base_commit:
+            raise ValueError('base commit must be an ancestor of candidate commit')
+        changed_paths = git('diff', '--name-only', f'{base_commit}..{candidate_commit}')
+        changed_paths = changed_paths.splitlines() if changed_paths else []
+        mode = 'qa_candidate'
+    commit = candidate_commit
     run_id = uuid4().hex
     run_dir = root / "reports" / ("maintenance_qa_" + run_id)
     run_dir.mkdir(parents=True)
@@ -27,8 +57,13 @@ def run(root, *, timeout=600):
     report = {
         "schema_version": 1,
         "run_id": run_id,
-        "mode": "check",
+        "mode": mode,
         "commit": commit,
+        "source_head": source_head,
+        "source_checkout_clean": source_clean,
+        "base_commit": base_commit,
+        "candidate_commit": candidate_commit,
+        "changed_paths": changed_paths,
         "python": platform.python_version(),
         "platform": platform.platform(),
         "started_at": datetime.now(UTC).isoformat(),
@@ -54,10 +89,15 @@ def run(root, *, timeout=600):
         )
         if scripts_dir:
             env["PATH"] = scripts_dir + os.pathsep + env.get("PATH", "")
+        diff_check = (
+            ["git", "show", "--check", "--oneline", commit]
+            if mode == 'check'
+            else ["git", "diff", "--check", f"{base_commit}..{candidate_commit}"]
+        )
         commands = [
             ("pytest", [sys.executable, "-m", "pytest"]),
             ("ruff", [sys.executable, "-m", "ruff", "check", "."]),
-            ("diff", ["git", "show", "--check", "--oneline", commit]),
+            ("diff", diff_check),
             ("cli", [sys.executable, "-m", "macro_data_platform.cli", "--help"]),
             ("cli_entrypoint", ["macroatlas", "--help"]),
             ("cli_collect", ["macroatlas", "collect", "--help"]),
@@ -130,14 +170,21 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--timeout", type=int, default=600, help="timeout per check in seconds")
+    parser.add_argument("--candidate", help="full immutable candidate commit SHA to verify")
+    parser.add_argument("--base", help="full base commit SHA; required with --candidate")
     args = parser.parse_args(argv)
     try:
-        report, path = run(args.project_root, timeout=args.timeout)
+        report, path = run(args.project_root, timeout=args.timeout,
+                           candidate=args.candidate, base=args.base)
     except (ValueError, OSError, subprocess.SubprocessError) as exc:
         print(json.dumps({"status": "NOT_EXECUTED", "reason": str(exc)}))
         return 2
     summary = {
         "status": report["status"],
+        "mode": report["mode"],
+        "base_commit": report["base_commit"],
+        "candidate_commit": report["candidate_commit"],
+        "changed_paths": report["changed_paths"],
         "report": str(path),
         "checks": [
             {
