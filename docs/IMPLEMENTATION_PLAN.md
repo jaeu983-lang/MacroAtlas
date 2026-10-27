@@ -163,7 +163,7 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 ## 다음 작업 순서
 
 현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
-공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows 최신 installer dry-run, updater no-op/cleanup, OS lock 경합 pilot을 완료했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub CI는 결제/사용 한도 문제로 runner가 시작되지 않았다. Windows candidate/failure 경로와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
+공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows installer dry-run, updater no-op/cleanup, OS lock 경합 pilot 및 최신 base `f8693f0`의 updater·retention 테스트 34개가 통과했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub Actions는 계정 사용 한도로 runner가 시작되지 않았다. Windows 사용자 세션 candidate/handoff와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.
