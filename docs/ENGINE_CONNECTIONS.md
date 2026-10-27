@@ -87,21 +87,25 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 - 큰 원본·정규화 본문은 파일로 둔다. 후속 대용량 stage 간 payload는 `artifact_id, relative_path, manifest_ref,
   sha256(확인된 경우), schema/version, counts/quality` 참조로 제한한다. 현재 작은 API payload 전체를 즉시 재작성하지 않는다.
 
-## 엔진별 시간 근거와 병목 계측 공백
+## 엔진 실행시간 계측과 남은 기준선
 
-일반 Orchestrator는 stage별 UTC `started_at`/`finished_at`을 보존하지만 `duration_ms`는 저장하지 않는다. 이 값으로 대략적인 경과시간은 사후 계산할 수 있으나 시스템 시계 변경에 영향을 받고, engine 호출 전후의 저장·직렬화 비용과 engine 내부 network/parse/quality 시간을 나누지 못한다. 대용량 worker는 monotonic `elapsed_seconds`와 일부 실행의 RSS를 별도 반환한다. knowledge lookup은 후보 row/byte 수 및 cache hit를 남기지만 elapsed time은 없다.
+Orchestrator는 engine 호출 전후를 `perf_counter_ns()`로 재며 stage 결과 검증과 직렬화까지를 전체 실행시간으로 기록한다. 저장된 `started_at`·`finished_at`과 보고서의 `observed_at`은 UTC 이벤트 시각으로만 쓴다. 공통 성능 표본은 task 이력의 `catalog.sqlite`와 분리된 `data/performance.sqlite`에 둔다. stage 시작/완료를 위한 task DB 쓰기는 stage 실행시간에 포함하지 않는다.
 
-| 엔진/계층 | 현재 시간 자료 | 다음 baseline 측정 단위 |
+표본에는 engine/version, stage, 결과 상태, task/stage 시도 번호, monotonic 전체 시간, 숫자 입력·출력 크기, workload tier, code SHA, Python·플랫폼 정보와 구분된 실행 범위를 둔다. 자연어 요청, task ID, 관측값, credential, source URL은 저장하지 않는다. 저장 전 필드 allowlist처럼 numeric shape와 고정 label만 투영한다. 작업 트리가 수정된 상태에서는 commit SHA를 오인해 쓰지 않고 `unknown`으로 둔다.
+
+| 계측 경계 | 기록 방법 | 해석할 때 주의할 점 |
 |---|---|---|
-| Discovery·candidate search | 실행시간 없음. 저장 metadata package의 manifest/raw/normalized를 검증하고 읽는 상한만 있음 | package 수·읽은 byte·hash 검증 시간·ranking 시간을 분리하고, metadata 규모별 fixture/replay로 측정 |
-| World Bank·BOJ·BLS·Census API | 일반 stage의 UTC 경계만 있음. workspace에 분석 가능한 `catalog.sqlite` task 이력은 없음 | request/response 완결 시간, raw 저장, parse, quality/freshness, SQLite stage 완료 시간. BOJ는 metadata 재사용/수집을 따로 기록 |
-| TIC/BIS watch·tabular parser | 공통 하위시간 없음. 파일 fetch와 `TabularFileEngine` 호출이 한 stage 안에 있음 | 다운로드 bytes/time, bounded read, archive/hash, parse·normalization 단계 시간과 행/열 수 |
-| Large-file qualification | worker가 elapsed/RSS를 기록. 합성 CSV worker는 1 MiB 0.051–0.053초, 16 MiB 0.803–0.900초, 64 MiB 3.425–4.408초, 127 MiB 6.326–7.041초 | 기존 fixture 범위는 재사용하되 worker 시간과 전체 stage/child-process 시간을 분리 |
-| Large-file production | 공식 BIS flat 24,378×21 단일 생산 실행의 stage 약 0.593초라는 기록; production sample 1건 | qualification과 섞지 말고 production input size·rows·output bytes·wall/RSS를 축적. 신뢰도는 낮음으로 유지 |
-| Feedback·knowledge | candidate rows/bytes, cache hit/miss는 있으나 lookup 시간 없음 | cold/warm lookup, index refresh, candidate 수별 elapsed time 및 scan cap 상태 |
-| CSV exporter·평가 validator | 별도 elapsed 없음; exporter의 검증·재파싱, evaluation set은 현재 비어 있음 | 저장 task 크기와 case 수별 읽기·hash·parse·쓰기/검증 시간을 측정. 비어 있는 평가 set 결과는 benchmark로 세지 않음 |
+| 전체 Orchestrator stage | 각 engine 호출당 monotonic wall time, engine/version/status/attempt | task claim·상태 전이용 SQLite 시간은 제외하고 결과 검증·직렬화는 포함 |
+| World Bank·BOJ·BLS·Census 전송 | 실제 공통 transport 호출의 `network` 시간 | fixture transport를 통한 응답은 network 시간이 아니며, 승인된 자연 요청 표본만 live로 분류 |
+| API raw 보존 | 응답 byte 수와 `raw_write` 시간 | 본문·URL은 표본에 복사하지 않음 |
+| API parser·quality | parser wrapper의 `parse`, freshness/quality 검사의 `quality` | 행·열 수만 관측. `parse`/`quality`는 구현에서 측정한 경계이며 stage 전체를 대체하지 않음 |
+| Task/knowledge SQLite | `HistoryStore` 연결 작업 및 knowledge 조회 시간, 후보 행·논리 byte/cache hit·miss | knowledge `query()` 결과에 `latency_ns`도 반환. 입력 scope와 텍스트는 성능 DB에 남기지 않음 |
+| CSV exporter | 저장 task 읽기, parse/quality, CSV 생성·파일 기록 | `csv_export` scope로 분리하며 내보내기 후에도 `catalog.sqlite` hash가 유지됨 |
+| 대용량 worker | 기존 qualification/production elapsed·RSS 자료 유지 | `worker` 기록을 orchestrator wall이나 API phase로 변환/합산하지 않음 |
 
-현재 보이는 후보 병목은 API network 대기, discovery metadata 재검증, task JSON 전체 직렬화·SQLite 갱신, exporter의 raw 재검증·재파싱이다. 측정 전에는 어느 항목도 실제 bottleneck으로 확정하지 않는다. 첫 보완은 공통 `perf_counter_ns()` stage wall time과 가능한 하위 phase timing, engine/version/status/input size·code SHA·environment를 기록하는 것이다. 사용자 요청문·원본 값·credential·query URL은 성능 기록에 넣지 않는다. fixture/synthetic/live를 구분하고, engine/version/workload tier당 표본 20개 전에는 p95를 확정하지 않는다. 성능 표본을 위해 live API 요청을 반복하지 않는다. 우선순위와 완료 조건은 통합 제품 기획 §11의 7번 작업을 따른다.
+SQLite phase는 해당 DB 작업 경계의 inclusive 측정이고 전체 stage와 일부 세부 phase는 겹칠 수 있으므로 phase 값을 더해 전체 시간으로 해석하지 않는다. Discovery·일반 tabular·평가 validator에는 아직 별도 leaf timing이 없으며 해당 stage가 Orchestrator에서 실행된 경우 전체 stage만 얻는다.
+
+읽기 전용 `macro-perf report --project-root .`은 execution scope·engine/version·stage·workload tier·evidence class·cache 상태·코드 SHA·환경별로 표본 수, 상태 수, p50/p95, 중앙 크기, 처리량을 집계한다. p95는 그룹에 20개 이상일 때만 표시하고, 그보다 적으면 `INSUFFICIENT_SAMPLE`이다. 현재 production 자연 요청 표본은 별도로 승인·수집되지 않았다. parser/exporter/knowledge는 보존 자료나 fixture로 반복 측정하고, live API 요청을 benchmark 용도로 만들지 않는다. 다음 성능 최적화나 EngineRegistry/composition 변경은 이 자료로 실제 병목이 확인된 뒤 선택한다.
 
 ## 대용량 엔진 연결 규칙
 

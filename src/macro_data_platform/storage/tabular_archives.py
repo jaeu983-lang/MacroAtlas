@@ -12,6 +12,7 @@ from macro_data_platform.connectors.tabular_files import (
     SUPPORTED_FORMATS,
     ParsedTable,
 )
+from macro_data_platform.performance.metrics import measured_phase
 
 PARSER_VERSION = "tabular-parser-v1"
 MAX_EXISTING_PACKAGES = 1000
@@ -125,6 +126,7 @@ def _source_change_status(settings: Settings, root: Path, entries: list[Path],
     return "unchanged" if previous_sha256 == raw_sha256 else "changed"
 
 
+@measured_phase("raw_write")
 def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
                           request_context: dict) -> dict:
     if format_name not in SUPPORTED_FORMATS:
@@ -214,6 +216,7 @@ def begin_tabular_package(settings: Settings, raw: bytes, format_name: str,
     }
 
 
+@measured_phase("raw_write")
 def complete_tabular_package(settings: Settings, package: dict, table: ParsedTable) -> dict:
     normalized_path = settings._inside(package["normalized_path"])
     manifest_path = settings._inside(package["manifest_path"])

@@ -1,9 +1,13 @@
 """Bounded institution-scoped feedback index and conditional reuse suggestions."""
 import json
+import logging
 from collections import OrderedDict
 from datetime import UTC, datetime
 from itertools import product
+from time import perf_counter_ns
 
+from macro_data_platform.performance.metrics import PerformanceMetrics, runtime_metadata
+from macro_data_platform.performance.storage import build_sample
 from macro_data_platform.storage.feedback import FeedbackStore
 from macro_data_platform.storage.history import HistoryStore
 
@@ -12,6 +16,7 @@ MAX_QUERY_SCAN = 500
 MAX_QUERY_RESULTS = 50
 MAX_CACHE_ENTRIES = 64
 MAX_CACHE_BYTES = 1_000_000
+_LOGGER = logging.getLogger(__name__)
 
 
 class KnowledgeStore:
@@ -171,6 +176,44 @@ class KnowledgeStore:
     def query(self, *, institution_id, category=None, dataset_id=None, concept=None,
               classification_axis=None, version=None, as_of=None, limit=20,
               include_unreviewed=False, include_inference=False):
+        """Return lookup output with latency; persist only counts and fixed labels."""
+        metrics = PerformanceMetrics()
+        metrics.observe_sample_class("stored")
+        started_ns = perf_counter_ns()
+        status = "FAILED"
+        result = None
+        try:
+            with metrics.activate():
+                result = self._query(
+                    institution_id=institution_id, category=category, dataset_id=dataset_id,
+                    concept=concept, classification_axis=classification_axis, version=version,
+                    as_of=as_of, limit=limit, include_unreviewed=include_unreviewed,
+                    include_inference=include_inference,
+                )
+            status = result.get("status", "UNKNOWN")
+            metrics.observe_cache(result.get("cache"))
+            metrics.observe_input(
+                rows=result.get("candidate_rows_read"),
+                byte_count=result.get("candidate_logical_bytes_read"),
+            )
+            metrics.observe_output(rows=len(result.get("items", ())))
+        finally:
+            duration_ns = max(0, perf_counter_ns() - started_ns)
+            try:
+                self.history.record_performance(build_sample(
+                    observed_at=self._now().isoformat(), execution_scope="knowledge_lookup",
+                    engine="knowledge", engine_version="1", stage="query", status=status,
+                    duration_ns=duration_ns, metrics=metrics.snapshot(),
+                    environment=runtime_metadata(str(self.history.settings.project_root)),
+                ))
+            except Exception:  # noqa: BLE001 - telemetry cannot change lookup behavior
+                _LOGGER.warning("performance telemetry sample could not be recorded")
+        result["latency_ns"] = duration_ns
+        return result
+
+    def _query(self, *, institution_id, category=None, dataset_id=None, concept=None,
+               classification_axis=None, version=None, as_of=None, limit=20,
+               include_unreviewed=False, include_inference=False):
         """Return scoped suggestions and evidence; never applies preferences automatically."""
         if not isinstance(institution_id, str) or not institution_id:
             raise ValueError("institution_id is required for scoped knowledge lookup")
@@ -415,7 +458,7 @@ class KnowledgeStore:
         )
         metrics = {name: lookup[name] for name in (
             "candidate_rows_read", "candidate_logical_bytes_read", "candidate_scan_cap",
-            "result_limit", "cache",
+            "result_limit", "cache", "latency_ns",
         ) if name in lookup}
         if lookup["status"] != "ready":
             status = ("lookup_incomplete" if lookup["status"] == "partial" else

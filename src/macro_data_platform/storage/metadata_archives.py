@@ -6,10 +6,13 @@ from uuid import uuid4
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.statistical_http import ApiDownload
+from macro_data_platform.performance.metrics import measured_phase, observe_download
 
 
+@measured_phase("raw_write")
 def begin_metadata_package(settings: Settings, source: str, download: ApiDownload,
                            request_context: dict) -> dict[str, str]:
+    observe_download(download)
     if source not in {"bls", "census", "sdmx", "codebook"}:
         raise ValueError("unsupported metadata source")
     package_id = uuid4().hex
@@ -45,6 +48,7 @@ def begin_metadata_package(settings: Settings, source: str, download: ApiDownloa
     }
 
 
+@measured_phase("raw_write")
 def complete_metadata_package(settings: Settings, source_package: dict[str, str],
                                records: list[dict], request_context: dict) -> dict[str, str]:
     if not isinstance(records, list) or not records:

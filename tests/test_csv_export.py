@@ -192,6 +192,49 @@ class CSVExportTests(unittest.TestCase):
         self.assertEqual(manifest["export"]["sha256"], hashlib.sha256(raw).hexdigest())
         self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before)
 
+    def test_fixture_stage_and_export_record_safe_performance_without_touching_task_db(self):
+        task_id = self._collect("worldbank")
+        database = self.settings.database_path
+        before_export = hashlib.sha256(database.read_bytes()).hexdigest()
+        status, result = self._export(task_id, "performance.csv")
+        self.assertEqual(status, 0)
+        self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before_export)
+
+        with closing(sqlite3.connect(self.settings.performance_database_path)) as connection:
+            stage = connection.execute(
+                "SELECT sample_class, status, attempt_no, duration_ns, phase_timings_json "
+                "FROM performance_samples WHERE execution_scope='orchestrator_stage' "
+                "AND engine='worldbank_collect_audit' ORDER BY sample_id LIMIT 1",
+            ).fetchone()
+            export = connection.execute(
+                "SELECT sample_class, status, input_rows, output_rows, output_bytes, "
+                "phase_timings_json FROM performance_samples "
+                "WHERE execution_scope='csv_export' ORDER BY sample_id DESC LIMIT 1",
+            ).fetchone()
+            samples = connection.execute("SELECT * FROM performance_samples").fetchall()
+
+        self.assertIsNotNone(stage)
+        self.assertEqual(stage[0], "fixture")
+        self.assertEqual(stage[1], "SUCCEEDED")
+        self.assertEqual(stage[2], 1)
+        self.assertGreater(stage[3], 0)
+        stage_phases = json.loads(stage[4])
+        self.assertIn("raw_write", stage_phases)
+        self.assertNotIn("network", stage_phases)
+        self.assertIsNotNone(export)
+        self.assertEqual(export[:2], ("stored", "COMPLETED"))
+        self.assertEqual(export[2], 3)
+        self.assertEqual(export[3], 3)
+        self.assertGreater(export[4], 0)
+        export_phases = json.loads(export[5])
+        self.assertIn("sqlite", export_phases)
+        self.assertIn("parse", export_phases)
+        self.assertIn("export", export_phases)
+        self.assertTrue((self.root / result["csv_path"]).is_file())
+        sample_text = repr(samples)
+        for private_value in (task_id, "api.worldbank.org", "NY.GDP.MKTP.CD", "123.5"):
+            self.assertNotIn(private_value, sample_text)
+
     def test_boj_csv_preserves_missing_value_and_manifest_hash_limit(self):
         task_id = self._collect("boj")
         status, result = self._export(task_id)

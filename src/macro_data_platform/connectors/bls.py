@@ -11,6 +11,7 @@ from macro_data_platform.connectors.statistical_http import (
     request_json,
 )
 from macro_data_platform.contracts import ErrorCode, StageStatus
+from macro_data_platform.performance.metrics import measured_phase
 
 API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
 API_DOCS = "https://www.bls.gov/developers/api_signature_v2.htm"
@@ -48,6 +49,7 @@ class BLSTransport:
                             headers={"Content-Type": "application/json"})
 
 
+@measured_phase("parse")
 def parse_bls(download: ApiDownload, query: BLSQuery) -> dict:
     data = decode_json(download)
     if not isinstance(data, dict) or data.get("status") != "REQUEST_SUCCEEDED":

@@ -7,6 +7,7 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.performance.metrics import measured_phase
 
 
 def _bls_periods(series: dict) -> tuple[list[str], str | None]:
@@ -39,6 +40,7 @@ def _freshness_issue(freshness: list[dict]) -> str | None:
     return None
 
 
+@measured_phase("quality")
 def validate_bls_result(
     parsed: dict,
     source_change_status: str,
@@ -93,6 +95,7 @@ def validate_bls_result(
     }
 
 
+@measured_phase("quality")
 def validate_census_result(
     parsed: dict,
     source_change_status: str,

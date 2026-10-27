@@ -7,6 +7,8 @@ from typing import Any
 from uuid import uuid4
 
 from macro_data_platform.config import Settings
+from macro_data_platform.performance.metrics import measure_current
+from macro_data_platform.performance.storage import append_sample
 
 
 class HistoryStore:
@@ -63,12 +65,13 @@ class HistoryStore:
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
         # Re-evaluate containment for every open, including after a symlink change.
-        connection = sqlite3.connect(self.settings.database_path, timeout=5)
-        connection.execute("PRAGMA foreign_keys=ON")
-        try:
-            yield connection
-        finally:
-            connection.close()
+        with measure_current("sqlite"):
+            connection = sqlite3.connect(self.settings.database_path, timeout=5)
+            connection.execute("PRAGMA foreign_keys=ON")
+            try:
+                yield connection
+            finally:
+                connection.close()
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
@@ -101,6 +104,10 @@ class HistoryStore:
             "INSERT INTO task_events(task_id, body) VALUES (?, ?)",
             (task_id, json.dumps(body, ensure_ascii=False, allow_nan=False)),
         )
+
+    def record_performance(self, sample: dict) -> None:
+        """Append sanitized performance data outside the task-history database."""
+        append_sample(self.settings, sample)
 
     def get(self, task_id: str) -> dict[str, Any]:
         with self._connect() as connection:

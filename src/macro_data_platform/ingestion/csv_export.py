@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import math
 import os
 import re
@@ -14,6 +15,7 @@ from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
+from time import perf_counter_ns
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.boj import (
@@ -36,6 +38,14 @@ from macro_data_platform.ingestion.worldbank_quality import (
     normalize_worldbank,
     source_payload_digest,
 )
+from macro_data_platform.performance.metrics import (
+    PerformanceMetrics,
+    current_metrics,
+    measure_current,
+    measured_phase,
+    runtime_metadata,
+)
+from macro_data_platform.performance.storage import append_sample, build_sample
 from macro_data_platform.storage.audit import digest as _audit_digest
 from macro_data_platform.storage.statistical_downloads import (
     _comparison_fingerprint_for_source,
@@ -43,6 +53,7 @@ from macro_data_platform.storage.statistical_downloads import (
 )
 
 MAX_MANIFEST_BYTES = 64 * 1024
+_LOGGER = logging.getLogger(__name__)
 PACKAGE_ID = re.compile(r"^[a-f0-9]{32}$")
 CSV_COLUMNS = (
     "date",
@@ -113,15 +124,17 @@ def _readonly_connection(settings):
     uri = settings.database_path.as_uri() + "?mode=ro"
     connection = sqlite3.connect(uri, uri=True)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA query_only=ON")
+    with measure_current("sqlite"):
+        connection.execute("PRAGMA query_only=ON")
     return connection
 
 
 def _load_task(connection, task_id):
-    row = connection.execute(
-        "SELECT document FROM tasks WHERE task_id=?",
-        (task_id,),
-    ).fetchone()
+    with measure_current("sqlite"):
+        row = connection.execute(
+            "SELECT document FROM tasks WHERE task_id=?",
+            (task_id,),
+        ).fetchone()
     if row is None:
         raise ValueError("unknown_task")
     try:
@@ -191,10 +204,11 @@ def _payload(stage):
 
 
 def _record(connection, record_id, kind, task_id, stage_run_id):
-    row = connection.execute(
-        "SELECT kind,task_id,stage_run_id,document FROM gate_a_records WHERE record_id=?",
-        (record_id,),
-    ).fetchone()
+    with measure_current("sqlite"):
+        row = connection.execute(
+            "SELECT kind,task_id,stage_run_id,document FROM gate_a_records WHERE record_id=?",
+            (record_id,),
+        ).fetchone()
     if (
         row is None
         or row["kind"] != kind
@@ -218,10 +232,11 @@ def _record(connection, record_id, kind, task_id, stage_run_id):
 
 
 def _audit_observations(connection, validation_id):
-    rows = connection.execute(
-        "SELECT document FROM gate_a_observations WHERE validation_id=? ORDER BY position",
-        (validation_id,),
-    ).fetchall()
+    with measure_current("sqlite"):
+        rows = connection.execute(
+            "SELECT document FROM gate_a_observations WHERE validation_id=? ORDER BY position",
+            (validation_id,),
+        ).fetchall()
     try:
         return [json.loads(row["document"]) for row in rows]
     except (TypeError, ValueError, RecursionError):
@@ -605,12 +620,13 @@ def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
         EvidenceKind(manifest["mode"]),
     )
     parsed = parse_boj_observations(data_download, query, metadata)
-    freshness = assess_freshness(
-        [row["date"] for row in parsed["observations"]],
-        frequency=metadata.get("frequency"), series_id=query.series_code,
-        series_key={"database": query.database, "series_code": query.series_code},
-        as_of=as_of, policy=freshness_policy,
-    )
+    with measure_current("quality"):
+        freshness = assess_freshness(
+            [row["date"] for row in parsed["observations"]],
+            frequency=metadata.get("frequency"), series_id=query.series_code,
+            series_key={"database": query.database, "series_code": query.series_code},
+            as_of=as_of, policy=freshness_policy,
+        )
     freshness_issue = (
         "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
         "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
@@ -704,6 +720,7 @@ def _value_text(value):
     return str(value)
 
 
+@measured_phase("export")
 def _csv_bytes(dataset):
     buffer = io.StringIO(newline="")
     writer = csv.DictWriter(
@@ -802,6 +819,7 @@ def _mkdir_export_parent(settings, target, export_root):
         raise ValueError("output_path_escape")
 
 
+@measured_phase("export")
 def _publish_pair(target, sidecar, csv_body, manifest_body):
     temp_csv = temp_manifest = None
     published_csv = published_manifest = False
@@ -858,6 +876,37 @@ def _publish_pair(target, sidecar, csv_body, manifest_body):
 def export_task(settings: Settings, task_id: str, output, *, format="csv",
                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
                 as_of: datetime | None = None) -> dict:
+    metrics = PerformanceMetrics()
+    metrics.observe_sample_class("stored")
+    started_ns = perf_counter_ns()
+    status = "FAILED"
+    result = None
+    try:
+        with metrics.activate():
+            result = _export_task(
+                settings, task_id, output, format=format,
+                freshness_policy=freshness_policy, as_of=as_of,
+            )
+        status = result.get("status", "UNKNOWN")
+        return result
+    finally:
+        duration_ns = max(0, perf_counter_ns() - started_ns)
+        metrics.observe_sample_class("stored")
+        try:
+            if settings.database_path.is_file():
+                append_sample(settings, build_sample(
+                    observed_at=datetime.now(UTC).isoformat(), execution_scope="csv_export",
+                    engine="csv_export", engine_version="1", stage="export", status=status,
+                    duration_ns=duration_ns, metrics=metrics.snapshot(),
+                    environment=runtime_metadata(str(settings.project_root)),
+                ))
+        except Exception:  # noqa: BLE001 - telemetry cannot change export outcome
+            _LOGGER.warning("performance telemetry sample could not be recorded")
+
+
+def _export_task(settings: Settings, task_id: str, output, *, format="csv",
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+                 as_of: datetime | None = None) -> dict:
     if format != "csv":
         raise ValueError("unsupported_export_format")
     if not isinstance(task_id, str) or not task_id:
@@ -879,6 +928,10 @@ def export_task(settings: Settings, task_id: str, output, *, format="csv",
                             freshness_policy=freshness_policy, as_of=evaluation_time)
         else:
             raise ValueError("unsupported_provider_task")
+
+    metrics = current_metrics()
+    if metrics is not None:
+        metrics.observe_input(rows=len(dataset.observations))
 
     relative, target, sidecar, export_root = _output_paths(settings, output)
     csv_body = _csv_bytes(dataset)
@@ -906,6 +959,11 @@ def export_task(settings: Settings, task_id: str, output, *, format="csv",
     manifest_body = (
         json.dumps(manifest, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2) + "\n"
     ).encode("utf-8")
+    if metrics is not None:
+        metrics.observe_output(
+            byte_count=len(csv_body) + len(manifest_body), rows=len(dataset.observations),
+            columns=len(CSV_COLUMNS),
+        )
     _mkdir_export_parent(settings, target, export_root)
     _publish_pair(target, sidecar, csv_body, manifest_body)
     return {

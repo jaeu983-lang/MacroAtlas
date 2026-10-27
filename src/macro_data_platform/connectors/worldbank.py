@@ -12,6 +12,7 @@ import requests
 
 from macro_data_platform.config import Settings
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus, utc
+from macro_data_platform.performance.metrics import measured_phase
 
 INDICATOR = "NY.GDP.MKTP.CD"
 INDICATOR_LABEL = "GDP (current US$)"
@@ -79,6 +80,7 @@ class WorldBankTransport:
     def __init__(self, settings: Settings):
         self.settings = settings
 
+    @measured_phase("network")
     def fetch(self, query: GDPQuery) -> Download:
         if self.settings.network_enabled is not True:
             raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
@@ -147,6 +149,7 @@ def check_http(download: Download) -> None:
     raise schema_failure("Unexpected HTTP status from the documented endpoint.")
 
 
+@measured_phase("parse")
 def parse_gdp(download: Download, query: GDPQuery) -> dict[str, Any]:
     """Minimal parsing only. Preserve source rows, empty units and null values."""
     check_http(download)

@@ -36,6 +36,10 @@ class Settings:
         return self._inside(f"{self.data_dir}/catalog.sqlite")
 
     @property
+    def performance_database_path(self) -> Path:
+        return self._inside(f"{self.data_dir}/performance.sqlite")
+
+    @property
     def raw_dir(self) -> Path:
         return self._inside(f"{self.data_dir}/raw")
 

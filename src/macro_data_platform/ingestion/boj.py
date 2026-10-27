@@ -21,6 +21,7 @@ from macro_data_platform.ingestion.freshness import (
     assess_freshness,
 )
 from macro_data_platform.orchestration import Orchestrator, StageInput, StageSpec, TaskPlan
+from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
 
@@ -141,12 +142,13 @@ class BOJObservationEngine:
                                      if key in saved),
                                ("BOJ observation raw preservation failed.",), ErrorCode.INTERNAL_BUG)
         parsed.update({**saved, "mode": download.kind.value})
-        freshness = assess_freshness(
-            [row["date"] for row in parsed["observations"]],
-            frequency=metadata.get("frequency"), series_id=query.series_code,
-            series_key={"database": query.database, "series_code": query.series_code},
-            as_of=self.clock(), policy=self.freshness_policy,
-        )
+        with measure_current("quality"):
+            freshness = assess_freshness(
+                [row["date"] for row in parsed["observations"]],
+                frequency=metadata.get("frequency"), series_id=query.series_code,
+                series_key={"database": query.database, "series_code": query.series_code},
+                as_of=self.clock(), policy=self.freshness_policy,
+            )
         freshness_issue = (
             "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
             "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
