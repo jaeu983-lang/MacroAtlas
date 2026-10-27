@@ -788,6 +788,8 @@ def export_task(settings: Settings, task_id: str, output, *, format="csv") -> di
     with closing(_readonly_connection(settings)) as connection:
         document = _load_task(connection, task_id)
         plan = document.get("plan")
+        if isinstance(plan, list) and any(not isinstance(row, dict) for row in plan):
+            raise ValueError("unsupported_task_plan")
         engines = [row.get("engine") for row in plan] if isinstance(plan, list) else []
         if engines == ["worldbank_collect_audit", "worldbank_validate"]:
             dataset = _worldbank(connection, settings, task_id, document)
