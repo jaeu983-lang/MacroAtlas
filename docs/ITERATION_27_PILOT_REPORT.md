@@ -25,4 +25,15 @@
 
 실제 Windows 환경에서 사람이 직접 updater를 실행해 Windows 사용자 세션과 PowerShell wrapper를 검증한다. 그 환경에서도 Codex CLI 인증이 필요할 수 있다. no-op/failure/success 결과와 base ref·중복 실행 방지·로그 보존을 검토하기 전까지 scheduler는 비활성으로 둔다.
 
+
+## 예약 설정 정적 검토 — 2026-10-27
+
+현재 연결된 실행기는 Linux이며 `powershell`, `pwsh`, Windows Task Scheduler에 접근할 수 없다. 따라서 실제 Windows pilot, 등록된 task의 사용자·로그온 조건 조회, 예약 실행 결과는 확인하지 않았다. Windows CI의 wrapper dry-run은 PowerShell 문법과 인자 전달 검사이며 실제 사용자 세션 pilot을 대체하지 않는다.
+
+`scripts/install_tasks.ps1`은 매일 07:30 health check와 토요일 09:00 improvement task를 각각 등록한다. 둘 다 `StartWhenAvailable`과 task별 `MultipleInstances IgnoreNew`를 쓰며 실행 제한은 각각 30분과 2시간이다. Improvement task 인자에는 `-BaseRef`가 없어 `run_improvement.py`가 checkout의 `origin/HEAD`를 사용한다. 현재 Linux checkout의 `origin/HEAD`는 `origin/codex/iteration-04-gate-a`를 가리키지만, Windows clone의 remote HEAD도 같은지 확인되지 않았다. 미설정이면 updater는 `NOT_EXECUTED`로 종료한다.
+
+`IgnoreNew`는 동일 task 이름의 중복 실행만 제한한다. installer와 updater에는 health task·manual run을 포함하는 공통 lock/idempotency guard가 없으며, 계획된 `ALREADY_RUNNING` 결과도 구현되어 있지 않다. Updater 보고서와 로그는 `reports/improvement_<run_id>/`에 보존되지만 자동 보존 기간·용량 한도·정리 정책이 없다. 실패 경로의 worktree도 의도적으로 남길 수 있으므로 장기 예약 전 디스크 사용량과 안전한 정리 기준이 필요하다. Task principal과 대화형 로그인 요건은 installer에서 명시하지 않아 실제 Windows에서 확인해야 한다.
+
+결론: scheduler는 설치·활성화하지 않는다. Windows pilot 전에는 대상 저장소의 명시적 base branch를 확정하고, 수동 실행과 예약 작업이 공유하는 중복 방지 및 report 보존 정책을 마련한다. 그다음 Windows에서 먼저 dry-run으로 경로·인증·기준 ref를 확인하고, 사람이 시작한 단일 updater 실행의 상태 보고서를 검토한다. Scheduler 검토에서는 실제 task principal, 로그인 요구, 지연 시작, 실행 제한과 두 task의 겹침도 확인한다. no-op/failure/success 및 cleanup 동작까지 검증한 뒤에만 예약 활성화를 별도 결정한다.
+
 이 updater 작업은 MacroAtlas provider 접속이나 Gate C 원자료 증거와 별도다.
