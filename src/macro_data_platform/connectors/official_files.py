@@ -14,13 +14,12 @@ TIMEOUT_SECONDS = 30
 PROFILES = {
     "tic": {
         "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt",
-        "format": "txt", "delimiter": "\t", "header_row": 6,
-        "source_agency": "U.S. Department of the Treasury, TIC",
-        "source_table_name": "Table 5: Major Foreign Holders of Treasury Securities",
+        "format": "tsv", "header_row": 6,
+        "source_agency": "U.S. Department of the Treasury",
     },
     "bis": {
         "url": "https://data.bis.org/static/bulk/WS_GLI_csv_col.zip",
-        "format": "zip", "source_agency": "BIS",
+        "format": "zip", "zip_member": "WS_GLI_csv_col.csv", "source_agency": "BIS",
     },
 }
 
