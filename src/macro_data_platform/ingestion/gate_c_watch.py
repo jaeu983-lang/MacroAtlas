@@ -118,9 +118,10 @@ def build_gate_c_watch_plan(source_id: str) -> TaskPlan:
 
 def make_gate_c_watch_orchestrator(store: HistoryStore, settings: Settings,
                                    transport: Transport | None = None) -> Orchestrator:
-    if store.settings.database_path != settings.database_path:
-        raise ValueError("Gate C watcher and history must use the same configured storage")
-    return Orchestrator(store, {("gate_c_file_watch", "1"): GateCFileEngine(settings, transport)})
+    from macro_data_platform.orchestration.composition import build_engine_registry
+
+    registry = build_engine_registry(settings, store, file_transport=transport)
+    return registry.orchestrator_for(engine_keys={("gate_c_file_watch", "1")})
 
 
 def create_gate_c_watch_task(store: HistoryStore, settings: Settings, source_id: str,

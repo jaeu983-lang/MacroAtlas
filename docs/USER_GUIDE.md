@@ -1,14 +1,16 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-26**, 20회차 World Bank/BOJ CSV 전달까지 반영. 제품의 현재 지원 범위 안내서.
+기준일: **2026-10-27**, 20회차 World Bank/BOJ CSV 전달 및 TIC/BIS 감시 범위 변경 반영. 제품의 현재 지원 범위 안내서.
 
-다음 작업 순서는 [제품 로드맵](ROADMAP_2026_10_26.md), 제품 가설과 목표 구조는
-[제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 개발 절차는 별도
+제품 범위·현재 우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 짧은 순서 요약은
+[제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를
+참조합니다. 개발 절차는 별도
 [개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 날짜가 붙은 회차 보고서는 당시 결과를 보존한 증거입니다.
 
 MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
-시계열, TIC/BIS 기준 파일 감시를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
-기관 전반 검색과 제품 자체 무인 스케줄링은 제공하지 않습니다. Codex의 별도 일일 감시는 제품 기능과 구분합니다.
+시계열, TIC/BIS 지정 파일 intake를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
+기관 전반 검색과 제품 자체 무인 스케줄링은 제공하지 않습니다. TIC/BIS 변경상태의 반복 확인은 현재 필요하지
+않다는 요청에 따라 중지했으며, `watch` 명령은 사용자가 단발 실행을 요청할 때만 사용합니다.
 
 처음 사용하는 경우 아래 순서로 진행하세요.
 
@@ -68,7 +70,8 @@ git diff --check
 Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. World Bank 명령은
 미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`만 지원하며 1~10개 연도 범위로 제한됩니다.
 BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지정된 공식 파일 URL과 기존 parser
-범위만 확인합니다. 명령은 URL이나 임의 기관을 입력받지 않습니다.
+범위만 확인합니다. 자동 예약 실행은 없고 현재 반복 감시도 중지된 상태입니다. 명령은 URL이나 임의 기관을
+입력받지 않습니다.
 
 각 실행은 JSON 요약에 task ID, 상태, stage, 품질 상태, 저장 경로를 표시합니다. `status`는 네트워크를
 사용하지 않고 task를 조회합니다. transient 실패가 생기면 프로세스를 다시 연 뒤 같은 task ID로

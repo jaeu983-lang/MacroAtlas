@@ -2,12 +2,14 @@
 import json
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
+from functools import partial
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError, URLError
 
 import pytest
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.statistical_http import (
@@ -16,11 +18,15 @@ from macro_data_platform.connectors.statistical_http import (
     request_json,
 )
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus
-from macro_data_platform.ingestion.bls import BLSEngine
-from macro_data_platform.ingestion.census import CensusEngine
+from macro_data_platform.ingestion.bls import BLSEngine as _BLSEngine
+from macro_data_platform.ingestion.census import CensusEngine as _CensusEngine
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
 from macro_data_platform.orchestration.runner import Orchestrator
 from macro_data_platform.storage.history import HistoryStore
+
+# These scenarios validate storage/retry/quality mechanics against historical fixtures.
+BLSEngine = partial(_BLSEngine, freshness_policy=HISTORICAL_FIXTURE_POLICY)
+CensusEngine = partial(_CensusEngine, freshness_policy=HISTORICAL_FIXTURE_POLICY)
 
 NOW = datetime(2026, 10, 26, tzinfo=UTC)
 BLS_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/"

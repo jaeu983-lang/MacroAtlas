@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.statistical_http import MAX_BYTES, ApiDownload
+from macro_data_platform.performance.metrics import measured_phase, observe_download
 
 MAX_COMPARISON_ARTIFACTS = 1000
 MAX_MANIFEST_BYTES = 64 * 1024
@@ -144,8 +145,10 @@ def _previous_source_status(settings: Settings, root: Path, source: str, source_
     return "unchanged" if previous_hash == current_comparison_sha256 else "changed"
 
 
+@measured_phase("raw_write")
 def save_statistical_download(settings: Settings, source: str, download: ApiDownload,
                               request_metadata: dict) -> dict[str, str]:
+    observe_download(download)
     if source not in {"bls", "census", "boj"}:
         raise ValueError("unsupported statistical source")
     root_relative = Path(settings.data_dir) / "raw" / source

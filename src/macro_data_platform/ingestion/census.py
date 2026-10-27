@@ -1,10 +1,12 @@
 """Census ACS table ingestion engine."""
+from datetime import UTC, datetime
 from typing import Protocol
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.census import CensusQuery, CensusTransport, parse_census
 from macro_data_platform.connectors.statistical_http import ApiDownload, SourceFailure
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.statistical_quality import validate_census_result
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
@@ -15,9 +17,12 @@ class Transport(Protocol):
 
 
 class CensusEngine:
-    def __init__(self, settings: Settings, transport: Transport | None = None):
+    def __init__(self, settings: Settings, transport: Transport | None = None, *,
+                 clock=lambda: datetime.now(UTC),
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY):
         self.settings = settings
         self.transport = transport if transport is not None else CensusTransport()
+        self.clock, self.freshness_policy = clock, freshness_policy
 
     def run(self, request: StageInput) -> StageResult[dict]:
         if self.settings.network_enabled is not True:
@@ -67,9 +72,16 @@ class CensusEngine:
             return StageResult(StageStatus.FAILED_TERMINAL, error_code=ErrorCode.INTERNAL_BUG,
                                warnings=("Census raw response preservation failed.",))
         parsed.update({**saved, "mode": download.kind.value})
-        quality = validate_census_result(parsed, saved["source_change_status"])
+        quality = validate_census_result(
+            parsed, saved["source_change_status"], as_of=self.clock(),
+            freshness_policy=self.freshness_policy,
+        )
         parsed["quality"] = quality
         if quality["status"] == "failed":
+            if any(issue in quality["issues"]
+                   for issue in ("stale_observations", "freshness_unverified")):
+                parsed["withheld_observation_count"] = quality["row_count"]
+                parsed["observations"] = []
             return StageResult(
                 StageStatus.NEEDS_REVIEW, parsed,
                 (saved["raw_path"], saved["manifest_path"]),

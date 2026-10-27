@@ -9,6 +9,7 @@ from types import MappingProxyType
 from typing import Any
 
 from macro_data_platform.evaluation.case_contracts import EvaluationCase
+from macro_data_platform.evaluation.case_sets import validate_case_sets
 from macro_data_platform.evaluation.split_audit import SplitLeakageIssue, audit_split_leakage
 from macro_data_platform.workflow_contracts import Candidate
 
@@ -20,6 +21,7 @@ _MANIFEST_FIELDS = {
     "counts_by_split", "counts_by_type", "missing_case_types", "gate_blockers", "files",
 }
 _REQUIRED_FILES = {"cases.jsonl", "schema.json", "catalog_snapshot.json"}
+__all__ = ["EvaluationCorpus", "load_corpus", "read_cases", "validate_case_sets"]
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -90,6 +92,8 @@ class EvaluationCorpus:
 
     def __repr__(self) -> str:
         return "EvaluationCorpus(<values omitted>)"
+
+
 
 
 def _safe_corpus_file(root: Path, filename: Any) -> Path:

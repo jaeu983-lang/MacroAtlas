@@ -11,6 +11,8 @@ from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 
+from freshness_support import HISTORICAL_FIXTURE_POLICY
+
 from macro_data_platform.cli import build_parser, dispatch
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.boj import DATA_ENDPOINT, METADATA_ENDPOINT
@@ -110,7 +112,10 @@ class CSVExportTests(unittest.TestCase):
                     "--live",
                 ]
             )
-            status, summary = dispatch(args, worldbank_transport=_WorldBankTransport())
+            status, summary = dispatch(
+                args, worldbank_transport=_WorldBankTransport(),
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
         else:
             args = build_parser().parse_args(
                 [
@@ -123,7 +128,10 @@ class CSVExportTests(unittest.TestCase):
                     "--live",
                 ]
             )
-            status, summary = dispatch(args, boj_transport=_BOJTransport())
+            status, summary = dispatch(
+                args, boj_transport=_BOJTransport(),
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
         self.assertEqual(status, 0, summary)
         return summary["task_id"]
 
@@ -140,7 +148,7 @@ class CSVExportTests(unittest.TestCase):
                 f"data/exports/{name}",
             ]
         )
-        return dispatch(args)
+        return dispatch(args, freshness_policy=HISTORICAL_FIXTURE_POLICY)
 
     def _update_task_document(self, task_id, update):
         with closing(sqlite3.connect(self.settings.database_path)) as connection:
@@ -170,6 +178,10 @@ class CSVExportTests(unittest.TestCase):
         self.assertEqual(rows[1]["value_status"], "missing")
         self.assertEqual(rows[0]["unit"], "")
         self.assertEqual(rows[0]["frequency"], "")
+        self.assertEqual(rows[0]["freshness_frequency"], "annual")
+        self.assertEqual(rows[0]["freshness_frequency_basis"], "observation_period_format")
+        self.assertEqual(rows[0]["freshness_latest_period"], "2022")
+        self.assertEqual(rows[0]["freshness_status"], "FRESH")
         manifest_path = self.root / result["provenance_path"]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual(manifest["task_id"], task_id)
@@ -179,6 +191,49 @@ class CSVExportTests(unittest.TestCase):
         )
         self.assertEqual(manifest["export"]["sha256"], hashlib.sha256(raw).hexdigest())
         self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before)
+
+    def test_fixture_stage_and_export_record_safe_performance_without_touching_task_db(self):
+        task_id = self._collect("worldbank")
+        database = self.settings.database_path
+        before_export = hashlib.sha256(database.read_bytes()).hexdigest()
+        status, result = self._export(task_id, "performance.csv")
+        self.assertEqual(status, 0)
+        self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before_export)
+
+        with closing(sqlite3.connect(self.settings.performance_database_path)) as connection:
+            stage = connection.execute(
+                "SELECT sample_class, status, attempt_no, duration_ns, phase_timings_json "
+                "FROM performance_samples WHERE execution_scope='orchestrator_stage' "
+                "AND engine='worldbank_collect_audit' ORDER BY sample_id LIMIT 1",
+            ).fetchone()
+            export = connection.execute(
+                "SELECT sample_class, status, input_rows, output_rows, output_bytes, "
+                "phase_timings_json FROM performance_samples "
+                "WHERE execution_scope='csv_export' ORDER BY sample_id DESC LIMIT 1",
+            ).fetchone()
+            samples = connection.execute("SELECT * FROM performance_samples").fetchall()
+
+        self.assertIsNotNone(stage)
+        self.assertEqual(stage[0], "fixture")
+        self.assertEqual(stage[1], "SUCCEEDED")
+        self.assertEqual(stage[2], 1)
+        self.assertGreater(stage[3], 0)
+        stage_phases = json.loads(stage[4])
+        self.assertIn("raw_write", stage_phases)
+        self.assertNotIn("network", stage_phases)
+        self.assertIsNotNone(export)
+        self.assertEqual(export[:2], ("stored", "COMPLETED"))
+        self.assertEqual(export[2], 3)
+        self.assertEqual(export[3], 3)
+        self.assertGreater(export[4], 0)
+        export_phases = json.loads(export[5])
+        self.assertIn("sqlite", export_phases)
+        self.assertIn("parse", export_phases)
+        self.assertIn("export", export_phases)
+        self.assertTrue((self.root / result["csv_path"]).is_file())
+        sample_text = repr(samples)
+        for private_value in (task_id, "api.worldbank.org", "NY.GDP.MKTP.CD", "123.5"):
+            self.assertNotIn(private_value, sample_text)
 
     def test_boj_csv_preserves_missing_value_and_manifest_hash_limit(self):
         task_id = self._collect("boj")
@@ -200,6 +255,17 @@ class CSVExportTests(unittest.TestCase):
             "fields_and_raw_hash_verified_no_capture_digest",
         )
         self.assertTrue(manifest["source"]["metadata_manifest_sha256"])
+
+    def test_export_rechecks_current_freshness_and_blocks_stale_series(self):
+        for provider in ("worldbank", "boj"):
+            with self.subTest(provider=provider):
+                task_id = self._collect(provider)
+                with self.assertRaisesRegex(ValueError, "freshness_requires_review"):
+                    export_task(
+                        self.settings, task_id, f"data/exports/stale-{provider}.csv",
+                        as_of=NOW,
+                    )
+                self.assertFalse((self.root / f"data/exports/stale-{provider}.csv").exists())
 
     def test_raw_tampering_is_refused_without_creating_output(self):
         task_id = self._collect("boj")
@@ -248,7 +314,8 @@ class CSVExportTests(unittest.TestCase):
 
         self._update_task_document(task_id, fail_quality)
         with self.assertRaisesRegex(ValueError, "boj_stored_result_mismatch"):
-            export_task(self.settings, task_id, "data/exports/quality.csv")
+            export_task(self.settings, task_id, "data/exports/quality.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
 
     def test_export_refuses_overwrite_traversal_symlink_and_incomplete_tasks(self):
         task_id = self._collect("boj")
@@ -256,13 +323,16 @@ class CSVExportTests(unittest.TestCase):
         output.parent.mkdir(parents=True)
         output.write_text("keep")
         with self.assertRaisesRegex(ValueError, "output_already_exists"):
-            export_task(self.settings, task_id, "data/exports/result.csv")
+            export_task(self.settings, task_id, "data/exports/result.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
         with self.assertRaisesRegex(ValueError, "output_path_invalid"):
-            export_task(self.settings, task_id, "data/exports/../escape.csv")
+            export_task(self.settings, task_id, "data/exports/../escape.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
         output.unlink()
         Path(f"{output}.provenance.json").write_text("keep")
         with self.assertRaisesRegex(ValueError, "output_already_exists"):
-            export_task(self.settings, task_id, "data/exports/result.csv")
+            export_task(self.settings, task_id, "data/exports/result.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
         Path(f"{output}.provenance.json").unlink()
         outside = self.root / "outside"
         outside.mkdir()
@@ -272,14 +342,17 @@ class CSVExportTests(unittest.TestCase):
             pass  # Symlink creation may require elevated privileges on Windows.
         else:
             with self.assertRaisesRegex(ValueError, "output_symlink"):
-                export_task(self.settings, task_id, "data/exports/nested/result.csv")
+                export_task(self.settings, task_id, "data/exports/nested/result.csv",
+                            freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
         with self.assertRaisesRegex(ValueError, "unknown_task"):
-            export_task(self.settings, "missing-task", "data/exports/missing.csv")
+            export_task(self.settings, "missing-task", "data/exports/missing.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
 
     def test_incomplete_task_is_refused(self):
         task_id = Orchestrator(HistoryStore(self.settings), {}).create("not planned").task_id
         with self.assertRaisesRegex(ValueError, "task_not_completed"):
-            export_task(self.settings, task_id, "data/exports/incomplete.csv")
+            export_task(self.settings, task_id, "data/exports/incomplete.csv",
+                        freshness_policy=HISTORICAL_FIXTURE_POLICY, as_of=NOW)
 
     def test_malformed_plan_entries_are_refused_without_writes(self):
         task_id = self._collect("boj")

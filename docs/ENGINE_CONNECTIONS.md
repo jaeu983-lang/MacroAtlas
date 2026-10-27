@@ -1,8 +1,10 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-26 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
-실행 제어는 하나의 Orchestrator를 사용한다. transport·parser·capacity 검사·storage는 엔진의 내부 부품이다.
-사용자 문제와 목표 구조의 맥락은 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md), 다음 구현 순서는
+기준: 2026-10-27 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
+transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
+별도이므로 전용 runner를 유지한다.
+제품 요구사항·우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 실행 순서 요약은
 [로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
 이 문서는 사용자 데이터 제품의 실행 경로를 다룬다. 저장소 코드를 분석·수정·QA하는 개발자 유지보수 흐름은 제품
@@ -12,7 +14,8 @@ Orchestrator 및 source engine과 별도 control plane이다. 현재 중복 실�
 ```mermaid
 flowchart TD
     CLI[CLI / Python 진입점] --> PLAN[고정 요청 확인 / TaskPlan]
-    PLAN --> RUN[Orchestrator + HistoryStore]
+    PLAN --> ROOT[composition root / EngineRegistry]
+    ROOT --> RUN[Orchestrator + HistoryStore]
     RUN --> API[API 수집 stage]
     RUN --> FILE[파일 수집 / 로컬 intake stage]
     API --> HTTP[기관별 transport]
@@ -48,12 +51,12 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 
 | 진입점 | 저장되는 stage / 실제 호출 | 출력·다음 연결 |
 |---|---|---|
-| `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
-| `collect boj-fxer` | `build_boj_plan` → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
-| `watch tic/bis` | `build_gate_c_watch_plan` → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
+| `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → 공통 EngineRegistry → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
+| `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
+| `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
-| BLS/Census | Python API에서 BLSEngine/CensusEngine을 runner에 명시 등록 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI dispatch 대상에는 없음 |
-| `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. World Bank/BOJ/watch는 저장된 계획을 재개하고, 대용량 시험 task는 중단 worker의 종료를 확인해 미확정 결과를 기록 |
+| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; Python API로 계획 실행 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI collect 명령은 없음 |
+| `status` / `resume` | task 조회 / 저장 plan의 `(engine, version)`을 공통 EngineRegistry가 해석 | 새 source 범위를 만들지 않고 같은 task 재개. Workflow confirmation은 WorldBank dispatcher가 재검증하고, 대용량 시험·production은 중단 worker 확인과 checkpoint 검증을 위해 전용 recovery runner를 유지 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산과 duration profile/forecast 결합 → worker 직전 예상 표시 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음. 완료 요약에 actual stage seconds 포함 |
 | `large-estimate qualification/production ID [--event-seq N]` | SQLite와 로컬 표본의 read-only 조회 → 선택 엔진 이력으로 예측 | task/event/worker 실행 없이 시간 범위·신뢰도·표본 수만 반환 |
@@ -86,6 +89,26 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
   상한·approval·미실행 조건을 바꾸지 않으며 시간의 범위와 신뢰도로만 안내한다.
 - 큰 원본·정규화 본문은 파일로 둔다. 후속 대용량 stage 간 payload는 `artifact_id, relative_path, manifest_ref,
   sha256(확인된 경우), schema/version, counts/quality` 참조로 제한한다. 현재 작은 API payload 전체를 즉시 재작성하지 않는다.
+
+## 엔진 실행시간 계측과 남은 기준선
+
+Orchestrator는 engine 호출 전후를 `perf_counter_ns()`로 재며 stage 결과 검증과 직렬화까지를 전체 실행시간으로 기록한다. 저장된 `started_at`·`finished_at`과 보고서의 `observed_at`은 UTC 이벤트 시각으로만 쓴다. 공통 성능 표본은 task 이력의 `catalog.sqlite`와 분리된 `data/performance.sqlite`에 둔다. stage 시작/완료를 위한 task DB 쓰기는 stage 실행시간에 포함하지 않는다.
+
+표본에는 engine/version, stage, 결과 상태, task/stage 시도 번호, monotonic 전체 시간, 숫자 입력·출력 크기, workload tier, code SHA, Python·플랫폼 정보와 구분된 실행 범위를 둔다. 자연어 요청, task ID, 관측값, credential, source URL은 저장하지 않는다. 저장 전 필드 allowlist처럼 numeric shape와 고정 label만 투영한다. 작업 트리가 수정된 상태에서는 commit SHA를 오인해 쓰지 않고 `unknown`으로 둔다.
+
+| 계측 경계 | 기록 방법 | 해석할 때 주의할 점 |
+|---|---|---|
+| 전체 Orchestrator stage | 각 engine 호출당 monotonic wall time, engine/version/status/attempt | task claim·상태 전이용 SQLite 시간은 제외하고 결과 검증·직렬화는 포함 |
+| World Bank·BOJ·BLS·Census 전송 | 실제 공통 transport 호출의 `network` 시간 | fixture transport를 통한 응답은 network 시간이 아니며, 승인된 자연 요청 표본만 live로 분류 |
+| API raw 보존 | 응답 byte 수와 `raw_write` 시간 | 본문·URL은 표본에 복사하지 않음 |
+| API parser·quality | parser wrapper의 `parse`, freshness/quality 검사의 `quality` | 행·열 수만 관측. `parse`/`quality`는 구현에서 측정한 경계이며 stage 전체를 대체하지 않음 |
+| Task/knowledge SQLite | `HistoryStore` 연결 작업 및 knowledge 조회 시간, 후보 행·논리 byte/cache hit·miss | knowledge `query()` 결과에 `latency_ns`도 반환. 입력 scope와 텍스트는 성능 DB에 남기지 않음 |
+| CSV exporter | 저장 task 읽기, parse/quality, CSV 생성·파일 기록 | `csv_export` scope로 분리하며 내보내기 후에도 `catalog.sqlite` hash가 유지됨 |
+| 대용량 worker | 기존 qualification/production elapsed·RSS 자료 유지 | `worker` 기록을 orchestrator wall이나 API phase로 변환/합산하지 않음 |
+
+SQLite phase는 해당 DB 작업 경계의 inclusive 측정이고 전체 stage와 일부 세부 phase는 겹칠 수 있으므로 phase 값을 더해 전체 시간으로 해석하지 않는다. Discovery·일반 tabular·평가 validator에는 아직 별도 leaf timing이 없으며 해당 stage가 Orchestrator에서 실행된 경우 전체 stage만 얻는다.
+
+읽기 전용 `macro-perf report --project-root .`은 execution scope·engine/version·stage·workload tier·evidence class·cache 상태·코드 SHA·환경별로 표본 수, 상태 수, p50/p95, 중앙 크기, 처리량을 집계한다. p95는 그룹에 20개 이상일 때만 표시하고, 그보다 적으면 `INSUFFICIENT_SAMPLE`이다. 현재 production 자연 요청 표본은 별도로 승인·수집되지 않았다. parser/exporter/knowledge는 보존 자료나 fixture로 반복 측정하고, live API 요청을 benchmark 용도로 만들지 않는다. EngineRegistry는 현재 저장 plan으로 각 source adapter와 공통 Orchestrator를 조립하는 구조 정리다. 이 변경은 성능 개선 수치를 주장하지 않으며, cache·SQLite·raw 저장 최적화는 자연 API나 큰 보존 자료에서 병목이 재현될 때까지 보류한다.
 
 ## 대용량 엔진 연결 규칙
 

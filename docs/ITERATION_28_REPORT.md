@@ -75,3 +75,14 @@ freshness 및 Excel writer는 구현하지 않는다. Gate는 9개 고정 사례
 기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 별도 draft pool의 27개 case JSON과 공식 evidence hash를 manifest로 고정했다.
 이전에 제안된 unversioned 36개 모의 코퍼스는 holdout에 날짜만 바꾼 동일 템플릿이 반복되고 manifest가 없어 승격하지 않았다.
 현재 pool도 assistant-simulated이며 독립 검토 전이라 fixed corpus gate는 차단되고 엔진 회귀 평가는 실행하지 않았다.
+
+## 최신 통합 base 충돌 정리
+
+현재 base에도 기존 JSON-per-split scaffold validator가 추가돼 있어 동일한 `evaluation/cases.py` 경로를 두 구현이 차지하던 충돌을
+정리했다. 기존 validator는 `case_sets.py`로 옮기고 `validate` 명령 및 예전 import 경로를 유지한다. 근거 기반 v1 JSONL corpus는
+`cases.py`의 reader와 `validate-corpus` 명령으로 검사한다. 두 검사 경로는 서로의 사례를 자동 변환하지 않고, 새 명령은 manifest·근거
+무결성과 blocked gate만 보고한다. 이 변경은 기존 split scaffold나 v1 corpus를 수정·승격하지 않는다.
+
+충돌 통합 후 현재 base 기준 전체 `pytest`: **811 passed**, `ruff check src tests scripts`, `compileall` 및
+`git diff --check`가 통과했다. 업데이트된 planning 문서의 상대 링크도 확인했다. `validate-corpus`의 exit code 2는
+9/36 fixed corpus가 아직 blocked임을 뜻하며 코드 실행 평가 실패와 구분한다.

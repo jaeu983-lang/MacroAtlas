@@ -14,6 +14,7 @@ from macro_data_platform.evaluation import (
     load_corpus,
     read_cases,
 )
+from macro_data_platform.evaluation.cli import main as evaluation_cli
 from macro_data_platform.workflow_contracts import Candidate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,32 @@ def test_initial_manifest_and_case_snapshots_are_deterministic_and_evidence_chec
         assert restored.to_json() == serialized
         for evidence in case.required_evidence:
             assert evidence["sha256"]
+
+
+def test_corpus_cli_reports_blocked_gate_without_promoting_partial_corpus(capsys):
+    result = evaluation_cli([
+        "validate-corpus", "--corpus-dir", str(CORPUS), "--repo-root", str(ROOT),
+    ])
+
+    report = json.loads(capsys.readouterr().out)
+    assert result == 2
+    assert report["status"] == "BLOCKED"
+    assert report["ready"] is False
+    assert report["case_count"] == 9
+    assert report["gate_status"] == "blocked"
+    assert report["evidence_files_verified"] is True
+
+
+def test_corpus_cli_reports_integrity_failure_as_invalid(tmp_path, capsys):
+    result = evaluation_cli([
+        "validate-corpus", "--corpus-dir", str(tmp_path), "--repo-root", str(ROOT),
+    ])
+
+    report = json.loads(capsys.readouterr().out)
+    assert result == 2
+    assert report["status"] == "INVALID"
+    assert report["ready"] is False
+    assert report["errors"]
 
 
 def test_case_contract_freezes_nested_request_and_expectation_data():

@@ -5,12 +5,14 @@ from datetime import timedelta
 
 import pytest
 import requests
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 from test_orchestration import Clock
 from test_workflow_contracts import AT, candidate, data_request, evidence, proposal
 from test_worldbank import FIXTURE, FixtureTransport, fixture_download
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.worldbank import GDPQuery
+from macro_data_platform.ingestion.freshness import FreshnessPolicy
 from macro_data_platform.ingestion.worldbank_request import (
     WorldBankRequestDispatcher,
     build_worldbank_plan,
@@ -83,7 +85,10 @@ def child(service, root):
 
 def dispatcher(setup, transport):
     settings, store, clock, _ = setup
-    return WorldBankRequestDispatcher(settings, store, clock=clock, transport=transport)
+    return WorldBankRequestDispatcher(
+        settings, store, clock=clock, transport=transport,
+        freshness_policy=HISTORICAL_FIXTURE_POLICY,
+    )
 
 
 @pytest.mark.parametrize("mode", ["file", "both"])
@@ -265,6 +270,23 @@ def test_default_network_denial_preserves_error_contract(setup):
     assert not settings.raw_dir.exists()
 
 
+def test_completed_direct_collection_is_rechecked_when_its_freshness_window_expires(setup):
+    settings, store, clock, service = setup
+    task = child(service, supplied(service))
+    transport = FixtureTransport(fixture_download())
+    policy = FreshnessPolicy(frequency_max_age_days={"annual": 1500})
+    dispatcher = WorldBankRequestDispatcher(
+        settings, store, clock=clock, transport=transport, freshness_policy=policy,
+    )
+    assert dispatcher.run(task["task_id"])["status"] == "COMPLETED"
+    assert len(transport.calls) == 1
+
+    clock.value += timedelta(days=200)
+    with pytest.raises(ValueError, match="stale or unverified"):
+        dispatcher.run(task["task_id"])
+    assert len(transport.calls) == 1
+
+
 @pytest.mark.parametrize("mode", ["file", "both"])
 def test_http_failure_and_resume_retain_old_raw_and_source_observations(setup, mode):
     settings, store, clock, service = setup
@@ -277,7 +299,8 @@ def test_http_failure_and_resume_retain_old_raw_and_source_observations(setup, m
     saved = settings.project_root / failed["payload"]["raw_path"]
     original = saved.read_bytes()
     reopened = WorldBankRequestDispatcher(settings, HistoryStore(settings), clock=clock,
-                                         transport=transport)
+                                         transport=transport,
+                                         freshness_policy=HISTORICAL_FIXTURE_POLICY)
     result = reopened.resume(task["task_id"])
     assert result["status"] == "COMPLETED" and len(transport.calls) == 2
     assert result["workflow_context"] == first["workflow_context"]

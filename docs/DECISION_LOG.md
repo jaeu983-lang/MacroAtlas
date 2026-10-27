@@ -1,8 +1,6 @@
 # Decision Log — 설계 변경·미해결 판단
 
-> 이 문서는 날짜가 붙은 결정 이력이다. 현재 실행 상태와 다음 허용 작업은
-> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)는 현재 구현·Gate 증거, [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)는
-> 다음 순서의 기준이다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+> 이 문서는 날짜가 붙은 결정 이력이다. 현재 범위와 우선순위는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 구현·Gate 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 짧은 순서 요약은 [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)를 따른다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
 
 ## 05회차 제한 구현 (2026-10-26)
 
@@ -80,14 +78,14 @@
 - **D-012 / ACCEPTED (사용자 요청 반영):** 필요한 기관의 API 키만 선택 등록하며
   전체 기관 키를 요구하지 않는다. 실제 값은 로컬 .env/환경변수, 기획서에는 환경변수
   이름만 기록한다. 경로별 인증 none/optional/required/unknown과 키 설정·유효성은
-  분리한다. 필수 키 누락은 해당 경로만 중단한다. PROJECT_PLAN.md §2.1에 정책과
+  분리한다. 필수 키 누락은 해당 경로만 중단한다. PROJECT_PLAN_ORIGINAL_2026_10_24.md §2.1에 정책과
   후속 검수 기준을 추가했다. 이번에는 설정 로더·커넥터·02회차 기능을 구현하지 않았다.
   기관별 실제 인증 조건은 커넥터 구현 시 공식 문서로 확인해야 한다.
 
 - **D-013 / ACCEPTED (사용자 요청 반영):** 14회차 최종 통합·검증 단계에 사용자
   설명서(Markdown)와 안내 PPT(PPTX)를 제작한다. 실행 방법·기관별 선택적 키 설정·
   수집 결과 확인을 실제 구현 기준으로 설명하고 대표 절차 재현 및 PPT 표시를 검수한다.
-  PROJECT_PLAN.md §10.3/14.2와 IMPLEMENTATION_PLAN.md 14회차에 반영했다.
+  PROJECT_PLAN_ORIGINAL_2026_10_24.md §10.3/14.2와 IMPLEMENTATION_PLAN.md 14회차에 반영했다.
   이번 작업은 기획 문서 3개만 변경했으며 설명서/PPT 제작과 02회차는 진행하지 않았다.
   실행 코드 변경이 없어 테스트는 재실행하지 않았다. 실제 키 접근·네트워크 호출 없음.
 
@@ -841,26 +839,71 @@ push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 reten
 indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
 원본 manifest, 과거 quality report는 변경하지 않고 unit/frequency unknown을 유지한다.
 
-## D-095 — 평가 사례 v1 계약과 근거 부족 시 gate 차단
+## D-095 — 시계열 주기 기반 최신성 판정
 
-2026-10-27. Iteration 28에서 `EvaluationCase` v1, JSONL reader, 고정 candidate snapshot 및 SHA-256 manifest를 추가한다.
-요청 snapshot은 기존 `DataRequest` 계약으로 검증하고, unknown/conflict 기대 필드는 근거가 연결되고 해당 후보의 기대 상태가
-`review_required`여야 한다. Excel 기대 정책은 원본 시계열 분리, 겹치는 값의 보존/검토, 원본 period 기준, 집계·변환·보간·
-forward-fill 없음, 결측 빈칸으로 고정한다. 이 계약과 사례 파일은 평가 실행이나 runtime rule 변경을 수행하지 않는다.
+2026-10-27. 사용자의 요청에 따라 최신성은 다운로드 시각이나 metadata refresh 시각이 아니라
+관측기간 끝을 기준으로 평가한다. 기본 최대 허용 일수는 일간 7, 주간 21, 월간 120, 분기 240,
+반기 183, 연간 730이며, 정책 ID·SHA256 fingerprint와 시계열 단위 override를 기록한다.
+이는 발표 달력을 공식 검증한 값이 아니라 명시적 운영 기본값이다. 주기가 없거나, 기간을
+해석할 수 없거나, 관측이 미래인 경우 `FRESHNESS_UNVERIFIED`; 허용치를 초과하면 `STALE`로
+분류하고 정규화 관측값과 지원 CSV 출력을 보류한다. 원본·manifest는 보존한다. World Bank,
+BLS, Census, BOJ 경로 및 World Bank/BOJ CSV 재검증에 연결했다. fixture 기반 테스트는
+실행했으나 이 변경의 live freshness 동작은 검증하지 않았다. Gate C는 통과 처리하지 않는다.
+세부 정책과 현재 범위는 [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md).
 
-초기 목표는 36 case, split별 12개, split마다 유형별 3개다. 현재 checkout에서 공식 근거와 보존 raw/report로 뒷받침할 수 있는
-고정 후보는 WDI USA GDP 하나라 9개 starter case만 수록한다. 근거가 저장되지 않은 BLS/Census 테스트용 합성 metadata를 gold
-candidate로 승격하지 않고, 같은 개념의 정답/오답 후보 쌍도 만들지 않는다. 따라서 case corpus manifest는 `blocked`이며
-near-match 0건과 유형·split 부족을 정확히 기록한다. 이 상태는 Iteration 28 gate 통과가 아니고, 이후 split/evaluator 작업으로
-진행할 수 없다. 보류를 해제하려면 공식 근거·무결성 검증이 가능한 추가 candidate snapshot과 근접 distractor가 먼저 필요하다.
+## D-096 — TIC/BIS 자료 변경상태 반복 확인 제외
 
-## D-096 — 모의 평가 근거와 작성자 provenance 계약
+2026-10-27. 사용자가 TIC/BIS 원자료 변경상태를 확인하는 작업은 현재 필요하지 않다고 지정했다.
+이에 `Gate C 자연 증거 감시`와 `Gate C Source Watch` 두 반복 자동화를 중지했고, 로드맵의 활성 작업에서
+정기 TIC/BIS 변경 확인을 제외했다. 기존 live `unchanged` 결과, 미관측 natural revision/recovery 기록,
+raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변경 감지 CLI와 기준본은 보존하며,
+사용자가 나중에 다시 요청할 때만 단발 범위·목적을 새로 확인한다. 이는 TIC/BIS 서버 오류나 데이터 손상이
+없음을 새로 검증한 결정이 아니며 Gate C 통과 범위를 확대하지 않는다.
 
-2026-10-27. 사용자의 요청에 따라 사람이 입력한 사례와 AI 모의 사례를 구분할 수 있도록 `EvaluationCase` Python 계약을 확장한다.
-모의 작성 provenance는 origin, run ID, 작성·검토 agent, generation prompt hash, review status, `human_observed=false`를 검증한다.
-`synthetic_fixture` evidence는 고정 candidate ID, 로컬 파일 경로와 SHA-256, 목적을 요구하고 official URI와 retrieval timestamp를
-허용하지 않는다. `catalog_snapshot` evidence도 로컬 hash에 한정하고 claim을 fixed evaluation catalog 범위로 제한한다.
+## D-097 — 통합 제품 기획을 현재 요구사항·우선순위 기준으로 지정
 
-이는 **계약 확장**이며 36개 코퍼스 완료나 평가 통과가 아니다. v1 manifest와 9개 starter case는 변경하지 않고 gate는 계속 차단한다.
-엔진 평가는 실행하지 않았고 공식 근거 gate는 blocked, 사람 관찰은 not observed 상태다. 사례 재사용 전에는 split 사이의
-의도·템플릿 누수를 제거하고 v2 schema/manifest 및 검토 provenance를 완성해야 한다.
+2026-10-27. 사용자가 원초 기획과 이후 수정 기획을 하나의 유기적 기준으로 통합해 달라고 요청했다.
+현재 `PROJECT_PLAN.md`를 제품 목표·지원/제외 범위·엔진 책임과 상태·데이터 품질 정책·통합 실행 순서의 단일 기준으로 정리하고,
+원초 문서는 `PROJECT_PLAN_ORIGINAL_2026_10_24.md`에 보존한다. 세부 기능 계약과 과거 회차 보고서는 근거·설계 이력으로 남기며,
+구현 상태와 검증 결과는 `IMPLEMENTATION_PLAN.md` 및 회차 evidence가 담당한다. `ROADMAP_2026_10_26.md`는 통합 기획의 요약이고,
+이전 상세 로드맵은 snapshot으로 보존한다. 이 문서 통합 자체는 코드 기능의 구현 또는 Gate 통과를 뜻하지 않는다.
+
+## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+
+2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
+성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
+가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
+최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
+engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
+
+## D-101 — 계측 후 provider 실행 조립을 공통 registry로 연결
+
+2026-10-27. 성능 계측 PR #56에서 161개의 fixture/stored 표본과 privacy-safe 보고 경로를 먼저 구현했다.
+이 표본은 live network나 production 저장 병목을 증명하지 않아 catalog cache, task 저장, raw write의 성능 최적화는 보류한다.
+이후 사용자의 명시적 효율화 지시에 따라 통합 기획 §11 순서 8의 구조 정리를 진행한다. `EngineRegistry`가 saved
+`(engine, version)` plan으로 공통 Orchestrator를 조립하고 재개하며 World Bank·BOJ·BLS·Census/Gate C의 transport와
+response/parser/quality adapter는 유지한다. World Bank confirmation은 dispatcher가 실행 전 재검사하며 대용량 trial/production은
+worker lock·checkpoint recovery 때문에 전용 runner로 남긴다. Registry 변경 자체를 성능 개선 측정으로 표현하지 않는다.
+
+## D-099 — synthetic 평가 scaffold와 user-evidence gate를 분리
+
+2026-10-27. 실제 사용 피드백 사례가 아직 없으므로, A/B corpus plumbing을 검증하기 위해 각 split에
+두 건씩 synthetic 계약 사례를 추가한다. 사례는 author self-review이며 private user data나 live provider 결과를
+포함한다고 주장하지 않는다. Validator는 provenance별 case count와 선언된 `reviewed_feedback_split_coverage`를
+별도로 보고한다. 이 coverage는 feedback ID를 SQLite 로그와 대조 검증하지 않는다. `READY`는 구조·분리·hash
+준비만 뜻하며 user-evidence 일반화 평가 완료를 뜻하지 않는다. validation/holdout은 set version 2와 계산된
+SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 anti-overfitting 보증이 아니다.
+
+## D-100 — 성능 표본을 task history와 분리하고 측정 후에만 최적화
+
+2026-10-27. 통합 기획 §11 순서 7을 구현하면서 UTC 시각을 elapsed 계산에 쓰지 않고 `perf_counter_ns()`를 사용한다.
+공통 stage wall과 가능한 network/raw/parse/quality/SQLite/export 경계는 engine/version·상태·attempt·숫자 크기·evidence class·workload·code/environment와 함께 별도 `performance.sqlite`에 쓴다. 요청, 원본 값, task ID, credential, URL은 제외한다. 이 DB 분리는 export의 catalog read-only 계약을 유지하고 측정 기록을 task history와 분리한다. knowledge는 latency를 반환하고 cache hit/miss를 표본화한다. 보고기는 read-only이고 그룹당 표본이 20개 미만이면 p95를 미확정으로 표시한다. live API 요청은 측정용으로 만들지 않는다. 대용량 worker 기준은 그대로 별도 유지한다. 실제 병목이 드러날 때까지 EngineRegistry/composition 및 저장 경로 최적화를 다음 순서로 미룬다.
+
+## D-103 — evidence-backed 평가 corpus와 assistant 초안을 별도 보관
+
+2026-10-27. Iteration 28은 기존 JSON-per-split synthetic scaffold를 유지하면서 별도의 immutable `EvaluationCase` v1 JSONL corpus,
+고정 candidate snapshot, evidence/file SHA-256 manifest와 split leakage audit을 추가한다. 고정 corpus는 목표 36개 중 9개이며
+초기 target 유형의 `near_match`가 0개라 gate는 `blocked`로 둔다. 별도 27개 assistant-simulated draft는 모두
+`independent_review_pending`이고 평가 corpus나 candidate catalog에 들어가지 않는다. hash 검증과 날짜 정규화 text audit은
+독립 의미 검토를 대신하지 않는다. `validate-corpus`는 evidence integrity와 gate 상태만 보고하고 검색 엔진을 실행하거나 draft를
+승격하지 않는다. 이 변경은 A의 일부 계약/fixture 준비이며 36-case gate, C/D 평가·승격 또는 사용자 관찰 통과를 뜻하지 않는다.

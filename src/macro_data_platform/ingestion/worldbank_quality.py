@@ -16,9 +16,16 @@ from macro_data_platform.connectors.worldbank import (
     parse_gdp,
 )
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageResult, StageStatus
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
+from macro_data_platform.performance.metrics import measured_phase
 
-NORMALIZATION_VERSION = "worldbank_gate_a_v2"
+NORMALIZATION_VERSION = "worldbank_gate_a_v3"
 PARSER_VERSION = "worldbank_gdp_parser_v2"
 
 
@@ -87,12 +94,29 @@ def _compare_prior_artifact(audit, artifact):
     return calculated, method
 
 
-def normalize_worldbank(parsed, query, source_change_status="first_observation"):
+@measured_phase("quality")
+def normalize_worldbank(
+    parsed,
+    query,
+    source_change_status="first_observation",
+    *,
+    as_of=None,
+    freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+):
     """Minimal deterministic checks; no inferred units, imputation or economic corrections."""
     rows = parsed["observations"]
     counts = Counter(row["date"] for row in rows)
     expected = {str(year) for year in range(query.start_year, query.end_year + 1)}
     issues, warnings = [], []
+    freshness = assess_freshness(
+        [row.get("date") for row in rows], frequency=parsed.get("frequency"),
+        period_format=parsed.get("period_format"), series_id=parsed.get("series_id"),
+        series_key=parsed.get("series_key"), as_of=as_of, policy=freshness_policy,
+    )
+    if freshness["status"] == FreshnessStatus.STALE:
+        issues.append("stale_observations")
+    elif freshness["status"] != FreshnessStatus.FRESH:
+        issues.append("freshness_unverified")
     if any(count > 1 for count in counts.values()):
         issues.append("duplicate_periods")
     missing = sorted(expected - counts.keys())
@@ -138,6 +162,7 @@ def normalize_worldbank(parsed, query, source_change_status="first_observation")
         "requested_periods": sorted(expected), "observed_periods": sorted(counts),
         "missing_periods": missing, "row_count": len(rows), "missing_value_count": nulls,
         "negative_gdp_value_count": negative_values,
+        "freshness": freshness,
         "source_change_status": source_change_status,
         "normalization_version": NORMALIZATION_VERSION, "parser_version": PARSER_VERSION,
         "page_metadata": parsed["page_metadata"],
@@ -177,7 +202,7 @@ class WorldBankAuditedCollection:
         audit = self.audit
         owner = audit.active(request)
         captured = _CapturedTransport(self.transport)
-        result = WorldBankGDPEngine(audit.settings, captured).run(request)
+        result = WorldBankGDPEngine(audit.settings, captured, check_freshness=False).run(request)
         payload = result.payload or {}
         try:
             if "raw_path" in payload and "manifest_path" in payload:
@@ -202,7 +227,10 @@ class WorldBankAuditedCollection:
                     comparison_sha256=comparison_sha256, comparison_method=comparison_method,
                     compare_prior=lambda prior: _compare_prior_artifact(audit, prior),
                 )
-                result = replace(result, payload={**payload, "artifact_id": saved["record_id"],
+                collection_payload = {key: value for key, value in payload.items()
+                                      if key != "observations"}
+                result = replace(result, payload={**collection_payload,
+                                                  "artifact_id": saved["record_id"],
                                                   "raw_sha256": artifact["raw_sha256"],
                                                   "comparison_sha256": comparison_sha256,
                                                   "comparison_method": comparison_method,
@@ -218,8 +246,8 @@ class WorldBankAuditedCollection:
 
 
 class WorldBankValidation:
-    def __init__(self, audit):
-        self.audit = audit
+    def __init__(self, audit, *, freshness_policy=DEFAULT_FRESHNESS_POLICY):
+        self.audit, self.freshness_policy = audit, freshness_policy
 
     def run(self, request):
         audit, upstream = self.audit, request.upstream or {}
@@ -235,6 +263,7 @@ class WorldBankValidation:
             parsed = parse_gdp(download, query)
             report, observations = normalize_worldbank(
                 parsed, query, artifact.get("source_change_status", "first_observation"),
+                as_of=audit.clock(), freshness_policy=self.freshness_policy,
             )
             code = ErrorCode.QUALITY_FAILURE if report["status"] == "failed" else None
         except ConnectorFailure as failure:
@@ -260,13 +289,22 @@ class WorldBankValidation:
         return _incident(audit, request, owner, result)
 
 
-def reusable(audit, spec, stage):
+def reusable(audit, spec, stage, *, freshness_policy=DEFAULT_FRESHNESS_POLICY):
     payload = stage["result"]["payload"]
     if spec.engine not in {"worldbank_collect_audit", "worldbank_validate"}:
         return False
     artifact = audit.get(payload["artifact_id"], kind="artifact")
     verified_download(audit, artifact)
     if artifact["query"] != spec.input_data:
+        return False
+    download = verified_download(audit, artifact)
+    query = GDPQuery(**artifact["query"])
+    parsed = parse_gdp(download, query)
+    current_quality, _ = normalize_worldbank(
+        parsed, query, artifact.get("source_change_status", "first_observation"),
+        as_of=audit.clock(), freshness_policy=freshness_policy,
+    )
+    if current_quality["status"] != "passed":
         return False
     reports = audit.for_task(artifact["task_id"], kind="validation")
     related = [report for report in reports if report["artifact_id"] == artifact["record_id"]]
@@ -284,12 +322,20 @@ def reusable(audit, spec, stage):
     return True
 
 
-def verify_completed(audit, doc):
+def verify_completed(audit, doc, *, freshness_policy=DEFAULT_FRESHNESS_POLICY):
     stage = next(row for row in reversed(doc["stages"]) if row["stage_id"] == "validate")
     payload = stage["result"]["payload"]
     artifact = audit.get(payload["artifact_id"], kind="artifact")
-    verified_download(audit, artifact)
+    download = verified_download(audit, artifact)
     report = audit.get(payload["validation_id"], kind="validation")
     if report["status"] != "passed" or report["artifact_id"] != artifact["record_id"]:
         raise ValueError("completed validation does not match artifact")
+    query = GDPQuery(**artifact["query"])
+    parsed = parse_gdp(download, query)
+    current_quality, _ = normalize_worldbank(
+        parsed, query, artifact.get("source_change_status", "first_observation"),
+        as_of=audit.clock(), freshness_policy=freshness_policy,
+    )
+    if current_quality["status"] != "passed":
+        raise ValueError("completed World Bank observations are stale or freshness is unverified")
     audit.observations(report["record_id"])

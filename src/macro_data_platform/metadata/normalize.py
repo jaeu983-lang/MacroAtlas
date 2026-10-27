@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlsplit
 
+from macro_data_platform.performance.metrics import measured_phase
+
 NORMALIZED_FIELDS = (
     "name", "definition", "unit", "frequency", "geo_coverage", "time_coverage",
     "seasonal_adjustment", "dimensions",
@@ -40,6 +42,7 @@ def _valid_timestamp(value: str) -> None:
         raise ValueError("retrieved_at must be UTC")
 
 
+@measured_phase("parse")
 def normalize_bls_catalog(payload: Mapping, *, source_url: str, retrieved_at: str,
                           raw_path: str, start_year: int, end_year: int,
                           expected_series_id: str) -> dict:
@@ -85,6 +88,7 @@ def normalize_bls_catalog(payload: Mapping, *, source_url: str, retrieved_at: st
     }
 
 
+@measured_phase("parse")
 def normalize_census_variable(payload: Mapping, *, source_url: str, retrieved_at: str,
                               raw_path: str, dataset_id: str, reference_year: int,
                               expected_variable_id: str) -> dict:
@@ -151,6 +155,7 @@ def _mapped_value(row: Mapping, mapping: Any, *, pointer: str) -> dict:
     raise ValueError("column mapping must be a name, alias list, or language map")
 
 
+@measured_phase("parse")
 def normalize_codebook_rows(rows: Sequence[Mapping], *, columns: Mapping[str, Any],
                             source_agency: str, source_url: str,
                             retrieved_at: str, raw_path: str) -> list[dict]:
