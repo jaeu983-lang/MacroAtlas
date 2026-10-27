@@ -6,7 +6,11 @@ import sqlite3
 import unicodedata
 from collections import defaultdict
 
-from macro_data_platform.analysis.scope_evidence import resolve_bis_flat_scope
+from macro_data_platform.analysis.scope_evidence import (
+    resolve_bis_flat_scope,
+    resolve_bls_scope,
+    resolve_census_scope,
+)
 from macro_data_platform.config import Settings
 from macro_data_platform.contracts import ErrorCode
 from macro_data_platform.storage.history import HistoryStore
@@ -203,6 +207,23 @@ class PatternAnalyzer:
                     ,json_extract(s.value, '$.result.payload.production_execution')
                     ,json_extract(s.value, '$.result.payload.execution_state')
                     ,json_extract(s.value, '$.result.payload.reason')
+                    ,json_extract(s.value, '$.result.payload.source_url')
+                    ,json_extract(s.value, '$.result.payload.source_agency')
+                    ,json_extract(s.value, '$.result.payload.dataset_id')
+                    ,json_extract(s.value, '$.result.payload.raw_path')
+                    ,json_extract(s.value, '$.result.payload.raw_sha256')
+                    ,json_extract(s.value, '$.result.payload.manifest_path')
+                    ,json_extract(p.value, '$.input_data.series_ids')
+                    ,json_extract(p.value, '$.input_data.start_year')
+                    ,json_extract(p.value, '$.input_data.end_year')
+                    ,json_extract(p.value, '$.input_data.dataset')
+                    ,json_extract(p.value, '$.input_data.year')
+                    ,json_extract(p.value, '$.input_data.variables')
+                    ,json_extract(p.value, '$.input_data.geography')
+                    ,json_extract(p.value, '$.input_data.raw_path')
+                    ,json_extract(p.value, '$.input_data.raw_sha256')
+                    ,json_extract(p.value, '$.input_data.request_manifest_path')
+                    ,json_extract(p.value, '$.input_data.request_manifest_sha256')
                 FROM tasks AS t
                 JOIN json_each(t.document, '$.stages') AS s
                 LEFT JOIN json_each(t.document, '$.plan') AS p
@@ -487,7 +508,11 @@ class PatternAnalyzer:
             (_plan_engine, _deferral_id, _deferral_seq, _origin_task_id, _fixture_path,
              _fixture_format, scope_url, scope_agency, input_url, input_agency,
              input_path, legacy_url, raw_path, manifest_path, _trial_attempted,
-             _production_execution, _execution_state, _trial_reason) = row[14:]
+             _production_execution, _execution_state, _trial_reason, payload_url,
+             payload_agency, payload_dataset, payload_raw_path, payload_raw_sha256,
+             payload_manifest_path, plan_series_ids, plan_start_year, plan_end_year,
+             plan_dataset, plan_year, plan_variables, plan_geography, plan_raw_path,
+             plan_raw_sha256, plan_manifest_path, plan_manifest_sha256) = row[14:]
             institution = _safe_scope(institution, institution=True)
             dataset = _safe_scope(dataset)
             concept = _safe_scope(concept)
@@ -500,6 +525,43 @@ class PatternAnalyzer:
                 source_raw_path=candidate_raw_path,
                 request_manifest_path=manifest_path,
             )
+            if scope_resolution is None and _plan_engine == "large_file_production":
+                scope_resolution = resolve_bis_flat_scope(
+                    self.project_root, self.data_dir,
+                    source_url=input_url, source_agency=input_agency,
+                    source_raw_path=plan_raw_path,
+                    request_manifest_path=plan_manifest_path,
+                    expected_raw_sha256=plan_raw_sha256,
+                    expected_manifest_sha256=plan_manifest_sha256,
+                )
+            if scope_resolution is None and _plan_engine == "bls":
+                try:
+                    series_ids = json.loads(plan_series_ids) if isinstance(plan_series_ids, str) else None
+                except ValueError:
+                    series_ids = None
+                scope_resolution = resolve_bls_scope(
+                    self.project_root, self.data_dir,
+                    source_url=payload_url, source_agency=payload_agency,
+                    dataset_id=payload_dataset, source_raw_path=payload_raw_path,
+                    source_raw_sha256=payload_raw_sha256,
+                    request_manifest_path=payload_manifest_path,
+                    series_ids=series_ids, start_year=plan_start_year,
+                    end_year=plan_end_year,
+                )
+            if scope_resolution is None and _plan_engine == "census":
+                try:
+                    variables = json.loads(plan_variables) if isinstance(plan_variables, str) else None
+                except ValueError:
+                    variables = None
+                scope_resolution = resolve_census_scope(
+                    self.project_root, self.data_dir,
+                    source_url=payload_url, source_agency=payload_agency,
+                    payload_dataset_id=payload_dataset, plan_dataset_id=plan_dataset,
+                    year=plan_year, variables=variables, geography=plan_geography,
+                    source_raw_path=payload_raw_path,
+                    source_raw_sha256=payload_raw_sha256,
+                    request_manifest_path=payload_manifest_path,
+                )
             if scope_resolution is not None:
                 institution = scope_resolution["institution_id"]
                 dataset = scope_resolution["dataset_id"]

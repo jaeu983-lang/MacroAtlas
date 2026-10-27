@@ -27,23 +27,22 @@ World Bank task는 attempt 1에서 `FAILED_RETRYABLE/TRANSIENT`, attempt 2에서
 | Engine/version | Operational stages | 오류 stage | Unknown institution | Unknown dataset | 확인 |
 |---|---:|---:|---:|---:|---|
 | `bis_flat_probe/1` | 1 | 1 | 0 | 0 | BIS exact URL와 저장 raw/manifest 검증 |
-| `bls/1` | 2 | 0 | 2 | 2 | payload에 BLS agency와 공식 API URL은 있으나 analyzer projection은 unknown. payload의 `dataset_id`도 명시적으로 null |
+| `bls/1` | 2 | 0 | 0 | 2 | 두 보존 response/manifest가 BLS endpoint와 요청 series를 확인. provider 결과의 `dataset_id`는 명시적으로 null |
 | `boj_metadata/1` | 2 | 0 | 0 | 0 | BOJ / `FM08` |
 | `boj_observations/1` | 2 | 0 | 0 | 0 | BOJ / `FM08` |
-| `census/1` | 2 | 0 | 2 | 2 | payload에 Census agency, `acs/acs1` dataset, 공식 URL이 있으나 analyzer projection은 unknown |
+| `census/1` | 2 | 0 | 0 | 0 | 보존 response/manifest, 요청, 공식 URL이 Census / `acs/acs1`과 일치 |
 | `gate_c_file_watch/1` | 15 | 0 | 0 | 0 | TIC 7, BIS column 8로 식별 |
-| `large_file_production/1` | 1 | 0 | 1 | 1 | 성공 task plan에 BIS source, raw/manifest path·hash가 있으나 analyzer가 해당 input fields를 projection에 연결하지 않음 |
+| `large_file_production/1` | 1 | 0 | 0 | 0 | 성공 plan의 raw/manifest 경로와 SHA가 BIS flat capture 검증 결과와 일치 |
 | `tabular_file/1` | 1 | 1 | 0 | 0 | BIS flat scope 복구 |
 | `worldbank_collect_audit/1` | 6 | 1 | 0 | 0 | World Bank / dataset `2`; transient 이후 같은 task 재개 성공 |
 | `worldbank_validate/1` | 5 | 0 | 0 | 0 | World Bank / dataset `2` |
-| **합계** | **37** | **3** | **5** | **5** | Unknown 5건은 모두 성공 stage이며 오류 scope에는 없음 |
+| **합계** | **37** | **3** | **0** | **2** | Unknown dataset 2건은 BLS success stage이며 오류 scope에는 없음 |
 
-BLS·Census·`large_file_production`의 5개 unknown은 **오류 누락이 아니라 analyzer scope projection 공백**이다. 저장된 BLS payload는 dataset ID가 null이므로 이를 만들어 내지 않는다. Census payload에는 `acs/acs1`이 있고 production plan에는 BIS provenance가 있으나, 각각의 기관/범위를 현재 projection이 연결하지 않는다.
+초기 감사 시에는 BLS·Census·`large_file_production` 성공 stage 5건이 analyzer projection에서 unknown이었다. 2026-10-27 후속으로 exact API URL, saved request, manifest, raw digest와 응답 구조를 검증하는 BLS/Census adapter를 연결하고, large-file production plan hash를 기존 BIS 검증기 결과와 대조했다. 이어 전체 analyzer 범위를 다시 읽어 terminal task 49개와 stage 57개 모두를 검사했다. truncation은 없었고 verified scope resolution 7건, operational stage 37건, 오류 3건, unknown institution 0건, unknown dataset 2건이었다. 나머지 unknown dataset 두 건은 BLS 성공 응답의 `dataset_id=null`을 그대로 보존한 결과다. series ID만으로 경제 dataset을 만들어 내지 않았다.
 
 ## 다음 우선 작업
 
-1. 성공 stage의 검증된 scope projection을 확장한다. Census는 저장된 dataset과 provider metadata를 확인하고, `large_file_production`은 BIS helper에 plan의 raw/manifest 경로를 연결해 기존 검증을 재사용한다.
-2. BLS agency identity는 보존 request manifest와 공식 endpoint metadata를 확인한 뒤 adapter 여부를 정한다. dataset ID는 현재 응답의 null을 유지하고, BLS series 범위가 명확해지기 전에는 오류들을 하나의 dataset scope로 합치지 않는다.
-3. 변경 후 전체 catalog를 다시 읽어 같은 69 task/57 stage 범위에서 identity coverage를 비교한다. 운영 오류 수와 Gate C 판정은 별도 집계로 유지한다.
+1. BLS의 official series metadata/catalogue를 별도 검토해 `CUUR0000SA0`에 provider가 명시한 dataset identity가 있는지 확인한다. 이를 확인하기 전에는 `dataset_id=null`을 유지하고, series ID를 dataset으로 승격하지 않는다.
+2. 새 운영 이력이 쌓일 때 같은 full-catalog 방식으로 기관·dataset·engine/version·stage·error category를 재감사한다. 운영 오류 수와 Gate C 자연 증거 판정은 계속 분리한다.
 
 이 결과는 2026-10-27 당시 local catalog 전체의 감사다. 다른 catalog, 이후 task, 또는 모든 기관이 오류가 없다는 뜻은 아니다. TIC/BIS Gate C의 자연 변경과 해당 watch scope의 자연 장애 후 재개 조건도 별도로 남아 있다.
