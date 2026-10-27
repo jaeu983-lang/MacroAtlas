@@ -2,6 +2,7 @@
 import json
 import re
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime
 
 from macro_data_platform.performance.metrics import (
@@ -128,7 +129,7 @@ def insert_sample(connection, sample):
 def append_sample(settings, sample):
     path = settings.performance_database_path
     path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(path, timeout=5) as connection:
+    with closing(sqlite3.connect(path, timeout=5)) as connection, connection:
         insert_sample(connection, sample)
 
 

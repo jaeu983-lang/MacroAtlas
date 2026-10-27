@@ -1,6 +1,7 @@
 """Performance telemetry is monotonic, aggregated, and separate from task content."""
 import json
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime
 
 import pytest
@@ -76,7 +77,7 @@ def test_sample_writer_discards_unapproved_text_fields(tmp_path):
     )
     history.record_performance(sample)
 
-    with sqlite3.connect(settings.performance_database_path) as connection:
+    with closing(sqlite3.connect(settings.performance_database_path)) as connection:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(performance_samples)")}
         row = connection.execute("SELECT * FROM performance_samples").fetchone()
     assert not {"request", "source_url", "original_value", "task_id"} & columns
@@ -131,7 +132,7 @@ def test_knowledge_query_returns_latency_and_records_cache_hit_without_query_con
     assert hit["latency_ns"] > 0
     assert miss["cache"] == "miss"
     assert hit["cache"] == "hit"
-    with sqlite3.connect(settings.performance_database_path) as connection:
+    with closing(sqlite3.connect(settings.performance_database_path)) as connection:
         rows = connection.execute(
             "SELECT execution_scope, engine, stage, cache_status, duration_ns, "
             "phase_timings_json FROM performance_samples ORDER BY sample_id",
