@@ -281,6 +281,19 @@ class CSVExportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "task_not_completed"):
             export_task(self.settings, task_id, "data/exports/incomplete.csv")
 
+    def test_malformed_plan_entries_are_refused_without_writes(self):
+        task_id = self._collect("boj")
+        for entry in (None, "boj_metadata", 42, []):
+            with self.subTest(entry=entry):
+                self._update_task_document(
+                    task_id, lambda document, entry=entry: document.update(plan=[entry])
+                )
+                before = self.settings.database_path.read_bytes()
+                with self.assertRaisesRegex(ValueError, "unsupported_task_plan"):
+                    export_task(self.settings, task_id, "data/exports/malformed.csv")
+                self.assertEqual(self.settings.database_path.read_bytes(), before)
+                self.assertFalse((self.root / "data/exports").exists())
+
     def test_output_is_gitignored(self):
         ignore = (Path(__file__).parents[1] / ".gitignore").read_text()
         self.assertIn("data/exports/", ignore)
