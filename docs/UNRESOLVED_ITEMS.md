@@ -1,8 +1,8 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: PR #1–#38이 병합됐다. updater 코드 기준은 PR #34 merge commit `543c719be506350ce57fd14358173e54ede812b3`이며 PR #35–#38은 pilot 문서 갱신이다. PR #23–#26에서 qualification/운영 이력과 기관·dataset scope 근거를 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 남은 제품 과제는 Gate C 자연 원자료 변경, 대용량 예측 보정, 통계 의미 검증, 지원 확대와 사용자 관찰이다. updater scheduler의 실제 Windows 검증은 아래 별도 상태를 따른다.
+> 2026-10-27 갱신: updater 코드 기준은 PR #34 merge commit `543c719be506350ce57fd14358173e54ede812b3`이다. 이후 Windows updater pilot evidence는 [27회차 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했으며, 기관·dataset scope 근거는 PR #23–#26에서 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 남은 제품 과제는 Gate C 자연 원자료 변경, 대용량 예측 보정, 통계 의미 검증, 지원 확대와 사용자 관찰이다. updater scheduler의 실제 Windows 검증은 아래 별도 상태를 따른다.
 
-후속 상태: PR #17–#38이 병합됐다. PR #35–#38은 pilot 문서 갱신이다. Linux updater candidate QA/PR handoff와 Windows installer dry-run, no-op/cleanup, 교차 프로세스 lock 경합은 확인됐다. 최신 no-op run `20261027T063907Z-d01e9247`은 base `aefd320`에서 cleanup과 retention 요약(`scanned=5, removed=0, preserved=5`)을 통과했다. Lock run `20261027T063105Z-60a54edf`는 네트워크 작업 없이 `ALREADY_RUNNING`을 반환했다. GitHub Actions는 계정 결제/사용 한도 문제로 runner를 시작하지 못했다. Candidate/failure 경로와 실제 scheduler 실행을 확인하기 전까지 task는 비활성이다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 결과를 기록한다.
+후속 상태: Linux updater candidate QA/PR handoff와 Windows installer dry-run, no-op/cleanup, 교차 프로세스 lock 경합은 확인됐다. 최신 no-op run `20261027T063907Z-d01e9247`은 base `aefd320`에서 cleanup과 retention 요약(`scanned=5, removed=0, preserved=5`)을 통과했다. Lock run `20261027T063105Z-60a54edf`는 네트워크 작업 없이 `ALREADY_RUNNING`을 반환했다. GitHub Actions는 계정 결제/사용 한도 문제로 runner를 시작하지 못했다. Candidate/failure 경로와 실제 scheduler 실행을 확인하기 전까지 task는 비활성이다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 결과를 기록한다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -85,7 +85,7 @@ Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#38 병합. updater 코드 기준은 `543c719be506350ce57fd14358173e54ede812b3`; 최신 Windows no-op run의 base는 `aefd320a67d0abb5779393b90d32f6d149efa77e`. Linux updater candidate path와 Windows no-op/cleanup/lock contention은 통과했으며 Gate C 자연 원자료 변경은 별도로 남아 있다.
+1. **완료:** 기능 구현과 기록된 pilot 증거가 통합됐다. updater 코드 기준은 `543c719be506350ce57fd14358173e54ede812b3`; 최신 Windows no-op run의 base는 `aefd320a67d0abb5779393b90d32f6d149efa77e`. Linux updater candidate path와 Windows no-op/cleanup/lock contention은 통과했으며 Gate C 자연 원자료 변경은 별도로 남아 있다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
