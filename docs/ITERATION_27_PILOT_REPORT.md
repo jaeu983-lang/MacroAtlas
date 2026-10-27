@@ -23,18 +23,18 @@ Linux 첫 시도는 자연 발생한 인증 실패 결과를, 두 번째는 cand
 
 ## 다음 단계
 
-Windows no-op 실행과 cleanup은 검증됐다. 다음에는 Windows에 등록된 task가 있는지와 principal·로그온 조건을 읽기 전용으로 확인한다. Windows changed-candidate success와 failure 경로, 교차 실행 lock 및 보존 정책은 미해결이므로 scheduler는 비활성으로 둔다.
+Windows no-op 실행과 cleanup은 검증됐다. Windows read-only `Get-ScheduledTask` 조회에서 `MacroData-HealthCheck`와 `MacroData-AgentImprovement`가 등록되지 않은 것을 확인했다. 따라서 조회할 task principal이나 실행 이력은 없다. Windows changed-candidate success와 failure 경로, 교차 실행 lock 및 보존 정책은 미해결이므로 scheduler는 비활성으로 둔다.
 
 
 ## 예약 설정 정적 검토 — 2026-10-27
 
-현재 연결된 실행기는 Linux이며 `powershell`, `pwsh`, Windows Task Scheduler에 접근할 수 없다. 따라서 실제 Windows pilot, 등록된 task의 사용자·로그온 조건 조회, 예약 실행 결과는 확인하지 않았다. Windows CI의 wrapper dry-run은 PowerShell 문법과 인자 전달 검사이며 실제 사용자 세션 pilot을 대체하지 않는다.
+정적 코드는 Linux에서 검토했다. 실제 Windows pilot은 사용자가 수행했고, read-only `Get-ScheduledTask` 조회 결과 MacroAtlas task가 하나도 등록되지 않았다. 그러므로 Windows task principal·로그온 조건·예약 실행 이력은 관찰할 수 없었다. Windows CI의 wrapper dry-run은 PowerShell 문법과 인자 전달 검사이며 실제 사용자 세션 pilot을 대체하지 않는다.
 
 `scripts/install_tasks.ps1`은 매일 07:30 health check와 토요일 09:00 improvement task를 각각 등록한다. 둘 다 `StartWhenAvailable`과 task별 `MultipleInstances IgnoreNew`를 쓰며 실행 제한은 각각 30분과 2시간이다. Improvement task 인자에는 `-BaseRef`가 없어 `run_improvement.py`가 checkout의 `origin/HEAD`를 사용한다. 현재 Linux checkout의 `origin/HEAD`는 `origin/codex/iteration-04-gate-a`를 가리키지만, Windows clone의 remote HEAD도 같은지 확인되지 않았다. 미설정이면 updater는 `NOT_EXECUTED`로 종료한다.
 
 `IgnoreNew`는 동일 task 이름의 중복 실행만 제한한다. installer와 updater에는 health task·manual run을 포함하는 공통 lock/idempotency guard가 없으며, 계획된 `ALREADY_RUNNING` 결과도 구현되어 있지 않다. Updater 보고서와 로그는 `reports/improvement_<run_id>/`에 보존되지만 자동 보존 기간·용량 한도·정리 정책이 없다. 실패 경로의 worktree도 의도적으로 남길 수 있으므로 장기 예약 전 디스크 사용량과 안전한 정리 기준이 필요하다. Task principal과 대화형 로그인 요건은 installer에서 명시하지 않아 실제 Windows에서 확인해야 한다.
 
-결론: scheduler는 설치·활성화하지 않는다. Windows 수동 no-op과 cleanup은 통과했지만, scheduler를 고려하기 전에 explicit base ref, 수동·예약 실행 공통 중복 방지, report 보존 정책이 필요하다. 실제 Windows task principal, 로그인 요건, 지연 시작, 실행 제한과 두 task 겹침은 아래의 읽기 전용 확인으로 점검한다. Windows candidate·failure 경로까지 검증하기 전 예약 활성화를 결정하지 않는다.
+결론: scheduler는 설치·활성화하지 않는다. 현재 Windows에는 MacroAtlas task가 등록돼 있지 않다. 수동 no-op과 cleanup은 통과했지만, scheduler를 고려하기 전에 explicit base ref, 수동·예약 실행 공통 중복 방지, report 보존 정책이 필요하다. 설치 전에는 task principal, 로그인 요건, 지연 시작, 실행 제한과 task 간 겹침을 설계 검토해야 한다. Windows candidate·failure 경로까지 검증하기 전 예약 활성화를 결정하지 않는다.
 
 ## Windows 첫 수동 실행 — 2026-10-27
 
@@ -49,6 +49,6 @@ Windows no-op 실행과 cleanup은 검증됐다. 다음에는 Windows에 등록�
 - PR #31의 cleanup 보완을 포함한 base `8fc22c89ae343d696ef0071503b6a0bc0c90a69b`에서 실행했다. Anaconda Python 3.12.8과 Windows PowerShell wrapper를 사용했다.
 - run `20261027T052555Z-e8c44ca0`: `NO_ACTIONABLE_CHANGE`, Codex exit code 0, `changed_paths=[]`, `candidate_commit=null`, `qa_report=null`, `push_status=NOT_RUN`, `network_requested=false`.
 - cleanup은 `PASSED`: worktree remove return code 0, 임시 branch 삭제 성공. report는 Windows 저장소의 `reports/improvement_20261027T052555Z-e8c44ca0/report.json`에 남아 있다.
-- 따라서 Windows 사용자 세션의 Codex no-op 및 cleanup 경로는 통과했다. 변경 candidate QA·push·PR과 retryable failure 경로는 실행되지 않았고, 실제 Task Scheduler 상태는 아직 확인하지 않았다.
+- 따라서 Windows 사용자 세션의 Codex no-op 및 cleanup 경로는 통과했다. 변경 candidate QA·push·PR과 retryable failure 경로는 실행되지 않았다. 사용자의 read-only task 조회에서 등록된 MacroAtlas scheduler가 없음을 확인했다.
 
 이 updater 작업은 MacroAtlas provider 접속이나 Gate C 원자료 증거와 별도다.
