@@ -27,7 +27,7 @@
 | 시험 worker 강제 종료 복구 | lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 당시 4조합 CI가 통과 | PR #4가 `25f3c87`에 이미 병합됨 | 완료된 제품 복구 항목. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | PR #6에서 BIS flat 전용 `handed_off/resolved`, 승인 child, chunk/hash checkpoint와 same-task resume 구조를 통합했고 실제 보존 raw task가 완료됨 | 다른 provider, Windows resource worker, 더 큰 입력·pagination은 별도 qualification 후 평가 | BIS flat 제한 경로 완료. 범용 대용량 지원은 남은 제품 범위 |
 | 추가 형식·기관과 Windows 대용량 worker | 현행 production worker는 BIS flat ZIP 한 경로의 Linux 자원 제한 실행만 지원. 다른 형식·기관 및 Windows 자원 worker는 지원 범위 밖 | 각 provider/format을 격리 qualification하고, Windows는 별도 process memory/time/cancel/orphan recovery 한도를 실제 Windows에서 입증한 뒤 한 경로씩 결정 | 제품 지원 범위 미구현. 서버 접속 오류로 분류하지 않음 |
-| 실제 분석가 업무 관찰 | 내부 status→CSV dry run과 23회차 관찰안은 준비됐으나 독립 참가자 관찰은 아직 없음 | 익명 기록·동의 절차를 사용해 분석가 1–2명이 저장 task 결과를 찾고 CSV를 설명하는 세션 수행 | 참가자 증거 대기. 자기 검토를 사용자 검증으로 계산하지 않음 |
+| 실제 분석가 업무 관찰 | 내부 status→CSV dry run과 23회차 관찰안은 준비됐으나 독립 참가자 관찰은 아직 없음 | A–G 28–39회차 gate 후 최종 40회차에서 검증된 원본/비교 workbook과 feedback 기록 흐름을 관찰. 시나리오·task ID·기대 sheet를 실행 전에 갱신 | 참가자 evidence 대기. 자기 검토를 사용자 검증으로 계산하지 않음 |
 
 BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 flat JSONL 생성은 structural preservation이며
 경제 의미를 정규화하지 않는다. 보존 원본 production 실행은 완료됐지만 이 경로를 일반 exporter나 추가 형식 지원으로
@@ -94,7 +94,7 @@ Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
-5. **관찰 대기:** 분석가 1–2명의 실제 업무 관찰 후 다음 provider·UI·자연어 범위를 정한다. 절차는 [23회차 계획](ITERATION_23_PLAN.md)에 있고 참가자 관찰은 미실행이다.
+5. **최종 관찰 대기:** 분석가 1–2명의 실제 업무 관찰은 23회차이며, A–G 28–39회차 통과 후 마지막 40회차로 진행한다. 관찰 대상은 완성된 workbook과 feedback 기록 흐름이다. 절차는 [23회차 계획](ITERATION_23_PLAN.md)에 있고 세션은 미실행이다.
 6. **예측 보정:** 승인된 qualification/production이 실행될 때 예측·실제 stage time을 축적한다. paired 표본이 각 operation에서 3건에 도달할 때 모델 오차를 재평가한다. 표본 생성만을 위한 실행은 하지 않는다.
 7. **품질·범위 확대:** 실제 사용자 요구가 확인된 provider/format 하나씩 metadata 계약, 의미 검증, Linux/Windows 자원 한도와 복구 완료 기준을 정한 뒤 qualification한다.
 

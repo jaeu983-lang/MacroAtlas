@@ -18,7 +18,7 @@ MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
 
 즉, 제품 엔진은 **공통 실행 계약 아래 분리**하고, 유지보수 스크립트는 **한 개발자 workflow controller 아래 통합**한다. source별 처리 규칙이나 대용량 worker를 공통 로직에 억지로 흡수하지 않는다.
 
-요구사항 A–G와 현재 코드의 대조 결과는 [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md)에 기록한다. 2026-10-27에는 split-set scaffold 검증기, evidence-backed `EvaluationCase` v1 contract와 9개 고정 사례 corpus를 추가했다. 고정 corpus는 목표 36개 중 9개여서 gate가 차단됐고, 독립 검토 전인 27개 assistant-simulated draft는 별도 보관한다. 전후 평가(C)·규칙 승격 심사(D)·공통 다중 시계열 Excel 출력(E–G)은 구현 완료가 아니다.
+요구사항 A–G와 현재 코드의 대조 결과는 [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md)에 기록한다. 2026-10-27에는 기존 split-set scaffold validator와 split별 synthetic 사례 두 건, 별도의 evidence-backed `EvaluationCase` v1 contract·고정 snapshot·9개 사례 corpus를 추가했다. 고정 corpus는 목표 36개 중 9개여서 gate가 차단됐고, 독립 검토 전인 27개 assistant-simulated draft는 별도 보관한다. 실제 검토된 feedback 사례와 candidate 평가(C)·규칙 승격 심사(D)·공통 다중 시계열 Excel 출력(E–G)은 구현 완료가 아니다.
 
 ## 현재 코드에서 확인한 중복과 단절
 
@@ -119,7 +119,9 @@ PR #38 병합 후 사용자는 최신 base `aefd320a67d0abb5779393b90d32f6d149ef
 
 같은 날 최신 base `e25d944af1b789b47d712707c0e180757b749bfb`에서 Windows updater run `20261027T084854Z-00b29eb9`가 실행됐다. Codex exit code 0, `NO_ACTIONABLE_CHANGE`, cleanup `PASSED`, retention `scanned=7/removed=0/preserved=7`을 기록했다. 이는 정상 no-op 실측이며 candidate QA/handoff나 실제 scheduled invocation은 아니다.
 
-이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
+이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 사용자 요청에 따라 제품 사용자 관찰은 참가자 확보만으로 병행하지 않고,
+[제품 평가·엔진 통합·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)의 A–G가 끝난 뒤 최종 검증으로 진행한다. 유지보수 실행 결과는
+제품 사용성이나 Gate 증거로 세지 않는다.
 
 ## 안전 조건과 미결 설계 결정
 

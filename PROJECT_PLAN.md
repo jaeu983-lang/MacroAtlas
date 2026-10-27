@@ -12,6 +12,7 @@
 | 이 문서 | 제품 요구사항, 엔진 경계, 데이터·품질 정책, 현재 범위, 통합 실행 순서 |
 | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | 구현·Gate 상태와 검증 증거의 현황표. 요구사항이나 우선순위를 새로 만들지 않음 |
 | [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md) | 이 문서에서 파생한 짧은 실행 순서. 독립 기준이 아님 |
+| [`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md) | §11의 평가·시계열·Excel 작업을 회차별로 구현하는 상세 일정. 제품 범위·정책은 이 문서에 종속됨 |
 | [`docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md`](docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md) | 엔진·피드백·평가·최신성·출력 항목별 구현 대조 |
 | [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md), [`docs/KNOWLEDGE_ENGINE_PLAN.md`](docs/KNOWLEDGE_ENGINE_PLAN.md), [`docs/SERIES_FRESHNESS.md`](docs/SERIES_FRESHNESS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md), [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md) | 해당 하위 기능의 상세 계약. 현재 우선순위와 완료 여부는 이 문서 및 구현 증거를 따름 |
 | `docs/ITERATION_*_PLAN.md`, `docs/*_REPORT.md`, Gate·live 기록 | 과거 범위·실행·검증 증거. 과거 계획을 현재 구현으로 간주하지 않음 |
@@ -194,23 +195,23 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 
 ## 11. 통합 실행 순서와 완료 조건
 
-아래 순서는 제품 작업 간 의존성과 현재 미완료 상태를 통합한 기준이다. 데이터 파이프라인과 maintenance tool은 서로 다른 workstream으로 관리한다. 사용자 관찰 23회차는 명시적으로 마지막 단계다.
+아래 순서는 제품 작업 간 의존성과 현재 미완료 상태를 통합한 기준이다. A–G 제품 작업의 회차별 구현·검증은 [상세 실행 일정](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md)에 구체화한다. 데이터 파이프라인과 maintenance tool은 서로 다른 workstream으로 관리한다. 사용자가 요청한 23회차 분석가 관찰은 A–G 검증을 모두 마친 뒤 마지막 제품 검증으로 둔다.
 
 | 순서 | Workstream | 작업 | 완료 조건 |
 |---:|---|---|---|
-| 1 | 평가 | 검토·비식별화된 사례를 development set에 추가하고 contrast group을 검토한다. Validation/holdout은 사례 근거와 review/hash update가 함께 있을 때만 고정한다. | 세 set이 실제 사례를 포함하고 structural/leakage/hash 검증에 통과. Synthetic 사례는 `synthetic`으로만 표시하고 사용자 evidence로 세지 않음 |
-| 2 | 평가 | 공통 EngineOutcome adapter와 baseline/candidate runner를 구현한다. | 동일 case version의 state/target/ranking/근거/금지 동작 비교, 유형별 결과 및 false confirmation 집계 재현 |
-| 3 | 규칙 | explicit promotion record와 rollback 추적을 구현한다. | 검증/holdout 및 금지 동작·false confirmation gate 통과, reviewer·applied commit·rollback 기록 완료 전에는 미승격 |
-| 4 | 시계열 모델 | 공통 typed Series/ObservationBatch를 설계하고 World Bank·BOJ 고정 경로에 먼저 연결한다. | source identity, field, currency/unit, frequency/calendar, period, override, raw/source provenance와 unknown 보존; 기존 raw/hash 계약 유지 |
-| 5 | 원자료 출력 | 개별 호환 series의 XLSX 원자료 출력 및 provenance를 구현한다. | 파일 경계/no-overwrite 검증, source 값과 결측 보존, stale/unverified 차단, 지원 connector별 fixture와 실제 저장 task 확인 |
-| 6 | 비교 출력 | 다중 series worksheet 분리와 alignment sheet를 구현한다. | compatibility rule, date/calendar, 집계/변환식, 결측 빈칸, overlap 충돌 보존/검토, 보간·forward-fill 금지를 회귀 테스트 |
+| 1 | 평가 사례·피드백 bridge | 검토·비식별화 사례를 development에 추가하고 family 단위 split/leakage를 검사한다. 기존 피드백은 검토 후 사례 초안으로만 전달한다. | 세 set의 schema·근거·누수·hash 검사 통과. 자동 사례/규칙 승격 금지. 상세 구현은 28–29회차 |
+| 2 | 평가 | 동일 사례 버전으로 baseline/candidate 상태·target·ranking·근거·금지 동작을 비교한다. | 유형별 결과와 false confirmation을 재현 가능하게 집계하고, 미목표 유형 퇴행·false-exact·금지 동작 0건. 상세 구현은 30–31회차 |
+| 3 | 규칙 | 명시적 promotion record와 적용/rollback 추적을 구현한다. | reviewer·근거·적용 commit·rollback이 연결되고 validation/holdout gate 통과 전에는 미승격. 상세 구현은 32회차 |
+| 4 | 시계열 모델·최신성 | 공통 typed Series/Observation을 World Bank·BOJ부터 만들고 주기별·시리즈별 freshness gate를 연결한다. | source identity, field, currency/unit, frequency/calendar, period, override, raw/source provenance와 unknown을 보존. latest 요청의 `STALE`/`FRESHNESS_UNVERIFIED` 차단. 상세 구현은 33–37회차 |
+| 5 | 원자료 출력 | 개별 호환 series의 XLSX 원자료 출력 및 provenance를 구현한다. | 파일 경계/no-overwrite 검증, source 값·결측 보존, stale/unverified 차단, 지원 connector별 fixture와 저장 task 확인. 상세 구현은 38회차 |
+| 6 | 비교 출력 | 호환성 정책에 따른 worksheet 분리와 별도 alignment sheet를 구현한다. | date/calendar·변환식·결측 빈칸·겹침 충돌 보존/검토를 명시하고 보간·forward-fill을 금지. 상세 구현은 39회차 |
 | 7 완료 | 성능 계측 | 공통 Orchestrator의 stage wall time을 monotonic clock으로 기록하고, 가능한 엔진은 network, raw/write, parse, quality, SQLite/export/worker 하위시간을 구분한다. | 개인정보 없는 `performance.sqlite`, read-only p50/p95·처리량 보고, knowledge latency 및 cache 상태를 구현. 161 fixture/stored 표본 기준선은 실제 API 지연을 증명하지 않는다. [PR #56](https://github.com/jaeu983-lang/MacroAtlas/pull/56) |
 | 8 완료 | 엔진 조립 | 측정 기록 이후 provider별 mapping을 더 쉽게 검토·등록하도록 공통 composition registry를 연결한다. | 같은 Orchestrator lifecycle에서 World Bank·BOJ·BLS·Census/Gate C adapters를 등록하고 저장 plan의 version 검증·재개가 회귀 없이 동작한다. 출처 adapter를 합치지 않으며 성능 개선은 별도 계측 근거가 있을 때만 수행한다. |
 | 9 | 유지보수 | Windows changed-candidate/handoff 및 failure-recovery pilot을 실측한다. | candidate SHA, 동일 SHA QA, allowlist, 실패/no-push, cleanup 및 handoff report 확인 |
 | 10 | 유지보수 | scheduler invocation은 정책을 확인한 뒤 별도 검증한다. | 등록 여부와 무관하게 우선 정적/dry-run 검증. 명시 승인 전까지 예약 작업은 비활성으로 유지하고 실제 invocation을 임의로 주장하지 않음 |
 | 11 | 유지보수 | 실행 시간 추정과 statistical metadata/quality를 실제 승인 작업에서 보정한다. | operation별 paired forecast가 3건 쌓인 후 error 재평가. 선택된 실제 series의 정의·단위·주기·calendar·revision evidence를 확인 |
 | 12 | 확장 | 반복 실수요가 확인된 provider/file format 하나를 선정해 qualification한다. | 공식 source contract, 예산, cancel/orphan recovery, 단위 정상/실패 evidence를 하나의 범위에서 통과. 전 기관 지원으로 일반화하지 않음 |
-| 13 / 23회차 | 사용자 검증 | 실제 분석가 1–2명이 저장 결과→파일 전달 흐름을 수행하는 관찰 | 참여자 동의·익명 기록, 업무 성공/실패·오해·수동 시간·재사용 여부를 기록. 참가자 evidence 없이 usability 통과 선언 금지. **모든 기술 workstream 뒤 마지막 순서** |
+| 40 / 23회차 | 최종 사용자 검증 | 실제 분석가 1–2명이 검증된 원자료·비교 workbook과 피드백 기록 흐름을 관찰한다. | 28–39회차 A–G gate 통과, 참가자 동의·익명 기록, 업무 성공/실패·오해·수동 시간 기록. 참가자 evidence 없이 usability 통과 선언 금지. **마지막 제품 검증** |
 
 회차 한 번에는 하나의 번호가 붙은 High scope만 구현한다. 현재 gate가 실패하면 의존하는 다음 구현을 통과 처리하지 않는다. 순서를 바꿀 때는 영향·이유·새 수용 기준을 기록하고 미통과 gate는 그대로 남긴다.
 
@@ -220,7 +221,7 @@ PR #34 이후 공통 maintenance QA, isolated updater, candidate SHA handoff, Wi
 
 ## 12. 완료·검토 규칙
 
-각 변경은 문제와 사용자 영향, 입출력 contract, 최소 정상·실패 사례, 데이터 완전성·보안 영향, 회귀 검증, 남은 한계를 포함한다. Tests, lint, diff 검사와 필요 CI를 실행한다. Fixture, synthetic, live evidence를 구분한다. 코드나 문서에 “완료”라고 적으려면 현재 branch/base에서 해당 범위에 맞는 증거가 있어야 한다.
+각 변경은 문제와 사용자 영향, 입출력 contract, 최소 정상·실패 사례, 데이터 완전성·보안 영향, 회귀 검증, 남은 한계를 포함한다. Tests, lint, diff 검사와 필요 CI를 실행한다. Fixture, synthetic, live evidence를 구분한다. 코드나 문서에 “완료”라고 적으려면 현재 branch/base에서 해당 범위에 맞는 증거가 있어야 한다. 28–39회차 계획과 구현 기록은 위 표와 상세 실행 일정에 연결하고, 23회차 분석가 관찰은 그 모든 제품 gate 뒤에만 수행한다.
 
 외부 데이터 변경, 의미 판단, 새 credential, 라이선스·접근권, 원본 덮어쓰기, 자동 promotion/merge/publish는 명시된 안전 경계와 검토 승인을 따라야 한다. 정상적인 reversible 코드·문서 변경은 전용 branch에서 진행하고 human review PR로 제공한다.
 
@@ -231,4 +232,5 @@ PR #34 이후 공통 maintenance QA, isolated updater, candidate SHA handoff, Wi
 - 통합/유지보수 설계: [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md), [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)
 - 사용자 흐름·출력: [`docs/WORKFLOW_ALIGNMENT_PLAN.md`](docs/WORKFLOW_ALIGNMENT_PLAN.md), [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)
 - scenario/evaluation: [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
+- A–G 회차별 실행·검증: [`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md)
 - 과거 실행 결과·변경 이유: `docs/ITERATION_*_REPORT.md`, [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md)
