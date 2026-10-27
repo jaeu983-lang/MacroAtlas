@@ -11,11 +11,11 @@ history ready for later resume.
 .\.venv\Scripts\macroatlas.exe watch bis --live
 ```
 
-The TIC profile fixes Table 5's official TXT URL, tab delimiter and header row 6. The BIS profile fixes
-`WS_GLI_csv_col.zip` and preserves the verified parser scope: a single supported table member is
-selected automatically. Capture time, HTTP status and content type are recorded as provenance but do
-not change the comparison scope. The request is bounded to one GET, 30 seconds and 16 MiB, with TLS
-verification, configured proxy/CA use, redirects disabled and no automatic retry.
+The TIC source URL ends in `.txt`, but its exact comparison profile uses the TSV parser and header row 6.
+The BIS profile fixes `WS_GLI_csv_col.zip` and explicitly selects its verified member
+`WS_GLI_csv_col.csv`. Capture time, HTTP status, content type and `Last-Modified` are recorded as
+provenance but do not change the comparison scope. The request is bounded to one GET, 30 seconds and
+16 MiB, with TLS verification, configured proxy/CA use, redirects disabled and no automatic retry.
 
 Both profiles store raw bytes and a manifest before parsing. If the exact-scope bytes change or the
 previous manifest cannot be verified, the new raw is retained and the parser returns `NEEDS_REVIEW`
@@ -37,6 +37,17 @@ clears and any `Retry-After` delay elapses. Keep the task ID unchanged.
 
 This watch is manual and does not create a recurring job. Natural source changes and natural
 failure-to-resume remain outside the current limited Gate C pass until observed.
+
+## Exact-scope profile audit — 2026-10-27
+
+Before the next live comparison, the preserved raw manifests were checked read-only against the
+requested baselines: TIC SHA256 `e5de973b1a6f13c8ec95707d665ce107f53f467db10d7a2d991677ee67d1de11`
+with TSV/header row 6, and BIS SHA256
+`aa52afce4e18214831cfa00d3cb5aef76db04c375dc6d3346e99f0568bdd9c1d` with ZIP member
+`WS_GLI_csv_col.csv`. The existing watcher profile had drifted to TXT plus extra TIC scope metadata
+and BIS automatic member selection. The profile was corrected to match these exact baseline scopes
+before issuing another request. This local audit made no source request and is not natural change or
+provider failure evidence.
 
 ## Post-merge monitoring — 2026-10-26
 

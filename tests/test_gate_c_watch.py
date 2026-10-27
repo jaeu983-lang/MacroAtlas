@@ -52,6 +52,25 @@ class FixtureTransport:
 
 
 class GateCWatchTests(unittest.TestCase):
+    def test_live_profiles_match_preserved_exact_baseline_scopes(self):
+        self.assertEqual({
+            key: PROFILES["tic"][key]
+            for key in ("url", "format", "header_row", "source_agency")
+        }, {
+            "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt",
+            "format": "tsv", "header_row": 6,
+            "source_agency": "U.S. Department of the Treasury",
+        })
+        self.assertNotIn("delimiter", PROFILES["tic"])
+        self.assertNotIn("source_table_name", PROFILES["tic"])
+        self.assertEqual({
+            key: PROFILES["bis"][key]
+            for key in ("url", "format", "zip_member", "source_agency")
+        }, {
+            "url": "https://data.bis.org/static/bulk/WS_GLI_csv_col.zip",
+            "format": "zip", "zip_member": "WS_GLI_csv_col.csv", "source_agency": "BIS",
+        })
+
     def test_live_transport_uses_configured_proxy_ca_and_fixed_url(self):
         class Response:
             def __init__(self):
