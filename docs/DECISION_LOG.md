@@ -840,3 +840,16 @@ push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 reten
 그러나 response의 structured `unit` 값은 빈 문자열이고 frequency/periodicity field가 없다. 따라서 이 결과는
 indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
 원본 manifest, 과거 quality report는 변경하지 않고 unit/frequency unknown을 유지한다.
+
+## D-095 — 평가 사례 v1 계약과 근거 부족 시 gate 차단
+
+2026-10-27. Iteration 28에서 `EvaluationCase` v1, JSONL reader, 고정 candidate snapshot 및 SHA-256 manifest를 추가한다.
+요청 snapshot은 기존 `DataRequest` 계약으로 검증하고, unknown/conflict 기대 필드는 근거가 연결되고 해당 후보의 기대 상태가
+`review_required`여야 한다. Excel 기대 정책은 원본 시계열 분리, 겹치는 값의 보존/검토, 원본 period 기준, 집계·변환·보간·
+forward-fill 없음, 결측 빈칸으로 고정한다. 이 계약과 사례 파일은 평가 실행이나 runtime rule 변경을 수행하지 않는다.
+
+초기 목표는 36 case, split별 12개, split마다 유형별 3개다. 현재 checkout에서 공식 근거와 보존 raw/report로 뒷받침할 수 있는
+고정 후보는 WDI USA GDP 하나라 9개 starter case만 수록한다. 근거가 저장되지 않은 BLS/Census 테스트용 합성 metadata를 gold
+candidate로 승격하지 않고, 같은 개념의 정답/오답 후보 쌍도 만들지 않는다. 따라서 case corpus manifest는 `blocked`이며
+near-match 0건과 유형·split 부족을 정확히 기록한다. 이 상태는 Iteration 28 gate 통과가 아니고, 이후 split/evaluator 작업으로
+진행할 수 없다. 보류를 해제하려면 공식 근거·무결성 검증이 가능한 추가 candidate snapshot과 근접 distractor가 먼저 필요하다.

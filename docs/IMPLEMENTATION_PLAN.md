@@ -9,6 +9,12 @@
 
 ## 현재 상태 — 2026-10-27
 
+28회차 평가 사례 v1 작업 branch에서는 엄격한 계약/JSONL reader와 고정 WDI candidate snapshot을 구현하고 근거 파일 hash를
+검증한다. 시작 코퍼스는 9개(개발·검증·보류 split 각 3개)이며 유형별로 rankable 3, insufficient_evidence 3, unrelated 3,
+near_match 0이다. 36개 목표, split별 12개, 유형별 3개 기준을 충족하지 못해 gate는 차단 상태다. BLS/Census의 synthetic test
+metadata를 정답 근거로 승격하지 않았다. [28회차 보고서](ITERATION_28_REPORT.md)를 따른다. 이 코퍼스는 PR 검토 중인 branch 자산이며
+통합된 기본 동작으로 간주하지 않는다.
+
 19회차 BIS flat 대용량 production handoff는 PR #6으로 통합되어 보존 원본 1건에서 실제 실행됐다. 이 실행은
 정해진 BIS flat scope의 구조 보존 materialization이며 Gate C natural evidence나 일반 기관·파일 지원 확대가
 아니다. 구현 계약과 당시 실측은 [19회차 기획안](ITERATION_19_PLAN.md), [19회차 보고서](ITERATION_19_REPORT.md)를 따른다.
@@ -110,6 +116,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 22 | 비API qualification과 BIS production/resume 전에 실행 시간·범위·신뢰도를 표시하고 실측 history로 shadow forecast를 계산; PR #10 통합 | 현재 catalog 표본 qualification 15, production 1, paired forecast 0. 예측 정확도는 낮은 신뢰도 상태 |
 | 23 | 저장 결과→CSV 업무 관찰 protocol·시나리오·동의와 익명 기록 절차 준비; PR #11 통합 | 실제 분석가 참가 세션 미실행. 실제 사용성 판단은 독립 참가자 관찰 후 수행 |
 | 24 | pytest/Ruff/diff/CLI/health를 공통 Python runner로 통합, Windows wrapper 및 report/log artifacts; PR #12 통합 | read-only analyzer와 updater→candidate QA handoff는 엔진 통합 계획의 후속 단계 |
+| 28 (gate 차단) | `EvaluationCase` v1 계약/validator/JSONL reader, 고정 WDI candidate snapshot, SHA-256 manifest와 근거 파일 검증; 9개 starter case | 36개 목표 및 near-match distractor evidence 부족. 평가 실행기·피드백 bridge·rule promotion은 미구현. [28회차 보고서](ITERATION_28_REPORT.md) |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
