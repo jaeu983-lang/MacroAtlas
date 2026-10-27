@@ -18,17 +18,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install project and test tools
         run: python -m pip install -e ".[dev]"
-      - name: Run test suite
-        run: python -m pytest -q
-      - name: Check style
-        run: python -m ruff check .
-      - name: Check installed CLI entry point
+      - name: Run shared maintenance checks through Windows wrapper
+        if: runner.os == 'Windows'
+        shell: powershell
         run: |
-          macroatlas --help
-          macroatlas collect --help
+          $PythonPath = (Get-Command python).Source
+          & .\scripts\run_checks.ps1 -PythonPath $PythonPath
+      - name: Run shared maintenance checks on Linux
+        if: runner.os != 'Windows'
+        run: python scripts/run_maintenance_qa.py
+      - name: Upload maintenance QA report and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-qa-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: reports/maintenance_qa_*/
+          if-no-files-found: warn

@@ -42,7 +42,9 @@ MacroAtlas가 풀려는 일은 “기관 이름을 검색하는 것” 자체가
 로그는 task와 artifact 참조를 사용하고 API secret이나 불필요한 원본 본문을 복제하지 않습니다.
 
 유지보수 analyzer는 운영 source data path와 별도입니다. 기본은 read-only 분석이며, 제안 검토·구현·검증·push는
-명시된 개발 작업으로 분리합니다. analyzer가 만든 제안은 코드 변경·승인·merge가 아닙니다.
+명시된 개발 작업으로 분리합니다. analyzer가 만든 제안은 코드 변경·승인·merge가 아닙니다. 현행 `pattern_cli`,
+`run_improvement.ps1`, `run_maintenance_qa.py`, `run_checks.ps1`은 하나의 완결된 updater가 아니며, 목표 통합 구조와
+도입 순서는 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 둡니다.
 
 ## 3. 목표 구조: 제어면·자료면·증거면
 
@@ -70,7 +72,12 @@ flowchart LR
     CHECK --> EVID
     VERIFIED --> EVID
     EXPORT --> USER
-    ANALYZER[유지보수 QA 도구] -. 별도 개발 흐름 .-> CODE[격리 worktree · 테스트 · 검토]
+    subgraph DEV[개발자 유지보수 흐름 · 제품 데이터 경로와 분리]
+        ANALYZER[read-only 이력 분석] --> PLAN[근거 기반 변경 계획]
+        PLAN --> CODE[격리 branch/worktree의 updater]
+        CODE --> QA[candidate SHA 검증]
+        QA --> REVIEW[보고서 · PR · 사람 검토]
+    end
 ```
 
 **제어면**은 요청·task·stage·resume 예산·명시 선택을 관리합니다. 현재 Orchestrator는 순차 stage runner이며,
