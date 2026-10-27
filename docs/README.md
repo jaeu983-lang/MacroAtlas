@@ -75,3 +75,6 @@
 개발자 측 analyzer와 Codex updater는 아직 별도 흐름입니다. 중복을 줄일 목표 구조와 구현 순서는
 [엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)에 기록했습니다. 24회차에서 QA·health 검사 경로는 공통 Python
 runner로 통합했습니다. Analyzer와 updater handoff, 예약 설정은 후속 단계이며 아직 바꾸지 않았습니다.
+
+다음 실제 사용자 관찰의 진행 절차와 기록표는 [23회차 계획](ITERATION_23_PLAN.md)에 있습니다. 계획 문서는 참가자
+세션을 수행했다는 증거가 아닙니다.

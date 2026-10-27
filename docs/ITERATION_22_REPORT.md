@@ -37,5 +37,5 @@
 실제 유사 workload가 축적돼야 엔진별 오차와 보정 정확도를 평가할 수 있다. 큰 파일의 row-count extrapolation도
 bounded prefix 기준이며, preview가 원본 무결성이나 실행 적격성을 검증하지 않는다.
 
-이번 회차는 외부 수집, 실제 보존 원본 production 재실행, Gate C 재판정, merge 또는 publish를 수행하지 않았다.
-구현은 리뷰 branch/PR에 제출하며 병합 전 사람 검토를 기다린다.
+이번 회차는 외부 수집, 실제 보존 원본 production 재실행, Gate C 재판정 또는 환경 publish를 수행하지 않았다.
+구현은 PR #10으로 사람 검토 후 통합됐으며 현재 base merge HEAD는 `1a00c1854a077d5e38ee6db77f523c13ebee4aae`다.
