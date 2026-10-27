@@ -76,8 +76,10 @@ worktree로 격리하고 허용 경로를 검사한 뒤 candidate commit→동�
 worktree와 생성 branch를 정리하고, QA 실패·범위 밖 변경은 push하지 않는다. 자동 merge/publish 권한은 없다.
 
 남은 검증은 실제 Windows 환경에서 감독자가 시작하는 Codex pilot 1회와 scheduler 중복 실행·base ref·로그 보존 확인이다.
-Codex CLI를 사용할 수 없는 현재 작업 환경에서는 실제 updater pass를 실행하지 않았다. 이 개발자 workflow 작업은 제품 data
-engine, Gate C 원자료 증거 또는 서버 접속 상태와 별도다. 구현 근거는 [26회차 보고서](ITERATION_26_REPORT.md)에 있다.
+Linux에서 첫 updater 시작을 시도했지만 설치된 Codex CLI가 approval 옵션 순서를 거부해 prompt 실행 전에 종료됐다. worktree는
+변경 없이 정리했고 candidate/QA/push/PR은 만들지 않았다. CLI 인자 호환성 수정과 preflight 후 pilot을 다시 확인한다. 이 개발자 workflow 작업은 제품 data
+engine, Gate C 원자료 증거 또는 서버 접속 상태와 별도다. 구현 근거는 [26회차 보고서](ITERATION_26_REPORT.md)와
+[CLI 호환성 후속 기록](ITERATION_26_FOLLOWUP_REPORT.md)에 있다.
 
 ## 다음 작업 우선순위
 

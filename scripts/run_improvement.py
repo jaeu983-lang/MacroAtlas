@@ -100,13 +100,34 @@ def _run_codex(worktree, prompt, log_path, timeout):
         raise FileNotFoundError("Codex CLI not found")
     with log_path.open("wb") as log:
         return subprocess.run(
-            [codex, "exec", "--sandbox", "workspace-write", "--ask-for-approval", "never", prompt],
+            [codex, "--ask-for-approval", "never", "exec", "--sandbox", "workspace-write", prompt],
             cwd=worktree,
             stdout=log,
             stderr=subprocess.STDOUT,
             timeout=timeout,
             check=False,
         )
+
+
+def _validate_codex_cli(root, codex):
+    result = subprocess.run(
+        [
+            codex,
+            "--ask-for-approval",
+            "never",
+            "exec",
+            "--sandbox",
+            "workspace-write",
+            "--help",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if result.returncode:
+        raise ValueError("installed Codex CLI does not support the configured safe exec options")
 
 
 def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
@@ -135,6 +156,7 @@ def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
     for executable in ("codex", "gh"):
         if not shutil.which(executable):
             raise FileNotFoundError(f"{executable} CLI not found")
+    _validate_codex_cli(root, shutil.which("codex"))
 
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
     branch = f"agent/improvement-{run_id}"
