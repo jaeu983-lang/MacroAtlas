@@ -1,8 +1,8 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: 최신 병합 HEAD는 PR #28의 `bb94bba38711002adb7fb4948ef5643c3d54b628`이며 PR #1–#28이 통합됐다. PR #23–#26에서 qualification/운영 이력과 기관·dataset scope 근거를 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 이 문서는 Gate C 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
+> 2026-10-27 갱신: 기준 HEAD는 PR #33 병합 commit `566c73737ba19bf75389ae21b8aea75dc0afad9e`이며 PR #1–#33이 통합됐다. PR #23–#26에서 qualification/운영 이력과 기관·dataset scope 근거를 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 남은 제품 과제는 Gate C 자연 원자료 변경, 대용량 예측 보정, 통계 의미 검증, 지원 확대와 사용자 관찰이다. updater scheduler 안전장치 및 Windows 추가 pilot은 아래 별도 상태를 따른다.
 
-후속 상태: PR #17–#28이 모두 병합됐다. 첫 Linux updater 시도는 token refresh `401`로 막혔으나 device-code 재인증 후 candidate QA/PR handoff가 성공했고 PR #28이 통합됐다. Windows supervised pilot과 scheduler 검토는 남아 있다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 결과를 기록했다.
+후속 상태: PR #17–#33이 모두 병합됐다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup은 확인됐다. scheduler용 명시 base/Python/principal, 교차 프로세스 lock, 제한 retention 및 설치 없는 dry-run을 구현·검증하는 후속 PR을 진행 중이며, Windows changed/failure pilot 전까지 task는 비활성으로 둔다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 결과를 기록한다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -77,15 +77,15 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 worktree로 격리하고 허용 경로를 검사한 뒤 candidate commit→동일 SHA QA→통과 시 push/PR 흐름을 연결한다. no-op에서는 작업
 worktree와 생성 branch를 정리하고, QA 실패·범위 밖 변경은 push하지 않는다. 자동 merge/publish 권한은 없다.
 
-남은 검증은 실제 Windows 환경에서 감독자가 시작하는 Codex pilot과 scheduler 중복 실행·base ref·로그 보존 확인이다.
-Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 재인증 뒤 updater가 candidate QA/PR handoff까지 완료했고 PR #28이 병합됐다. Windows 환경의 updater와 사용자 세션은 아직 검증하지 않았다. 이 개발자 인증 이슈는 제품 data engine, Gate C 원자료 증거 또는 기관 서버 상태와 별도다. 상세 이력은 [26회차 차단 기록](ITERATION_26_PILOT_BLOCKER_REPORT.md)과 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 있다.
+Windows pilot의 no-op/cleanup은 통과했다. scheduler base/Python/principal, manual/scheduled 공통 lock, `ALREADY_RUNNING`, 제한적인 90일 report retention은 코드에 반영하고 CI로 확인한다. 남은 검증은 실제 Windows changed-candidate 및 실패 경로이며, 그때까지 scheduler를 설치하거나 활성화하지 않는다.
+Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 재인증 뒤 updater가 candidate QA/PR handoff까지 완료했고 PR #28이 병합됐다. Windows 사용자 세션에서는 updater no-op/cleanup이 통과했다. scheduler 가드와 설치 없는 installer dry-run은 코드 수준으로 보완 중이며 Windows changed/failure pilot과 실제 scheduler 동작은 아직 확인하지 않았다. 이 개발자 인증 이슈는 제품 data engine, Gate C 원자료 증거 또는 기관 서버 상태와 별도다. 상세 이력은 [26회차 차단 기록](ITERATION_26_PILOT_BLOCKER_REPORT.md)과 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 있다.
 
 ## 다음 작업 우선순위
 
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#28 병합. 최신 base는 `bb94bba38711002adb7fb4948ef5643c3d54b628`. updater Linux candidate path는 device-code 재인증 뒤 통과·병합됐으며 supervised Windows pilot과 Gate C 자연 증거는 별도로 남아 있다.
+1. **완료:** PR #1~#33 병합. 기준 base는 `566c73737ba19bf75389ae21b8aea75dc0afad9e`. updater Linux candidate path와 Windows no-op/cleanup은 통과했으며 Gate C 자연 원자료 변경은 별도로 남아 있다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.

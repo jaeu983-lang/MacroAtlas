@@ -11,6 +11,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from maintenance_retention import prune_reports
+
 _COMMIT_SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 
 
@@ -160,6 +164,7 @@ def run(root, *, timeout=600, candidate=None, base=None):
         else:
             report["cleanup"] = "NOT_NEEDED"
         report["finished_at"] = datetime.now(UTC).isoformat()
+        report["retention"] = prune_reports(root, report_type="maintenance_qa")
         (run_dir / "report.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )

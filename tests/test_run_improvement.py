@@ -1,6 +1,8 @@
 """Tests for bounded maintenance update planning and path isolation."""
 import importlib.util
+import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -162,6 +164,52 @@ def test_dry_run_resolves_origin_head_without_creating_worktree_or_report(tmp_pa
     assert report["network_requested"] is False
     assert path is None
     assert not (tmp_path / "reports").exists()
+
+
+def test_update_lock_is_exclusive_across_processes_and_released(tmp_path):
+    lock = maintenance._try_acquire_update_lock(tmp_path)
+    assert lock is not None
+    script = Path(__file__).parents[1] / "scripts/run_improvement.py"
+    child_code = (
+        "import importlib.util, pathlib, sys; "
+        "p=pathlib.Path(sys.argv[1]); "
+        "s=importlib.util.spec_from_file_location('child_updater', p); "
+        "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+        "h=m._try_acquire_update_lock(pathlib.Path(sys.argv[2])); "
+        "print('LOCKED' if h else 'BUSY'); "
+        "m._release_update_lock(h) if h else None"
+    )
+
+    busy = subprocess.run(
+        [sys.executable, "-c", child_code, str(script), str(tmp_path)],
+        check=True, capture_output=True, text=True, timeout=20,
+    )
+    maintenance._release_update_lock(lock)
+    acquired = subprocess.run(
+        [sys.executable, "-c", child_code, str(script), str(tmp_path)],
+        check=True, capture_output=True, text=True, timeout=20,
+    )
+
+    assert busy.stdout.strip() == "BUSY"
+    assert acquired.stdout.strip() == "LOCKED"
+
+
+def test_lock_contention_returns_persisted_already_running_without_starting_updater(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(maintenance, "_try_acquire_update_lock", lambda root: None)
+    monkeypatch.setattr(
+        maintenance, "_run_unlocked", lambda *args, **kwargs: pytest.fail("updater started")
+    )
+
+    report, path = maintenance.run(tmp_path, base_ref="origin/main")
+
+    assert report["status"] == "ALREADY_RUNNING"
+    assert report["network_requested"] is False
+    assert json.loads(path.read_text(encoding="utf-8"))["status"] == "ALREADY_RUNNING"
+    assert not (
+        tmp_path / "reports" / f"improvement_{report['run_id']}" / "checkout"
+    ).exists()
 
 
 def test_missing_origin_head_requires_explicit_base_ref(tmp_path):

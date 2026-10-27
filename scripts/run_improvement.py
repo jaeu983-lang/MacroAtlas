@@ -1,5 +1,6 @@
 """Run a bounded developer maintenance update on an isolated branch/worktree."""
 import argparse
+import errno
 import json
 import os
 import re
@@ -9,6 +10,10 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from uuid import uuid4
+
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from maintenance_retention import prune_reports
 
 
 def _git(root, *args, check=True, text=True, timeout=None):
@@ -217,8 +222,8 @@ def _codex_failure_kind(log_path):
     return "AUTHENTICATION_REQUIRED" if any(marker in log_text for marker in auth_markers) else None
 
 
-def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
-        timeout=3600, dry_run=False):
+def _run_unlocked(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
+                  timeout=3600, dry_run=False):
     root = Path(root).resolve()
     if timeout <= 0:
         raise ValueError("timeout must be positive")
@@ -413,6 +418,96 @@ def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
     return report, report_path
 
 
+def _try_acquire_update_lock(root):
+    lock_path = Path(root) / "reports" / ".run_improvement.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = lock_path.open("a+b")
+    handle.seek(0, os.SEEK_END)
+    if handle.tell() == 0:
+        handle.write(b"\0")
+        handle.flush()
+    handle.seek(0)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as exc:
+        handle.close()
+        contention_errors = {errno.EACCES, errno.EAGAIN}
+        if hasattr(errno, "EDEADLK"):
+            contention_errors.add(errno.EDEADLK)
+        if exc.errno in contention_errors or getattr(exc, "winerror", None) in {32, 33, 36}:
+            return None
+        raise
+    return handle
+
+
+def _release_update_lock(handle):
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    finally:
+        handle.close()
+
+
+def _busy_report(root, task_file, base_ref):
+    run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
+    run_dir = Path(root) / "reports" / f"improvement_{run_id}"
+    run_dir.mkdir(parents=True)
+    now = datetime.now(UTC).isoformat()
+    report = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "status": "ALREADY_RUNNING",
+        "base_ref": base_ref,
+        "task_file": task_file,
+        "changed_paths": [],
+        "push_status": "NOT_RUN",
+        "pull_request": None,
+        "network_requested": False,
+        "reason": "another maintenance updater owns the repository lock",
+        "started_at": now,
+        "finished_at": now,
+    }
+    report_path = run_dir / "report.json"
+    _write_report(report_path, report)
+    return report, report_path
+
+
+def run(root, *, task_file="prompts/weekly_improvement.md", base_ref=None,
+        timeout=3600, dry_run=False):
+    root = Path(root).resolve()
+    if dry_run:
+        return _run_unlocked(
+            root, task_file=task_file, base_ref=base_ref, timeout=timeout, dry_run=True
+        )
+    lock = _try_acquire_update_lock(root)
+    if lock is None:
+        return _busy_report(root, task_file, base_ref)
+    try:
+        report, report_path = _run_unlocked(
+            root, task_file=task_file, base_ref=base_ref, timeout=timeout, dry_run=False
+        )
+        if report_path is not None:
+            report["retention"] = prune_reports(root, report_type="improvement")
+            _write_report(report_path, report)
+        return report, report_path
+    finally:
+        _release_update_lock(lock)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
@@ -435,7 +530,9 @@ def main(argv=None):
     if path is not None:
         report["report"] = str(path)
     print(json.dumps(report))
-    return 0 if report["status"] in {"DRY_RUN", "NO_ACTIONABLE_CHANGE", "PULL_REQUEST_CREATED"} else 1
+    return 0 if report["status"] in {
+        "DRY_RUN", "NO_ACTIONABLE_CHANGE", "PULL_REQUEST_CREATED", "ALREADY_RUNNING"
+    } else 1
 
 
 if __name__ == "__main__":
