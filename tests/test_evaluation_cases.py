@@ -259,3 +259,73 @@ def test_unreviewed_gdp_total_vs_per_capita_draft_stays_outside_fixed_corpus():
     assert len(corpus.cases) == 9
     assert case.case_id not in {item.case_id for item in corpus.cases}
     assert candidate.candidate_id not in {item.candidate_id for item in corpus.candidates}
+
+
+@pytest.mark.parametrize(("filename", "split", "relevant_id", "forbidden_id"), [
+    (
+        "worldbank_cpi_inflation_vs_index_near_match.json",
+        "validation",
+        "worldbank:2:USA:FP.CPI.TOTL.ZG",
+        "worldbank:2:USA:FP.CPI.TOTL",
+    ),
+    (
+        "worldbank_population_total_vs_urban_share_near_match.json",
+        "holdout",
+        "worldbank:2:USA:SP.POP.TOTL",
+        "worldbank:2:USA:SP.URB.TOTL.IN.ZS",
+    ),
+])
+def test_official_metric_near_match_drafts_are_validated_but_not_promoted(
+        filename, split, relevant_id, forbidden_id):
+    draft_path = ROOT / "tests/fixtures/evaluation/drafts" / filename
+    draft = json.loads(draft_path.read_text(encoding="utf-8"))
+    assert draft["draft_status"] == "independent_review_pending"
+    assert draft["intended_split"] == split
+    assert draft["authorship"] == {
+        "origin": "assistant_simulated",
+        "human_observed": False,
+        "independent_review_completed": False,
+    }
+
+    case = EvaluationCase.from_dict(draft["case"])
+    candidates = tuple(Candidate.from_dict(draft[key])
+                       for key in ("candidate", "distractor_candidate"))
+    assert case.case_type == "near_match"
+    assert case.relevant_candidate_ids == (relevant_id,)
+    assert case.forbidden_candidate_ids == (forbidden_id,)
+    assert {candidate.candidate_id for candidate in candidates} == {
+        relevant_id, forbidden_id,
+    }
+    assert all(candidate.support_status == "unsupported" for candidate in candidates)
+    assert case.expected_fields[relevant_id]["unit"]["state"] == "unknown"
+    assert case.expected_fields[relevant_id]["frequency"]["state"] == "unknown"
+    for evidence in case.required_evidence:
+        evidence_path = ROOT / evidence["local_ref"]
+        assert hashlib.sha256(evidence_path.read_bytes()).hexdigest() == evidence["sha256"]
+    for candidate in candidates:
+        for evidence in candidate.evidence:
+            evidence_path = ROOT / evidence.original_ref.split(":", 1)[0]
+            assert evidence_path.is_file()
+
+    corpus = load_corpus(CORPUS)
+    assert len(corpus.cases) == 9
+    assert case.case_id not in {item.case_id for item in corpus.cases}
+    assert {candidate.candidate_id for candidate in candidates}.isdisjoint(
+        {item.candidate_id for item in corpus.candidates}
+    )
+
+
+def test_near_match_draft_batch_has_no_text_template_leakage_across_splits():
+    draft_names = (
+        "worldbank_gdp_price_basis_near_match.json",
+        "worldbank_gdp_total_vs_per_capita_near_match.json",
+        "worldbank_cpi_inflation_vs_index_near_match.json",
+        "worldbank_population_total_vs_urban_share_near_match.json",
+    )
+    cases = tuple(
+        EvaluationCase.from_dict(json.loads(
+            (ROOT / "tests/fixtures/evaluation/drafts" / name).read_text(encoding="utf-8")
+        )["case"])
+        for name in draft_names
+    )
+    assert audit_split_leakage(cases) == ()

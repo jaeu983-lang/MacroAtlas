@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+  "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Tue, 27 Oct 2026 14:32:41 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 700,
+  "raw_path": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json",
+  "raw_sha256": "e19cf58538b55a25fe82cb6209de2dcefc0c374de1ffad319724b4673934ba09"
+}
