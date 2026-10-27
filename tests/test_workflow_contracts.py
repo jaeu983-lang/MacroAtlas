@@ -362,9 +362,8 @@ def test_inconsistent_or_credential_value_shaped_configuration_is_rejected(chang
 @pytest.mark.parametrize("suffix", ["?api_key=pretend-private", "?access-token=pretend-private",
                                     "?app_id=pretend-private", "?UserID=pretend-private"])
 def test_credential_query_parameters_are_rejected_without_echoing_values(suffix):
-    item = evidence(source_url="https://example.org/data" + suffix)
     with pytest.raises(ValueError) as caught:
-        candidate(evidence=(item,))
+        evidence(source_url="https://example.org/data" + suffix)
     assert "pretend-private" not in str(caught.value)
 
 

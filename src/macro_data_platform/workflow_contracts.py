@@ -10,15 +10,7 @@ from types import MappingProxyType
 from typing import Any, ClassVar
 from urllib.parse import parse_qsl, urlsplit
 
-from macro_data_platform.contracts import EvidenceKind, SourceEvidence, utc
-
-_CREDENTIAL_NAMES = {"key", "apikey", "token", "accesstoken", "password", "secret",
-                     "authorization", "appid", "applicationid", "userid", "clientsecret",
-                     "subscriptionkey"}
-
-
-def _credential_name(name: str) -> bool:
-    return re.sub(r"[^a-z0-9]", "", name.lower()) in _CREDENTIAL_NAMES
+from macro_data_platform.contracts import EvidenceKind, SourceEvidence, _credential_name, utc
 
 
 def _check(condition: bool, message: str) -> None:
