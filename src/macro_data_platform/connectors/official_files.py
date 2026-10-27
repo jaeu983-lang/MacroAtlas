@@ -10,7 +10,7 @@ from macro_data_platform.connectors.statistical_http import SourceFailure, parse
 from macro_data_platform.contracts import ErrorCode, StageStatus, utc
 
 MAX_FILE_BYTES = 16 * 1024 * 1024
-TIMEOUT_SECONDS = 20
+TIMEOUT_SECONDS = 30
 PROFILES = {
     "tic": {
         "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt",
@@ -74,7 +74,7 @@ class OfficialFileTransport:
         url = profile["url"]
         verify = (os.environ.get("REQUESTS_CA_BUNDLE")
                   or os.environ.get("CURL_CA_BUNDLE") or True)
-        deadline = time.monotonic() + TIMEOUT_SECONDS + 10
+        deadline = time.monotonic() + TIMEOUT_SECONDS
         try:
             with requests.Session() as session:
                 session.trust_env = False

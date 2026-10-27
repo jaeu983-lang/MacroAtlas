@@ -1,11 +1,12 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-26 갱신: PR #9 merge HEAD는 `7723afe95d6c5edb6a28bcf52bd08518ad5ca381`이다. CSV 전달은 통합·검증됐고, 내부 status→export dry run도 실행했다. 실제 목표 사용자 관찰과 Gate C 자연 증거는 미완료다. 세부 증거는 [20회차 보고서](ITERATION_20_REPORT.md)와 [사용 흐름 검토](USER_WORKFLOW_DRY_RUN_2026_10_26.md)를 따른다.
+> 2026-10-27 갱신: PR #1–#12가 병합됐고 현재 기준 HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`이다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 현재 HEAD가 아니다. PR #4의 worker 복구도 `25f3c87`로 이미 통합됐다. 이번 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
 
-기준일: 2026-10-26. 근거는 17회차 시험, 현재 저장소 상태, 과거 네 provider live 결과와
-최신 TIC/BIS exact-scope 감시다. TIC task `2733c6a3-abb8-4201-9735-b3354fd32bd9`와
-BIS task `30786cba-1024-4d8b-a599-51942bd91c63`는 모두 완료·unchanged였다. 이 감시에서 자연 개정이나
-provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로 현재 장애를 판정하지 않는다.
+기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
+과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
+`2733c6a3-abb8-4201-9735-b3354fd32bd9`와 BIS task `30786cba-1024-4d8b-a599-51942bd91c63`는
+완료·unchanged였으며 자연 개정이나 provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로
+현재 장애를 판정하지 않는다.
 다른 기관 접속 상태나 다음 게시 주기까지의 상태는 이 결과에 포함되지 않는다.
 
 ## 1. 데이터 처리·전달에 남은 작업
@@ -14,9 +15,12 @@ provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로
 |---|---|---|---|
 | BIS GLI flat ZIP 구조 보존 materialization | PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 event seq 1/raw를 한 번 처리. 24,378×21 문자열 JSONL, manifest/chunk hash, 원본 불변성, task attempt와 `handed_off/resolved` 확인 | 이 단일 BIS flat profile은 완료. 다른 provider·format·의미 정규화는 별도 qualification과 승인으로 계획 | 해결된 로컬 데이터 처리 항목. 접속 오류나 Gate C 자연 증거가 아님 |
 | World Bank/BOJ 정규화 결과 CSV 전달 | 20회차에서 완료 task의 저장 evidence를 read-only 재검증해 CSV와 provenance sidecar를 만들고, 보존 World Bank/BOJ task로 확인 | 현재 좁은 provider scope를 유지. XLSX, BIS flat JSONL, 다른 기관 export는 별도 요구·검증 후 계획 | 이 제한된 로컬 전달 기능은 해결. XLSX/BIS export는 미구현 제품 범위이지 접속 장애가 아님 |
+| 비API 대용량 시간 예측의 경험 보정 | 현재 catalog에 qualification 성공 사례 15건, production 1건, baseline/empirical paired forecast 0건 | 각 실행 전 예측과 실제 stage 시간을 기존의 승인된 작업에서 축적한다. 예측 표본을 만들 목적만으로 대용량 작업을 실행하지 않는다. Qualification과 production은 따로 보정 | 기능은 구현·통합됐다. 예측 정확도는 증거 부족으로 낮은 신뢰도 |
 | 통계 의미·품질 범위 확대 | World Bank 고정 실측은 quality passed이지만 normalized unit/frequency unknown 경고가 있음. 경제 이상치·개정 역사·기관 간 동등성은 검사 범위 밖 | 공식 metadata로 단위·빈도·정의 확인 및 범위별 품질 검증 설계 | 데이터 의미/검증 범위. 다운로드 실패 아님 |
-| 시험 worker 강제 종료 복구 | 17회차 구현에서 RUNNING task와 orphan scratch 복구가 빠져 있었음. lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 코드 HEAD `e2e72a5`의 645개 로컬 테스트/Ruff 및 4조합 CI run 40359478210이 통과 | 구현 검증 완료. PR #4 통합은 PR #3 다음 순서 | 제품 내부 복구 결함. 서버 문제 아님 |
+| 시험 worker 강제 종료 복구 | lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 당시 4조합 CI가 통과 | PR #4가 `25f3c87`에 이미 병합됨 | 완료된 제품 복구 항목. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | PR #6에서 BIS flat 전용 `handed_off/resolved`, 승인 child, chunk/hash checkpoint와 same-task resume 구조를 통합했고 실제 보존 raw task가 완료됨 | 다른 provider, Windows resource worker, 더 큰 입력·pagination은 별도 qualification 후 평가 | BIS flat 제한 경로 완료. 범용 대용량 지원은 남은 제품 범위 |
+| 추가 형식·기관과 Windows 대용량 worker | 현행 production worker는 BIS flat ZIP 한 경로의 Linux 자원 제한 실행만 지원. 다른 형식·기관 및 Windows 자원 worker는 지원 범위 밖 | 각 provider/format을 격리 qualification하고, Windows는 별도 process memory/time/cancel/orphan recovery 한도를 실제 Windows에서 입증한 뒤 한 경로씩 결정 | 제품 지원 범위 미구현. 서버 접속 오류로 분류하지 않음 |
+| 실제 분석가 업무 관찰 | 내부 status→CSV dry run과 23회차 관찰안은 준비됐으나 독립 참가자 관찰은 아직 없음 | 익명 기록·동의 절차를 사용해 분석가 1–2명이 저장 task 결과를 찾고 CSV를 설명하는 세션 수행 | 참가자 증거 대기. 자기 검토를 사용자 검증으로 계산하지 않음 |
 
 BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 flat JSONL 생성은 structural preservation이며
 경제 의미를 정규화하지 않는다. 보존 원본 production 실행은 완료됐지만 이 경로를 일반 exporter나 추가 형식 지원으로
@@ -47,20 +51,21 @@ BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 f
 
 ## 4. 증거 미관측 — 현재 고장과 분리
 
-| 항목 | 이번 관측 | 충족에 필요한 증거 |
-|---|---|---|
-| 실제 원자료 개정 감지 | TIC/BIS 모두 unchanged | 같은 scope의 실제 변경 raw 쌍, changed/NEEDS_REVIEW, 양쪽 원본 보존 및 새 정규화 차단 |
-| 자연 장애 후 durable resume | 이번 live 실행에서는 자연 장애가 발생하지 않음 | 자연 retryable 실패를 저장한 같은 task/stage에서 Retry-After 준수 후 재개 성공 및 attempt/event 이력 |
+| 항목 | 이번 관측 | 남은 조건 | 판정 |
+|---|---|---|---|
+| 실제 원자료 개정 감지 | 마지막 기록된 exact-scope 비교는 TIC/BIS 모두 unchanged | 같은 scope의 실제 변경 raw 쌍, `changed/NEEDS_REVIEW`, 양쪽 원본 보존 및 새 정규화 차단 | 미해결. 자연 개정 대기 |
+| 자연 장애 후 durable resume | World Bank API task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT` 이후 같은 task의 attempt 2로 재개해 collect·validate가 성공했다. 최초 Retry-After는 없었고 max_attempts=3 중 1회 사용 상태였다. | 이 실측은 World Bank API collector 범위다. TIC/BIS file watch에서의 natural retryable failure는 아직 관측되지 않았다. source-specific 증거가 요구되면 같은 URL/scope의 저장 task를 재개 | World Bank 범위의 자연 durable resume는 확보. Gate C 자연 source revision은 별도 미해결 |
 
-변경·503 fixture는 동작 검증에 사용하며 자연 발생 실측을 대신하지 않는다. 이 두 항목은 Gate C 확대 범위의
-증거 대기다. 현재 서버 장애 또는 현재 데이터 손상이라는 판정이 아니다.
+변경·503 fixture는 동작 검증에 사용하며 자연 발생 실측을 대신하지 않는다. World Bank 재개는 별도의 자연
+실측으로 저장됐지만 TIC/BIS 변경 쌍을 대체하지 않는다. 이는 현재 서버 장애 또는 현재 데이터 손상이라는 판정이
+아니다.
 
 ## 5. 작업 상태와 원인을 혼동하지 않는 규칙
 
-이번 조회는 로컬 SQLite의 최근 최대 60개 task snapshot을 읽기 전용으로 확인했다.
+이번 조회는 보존된 SQLite task와 event를 읽기 전용으로 확인했다.
 `NEEDS_REVIEW`인 flat 재검증 task 2797e6d0-a8ac-40e5-aca4-066991a7c2e1은 reason=cells의 정상 인계다.
 과거 task bea335ad-1819-42cb-8acd-797c6a452255의 SCHEMA_CHANGED는 과거 parser 판정으로 보존한다.
-World Bank 과거 task 84a1afd9-4b56-454f-96ea-f6e59f245afc의 FAILED/TRANSIENT는 이력이며 이후 새 성공 task와 함께 해석한다.
+World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`는 2026-10-26에 collect가 `FAILED_RETRYABLE/TRANSIENT`로 끝났고, 2026-10-27에 같은 task를 한 번 재개해 collect·validate 성공으로 완료됐다. 첫 실패와 재개 attempt/event는 모두 보존됐다.
 plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 계산하지 않는다.
 과거 task 상태를 새 성공으로 덮어쓰거나 삭제하지 않았다.
 
@@ -69,14 +74,16 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#9 통합과 18회차 QA 경로. PR #9 merge commit `7723afe`의 CI 네 조합이 통과했다.
+1. **완료:** PR #1~#12 병합. 현재 base HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
-5. **다음 제품 작업:** 분석가 1–2명의 실제 관찰 세션 후 다음 provider·UI·자연어 범위를 정한다. 다른 export format/provider, Windows 대용량 worker, 경제 이상치·개정 의미 검증은 별도 요구와 수용 기준을 기다린다.
-6. **병행 증거 대기:** TIC/BIS 감시는 유지하되 unchanged는 Gate 승격으로 처리하지 않는다. 실제 개정 쌍과 자연 장애→같은 task/stage 재개가 생길 때만 Gate C 확대를 재판정한다. 인위적으로 장애를 만들거나 baseline을 바꾸지 않는다.
+5. **관찰 대기:** 분석가 1–2명의 실제 업무 관찰 후 다음 provider·UI·자연어 범위를 정한다. 절차는 [23회차 계획](ITERATION_23_PLAN.md)에 있고 참가자 관찰은 미실행이다.
+6. **자연 증거:** TIC/BIS 감시는 기존 baseline과 exact scope로 유지한다. 실제 개정 쌍이 생기면 변경 raw 두 개, `changed/NEEDS_REVIEW`, 정규화 차단을 검토한다. World Bank 자연 resume는 확보됐으나 provider-specific Gate C 검토를 대체하지 않는다.
+7. **예측 보정:** 승인된 qualification/production이 실행될 때 예측·실제 stage time을 축적한다. paired 표본이 각 operation에서 3건에 도달할 때 모델 오차를 재평가한다. 표본 생성만을 위한 실행은 하지 않는다.
+8. **품질·범위 확대:** 실제 사용자 요구가 확인된 provider/format 하나씩 metadata 계약, 의미 검증, Linux/Windows 자원 한도와 복구 완료 기준을 정한 뒤 qualification한다.
 
-남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 더 넓은 provider/format은 미구현 기능이고, 자연 개정/장애는 아직 관측되지 않은 Gate C 증거다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
+남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 추가 provider/format과 Windows resource worker는 미구현 기능이다. 실제 TIC/BIS 원자료 개정은 여전히 미관측이다. World Bank에서는 자연 transient failure를 저장한 task의 same-task resume가 확인됐다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 
 근거: [현행 Gate 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md), [인계 목록](NON_API_DEFERRED_CATALOG.json),
 [엔진 연결 설계](ENGINE_CONNECTIONS.md), [17회차 시험 계획](ITERATION_17_PLAN.md),

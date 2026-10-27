@@ -1,13 +1,13 @@
 # MacroAtlas 현재 구현 상태와 Gate 증거
 
-> 2026-10-26 갱신: PR #10 병합 HEAD는 `1a00c1854a077d5e38ee6db77f523c13ebee4aae`다. CSV 전달은 [20회차 보고서](ITERATION_20_REPORT.md), 대용량 시간 예측은 [22회차 보고서](ITERATION_22_REPORT.md)에 기록한다. 내부 사용 흐름 검토와 실제 분석가 세션 준비는 각각 [dry run](USER_WORKFLOW_DRY_RUN_2026_10_26.md), [23회차 진행안](ITERATION_23_PLAN.md)에 있으며, 참가자 관찰과 Gate C 자연 증거는 아직 대기 중이다.
+> 2026-10-27 갱신: PR #1–#12가 병합됐고 현재 기준 HEAD는 `8b856fd34924a796f96c33d4ec8608593fc46889`다. PR #9의 `7723afe`와 PR #10의 `1a00c18`은 역사적 병합점이다. PR #11/#12에서 분석가 세션 준비와 유지보수 QA 통합을 추가했다. 보존된 World Bank task의 자연 transient 실패는 같은 task/stage 재개로 복구됐으며, TIC/BIS natural source revision은 여전히 증거 대기다. 전체 미해결 항목과 우선순위는 [미해결 항목](UNRESOLVED_ITEMS.md)을 따른다.
 
 > **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
 > [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
 > 역사 보고서는 당시의 증거, [`DECISION_LOG.md`](DECISION_LOG.md)는 설계 선택의 이력을 담는다.
 > 기본 규칙은 한 task에 한 회차이며, 실패하거나 관측되지 않은 증거를 통과로 취급하지 않는다.
 
-## 현재 상태 — 2026-10-26
+## 현재 상태 — 2026-10-27
 
 19회차 BIS flat 대용량 production handoff는 PR #6으로 통합되어 보존 원본 1건에서 실제 실행됐다. 이 실행은
 정해진 BIS flat scope의 구조 보존 materialization이며 Gate C natural evidence나 일반 기관·파일 지원 확대가
@@ -106,11 +106,14 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 자연 revision/recovery; 일반 CSV 전달은 후속 exporter 범위 |
 | 19 (완료) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회; PR #6 통합·4조합 CI·보존 원본 production run 완료 | 다른 provider/format, Windows resource worker, semantic normalization, World Bank/BOJ CSV export |
 | 20 | 완료·품질 통과 World Bank/BOJ task의 UTF-8 CSV/provenance 전달, read-only revalidation, no-overwrite/path guard; PR #9 merge 및 4조합 CI 완료 | XLSX, BIS flat JSONL export, arbitrary provider, 독립 사용자 검증 |
+| 22 | 비API qualification과 BIS production/resume 전에 실행 시간·범위·신뢰도를 표시하고 실측 history로 shadow forecast를 계산; PR #10 통합 | 현재 catalog 표본 qualification 15, production 1, paired forecast 0. 예측 정확도는 낮은 신뢰도 상태 |
+| 23 | 저장 결과→CSV 업무 관찰 protocol·시나리오·동의와 익명 기록 절차 준비; PR #11 통합 | 실제 분석가 참가 세션 미실행. 실제 사용성 판단은 독립 참가자 관찰 후 수행 |
+| 24 | pytest/Ruff/diff/CLI/health를 공통 Python runner로 통합, Windows wrapper 및 report/log artifacts; PR #12 통합 | read-only analyzer와 updater→candidate QA handoff는 엔진 통합 계획의 후속 단계 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
 
-## 실패·미충족 항목과 해결 계획 — 2026-10-26
+## 실패·미충족 항목과 해결 계획 — 2026-10-27
 
 현행 미해결 항목은 [데이터 처리·서버 접속 분류표](UNRESOLVED_ITEMS.md)를 따른다.
 아래 과거 실패의 상태와 현재 제품 미구현·정상 인계·증거 대기를 혼합하지 않는다.
@@ -136,28 +139,29 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | BIS flat CSV ZIP | cells=500010으로 정상 deferred. PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 raw를 한 번 처리해 24,378×21 구조 보존 JSONL 생성. raw·request manifest 불변과 manifest/chunk 해시 확인 | 해당 BIS flat profile은 완료. 새 기관·포맷 및 의미 정규화는 별도 qualification/승인 후 계획 | 완료: 동일 raw/event provenance, child attempt/stage, `handed_off/resolved`, output hash 확인. Gate C natural change/resume과 분리 |
 | BIS watcher 첫 비교 | 해결. 명시 zip_member 추가로 기존 auto-select baseline과 scope가 달라 first_observation 발생 | 기존 exact scope 유지 | 수정 후 동일 baseline 대비 unchanged 확인. 첫 실행은 증거에서 제외 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
-| TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 최신 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
-| 자연 장애 후 durable resume | 미관측(`NOT_RUN`). 과거 BIS 503은 실패 task로 저장되지 않았고 simulated 시험은 live 증거가 아님 | 저장 후 요청하는 watcher에서 자연 retryable 실패 발생 시 Retry-After 준수 후 같은 task를 다시 열어 resume | 같은 task/stage 성공과 실패·재개 attempt/event 이력 보존 |
+| TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 문서화된 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
+| 자연 장애 후 durable resume | World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT`를 저장했고 2026-10-27 같은 task attempt 2에서 collect·validate 성공. 최초 `Retry-After` 없음, max_attempts 3 중 1회 사용 | 이 evidence는 World Bank API scope에 한정. TIC/BIS watch scope에서 자연 transient failure는 미관측 | 자연 failure와 same-task/stage success, 두 attempt와 event 이력이 보존됨. TIC/BIS source revision은 별도 충족 필요 |
 | BOJ 다른 series·기간, 범용 검색/자연어, 일반 Windows 사용자 workflow | 미지원·미검증 범위. 현재 고정 CLI 성공으로 전체 지원을 주장할 수 없음 | 다음 제품 회차에서 한 가지 사용자 흐름과 수용 기준을 정해 구현 | 범위별 정상·오류·실사용 검증 및 지원 문서 갱신 |
 
 ### 실행 순서와 판정 규칙
 
-1. 완료: PR #1~#9의 검토·병합. PR #9 merge commit `7723afe`, CI 네 조합 성공.
+1. 완료: PR #1~#12의 검토·병합. 현재 base HEAD `8b856fd`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
 3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
    남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
 4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff, 20회차 CSV 전달.
 5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 실제 목표 사용자
    관찰과 다음 제품 범위 결정은 참여자 확보 후 수행한다.
-6. 실제 개정과 자연 장애→같은 task 재개 증거가 확보되면 Gate C의 확대 범위를 재판정한다.
-   현재 D-067 제한 통과는 유지하고 미관측 항목을 전체 통과로 승격하지 않는다.
+6. World Bank 자연 retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 여전히 미관측이며,
+   해당 pair가 생기면 exact scope, 양쪽 raw 보존, `changed/NEEDS_REVIEW`, 새 normalization 차단을 재검토한다.
+   현재 D-067 제한 범위를 확대하지 않는다.
 
 근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
 [source watch](GATE_C_SOURCE_WATCH.md), [BOJ 실측](BOJ_LIVE_RECHECK_2026_10_26.md).
 
 ## 다음 작업 순서
 
-현행 우선순위와 완료 조건은 [2026-10-26 제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #3~#9와
+현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. PR #1~#12와
 유지보수 QA 경로는 통합 완료됐다. 20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도
 완료했다. 다음 제품 순서는 실제 목표 사용자 관찰이며 참가자와 검증 환경이 필요하다. 이 문서와 로드맵이 달라 보이면
 현재 증거는 이 문서, 실행 순서는 로드맵에 둡니다.

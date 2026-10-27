@@ -97,6 +97,7 @@ class GateCWatchTests(unittest.TestCase):
         })
         self.assertEqual(kwargs["verify"], "/configured/ca.pem")
         self.assertFalse(kwargs["allow_redirects"])
+        self.assertEqual(kwargs["timeout"], (5, 30))
         self.assertEqual(result.body, b"abc")
 
     def test_source_scope_change_preserves_raw_and_withholds_normalized_output(self):
