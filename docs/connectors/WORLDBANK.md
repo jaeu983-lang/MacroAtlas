@@ -80,6 +80,14 @@ decimal 및 추가 필드를 보존하며 결측·단위·스케일을 보정하
 조합은 series_id를 만들어내지 않고 series_key로 표기한다. YYYY 기간 형식과 원본 지표
 명칭은 별도로 보존한다. lastupdated는 source_last_updated이며 불변 source_version은 아니다.
 
+2026-10-27 공식 indicator metadata 확인에서는 `NY.GDP.MKTP.CD`의 이름을 `GDP (current US$)`로,
+source note를 현재 가격의 미국 달러 값으로 확인했다. 이 별도 endpoint 응답의 structured `unit`
+field는 비어 있고 frequency/periodicity 필드는 없었다. 캡처와 요청 manifest는
+[`WDI metadata evidence`](../evidence/worldbank_gdp_indicator_metadata_20261027.json) 및
+[`request manifest`](../evidence/worldbank_gdp_indicator_metadata_20261027.manifest.json)에 있다.
+따라서 명칭·정의의 의미는 공식 설명으로 확인했지만 raw `unit`은 그대로 보존하고 정규화 `unit`과
+`frequency`는 unknown으로 남긴다. 이 metadata lookup은 기존 observation을 수정하지 않았다.
+
 ## 실행 연결 및 범위 경계
 
 WorldBankGDPEngine을 `(worldbank_gdp, 1)` 키로 Orchestrator에 등록하고 StageSpec.input_data에

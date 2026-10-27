@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json",
+  "retrieved_at": "2026-10-27T06:51:46.588787+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Sun, 25 Oct 2026 14:54:27 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 938,
+  "raw_path": "docs/evidence/worldbank_gdp_indicator_metadata_20261027.json",
+  "raw_sha256": "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28"
+}
