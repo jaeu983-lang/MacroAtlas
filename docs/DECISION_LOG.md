@@ -834,7 +834,8 @@ push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 reten
 ## D-094 — World Bank GDP 공식 metadata 보존 및 unknown 유지
 
 2026-10-27. Official World Bank indicator metadata endpoint를 한 번 조회해 HTTP 200 응답과 manifest를
-[`docs/evidence`](evidence/worldbank_gdp_indicator_metadata_20261027.json)에 보존했다. Exact indicator
+[metadata response](evidence/worldbank_gdp_indicator_metadata_20261027.json) 및
+[request manifest](evidence/worldbank_gdp_indicator_metadata_20261027.manifest.json)에 보존했다. Exact indicator
 `NY.GDP.MKTP.CD`의 공식 name은 `GDP (current US$)`이며 source note는 현재 가격의 미국 달러라고 설명한다.
 그러나 response의 structured `unit` 값은 빈 문자열이고 frequency/periodicity field가 없다. 따라서 이 결과는
 indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
