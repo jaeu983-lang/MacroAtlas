@@ -3,6 +3,7 @@
 This document describes the implemented freshness gate for source observation
 periods. It checks how recent the newest observation is for its own cadence; it
 does not treat a recent download or metadata refresh as evidence of recent data.
+The integrated product scope and remaining work are tracked in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## Current policy
 

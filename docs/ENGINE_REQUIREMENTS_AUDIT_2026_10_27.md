@@ -7,6 +7,7 @@
 | 영역 | 판정 | 코드·검증에서 확인한 내용 | 남은 조건 |
 |---|---|---|---|
 | 공통 데이터 실행 엔진 | **부분 통합** | `Engine`/`StageResult` 계약과 공통 `Orchestrator`가 stage·attempt·retry/resume·task history를 관리한다. World Bank, BOJ, BLS/Census, 파일, 대용량 작업은 이 계약에 맞춘 adapter/worker다. | CLI와 provider별 runner factory가 각각 엔진 mapping을 구성한다. 전역 단일 registry/control-plane wiring은 아직 완전히 공통화되지 않았다. provider adapter는 출처별 전송·응답 차이 때문에 유지하는 편이 맞다. |
+| 엔진별 성능·병목 계측 | **일부 개별 계측만 존재** | 일반 stage에는 UTC `started_at`/`finished_at`이 있으나 monotonic elapsed/phase timings는 없다. 대용량 worker는 elapsed/RSS를, knowledge query는 candidate rows/bytes/cache를 기록한다. | API·discovery·tabular·export 등 engine별 기준선과 하위 단계별 시간은 미수집이다. 통합 기획서 §11 순서 7에서 계측·표본 수·환경을 고정한다. |
 | 피드백 별도 로그 | **구현됨** | `FeedbackStore`가 task/stage 연결, append-only revision, review 상태, 철회, 범위 필터를 SQLite에 기록하고 `macro-feedback` CLI가 관리한다. | 사용자가 검토하지 않은 내용은 지식 재사용에 쓰지 않는다. 로그에서 평가 사례나 공통 코드 규칙을 자동 생성하지 않는다. |
 | 주기별 최신성 | **구현됨, 기본 정책 제한** | 공통 `assess_freshness`가 daily/weekly/monthly/quarterly/semiannual/annual 허용일, period-end, exact series override, 정책 fingerprint를 기록하고 오래되거나 확인 불가한 결과를 차단한다. World Bank·BOJ·BLS·Census 경로에 연결돼 있다. | 기본 허용일은 운용상 기본값이지 각 시리즈 공표 달력 보증이 아니다. 실제 series별 공표 일정 검증과 모든 generic tabular 경로 적용은 남았다. |
 | A. 평가 사례 형식 | **기반 구현, 실제 사례 없음** | `evaluation/sets/*.json`에서 버전, 질문 변형, 기대 상태·기관/dataset/series/field, 필수 근거, 금지 동작, Excel 정책, 검토·개인정보 확인을 요구한다. `macro-eval validate`가 형식을 검사한다. | 세 set에 사례가 없어 상태는 `VALID_BUT_EMPTY`다. 사람이 승인·비식별화한 사례를 채워야 한다. |
@@ -23,13 +24,17 @@
 
 검증은 `tests/test_evaluation_cases.py`의 빈 set, 준비 완료 set, split 누수, 개인정보 확인, feedback 참조, frozen hash 변경 사례를 대상으로 한다. 상세 필드와 사용법은 [평가 사례 규약](EVALUATION_CASES.md)을 따른다.
 
-## 다음 구현 순서
+## 통합 기획서의 미완료 조건 대조
+
+아래 항목은 통합 순서를 새로 정하지 않는다. 작업 우선순위와 완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따른다.
+
+통합 실행 순서 7은 모든 runtime engine의 공통 stage 시간과 가능한 phase breakdown을 수집하는 별도 선행 작업이다. 기존 duration forecast는 대용량 qualification/production만 다루므로 일반 connector·discovery·export의 성능 기준선으로 보지 않는다. 성능을 측정하기 위해 live API 요청을 반복하지 않는다.
 
 1. 사용자가 명시적으로 검토한 피드백 또는 공개 근거에서 개인정보를 제거한 사례를 개발 세트에 추가한다. 유사하지만 정답이 다른 질문은 같은 contrast group에 넣는다. 검토 전 피드백은 옮기지 않는다.
 2. 실제 engine output을 사례 기준으로 정규화하는 outcome adapter와 기준안/후보안 비교기(C)를 만든다. validation·holdout 결과, false-confirmation 0건, forbidden action 0건이 확인되기 전에는 규칙을 반영하지 않는다.
 3. 규칙 승격 기록(D)을 case version, 데이터 지표, reviewer, candidate commit, rollback commit과 결합한다.
 4. 공통 typed series/batch 계약(E)을 설계하고 우선 World Bank와 BOJ에 연결한 뒤, 호환성 증명 없이 provider들을 합치지 않는다.
 5. 같은 series의 원자료 출력(F)을 XLSX로 추가하고, 이후에만 여러 series 정렬·가공 출력(G)을 별도 기능으로 구현한다. 결측은 기본 빈칸이며 보간/forward-fill은 명시 근거 없이는 금지한다.
-6. 실제 분석가 1–2명 관찰(23회차)은 위의 기술 기반 다음, 로드맵의 마지막 순서로 유지한다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
+6. 실제 분석가 1–2명 관찰(23회차)은 위의 기술 기반 다음, [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11의 순서 13이자 마지막으로 유지한다. 사용자 관찰 결과를 synthetic fixture 또는 통과 지표로 대체하지 않는다.
 
 따라서 엔진 통합과 freshness/feedback 기반은 일부 동작하지만, 전체 평가-승격 루프 및 다중 시계열 Excel 흐름은 아직 완료되지 않았다.

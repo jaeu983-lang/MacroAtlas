@@ -1,8 +1,6 @@
 # Decision Log — 설계 변경·미해결 판단
 
-> 이 문서는 날짜가 붙은 결정 이력이다. 현재 실행 상태와 다음 허용 작업은
-> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)는 현재 구현·Gate 증거, [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)는
-> 다음 순서의 기준이다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+> 이 문서는 날짜가 붙은 결정 이력이다. 현재 범위와 우선순위는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 구현·Gate 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 짧은 순서 요약은 [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)를 따른다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
 
 ## 05회차 제한 구현 (2026-10-26)
 
@@ -80,14 +78,14 @@
 - **D-012 / ACCEPTED (사용자 요청 반영):** 필요한 기관의 API 키만 선택 등록하며
   전체 기관 키를 요구하지 않는다. 실제 값은 로컬 .env/환경변수, 기획서에는 환경변수
   이름만 기록한다. 경로별 인증 none/optional/required/unknown과 키 설정·유효성은
-  분리한다. 필수 키 누락은 해당 경로만 중단한다. PROJECT_PLAN.md §2.1에 정책과
+  분리한다. 필수 키 누락은 해당 경로만 중단한다. PROJECT_PLAN_ORIGINAL_2026_10_24.md §2.1에 정책과
   후속 검수 기준을 추가했다. 이번에는 설정 로더·커넥터·02회차 기능을 구현하지 않았다.
   기관별 실제 인증 조건은 커넥터 구현 시 공식 문서로 확인해야 한다.
 
 - **D-013 / ACCEPTED (사용자 요청 반영):** 14회차 최종 통합·검증 단계에 사용자
   설명서(Markdown)와 안내 PPT(PPTX)를 제작한다. 실행 방법·기관별 선택적 키 설정·
   수집 결과 확인을 실제 구현 기준으로 설명하고 대표 절차 재현 및 PPT 표시를 검수한다.
-  PROJECT_PLAN.md §10.3/14.2와 IMPLEMENTATION_PLAN.md 14회차에 반영했다.
+  PROJECT_PLAN_ORIGINAL_2026_10_24.md §10.3/14.2와 IMPLEMENTATION_PLAN.md 14회차에 반영했다.
   이번 작업은 기획 문서 3개만 변경했으며 설명서/PPT 제작과 02회차는 진행하지 않았다.
   실행 코드 변경이 없어 테스트는 재실행하지 않았다. 실제 키 접근·네트워크 호출 없음.
 
@@ -861,3 +859,27 @@ BLS, Census, BOJ 경로 및 World Bank/BOJ CSV 재검증에 연결했다. fixtur
 raw baseline, Gate C D-067 제한 범위 판정은 수정하지 않는다. 변경 감지 CLI와 기준본은 보존하며,
 사용자가 나중에 다시 요청할 때만 단발 범위·목적을 새로 확인한다. 이는 TIC/BIS 서버 오류나 데이터 손상이
 없음을 새로 검증한 결정이 아니며 Gate C 통과 범위를 확대하지 않는다.
+
+## D-097 — 통합 제품 기획을 현재 요구사항·우선순위 기준으로 지정
+
+2026-10-27. 사용자가 원초 기획과 이후 수정 기획을 하나의 유기적 기준으로 통합해 달라고 요청했다.
+현재 `PROJECT_PLAN.md`를 제품 목표·지원/제외 범위·엔진 책임과 상태·데이터 품질 정책·통합 실행 순서의 단일 기준으로 정리하고,
+원초 문서는 `PROJECT_PLAN_ORIGINAL_2026_10_24.md`에 보존한다. 세부 기능 계약과 과거 회차 보고서는 근거·설계 이력으로 남기며,
+구현 상태와 검증 결과는 `IMPLEMENTATION_PLAN.md` 및 회차 evidence가 담당한다. `ROADMAP_2026_10_26.md`는 통합 기획의 요약이고,
+이전 상세 로드맵은 snapshot으로 보존한다. 이 문서 통합 자체는 코드 기능의 구현 또는 Gate 통과를 뜻하지 않는다.
+
+## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+
+2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
+성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
+가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
+최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
+engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.
+
+## D-098 — 공통 runtime engine 성능 계측을 composition 정리보다 앞에 둠
+
+2026-10-27. 통합 구조 검토에서 일반 stage는 UTC 시작·종료 시각만 기록하고, 대용량 외 engine별 elapsed/phase timing과
+성능 기준선은 없음을 확인했다. 고정 작업의 병목을 먼저 측정하고, network·raw/write·parse·quality·SQLite/export 등
+가능한 하위시간과 입력 규모를 개인정보 없이 기록한다. 표본 수와 fixture/synthetic/live 구분을 함께 보고하며, p50/p95는
+최소 20개 표본이 있을 때만 정식 표시한다. live 요청을 성능 표본 확보 목적으로 반복하지 않는다. 측정 결과가 나온 뒤에만
+engine composition이나 저장·파싱 경로 최적화를 선택한다. 대용량 추정기는 이 범용 기준선을 대체하지 않는다.

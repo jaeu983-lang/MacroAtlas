@@ -1,8 +1,8 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-26 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
-실행 제어는 하나의 Orchestrator를 사용한다. transport·parser·capacity 검사·storage는 엔진의 내부 부품이다.
-사용자 문제와 목표 구조의 맥락은 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md), 다음 구현 순서는
+기준: 2026-10-27 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+출처별 runner가 같은 Orchestrator 계약을 사용하지만, 공통 전역 registry는 아직 없다. transport·parser·capacity 검사·storage는 엔진의 내부 부품이다.
+제품 요구사항·우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 실행 순서 요약은
 [로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
 이 문서는 사용자 데이터 제품의 실행 경로를 다룬다. 저장소 코드를 분석·수정·QA하는 개발자 유지보수 흐름은 제품
@@ -86,6 +86,22 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
   상한·approval·미실행 조건을 바꾸지 않으며 시간의 범위와 신뢰도로만 안내한다.
 - 큰 원본·정규화 본문은 파일로 둔다. 후속 대용량 stage 간 payload는 `artifact_id, relative_path, manifest_ref,
   sha256(확인된 경우), schema/version, counts/quality` 참조로 제한한다. 현재 작은 API payload 전체를 즉시 재작성하지 않는다.
+
+## 엔진별 시간 근거와 병목 계측 공백
+
+일반 Orchestrator는 stage별 UTC `started_at`/`finished_at`을 보존하지만 `duration_ms`는 저장하지 않는다. 이 값으로 대략적인 경과시간은 사후 계산할 수 있으나 시스템 시계 변경에 영향을 받고, engine 호출 전후의 저장·직렬화 비용과 engine 내부 network/parse/quality 시간을 나누지 못한다. 대용량 worker는 monotonic `elapsed_seconds`와 일부 실행의 RSS를 별도 반환한다. knowledge lookup은 후보 row/byte 수 및 cache hit를 남기지만 elapsed time은 없다.
+
+| 엔진/계층 | 현재 시간 자료 | 다음 baseline 측정 단위 |
+|---|---|---|
+| Discovery·candidate search | 실행시간 없음. 저장 metadata package의 manifest/raw/normalized를 검증하고 읽는 상한만 있음 | package 수·읽은 byte·hash 검증 시간·ranking 시간을 분리하고, metadata 규모별 fixture/replay로 측정 |
+| World Bank·BOJ·BLS·Census API | 일반 stage의 UTC 경계만 있음. workspace에 분석 가능한 `catalog.sqlite` task 이력은 없음 | request/response 완결 시간, raw 저장, parse, quality/freshness, SQLite stage 완료 시간. BOJ는 metadata 재사용/수집을 따로 기록 |
+| TIC/BIS watch·tabular parser | 공통 하위시간 없음. 파일 fetch와 `TabularFileEngine` 호출이 한 stage 안에 있음 | 다운로드 bytes/time, bounded read, archive/hash, parse·normalization 단계 시간과 행/열 수 |
+| Large-file qualification | worker가 elapsed/RSS를 기록. 합성 CSV worker는 1 MiB 0.051–0.053초, 16 MiB 0.803–0.900초, 64 MiB 3.425–4.408초, 127 MiB 6.326–7.041초 | 기존 fixture 범위는 재사용하되 worker 시간과 전체 stage/child-process 시간을 분리 |
+| Large-file production | 공식 BIS flat 24,378×21 단일 생산 실행의 stage 약 0.593초라는 기록; production sample 1건 | qualification과 섞지 말고 production input size·rows·output bytes·wall/RSS를 축적. 신뢰도는 낮음으로 유지 |
+| Feedback·knowledge | candidate rows/bytes, cache hit/miss는 있으나 lookup 시간 없음 | cold/warm lookup, index refresh, candidate 수별 elapsed time 및 scan cap 상태 |
+| CSV exporter·평가 validator | 별도 elapsed 없음; exporter의 검증·재파싱, evaluation set은 현재 비어 있음 | 저장 task 크기와 case 수별 읽기·hash·parse·쓰기/검증 시간을 측정. 비어 있는 평가 set 결과는 benchmark로 세지 않음 |
+
+현재 보이는 후보 병목은 API network 대기, discovery metadata 재검증, task JSON 전체 직렬화·SQLite 갱신, exporter의 raw 재검증·재파싱이다. 측정 전에는 어느 항목도 실제 bottleneck으로 확정하지 않는다. 첫 보완은 공통 `perf_counter_ns()` stage wall time과 가능한 하위 phase timing, engine/version/status/input size·code SHA·environment를 기록하는 것이다. 사용자 요청문·원본 값·credential·query URL은 성능 기록에 넣지 않는다. fixture/synthetic/live를 구분하고, engine/version/workload tier당 표본 20개 전에는 p95를 확정하지 않는다. 성능 표본을 위해 live API 요청을 반복하지 않는다. 우선순위와 완료 조건은 통합 제품 기획 §11의 7번 작업을 따른다.
 
 ## 대용량 엔진 연결 규칙
 
