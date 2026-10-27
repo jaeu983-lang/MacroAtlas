@@ -807,3 +807,11 @@ Task Scheduler에 등록하지 않는다. Updater manual/scheduled 실행은 rep
 가리키는 것을 확인한 뒤 unregister했고, 후속 task 조회에서 둘 다 없음을 확인했다. 최신 base `a7f7a1f`로 fast-forward한 다음
 installer dry-run은 base SHA, Anaconda Python 경로, 현재 user principal, `Interactive`/`Limited` 및 두 action을 출력하면서
 `registered=false`를 반환했다. 이 실측은 installer 계획 검증에 한정하며 actual scheduled execution을 의미하지 않는다.
+
+## D-091 — 최신 Windows updater no-op 경로 실측
+
+2026-10-27. 사용자가 updater 운영 가드가 포함된 Windows checkout에서 `run_improvement.ps1`을 실행했다. Run
+`20261027T062202Z-a897a292`는 base `689cd1b14dd15c50987893ac9cd25dbe9c6aab62`, `NO_ACTIONABLE_CHANGE`,
+`cleanup=PASSED`, `network_requested=false`로 끝났고 candidate/QA/push/PR은 없었다. Retention 요약은 90일, scanned 3,
+removed 0, preserved 3이었다. 이는 단일 정상 no-op 경로만 확인하며 concurrent lock contention, candidate handoff, failure resume,
+또는 scheduler 실행의 증거로 확대하지 않는다. 예약 task는 계속 비활성이다.
