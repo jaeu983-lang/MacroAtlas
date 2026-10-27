@@ -254,6 +254,11 @@ def validate_case_sets(directory: str | Path) -> dict:
             errors.append(f"{path.name}: cases must be a list of at most {_MAX_CASES_PER_SET}")
             continue
         valid_cases = 0
+        provenance_counts = {
+            "synthetic": 0,
+            "reviewed_feedback": 0,
+            "official_reference": 0,
+        }
         for index, case in enumerate(cases):
             where = f"{path.name}.cases[{index}]"
             case_errors = _validate_case(case, split=split, where=where)
@@ -261,6 +266,8 @@ def validate_case_sets(directory: str | Path) -> dict:
             if case_errors:
                 continue
             valid_cases += 1
+            origin = case["provenance"]["origin"]
+            provenance_counts[origin] += 1
             case_id = case["case_id"]
             if case_id in case_ids:
                 errors.append(f"{where}.case_id duplicates {case_ids[case_id]}")
@@ -277,8 +284,12 @@ def validate_case_sets(directory: str | Path) -> dict:
                 previous_split = questions.setdefault(key, split)
                 if previous_split != split:
                     errors.append(f"{where}.question duplicates exact text in {previous_split}")
-        summaries[split] = {"set_version": document["set_version"], "case_count": len(cases),
-                            "valid_case_count": valid_cases}
+        summaries[split] = {
+            "set_version": document["set_version"],
+            "case_count": len(cases),
+            "valid_case_count": valid_cases,
+            "provenance_counts": provenance_counts,
+        }
         set_versions[split] = document["set_version"]
         set_bytes[split] = raw
 
@@ -322,10 +333,18 @@ def validate_case_sets(directory: str | Path) -> dict:
     structurally_valid = not errors
     ready = structurally_valid and all(summaries.get(split, {}).get("case_count", 0) > 0
                                        for split in SPLITS)
+    feedback_counts = [summaries.get(split, {}).get("provenance_counts", {}).get(
+        "reviewed_feedback", 0) for split in SPLITS]
+    feedback_coverage = (
+        "complete" if ready and all(count > 0 for count in feedback_counts)
+        else "partial" if any(count > 0 for count in feedback_counts)
+        else "none"
+    )
     return {
         "schema_version": SET_SCHEMA_VERSION,
         "status": "READY" if ready else "INVALID" if errors else "VALID_BUT_EMPTY",
         "ready": ready,
+        "reviewed_feedback_split_coverage": feedback_coverage,
         "sets": summaries,
         "frozen_splits": frozen_status,
         "errors": errors,

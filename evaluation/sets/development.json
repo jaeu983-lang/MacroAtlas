@@ -1,6 +1,125 @@
 {
   "schema_version": 1,
   "split": "development",
-  "set_version": 1,
-  "cases": []
+  "set_version": 2,
+  "cases": [
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-wb-usa-gdp-current-usd",
+      "case_version": 1,
+      "split": "development",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": null,
+      "question": {
+        "canonical": "미국 GDP(current US$)를 2020년부터 2022년까지 연도별 원자료로 보여줘.",
+        "variants": [
+          "World Bank WDI에서 미국 NY.GDP.MKTP.CD를 2020–2022년으로 조회해줘."
+        ]
+      },
+      "expected": {
+        "state": "ANSWERABLE",
+        "entities": [
+          {
+            "source_agency": "World Bank",
+            "dataset_id": "2",
+            "series_id": "NY.GDP.MKTP.CD",
+            "field": "GDP (current US$)"
+          }
+        ]
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "guess_identifier",
+        "assume_missing_is_zero",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "source_series_worksheet",
+        "missing_value": "blank",
+        "overlap_conflict": "preserve_separately",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-boj-fxer-monthly",
+      "case_version": 1,
+      "split": "development",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": null,
+      "question": {
+        "canonical": "BOJ FXERD01의 2026년 9월 달러/엔 09:00 JST 원자료를 날짜별로 내려줘.",
+        "variants": [
+          "일본은행 FM08의 FXERD01을 202609 한 달만 조회하고 null은 보존해줘."
+        ]
+      },
+      "expected": {
+        "state": "ANSWERABLE",
+        "entities": [
+          {
+            "source_agency": "Bank of Japan",
+            "dataset_id": "FM08",
+            "series_id": "FXERD01",
+            "field": "US.Dollar/Yen Spot Rate at 9:00 in JST, Tokyo Market"
+          }
+        ]
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "guess_identifier",
+        "assume_missing_is_zero",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "source_series_worksheet",
+        "missing_value": "blank",
+        "overlap_conflict": "preserve_separately",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    }
+  ]
 }

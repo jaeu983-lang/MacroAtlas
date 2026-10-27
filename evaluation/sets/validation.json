@@ -1,6 +1,119 @@
 {
   "schema_version": 1,
   "split": "validation",
-  "set_version": 1,
-  "cases": []
+  "set_version": 2,
+  "cases": [
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-bls-cpi-unadjusted",
+      "case_version": 1,
+      "split": "validation",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": "synthetic-cpi-series-qualification",
+      "question": {
+        "canonical": "BLS 미국 CPI-U 전체 항목의 비계절조정 월간 원자료를 2024년으로 내려줘.",
+        "variants": [
+          "2024년 미국 CPI-U all items, not seasonally adjusted를 월별로 수집해줘."
+        ]
+      },
+      "expected": {
+        "state": "ANSWERABLE",
+        "entities": [
+          {
+            "source_agency": "Bureau of Labor Statistics",
+            "dataset_id": null,
+            "series_id": "CUUR0000SA0",
+            "field": "CPI-U all items, not seasonally adjusted"
+          }
+        ]
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "guess_identifier",
+        "assume_missing_is_zero",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "source_series_worksheet",
+        "missing_value": "blank",
+        "overlap_conflict": "preserve_separately",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "case_id": "synthetic-bls-cpi-unspecified",
+      "case_version": 1,
+      "split": "validation",
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (synthetic self-review)",
+        "reviewed_at": "2026-10-27T19:35:48+00:00",
+        "privacy_cleared": true
+      },
+      "provenance": {
+        "origin": "synthetic",
+        "feedback_id": null,
+        "evidence": []
+      },
+      "contrast_group": "synthetic-cpi-series-qualification",
+      "question": {
+        "canonical": "미국 CPI 데이터를 받아줘.",
+        "variants": [
+          "CPI 지표 최신 자료를 찾아서 내려줘."
+        ]
+      },
+      "expected": {
+        "state": "NEEDS_REVIEW",
+        "entities": []
+      },
+      "required_evidence": [
+        "source_url",
+        "source_identifier",
+        "definition",
+        "unit",
+        "frequency",
+        "observation_period",
+        "retrieved_at",
+        "raw_hash",
+        "request_manifest"
+      ],
+      "forbidden_actions": [
+        "guess_identifier",
+        "guess_seasonal_adjustment",
+        "assume_missing_is_zero",
+        "interpolate_missing_values",
+        "forward_fill"
+      ],
+      "excel_expectation": {
+        "policy": "not_applicable",
+        "missing_value": "not_applicable",
+        "overlap_conflict": "not_applicable",
+        "interpolate": false,
+        "forward_fill": false
+      }
+    }
+  ]
 }

@@ -9,16 +9,27 @@ The complete feedback→evaluation→promotion contract and priority order are i
 
 ## Current state
 
-`evaluation/sets/development.json`, `validation.json`, and `holdout.json` are
-versioned manifests and are deliberately empty. The validation and holdout
-file bytes and versions are pinned in `evaluation/sets/frozen.json`. A change
-to either frozen set must include a deliberate, reviewed lock update in the same
-PR. This detects accidental edits; it does not prevent a reviewer from
-approving a new baseline. No representative cases have
-been curated yet, so the command reports `VALID_BUT_EMPTY`; that is not an
-evaluation pass. Do not fill the sets with invented user or provider evidence.
+The three versioned manifests currently contain six synthetic contract cases,
+two per split. They cover the fixed World Bank and BOJ paths, a BLS CPI
+contrast between a qualified and ambiguous request, incompatible frequencies
+in Excel, and unknown-frequency freshness. They are author-generated fixtures,
+not user feedback or evidence that live providers returned the expected data.
+The reviewer field records the synthetic author's self-review; it is not an
+independent human review.
 
-Run the structural, split-leakage, and frozen-hash checks from the repository root:
+The validation and holdout file bytes and versions are pinned in
+`evaluation/sets/frozen.json`. A change to either frozen set must include a
+deliberate, reviewed lock update in the same PR. The hash detects unreviewed
+drift; it does not make the public holdout secret or prevent an approved
+baseline change. The validator reports structural `READY` separately from
+`reviewed_feedback_split_coverage` (`none`, `partial`, or `complete`). Coverage
+is based only on declared provenance labels; the validator does not
+authenticate feedback IDs against the SQLite feedback log. Neither status
+scores engine behavior. These six synthetic cases are scaffolding only and do
+not satisfy the user-evidence or generalization gate.
+
+Run the structural, split-leakage, provenance-count, and frozen-hash checks from
+the repository root:
 
 ```text
 python -m macro_data_platform.evaluation.cli validate
@@ -38,7 +49,11 @@ entity/field, required evidence, forbidden actions, and an explicit Excel
 expectation. It also records reviewed provenance, feedback reference when
 applicable, reviewer/time, and privacy clearance. The validator rejects
 unreviewed or uncleared cases, unknown fields, duplicate IDs, repeated exact
-questions across splits, and contrast groups split across sets.
+questions across splits, and contrast groups split across sets. It reports
+provenance counts for each split. `reviewed_feedback_split_coverage` only
+summarizes declared feedback-origin labels; synthetic and official-reference
+cases do not count as reviewed-feedback cases, and the validator does not
+verify feedback IDs against the feedback log.
 
 Illustrative record shape (documentation example only; it is not counted as an
 evaluation case):
@@ -91,9 +106,11 @@ must be kept separate or sent for review.
 
 ## Not implemented by this step
 
-The validator does not run an engine, calculate answer/ranking accuracy,
-compare baseline and candidate rules, calculate false-confirmation rates, or
-approve a rule. The sets must first contain reviewed cases, and the product
-engines need a shared, versioned outcome record before a meaningful candidate
-comparison can be run. Rule promotion and rollback remain explicit human
-decisions with no automatic feedback-to-code path.
+The validator does not authenticate source evidence, run an engine, calculate
+answer/ranking accuracy, compare baseline and candidate rules, calculate
+false-confirmation rates, or approve a rule. The current synthetic cases only
+exercise corpus structure. A representative evaluation still needs
+independently reviewed cases and verified feedback/source references, plus a
+shared, versioned outcome record from the product engines. Rule promotion and
+rollback remain explicit human decisions with no automatic feedback-to-code
+path.

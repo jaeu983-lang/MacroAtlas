@@ -10,8 +10,8 @@
 | 엔진별 성능·병목 계측 | **일부 개별 계측만 존재** | 일반 stage에는 UTC `started_at`/`finished_at`이 있으나 monotonic elapsed/phase timings는 없다. 대용량 worker는 elapsed/RSS를, knowledge query는 candidate rows/bytes/cache를 기록한다. | API·discovery·tabular·export 등 engine별 기준선과 하위 단계별 시간은 미수집이다. 통합 기획서 §11 순서 7에서 계측·표본 수·환경을 고정한다. |
 | 피드백 별도 로그 | **구현됨** | `FeedbackStore`가 task/stage 연결, append-only revision, review 상태, 철회, 범위 필터를 SQLite에 기록하고 `macro-feedback` CLI가 관리한다. | 사용자가 검토하지 않은 내용은 지식 재사용에 쓰지 않는다. 로그에서 평가 사례나 공통 코드 규칙을 자동 생성하지 않는다. |
 | 주기별 최신성 | **구현됨, 기본 정책 제한** | 공통 `assess_freshness`가 daily/weekly/monthly/quarterly/semiannual/annual 허용일, period-end, exact series override, 정책 fingerprint를 기록하고 오래되거나 확인 불가한 결과를 차단한다. World Bank·BOJ·BLS·Census 경로에 연결돼 있다. | 기본 허용일은 운용상 기본값이지 각 시리즈 공표 달력 보증이 아니다. 실제 series별 공표 일정 검증과 모든 generic tabular 경로 적용은 남았다. |
-| A. 평가 사례 형식 | **기반 구현, 실제 사례 없음** | `evaluation/sets/*.json`에서 버전, 질문 변형, 기대 상태·기관/dataset/series/field, 필수 근거, 금지 동작, Excel 정책, 검토·개인정보 확인을 요구한다. `macro-eval validate`가 형식을 검사한다. | 세 set에 사례가 없어 상태는 `VALID_BUT_EMPTY`다. 사람이 승인·비식별화한 사례를 채워야 한다. |
-| B. 개발·검증·보류 세트 분리 | **구조 구현, 실행 불가** | development/validation/holdout 파일을 분리하고 validation/holdout은 SHA-256 lock 및 set version으로 고정한다. 중복 질문과 contrast group의 split 횡단을 차단한다. | set이 모두 비어 있고 의미상 유사성은 사람이 contrast group으로 표시해야 한다. lock hash 변경은 사례 변경을 검토하는 PR과 함께 해야 한다. |
+| A. 평가 사례 형식 | **기반 구현, synthetic 준비 사례 있음** | `evaluation/sets/*.json`에 synthetic 사례 6개(각 split 2개)가 있고, validator가 필드와 provenance별 개수, 선언된 reviewed-feedback split coverage를 표시한다. | 모두 author self-reviewed synthetic 사례라 user evidence·실제 source 결과를 입증하지 않는다. coverage는 feedback ID를 SQLite 로그와 대조하지 않는다. 실제 검토와 evidence 확인이 필요하다. |
+| B. 개발·검증·보류 세트 분리 | **구조 검증 통과, 근거 Gate 미통과** | development/validation/holdout 파일을 분리하고 validation/holdout의 version·SHA-256을 고정한다. exact 질문 중복과 명시 contrast group의 split 횡단을 차단한다. | 의미 유사성은 curator가 표시해야 한다. 공개 저장소의 holdout은 비밀이 아니며 hash는 무단 drift만 감지한다. 실제 reviewed evidence가 보충돼야 한다. |
 | C. 기준안·후보안 전후 평가 | **미구현** | 일반 코드 테스트와 반복 시나리오가 존재하지만 이는 제품 사례별 후보안 비교기가 아니다. | 엔진 공통 outcome(답 상태, target, ranking, evidence, forbidden action) 계약과 같은 사례 버전의 비교 실행기가 필요하다. 유형별 정확도·오확정·금지 동작을 계산해야 한다. |
 | D. 규칙 반영 심사 | **부분 구현** | 피드백 검토/지식 범위·사용자 확인 흐름이 있고, pattern analyzer는 `draft` 제안만 만든다. 자동 승격은 하지 않는다. | 코드 규칙의 근거 case/version, 전후 지표, 리뷰 승인, applied commit, rollback을 묶는 promotion record/절차는 없다. |
 | E. 공통 시계열 정규화 | **부분 구현** | 수집기별 normalized observation에는 날짜·값·단위/주기(가능한 경우)와 source provenance를 보존한다. 최신성 evaluator는 period와 override를 별도 기록한다. | 종목·필드·통화·단위·주기·달력·override·출처/원본을 모든 provider에 걸쳐 표현하는 공통 typed series/batch 계약은 없다. 미제공 메타데이터는 기존처럼 unknown이어야 한다. |
@@ -20,9 +20,9 @@
 
 ## 이번 수정
 
-이번 회차는 사람이 검토한 사례를 안전하게 분리할 선행 기반(A–B)만 구현했다. `macro-eval validate`는 구조 오류, 중복 사례 ID, split 간 정확 질문 중복, contrast group 누수, validation/holdout의 frozen hash 변경을 검출한다. 세 manifest는 현재 빈 상태로 고정돼 있으므로 평가를 통과한 것으로 간주하지 않는다. 검증기 자체는 엔진 실행·점수 산출·규칙 승격을 하지 않는다.
+이번 수정은 계약 동작을 연습하는 synthetic 사례 6개와 provenance 보고를 추가했다. `macro-eval validate`는 구조 오류, 중복 사례 ID, split 간 정확 질문 중복, contrast group 누수, validation/holdout의 frozen hash 변경을 검출하고 set별 `synthetic`·`reviewed_feedback`·`official_reference` 개수를 보여준다. 현재 세 set은 구조상 `READY`지만 전부 synthetic이며 선언된 reviewed-feedback split coverage는 `none`이다. 이 coverage는 feedback ID를 SQLite와 대조하지 않는다. 이것은 engine 평가 통과가 아니며 검증기는 엔진 실행·점수 산출·규칙 승격을 하지 않는다.
 
-검증은 `tests/test_evaluation_cases.py`의 빈 set, 준비 완료 set, split 누수, 개인정보 확인, feedback 참조, frozen hash 변경 사례를 대상으로 한다. 상세 필드와 사용법은 [평가 사례 규약](EVALUATION_CASES.md)을 따른다.
+검증은 `tests/test_evaluation_cases.py`의 빈/populated set, provenance 집계와 선언된 feedback coverage, split 누수, 개인정보 확인, frozen hash 변경 사례를 대상으로 한다. 상세 필드와 사용법은 [평가 사례 규약](EVALUATION_CASES.md)을 따른다.
 
 ## 통합 기획서의 미완료 조건 대조
 

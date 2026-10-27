@@ -59,6 +59,7 @@ def test_empty_versioned_sets_are_valid_but_not_ready(tmp_path):
 
     assert report["status"] == "VALID_BUT_EMPTY"
     assert not report["ready"]
+    assert report["reviewed_feedback_split_coverage"] == "none"
     assert all(value["case_count"] == 0 for value in report["sets"].values())
     assert report["errors"] == []
 
@@ -72,7 +73,30 @@ def test_three_populated_sets_are_ready(tmp_path):
 
     assert report["status"] == "READY"
     assert report["ready"]
+    assert report["reviewed_feedback_split_coverage"] == "none"
+    assert report["sets"]["development"]["provenance_counts"] == {
+        "synthetic": 1, "reviewed_feedback": 0, "official_reference": 0,
+    }
     assert report["errors"] == []
+
+
+def test_reviewed_feedback_coverage_requires_each_split(tmp_path):
+    cases = {}
+    for split in ("development", "validation", "holdout"):
+        case = _case(split)
+        case["provenance"] = {
+            "origin": "reviewed_feedback", "feedback_id": f"feedback-{split}",
+            "evidence": [],
+        }
+        cases[split] = [case]
+    _write_sets(tmp_path, cases)
+
+    report = validate_case_sets(tmp_path)
+
+    assert report["status"] == "READY"
+    assert report["reviewed_feedback_split_coverage"] == "complete"
+    assert all(summary["provenance_counts"]["reviewed_feedback"] == 1
+               for summary in report["sets"].values())
 
 
 def test_contrast_group_and_exact_question_cannot_leak_between_splits(tmp_path):
