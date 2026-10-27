@@ -1,0 +1,75 @@
+{
+  "draft_id": "unrelated-development-brent-crude",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "case": {
+    "case_id": "draft-eval-v1-unrelated-development-brent-crude",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-unrelated-development-brent-crude",
+    "split": "development",
+    "case_type": "unrelated",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-unrelated-development-brent-crude",
+      "text": "Find daily Brent crude spot prices in USD.",
+      "concept": "Brent crude spot price",
+      "institution_hint": null,
+      "countries": [],
+      "dimensions": null,
+      "period_start": null,
+      "period_end": null,
+      "frequency": null,
+      "unit_policy": null,
+      "target_unit": null,
+      "vintage_requirement": null
+    },
+    "query_variants": [
+      "Find daily Brent crude spot prices in USD.",
+      "브렌트유 현물 가격의 일별 달러 시계열을 찾아줘.",
+      "I need the Brent benchmark spot price each day."
+    ],
+    "expected_state": "unmatched",
+    "relevant_candidate_ids": [],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.CD"
+    ],
+    "expected_match_status": {},
+    "expected_fields": {},
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-fixed-eval-catalog-v1",
+        "evidence_kind": "catalog_snapshot",
+        "official_uri": null,
+        "local_ref": "tests/fixtures/evaluation/v1/catalog_snapshot.json",
+        "retrieved_at": null,
+        "sha256": "1d9ba4eb3c03bf29ec36a97d975a466dc3348227498644d2ddfd519f2f7a5670",
+        "claim": "The fixed evaluation catalog snapshot does not contain a candidate for this request; this says nothing about other providers or MacroAtlas-wide search.",
+        "purpose": "Scope the unmatched expectation to the exact candidate list in evaluation catalog v1."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "draft_id": "rankable-development-gdp-constant-2021",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "case": {
+    "case_id": "draft-eval-v1-rankable-development-gdp-constant-2021",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-rankable-development-gdp-constant-2021",
+    "split": "development",
+    "case_type": "rankable",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-rankable-development-gdp-constant-2021",
+      "text": "Return the US GDP series in constant 2015 dollars for 2021.",
+      "concept": "United States GDP at constant 2015 prices",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2021",
+      "period_end": "2021",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Return the US GDP series in constant 2015 dollars for 2021.",
+      "2015년 기준 불변 달러로 표시된 2021년 미국 GDP 지표를 찾아줘.",
+      "Locate US real GDP using the WDI constant-2015-dollar indicator for 2021."
+    ],
+    "expected_state": "candidate_found",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.KD"
+    ],
+    "forbidden_candidate_ids": [],
+    "expected_match_status": {
+      "worldbank:2:USA:NY.GDP.MKTP.KD": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:NY.GDP.MKTP.KD": {
+        "available_end": {
+          "state": "known",
+          "value": "2022"
+        },
+        "available_start": {
+          "state": "known",
+          "value": "2020"
+        },
+        "dataset_id": {
+          "state": "known",
+          "value": "2"
+        },
+        "definition": {
+          "state": "known",
+          "value": "World Bank label and source note: GDP expressed in constant prices, adjusted for price changes with 2015 as the reference year, in US dollars."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        },
+        "institution_id": {
+          "state": "known",
+          "value": "worldbank"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "NY.GDP.MKTP.KD"
+        },
+        "unit": {
+          "state": "unknown"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-gdp-constant-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.KD?format=json",
+        "local_ref": "docs/evidence/worldbank_gdp_constant_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T13:51:33+00:00",
+        "sha256": "bc4bc0ffec1755410f52b1091c6b1f46917c7417977102350d3d1102b4659216",
+        "claim": "Official World Bank metadata labels this series GDP (constant 2015 US$) — USA, WDI; structured unit/frequency are not inferred from missing fields."
+      },
+      {
+        "evidence_id": "wdi-gdp-constant-usa-2020-2022-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.KD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_gdp_constant_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T13:51:33+00:00",
+        "sha256": "a41648b71000cba132ae70d2775add95697a54a84aa6d97ea018d648f87ccdf0",
+        "claim": "Official World Bank evidence for GDP (constant 2015 US$) — USA, WDI; observation scope is limited to USA 2020–2022 where the evidence is an observation response."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  },
+  "candidate": {
+    "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.KD",
+    "institution_id": "worldbank",
+    "label": "GDP (constant 2015 US$) — USA, WDI",
+    "definition": "World Bank label and source note: GDP expressed in constant prices, adjusted for price changes with 2015 as the reference year, in US dollars.",
+    "dataset_id": "2",
+    "series_id": "NY.GDP.MKTP.KD",
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "NY.GDP.MKTP.KD"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "dataset_id": "2",
+        "evidence_id": "wdi-gdp-constant-metadata-20261027",
+        "kind": "live_api",
+        "original_ref": "docs/evidence/worldbank_gdp_constant_metadata_20261027.json:indicator",
+        "retrieved_at": "2026-10-27T13:51:33+00:00",
+        "series_id": "NY.GDP.MKTP.KD",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.KD?format=json",
+        "source_version": null
+      },
+      {
+        "dataset_id": "2",
+        "evidence_id": "wdi-gdp-constant-usa-2020-2022-20261027",
+        "kind": "live_ingestion",
+        "original_ref": "docs/evidence/worldbank_gdp_constant_usa_2020_2022_20261027.json:USA-2020-2022",
+        "retrieved_at": "2026-10-27T13:51:33+00:00",
+        "series_id": "NY.GDP.MKTP.KD",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.KD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official metadata distinguishes constant-price GDP from the current-price WDI series. This is a catalog distractor only; MacroAtlas collection currently rejects this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency are not supplied in the retained indicator metadata.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "The current World Bank product collector does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": [],
+    "schema_version": 1
+  }
+}

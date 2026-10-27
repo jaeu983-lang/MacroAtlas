@@ -1,0 +1,158 @@
+{
+  "draft_id": "insufficient-development-monthly-gdp",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "case": {
+    "case_id": "draft-eval-v1-insufficient-development-monthly-gdp",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-insufficient-development-monthly-gdp",
+    "split": "development",
+    "case_type": "insufficient_evidence",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-insufficient-development-monthly-gdp",
+      "text": "I need monthly total US GDP in current dollars for 2020–2022.",
+      "concept": "Monthly total US GDP in current dollars",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "monthly",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "I need monthly total US GDP in current dollars for 2020–2022.",
+      "2020~2022년 미국 월별 명목 GDP를 달러로 받고 싶어.",
+      "Please locate monthly WDI observations for US current-price GDP."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.CD"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:NY.GDP.MKTP.CD": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:NY.GDP.MKTP.CD": {
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "worldbank-wdi-guide",
+        "evidence_kind": "official_docs",
+        "official_uri": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+        "local_ref": "docs/connectors/WORLDBANK.md",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "sha256": "b414d3c24dcba479105e2e4a5cfb60d9ea25a90c4e79228167cf34d8ee4f505f",
+        "claim": "Official World Bank metadata labels this series GDP (current US$) — USA, WDI; structured unit/frequency are not inferred from missing fields."
+      },
+      {
+        "evidence_id": "worldbank-gate-a-run",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/ITERATION_04_REPORT.md",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "sha256": "54b3335007ed011c540708be1eea5c8e6f1de3c4d4f26c8fba50d0d1bd7d683f",
+        "claim": "Official World Bank evidence for GDP (current US$) — USA, WDI; observation scope is limited to USA 2020–2022 where the evidence is an observation response."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  },
+  "candidate": {
+    "auth_requirement": "none",
+    "availability_status": "available",
+    "available_end": "2022",
+    "available_start": "2020",
+    "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.CD",
+    "countries": [
+      "USA"
+    ],
+    "credential_env_var": null,
+    "dataset_id": "2",
+    "definition": "Official indicator label only: GDP (current US$); the retained evidence does not contain the full methodological definition.",
+    "dimensions": {},
+    "evidence": [
+      {
+        "dataset_id": null,
+        "evidence_id": "worldbank-wdi-guide",
+        "kind": "official_docs",
+        "original_ref": "docs/connectors/WORLDBANK.md:indicator-reference",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "series_id": null,
+        "source_agency": "World Bank",
+        "source_url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+        "source_version": null
+      },
+      {
+        "dataset_id": null,
+        "evidence_id": "worldbank-gate-a-run",
+        "kind": "live_ingestion",
+        "original_ref": "docs/ITERATION_04_REPORT.md:2020-2022-live-result",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "series_id": null,
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "source_version": null
+      }
+    ],
+    "frequency": null,
+    "institution_id": "worldbank",
+    "label": "GDP (current US$) — USA, WDI",
+    "metadata_revision": "gate-a-2026-10-24",
+    "rationale": "The same source, country, indicator and 2020–2022 period were collected in the documented Gate A run.",
+    "schema_version": 1,
+    "series_id": null,
+    "series_key": {
+      "country": "USA",
+      "indicator": "NY.GDP.MKTP.CD",
+      "source": "2"
+    },
+    "source_version": null,
+    "support_status": "supported",
+    "supported_outputs": [
+      "raw_json"
+    ],
+    "uncertainties": [
+      "Full methodological definition is not in retained metadata.",
+      "Unit and frequency remain unknown; use source values without conversion.",
+      "Availability evidence covers only 2020–2022."
+    ],
+    "unit": null,
+    "verification_status": "documented"
+  }
+}

@@ -18,8 +18,8 @@
     "schema.json": "ace4c459c31e184073321b4894436752e0188b8b2589e4f78806479e405909cc"
   },
   "gate_blockers": [
-    "Only one evidence-backed candidate is present in the current fixed catalog snapshot; 27 of 36 planned cases are not authored.",
-    "An official near-match distractor draft exists but is not in the fixed catalog or evaluation set pending independent review; the corpus still has no near_match cases.",
+    "The fixed corpus still contains only 9 of 36 cases. A separate 27-case assistant-simulated draft pool matches the planned split/type quotas, but none has completed independent review or promotion.",
+    "The 9 near-match drafts remain outside the fixed catalog and evaluation set pending independent review; several candidates are unsupported by the current collector.",
     "BLS and Census catalog records in current tests are synthetic fixtures, not retained official metadata snapshots suitable for positive gold labels."
   ],
   "gate_status": "blocked",

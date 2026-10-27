@@ -177,7 +177,9 @@ def test_manifest_reports_partial_gate_without_promoting_it_to_complete():
     assert manifest["intended_case_count"] == 36
     assert manifest["case_count"] == 9
     assert manifest["gate_status"] == "blocked"
-    assert any("near-match distractor" in message for message in manifest["gate_blockers"])
+    assert any("9 near-match drafts" in message for message in manifest["gate_blockers"])
+    assert any("27-case assistant-simulated draft pool" in message
+               for message in manifest["gate_blockers"])
     assert not any("split leakage" in message for message in manifest["gate_blockers"])
     assert corpus.split_leakage_issues == ()
 
@@ -329,3 +331,67 @@ def test_near_match_draft_batch_has_no_text_template_leakage_across_splits():
         for name in draft_names
     )
     assert audit_split_leakage(cases) == ()
+
+
+def test_simulated_draft_corpus_fills_quotas_without_promotion_or_split_leakage():
+    corpus = load_corpus(CORPUS)
+    draft_manifest_path = ROOT / "tests/fixtures/evaluation/drafts/manifest.json"
+    draft_manifest = json.loads(draft_manifest_path.read_text(encoding="utf-8"))
+    draft_cases = []
+    draft_counts = {}
+    fixed_case_ids = {case.case_id for case in corpus.cases}
+    draft_paths = sorted(
+        path for path in (ROOT / "tests/fixtures/evaluation/drafts").glob("*.json")
+        if path.name != "manifest.json"
+    )
+    expected_file_hashes = {}
+    expected_evidence_hashes = {}
+    for draft_path in draft_paths:
+        draft = json.loads(draft_path.read_text(encoding="utf-8"))
+        if "case" not in draft:
+            continue
+        assert draft["draft_status"] == "independent_review_pending"
+        assert draft["authorship"] == {
+            "origin": "assistant_simulated",
+            "human_observed": False,
+            "independent_review_completed": False,
+        }
+        case = EvaluationCase.from_dict(draft["case"])
+        draft_cases.append(case)
+        expected_file_hashes[draft_path.name] = hashlib.sha256(
+            draft_path.read_bytes()
+        ).hexdigest()
+        assert case.case_id not in fixed_case_ids
+        draft_counts[(case.split, case.case_type)] = (
+            draft_counts.get((case.split, case.case_type), 0) + 1
+        )
+        for evidence in case.required_evidence:
+            evidence_path = ROOT / evidence["local_ref"]
+            actual_hash = hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+            assert actual_hash == evidence["sha256"]
+            expected_evidence_hashes[evidence["local_ref"]] = actual_hash
+        for key in ("candidate", "distractor_candidate"):
+            if key in draft:
+                Candidate.from_dict(draft[key])
+
+    assert len(draft_cases) == 27
+    assert audit_split_leakage((*corpus.cases, *draft_cases)) == ()
+    assert draft_manifest["draft_manifest_version"] == 1
+    assert draft_manifest["draft_status"] == "independent_review_pending"
+    assert draft_manifest["authorship"] == {
+        "origin": "assistant_simulated",
+        "human_observed": False,
+        "independent_review_completed": False,
+    }
+    assert draft_manifest["files"] == expected_file_hashes
+    assert draft_manifest["evidence_files"] == expected_evidence_hashes
+    assert draft_manifest["cross_split_text_audit_issue_count"] == 0
+    assert draft_manifest["gate_status"] == "blocked"
+    for split in ("development", "validation", "holdout"):
+        for case_type in ("rankable", "near_match", "insufficient_evidence", "unrelated"):
+            fixed_count = sum(
+                case.split == split and case.case_type == case_type
+                for case in corpus.cases
+            )
+            assert fixed_count + draft_counts.get((split, case_type), 0) == 3
+    assert corpus.manifest["gate_status"] == "blocked"

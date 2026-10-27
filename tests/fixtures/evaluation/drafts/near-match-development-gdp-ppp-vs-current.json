@@ -1,0 +1,272 @@
+{
+  "draft_id": "near-match-development-gdp-ppp-vs-current",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.PP.CD",
+    "institution_id": "worldbank",
+    "label": "GDP, PPP (current international $) — USA, WDI",
+    "definition": "This indicator provides values for gross domestic product (GDP) expressed in current international dollars, converted by purchasing power parities (PPPs). PPPs account for the different price levels across countries and thus PPP-based comparisons of economic output are more appropriate for comparing the output of economies and the average material well-being of their inhabitants than exchange-rate based comparisons.  \n\nGross domestic product is the total income earned through the production of goods and services in an economic territory during an accounting period. It can be measured in three different ways: using either the expenditure approach, the income approach, or the production approach. This series has been linked to produce a consistent time series to counteract breaks in series over time due to changes in base years, source data and methodologies. Thus, it may not be comparable with other national accounts series in the database for historical years. This indicator is expressed in current prices, meaning no adjustment has been made to account for price changes over time. The PPP conversion factor is a currency conversion factor and a spatial price deflator. PPPs convert different currencies to a common currency and, in the process of conversion, equalize their purchasing power by eliminating the differences in price levels between countries, thereby allowing volume or output comparisons of GDP and its expenditure components.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "NY.GDP.MKTP.PP.CD"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-gdp-ppp-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.PP.CD?format=json",
+        "retrieved_at": "2026-10-27T14:41:15.143531+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_ppp_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.MKTP.PP.CD",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-gdp-ppp-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.PP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:41:15.582171+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_ppp_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.MKTP.PP.CD",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the API unit field is empty and metadata has no structured frequency field.",
+      "Observed availability is limited to USA 2020–2022.",
+      "The current MacroAtlas collector does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "distractor_candidate": {
+    "auth_requirement": "none",
+    "availability_status": "available",
+    "available_end": "2022",
+    "available_start": "2020",
+    "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.CD",
+    "countries": [
+      "USA"
+    ],
+    "credential_env_var": null,
+    "dataset_id": "2",
+    "definition": "Official indicator label only: GDP (current US$); the retained evidence does not contain the full methodological definition.",
+    "dimensions": {},
+    "evidence": [
+      {
+        "dataset_id": null,
+        "evidence_id": "worldbank-wdi-guide",
+        "kind": "official_docs",
+        "original_ref": "docs/connectors/WORLDBANK.md:indicator-reference",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "series_id": null,
+        "source_agency": "World Bank",
+        "source_url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+        "source_version": null
+      },
+      {
+        "dataset_id": null,
+        "evidence_id": "worldbank-gate-a-run",
+        "kind": "live_ingestion",
+        "original_ref": "docs/ITERATION_04_REPORT.md:2020-2022-live-result",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "series_id": null,
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "source_version": null
+      }
+    ],
+    "frequency": null,
+    "institution_id": "worldbank",
+    "label": "GDP (current US$) — USA, WDI",
+    "metadata_revision": "gate-a-2026-10-24",
+    "rationale": "The same source, country, indicator and 2020–2022 period were collected in the documented Gate A run.",
+    "schema_version": 1,
+    "series_id": null,
+    "series_key": {
+      "country": "USA",
+      "indicator": "NY.GDP.MKTP.CD",
+      "source": "2"
+    },
+    "source_version": null,
+    "support_status": "supported",
+    "supported_outputs": [
+      "raw_json"
+    ],
+    "uncertainties": [
+      "Full methodological definition is not in retained metadata.",
+      "Unit and frequency remain unknown; use source values without conversion.",
+      "Availability evidence covers only 2020–2022."
+    ],
+    "unit": null,
+    "verification_status": "documented"
+  },
+  "case": {
+    "case_id": "draft-eval-v1-near-match-development-gdp-ppp-vs-current",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-near-match-development-gdp-ppp-vs-current",
+    "split": "development",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-near-match-development-gdp-ppp-vs-current",
+      "text": "Find total US GDP in current international dollars on a purchasing-power-parity basis for 2020–2022.",
+      "concept": "US total GDP on a PPP basis in current international dollars",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Find total US GDP in current international dollars on a purchasing-power-parity basis for 2020–2022.",
+      "구매력평가 기준 국제달러로 표시된 미국 총 GDP를 2020~2022년으로 찾아줘.",
+      "Locate the World Bank source for us total gdp on a ppp basis in current international dollars using the original reporting period.",
+      "Keep us total gdp on a ppp basis in current international dollars separate from its similar measure."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.PP.CD"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.CD"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:NY.GDP.MKTP.PP.CD": "review_required",
+      "worldbank:2:USA:NY.GDP.MKTP.CD": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:NY.GDP.MKTP.PP.CD": {
+        "definition": {
+          "state": "known",
+          "value": "This indicator provides values for gross domestic product (GDP) expressed in current international dollars, converted by purchasing power parities (PPPs). PPPs account for the different price levels across countries and thus PPP-based comparisons of economic output are more appropriate for comparing the output of economies and the average material well-being of their inhabitants than exchange-rate based comparisons.  \n\nGross domestic product is the total income earned through the production of goods and services in an economic territory during an accounting period. It can be measured in three different ways: using either the expenditure approach, the income approach, or the production approach. This series has been linked to produce a consistent time series to counteract breaks in series over time due to changes in base years, source data and methodologies. Thus, it may not be comparable with other national accounts series in the database for historical years. This indicator is expressed in current prices, meaning no adjustment has been made to account for price changes over time. The PPP conversion factor is a currency conversion factor and a spatial price deflator. PPPs convert different currencies to a common currency and, in the process of conversion, equalize their purchasing power by eliminating the differences in price levels between countries, thereby allowing volume or output comparisons of GDP and its expenditure components."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "NY.GDP.MKTP.PP.CD"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:NY.GDP.MKTP.CD": {
+        "definition": {
+          "state": "known",
+          "value": "Official indicator label only: GDP (current US$); the retained evidence does not contain the full methodological definition."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "NY.GDP.MKTP.CD"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-gdp-ppp-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.PP.CD?format=json",
+        "local_ref": "docs/evidence/worldbank_gdp_ppp_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:15.143531+00:00",
+        "sha256": "e0a12d757d047f4a581238ccf5b79d606fc829fcf9b40c4808f951ec1d6b8ee1",
+        "claim": "Official World Bank metadata labels this series GDP, PPP (current international $) — USA, WDI; absent structured unit/frequency values are not inferred."
+      },
+      {
+        "evidence_id": "wdi-gdp-ppp-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.PP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_gdp_ppp_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:15.582171+00:00",
+        "sha256": "caa247def8c75e2624b465ce306c4c3d69699a4f85faa56108160110fdc9a496",
+        "claim": "Official World Bank USA observations establish availability only for the recorded 2020–2022 periods for GDP, PPP (current international $) — USA, WDI."
+      },
+      {
+        "evidence_id": "worldbank-wdi-guide",
+        "evidence_kind": "official_docs",
+        "official_uri": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+        "local_ref": "docs/connectors/WORLDBANK.md",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "sha256": "b414d3c24dcba479105e2e4a5cfb60d9ea25a90c4e79228167cf34d8ee4f505f",
+        "claim": "Official World Bank metadata labels this series GDP (current US$) — USA, WDI; absent structured unit/frequency values are not inferred."
+      },
+      {
+        "evidence_id": "worldbank-gate-a-run",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/ITERATION_04_REPORT.md",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "sha256": "54b3335007ed011c540708be1eea5c8e6f1de3c4d4f26c8fba50d0d1bd7d683f",
+        "claim": "Official World Bank USA observations establish availability only for the recorded 2020–2022 periods for GDP (current US$) — USA, WDI."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

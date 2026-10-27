@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SL.UEM.TOTL.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+  "retrieved_at": "2026-10-27T14:41:16.736659+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Tue, 27 Oct 2026 14:41:16 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 846,
+  "raw_path": "docs/evidence/worldbank_unemployment_rate_usa_2020_2022_20261027.json",
+  "raw_sha256": "1b88fe7835d3474073eb87dea609ee77794c08ebd05aebf5d0ef6816c782a9f4"
+}

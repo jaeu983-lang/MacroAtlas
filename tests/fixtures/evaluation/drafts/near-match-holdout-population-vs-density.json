@@ -1,0 +1,270 @@
+{
+  "draft_id": "near-match-holdout-population-vs-density",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "holdout",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SP.POP.TOTL",
+    "institution_id": "worldbank",
+    "label": "Population, total — USA, WDI",
+    "definition": "Total population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. The values shown are midyear estimates.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SP.POP.TOTL"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-population-total-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json",
+        "retrieved_at": "2026-10-27T14:32:41.353825+00:00",
+        "original_ref": "docs/evidence/worldbank_population_total_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SP.POP.TOTL",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-population-total-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+        "original_ref": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SP.POP.TOTL",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+      "Observed availability evidence covers only USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "distractor_candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:EN.POP.DNST",
+    "institution_id": "worldbank",
+    "label": "Population density (people per sq. km of land area) — USA, WDI",
+    "definition": "Population density is midyear population divided by land area in square kilometers. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship--except for refugees not permanently settled in the country of asylum, who are generally considered part of the population of their country of origin. Land area is a country's total area, excluding area under inland water bodies, national claims to continental shelf, and exclusive economic zones. In most cases the definition of inland water bodies includes major rivers and lakes.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "EN.POP.DNST"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-population-density-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/EN.POP.DNST?format=json",
+        "retrieved_at": "2026-10-27T14:41:17.712242+00:00",
+        "original_ref": "docs/evidence/worldbank_population_density_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "EN.POP.DNST",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-population-density-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/EN.POP.DNST?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:41:18.041524+00:00",
+        "original_ref": "docs/evidence/worldbank_population_density_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "EN.POP.DNST",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "case": {
+    "case_id": "draft-eval-v1-near-match-holdout-population-vs-density",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-near-match-holdout-population-vs-density",
+    "split": "holdout",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-near-match-holdout-population-vs-density",
+      "text": "I want the total US population count in 2021, not people per square kilometer.",
+      "concept": "US total population count in 2021",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "I want the total US population count in 2021, not people per square kilometer.",
+      "2021년 미국 총인구 수를 찾아줘. 면적당 인구밀도가 아니야.",
+      "Locate the World Bank source for us total population count in 2021 over the requested periods.",
+      "Keep us total population count in 2021 separate from its similar measure."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:SP.POP.TOTL"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:EN.POP.DNST"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:SP.POP.TOTL": "review_required",
+      "worldbank:2:USA:EN.POP.DNST": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:SP.POP.TOTL": {
+        "definition": {
+          "state": "known",
+          "value": "Total population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. The values shown are midyear estimates."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SP.POP.TOTL"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:EN.POP.DNST": {
+        "definition": {
+          "state": "known",
+          "value": "Population density is midyear population divided by land area in square kilometers. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship--except for refugees not permanently settled in the country of asylum, who are generally considered part of the population of their country of origin. Land area is a country's total area, excluding area under inland water bodies, national claims to continental shelf, and exclusive economic zones. In most cases the definition of inland water bodies includes major rivers and lakes."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "EN.POP.DNST"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-population-total-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json",
+        "local_ref": "docs/evidence/worldbank_population_total_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.353825+00:00",
+        "sha256": "2f8491efc00bf2c0995112ff8e87aba69e5e9d22d0880b22f7e3a4ec757ba05c",
+        "claim": "Official World Bank metadata/observation evidence for Population, total — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-total-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+        "sha256": "e19cf58538b55a25fe82cb6209de2dcefc0c374de1ffad319724b4673934ba09",
+        "claim": "Official World Bank metadata/observation evidence for Population, total — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-density-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/EN.POP.DNST?format=json",
+        "local_ref": "docs/evidence/worldbank_population_density_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:17.712242+00:00",
+        "sha256": "c5df1b392124d9113915d833c5d4a47e73d9c6b989de0e6a64a9487479f9040c",
+        "claim": "Official World Bank metadata/observation evidence for Population density (people per sq. km of land area) — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-density-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/EN.POP.DNST?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_population_density_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:18.041524+00:00",
+        "sha256": "34acc799501d0bca8d4a987d0ff354cc37e71bd0186617891a37570fe3ce44dd",
+        "claim": "Official World Bank metadata/observation evidence for Population density (people per sq. km of land area) — USA, WDI; scope is limited to the recorded USA series and periods."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

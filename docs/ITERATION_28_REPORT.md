@@ -31,11 +31,14 @@
 | validation | 1 | 0 | 1 | 1 | 3 |
 | holdout | 1 | 0 | 1 | 1 | 3 |
 
-목표는 split당 12개, 각 유형 3개다. 따라서 초기 manifest의 gate 상태는 **blocked**다. 27개를 더 채워야 한다. 추가한 split
-audit이 처음 찾아낸 rankable 세트의 날짜만 다른 질문 두 쌍은 검증·보류 사례의 표현을 다시 써서 해소했고, 현재 9개 코퍼스의
-audit 결과는 0건이다. 이 audit은 텍스트 템플릿 점검이며 완전한 의미 유사도 판정은 아니다. 후속으로
-World Bank의 current-price/constant-price GDP, total GDP/per-capita GDP, inflation/CPI index, population count/urban population share를 구분하는 공식 metadata와 2020–2022 관측 응답을 보존해 near-match 초안 네 개를 만들었지만,
-독립 검토 대기 상태라 fixed catalog와 평가 코퍼스에 아직 넣지 않았다. Per-capita, CPI, population candidates는 공식 API 근거가 있어도 현 collector가 지원하지 않아 draft distractor로만 둔다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
+목표는 split당 12개, 각 유형 3개다. 고정 사례만 놓고 보면 초기 manifest gate는 계속 **blocked**이며 9개가 승격되어 있다.
+별도 draft pool에는 27개 assistant-simulated 사례를 작성했다. 각 split에 rankable 2, near_match 3, insufficient_evidence 2,
+unrelated 2개씩 있으며, fixed corpus 한 건씩과 합산하면 split/type별 3개 목표를 채운다. 27개 모두 독립 검토 대기라 고정 세트에
+포함하지 않았고 evaluator도 실행하지 않았다. 고정 9개와 draft pool 각각의 텍스트 audit은 0건이다. 이 audit은 텍스트 템플릿 점검이며 완전한 의미 유사도 판정은 아니다. 후속으로
+World Bank의 current/constant/PPP GDP, total/per-capita GDP, CPI/GDP-deflator inflation, unemployment/labor-force participation,
+population count/growth/density/urban share를 구분하는 공식 metadata와 USA 2020–2022 관측 응답을 보존했다. 이 근거를 사용한
+near-match draft 9개를 포함해 총 27개 초안을 만들었지만, 독립 검토 대기라 fixed catalog와 평가 코퍼스에는 아직 넣지 않았다.
+고정 GDP nominal 외의 candidate는 현 collector가 지원하지 않아 draft-only다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
 candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1-candidate snapshot에만 해당하며, MacroAtlas 전체 또는 공식
 기관에서 해당 통계가 없다는 주장을 하지 않는다. 이 gate 상태로 29회차 split/feedback bridge나 30회차 evaluator를 시작하지 않는다.
 
@@ -43,16 +46,16 @@ candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1
 
 - `src/macro_data_platform/evaluation/`: case contract, JSONL/manifest/candidate reader, split leakage audit.
 - `tests/fixtures/evaluation/v1/`: v1 schema, 9개 case, 고정 catalog, 초기 manifest 및 hash.
-- `tests/fixtures/evaluation/drafts/`: assistant-simulated, 독립 검토 대기 near-match 후보 4개. 평가 세트에 포함하지 않는다.
+- `tests/fixtures/evaluation/drafts/`: SHA-256 draft manifest와 assistant-simulated, 독립 검토 대기 사례 27개(near-match 9개 포함). 평가 세트에 포함하지 않는다.
 - `docs/evidence/worldbank_*_20261027.json`: World Bank 공식 metadata와 USA 2020–2022 응답 원문 snapshot 및 수집 manifest.
 - `tests/test_evaluation_cases.py`: cross-field 거부, immutable snapshot, hash tamper, reader 경계 및 unreviewed draft 격리 검사.
 - `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`: D-095 결정과 현재 gate 상태.
 
 ## 검증과 한계
 
-초기 코퍼스 구현 당시 전체 pytest **745 passed**, `ruff check .`, `git diff --check`, `compileall`이 통과했다. 이번 후속 초안 확장에서는
+초기 코퍼스 구현 당시 전체 pytest **745 passed**, `ruff check .`, `git diff --check`, `compileall`이 통과했다. 이번 draft 확장에서는
 World Bank 공식 metadata·관측 응답 HTTP 200과 2020–2022 기간, case/candidate 계약 및 evidence SHA-256을 확인했다.
-`tests/test_evaluation_cases.py` 20개와 전체 pytest, Ruff, compileall, diff 검사가 통과했다. 네 near-match 초안 사이 cross-split text-template audit은 0건이다.
+`tests/test_evaluation_cases.py` 21개와 전체 pytest, Ruff, compileall, diff 검사가 통과했다. 27개 초안의 split/type 분포는 목표 quota와 일치하고, cross-split text-template audit은 0건이다.
 Split audit은 case family가 split을 넘는 경우와 연도·월 범위만 다른 반복 템플릿을
 탐지하며, 완전한 의미 유사도 판정은 아니다. 이 후속 작업은 product 수집, SQLite, raw store, export 경로를 실행하지 않았다.
 
@@ -69,6 +72,6 @@ freshness 및 Excel writer는 구현하지 않는다. Gate는 9개 고정 사례
 
 후속 작업에서는 AI 모의 사례를 사람 관찰로 오인하지 않도록 Python value contract에 작성 provenance와 별도 evidence 종류를
 추가했다. Synthetic fixture evidence는 후보 ID와 로컬 SHA-256을 가리키며 official URI나 조회 시각을 가질 수 없다.
-기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 추가 near-match 사례는 provenance에 assistant 생성·비관찰·독립 검토
-대기를 기록하고 별도 draft 디렉터리에 둔다. 36개 모의 코퍼스 초안은 holdout에 날짜만 바꾼 동일 템플릿이 반복되고 manifest가
-없어 반영하지 않았다. 따라서 코퍼스 gate는 여전히 차단이며 엔진 회귀 평가는 실행되지 않았다.
+기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 별도 draft pool의 27개 case JSON과 공식 evidence hash를 manifest로 고정했다.
+이전에 제안된 unversioned 36개 모의 코퍼스는 holdout에 날짜만 바꾼 동일 템플릿이 반복되고 manifest가 없어 승격하지 않았다.
+현재 pool도 assistant-simulated이며 독립 검토 전이라 fixed corpus gate는 차단되고 엔진 회귀 평가는 실행하지 않았다.
