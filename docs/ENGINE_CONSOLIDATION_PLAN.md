@@ -103,6 +103,8 @@ flowchart LR
 | 26 완료 | Isolated updater와 candidate QA handoff | 기존 updater가 현재 branch를 바꾸고 QA를 호출하지 않았다. | `run_improvement.py`는 origin/명시 base에서 isolated worktree를 만들고 경로 allowlist·no-op·동일 SHA QA·조건부 push/PR을 연결한다. CI dry run과 unit tests가 no-op 정리 및 QA 실패 시 무push를 확인한다. 실제 Codex pilot은 27회차에서 확인한다. [보고서](ITERATION_26_REPORT.md) |
 | 27 | Schedule consolidation and supervised pilot | 자동 주기는 통합 흐름이 Windows에서 운영 가능한지 입증한 뒤에만 검토한다. | 먼저 Windows에서 사람이 직접 시작한 pilot 1회로 no-op·failure·success 보고를 검토한다. 실제 Codex 실행은 이 검토 뒤에만 한다. 반복 scheduler는 비활성 상태로 유지하고 중복 실행 방지, 환경·base ref 설정, 로그 보존을 확인한다. 이후 사용하지 않는 launcher를 제거한다. |
 
+2026-10-27 상태: PR #26 merge 후 Linux에서 updater를 수동 실행했으나 실제 Codex 요청이 `401 Unauthorized`로 실패해 `CODEX_AUTH_REQUIRED`로 끝났다. CLI login status는 로그인 상태를 표시했지만 토큰 갱신은 실패했다. candidate/QA/push/PR은 없었고 실패 분석용 worktree와 report를 보존했다. 따라서 Windows pilot과 no-op/성공 결과는 미확인이다. 재인증 후 Windows 수동 pilot을 완료하고 결과를 검토하기 전까지 scheduler를 활성화하지 않는다. 자세한 실행 근거는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
+
 이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 제품 사용자 관찰은 참가자가 필요하므로 준비된 세션 절차와 병행할 수 있지만, 유지보수 실행 결과를 제품 사용성이나 Gate 증거로 세지 않는다.
 
 ## 안전 조건과 미결 설계 결정
