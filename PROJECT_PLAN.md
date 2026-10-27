@@ -87,7 +87,7 @@ Gate A와 D는 해당 범위에서 통과했다. Gate B/C/E는 제한 범위 판
 flowchart LR
   U[CLI / Python API] --> O[공통 Orchestrator]
   O --> P[저장된 TaskPlan · stage history · retry/resume]
-  O --> R[provider별 runner composition<br/>통합 registry는 보완 필요]
+  O --> R[공통 composition root / EngineRegistry<br/>saved plan의 engine/version 조립]
   R --> A[API source adapters]
   R --> F[공식 파일·tabular adapter]
   R --> L[승인된 대용량 worker]
@@ -102,12 +102,12 @@ flowchart LR
   Q --> PR[사람 검토 PR]
 ```
 
-- **공통 실행 계층:** `Engine`, `StageInput`, `StageResult`, `TaskPlan` 계약과 `Orchestrator`가 stage lifecycle·attempt·상태·resume·이력을 관리한다. provider별 runner factory와 CLI mapping은 아직 각 진입점에 나뉘어 있고, 전역 engine/version registry는 구현되지 않았다.
+- **공통 실행 계층:** `Engine`, `StageInput`, `StageResult`, `TaskPlan` 계약과 `Orchestrator`가 stage lifecycle·attempt·상태·resume·이력을 관리한다. `EngineRegistry`/composition root가 출처별 factory를 `(engine, version)`으로 등록하고 저장 plan에 맞는 runner를 조립한다. 대용량 worker는 별도 잠금·checkpoint recovery runner를 유지한다.
 - **출처별 adapter:** 기관 API endpoint, 인증, paging, response schema와 파일 parser는 각 connector/engine adapter가 책임진다. 이 차이를 없애려고 하나의 거대한 source engine으로 합치지 않는다.
 - **공유 서비스:** transport 공통 처리, raw/artifact store, metadata projection, freshness evaluator, duration estimator 등 반복되는 정책을 typed service로 둔다. 독립 권한·수명이 없는 부품을 또 다른 “엔진”으로 부르지 않는다.
 - **대용량 worker:** 작은 tabular parser와 다른 memory/time/checkpoint 경계를 가진다. qualification 통과는 production 승인이 아니다.
 - **개발자 maintenance:** 분석 proposal → 격리 수정 → candidate SHA QA → branch/PR까지만 지원할 수 있다. 제품 task·원본·credential과 분리하며 자동 merge·배포하지 않는다.
-- **현재 통합 공백:** 실행 계약은 공통이지만 provider별 runner factory와 CLI dispatch의 engine mapping 생성은 완전히 한곳으로 모이지 않았다. 새 source를 추가하기 전에 공통 composition/registry 경계를 보완한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
+- **현재 통합 공백:** 고정 CLI collect 명령은 World Bank/BOJ 범위이고 BLS/Census는 등록된 Python engine 경로만 있다. 새 provider는 connector/engine adapter와 registry 등록·회귀 사례를 함께 추가한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
 
 | 엔진/계층 | 맡는 일 | 현재 상태 |
 |---|---|---|
@@ -115,7 +115,7 @@ flowchart LR
 | Source connector/adapter | World Bank·BOJ·BLS·Census API별 인증, 요청, paging, 응답 해석을 수행한다. | 출처별 adapter로 유지하며 일부 경로만 실제 수집 검증. 기관을 독립 agent로 쪼개지 않는다. |
 | 공식 파일 intake/watch | 지정한 TIC/BIS 파일의 범위·출처를 기록하고 허용된 단발 작업을 수행한다. | 필요 시 사용자 요청으로만 사용. 반복 변경 감시 자동화는 중지. |
 | Large-file trial/production worker | 자원·시간·범위를 제한해 대용량 원본을 분리 처리하고 결과를 전달한다. | trial/production 경로가 분리됨. 보존한 BIS GLI flat ZIP 1건의 승인형 Linux 구조 보존 경로만 확인. |
-| Orchestrator·task history | 저장된 plan을 stage로 실행하고 상태, attempt, 실패, 명시적 resume 이력을 관리한다. | 공통 lifecycle이 구현됨. provider 전체의 runner composition은 아직 전역 단일 registry로 통합되지 않음. |
+| Orchestrator·task history | 저장된 plan을 stage로 실행하고 상태, attempt, 실패, 명시적 resume 이력을 관리한다. | `EngineRegistry`가 World Bank·BOJ·BLS·Census·Gate C adapter를 등록하고 saved `(engine, version)`으로 조립·재개. 승인 조건은 dispatcher에서 재검증하고 large-file recovery는 전용 runner에 둠. |
 | Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | monotonic stage/선택 phase 계측, 별도 privacy-safe 표본 DB, knowledge latency와 읽기 전용 보고기를 구현한다. 자연 API 기준선과 일부 leaf timing은 미수집이며 fixture 반복 자료로 p95가 20개를 넘기기 전 확정하지 않는다. |
 | Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
@@ -123,7 +123,7 @@ flowchart LR
 | Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
 | Developer maintenance workflow | 저장소 개선 후보를 격리 branch/worktree에서 수정·검증해 사람이 검토할 PR로 만든다. | 제품 데이터 Orchestrator와 별도 control plane. 일부 QA/updater 흐름은 있으나 자동 merge·배포는 없음. |
 
-현재 코드 대조와 남은 공백은 [`docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md`](docs/ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md), 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)를 따른다.
+Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)를 따른다. 성능 계측과 별도 최적화 근거는 [`docs/ENGINE_PERFORMANCE_BASELINE_2026_10_27.md`](docs/ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)를 따른다.
 
 ## 5. 원본·메타데이터·정규화 시계열 계약
 
@@ -204,8 +204,8 @@ flowchart LR
 | 4 | 시계열 모델 | 공통 typed Series/ObservationBatch를 설계하고 World Bank·BOJ 고정 경로에 먼저 연결한다. | source identity, field, currency/unit, frequency/calendar, period, override, raw/source provenance와 unknown 보존; 기존 raw/hash 계약 유지 |
 | 5 | 원자료 출력 | 개별 호환 series의 XLSX 원자료 출력 및 provenance를 구현한다. | 파일 경계/no-overwrite 검증, source 값과 결측 보존, stale/unverified 차단, 지원 connector별 fixture와 실제 저장 task 확인 |
 | 6 | 비교 출력 | 다중 series worksheet 분리와 alignment sheet를 구현한다. | compatibility rule, date/calendar, 집계/변환식, 결측 빈칸, overlap 충돌 보존/검토, 보간·forward-fill 금지를 회귀 테스트 |
-| 7 | 성능 계측 | 공통 Orchestrator의 stage wall time을 monotonic clock으로 기록하고, 가능한 엔진은 network, raw/write, parse, quality, SQLite/export/worker 하위시간을 구분한다. | 엔진/version/stage/status/시도·코드 SHA·환경·입력 크기를 개인정보 없이 저장하고 읽기 전용 성능 보고에서 p50/p95·처리량·표본 수를 보여준다. engine/version/작업크기별 20개 미만이면 p95를 확정하지 않고 `INSUFFICIENT_SAMPLE`로 표시한다. fixture·synthetic·live 증거를 구분하며 표본을 위해 live 요청을 만들지 않는다. |
-| 8 | 엔진 조립 | 측정 기준을 보존하면서 provider별 mapping을 더 쉽게 검토·등록할 공통 composition registry를 보완한다. | 같은 Orchestrator lifecycle에서 source-specific adapters를 등록하고 plan/version 검증과 resume가 회귀 없이 동작. 출처 adapter를 합치지 않으며 성능 개선은 계측 결과가 근거일 때만 수행 |
+| 7 완료 | 성능 계측 | 공통 Orchestrator의 stage wall time을 monotonic clock으로 기록하고, 가능한 엔진은 network, raw/write, parse, quality, SQLite/export/worker 하위시간을 구분한다. | 개인정보 없는 `performance.sqlite`, read-only p50/p95·처리량 보고, knowledge latency 및 cache 상태를 구현. 161 fixture/stored 표본 기준선은 실제 API 지연을 증명하지 않는다. [PR #56](https://github.com/jaeu983-lang/MacroAtlas/pull/56) |
+| 8 완료 | 엔진 조립 | 측정 기록 이후 provider별 mapping을 더 쉽게 검토·등록하도록 공통 composition registry를 연결한다. | 같은 Orchestrator lifecycle에서 World Bank·BOJ·BLS·Census/Gate C adapters를 등록하고 저장 plan의 version 검증·재개가 회귀 없이 동작한다. 출처 adapter를 합치지 않으며 성능 개선은 별도 계측 근거가 있을 때만 수행한다. |
 | 9 | 유지보수 | Windows changed-candidate/handoff 및 failure-recovery pilot을 실측한다. | candidate SHA, 동일 SHA QA, allowlist, 실패/no-push, cleanup 및 handoff report 확인 |
 | 10 | 유지보수 | scheduler invocation은 정책을 확인한 뒤 별도 검증한다. | 등록 여부와 무관하게 우선 정적/dry-run 검증. 명시 승인 전까지 예약 작업은 비활성으로 유지하고 실제 invocation을 임의로 주장하지 않음 |
 | 11 | 유지보수 | 실행 시간 추정과 statistical metadata/quality를 실제 승인 작업에서 보정한다. | operation별 paired forecast가 3건 쌓인 후 error 재평가. 선택된 실제 series의 정의·단위·주기·calendar·revision evidence를 확인 |

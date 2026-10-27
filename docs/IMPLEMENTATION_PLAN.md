@@ -19,7 +19,7 @@
 > 출력한다. live API 표본을 임의 생성하지 않았으며, source별 자연 기준선은 승인된 요청의 표본을 기다린다.
 > 세부 phase가 없는 Discovery와 기존 대용량 worker 자료는 별도 scope다. 161개의 fixture/stored 반복 결과는
 > [오프라인 기준선](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)에 기록했으며 실제 API 지연을 나타내지 않는다.
-> 측정 전 최적화나 registry 통합은 하지 않는다.
+> 이 측정 뒤 통합 기획 §11 순서 8에 따라 공통 EngineRegistry/composition root를 연결했다. 이는 saved plan의 등록·재개 구조를 단순화한 변경이며 성능 개선을 입증하지 않는다. cache·SQLite·raw-write 최적화는 실제 workload 병목이 재현될 때까지 보류한다.
 
 ## 현재 상태 — 2026-10-27
 

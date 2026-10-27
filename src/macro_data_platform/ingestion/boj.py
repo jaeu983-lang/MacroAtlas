@@ -184,7 +184,7 @@ def build_boj_plan(query: BOJQuery) -> TaskPlan:
     ))
 
 
-def _metadata_reusable(spec: StageSpec, candidate: dict, settings: Settings) -> bool:
+def metadata_reusable(spec: StageSpec, candidate: dict, settings: Settings) -> bool:
     if (spec.engine != "boj_metadata" or candidate.get("status") != StageStatus.SUCCEEDED
             or not isinstance(candidate.get("result"), dict)):
         return False
@@ -225,15 +225,15 @@ def make_boj_orchestrator(store: HistoryStore, settings: Settings,
                           clock=lambda: datetime.now(UTC),
                           freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY
                           ) -> Orchestrator:
-    if store.settings.database_path != settings.database_path:
-        raise ValueError("BOJ runner and history must use the same configured storage")
-    engines = {
-        ("boj_metadata", "1"): BOJMetadataEngine(settings, transport),
-        ("boj_observations", "2"): BOJObservationEngine(
-            settings, transport, clock=clock, freshness_policy=freshness_policy),
-    }
-    return Orchestrator(store, engines, reuse_validator=(
-        lambda spec, candidate: _metadata_reusable(spec, candidate, settings)), clock=clock)
+    from macro_data_platform.orchestration.composition import build_engine_registry
+
+    registry = build_engine_registry(
+        settings, store, boj_transport=transport, clock=clock,
+        freshness_policy=freshness_policy,
+    )
+    return registry.orchestrator_for(engine_keys={
+        ("boj_metadata", "1"), ("boj_observations", "2"),
+    })
 
 
 def create_boj_task(store: HistoryStore, settings: Settings, query: BOJQuery,

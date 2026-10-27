@@ -17,8 +17,8 @@ from macro_data_platform.connectors.statistical_http import ApiDownload
 from macro_data_platform.contracts import EvidenceKind, StageStatus
 from macro_data_platform.ingestion.bls import BLSEngine as _BLSEngine
 from macro_data_platform.ingestion.census import CensusEngine as _CensusEngine
+from macro_data_platform.orchestration import build_engine_registry
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
-from macro_data_platform.orchestration.runner import Orchestrator
 from macro_data_platform.storage.history import HistoryStore
 
 BLSEngine = partial(_BLSEngine, freshness_policy=HISTORICAL_FIXTURE_POLICY)
@@ -143,25 +143,29 @@ class CensusTests(unittest.TestCase):
     def test_orchestrator_runs_both_sources(self):
         with tempfile.TemporaryDirectory() as directory:
             settings = Settings(Path(directory), network_enabled=True)
-            engines = {
-                ("bls", "1"): BLSEngine(settings, FixtureTransport(download(BLS_URL, {
+            store = HistoryStore(settings)
+            registry = build_engine_registry(
+                settings, store,
+                bls_transport=FixtureTransport(download(BLS_URL, {
                     "status": "REQUEST_SUCCEEDED", "Results": {"series": [{
                         "seriesID": "CUUR0000SA0", "data": [{
                             "year": "2024", "period": "M01", "value": "308.417",
                         }]
                     }]},
-                }))),
-                ("census", "1"): CensusEngine(settings, FixtureTransport(download(CENSUS_URL, self.body))),
-            }
-            runner = Orchestrator(HistoryStore(settings), engines)
+                })),
+                census_transport=FixtureTransport(download(CENSUS_URL, self.body)),
+                clock=lambda: NOW, freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
             cases = [
                 ("bls", {"series_ids": ["CUUR0000SA0"], "start_year": 2024, "end_year": 2024}),
                 ("census", {"year": 2022, "dataset": "acs/acs1",
                             "variables": ["NAME", "B01001_001E"], "geography": "state:06"}),
             ]
             for name, inputs in cases:
+                plan = TaskPlan((StageSpec(name, name, inputs),))
+                runner = registry.orchestrator_for(plan=plan)
                 task = runner.create(name)
-                runner.plan(task.task_id, TaskPlan((StageSpec(name, name, inputs),)))
+                runner.plan(task.task_id, plan)
                 result = runner.run(task.task_id)
                 self.assertEqual(result["status"], "COMPLETED")
 

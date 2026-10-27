@@ -12,14 +12,9 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
-from macro_data_platform.ingestion.worldbank import GDPTransport, WorldBankGDPEngine
-from macro_data_platform.ingestion.worldbank_quality import (
-    WorldBankAuditedCollection,
-    WorldBankValidation,
-    reusable,
-    verify_completed,
-)
-from macro_data_platform.orchestration import Orchestrator, StageInput, StageSpec, TaskPlan
+from macro_data_platform.ingestion.worldbank import GDPTransport
+from macro_data_platform.ingestion.worldbank_quality import verify_completed
+from macro_data_platform.orchestration import StageInput, StageSpec, TaskPlan
 from macro_data_platform.orchestration.models import json_snapshot
 from macro_data_platform.orchestration.workflow import validate_workflow_task
 from macro_data_platform.storage.audit import AuditStore
@@ -171,37 +166,31 @@ class WorldBankRequestDispatcher:
                 raise ValueError("completed World Bank observations are stale or unverified")
         return doc, confirmed, plan
 
-    def _runner(self):
-        engines = {
-            ("worldbank_gdp", "2"): WorldBankGDPEngine(
-                self.settings, self.transport, clock=self.clock,
-                freshness_policy=self.freshness_policy),
-            ("worldbank_delivery", "1"): _LinkStage(self),
-        }
-        if self.gate_a:
-            engines.update({
-                ("worldbank_collect_audit", "1"): WorldBankAuditedCollection(
-                    self.audit, self.transport, settings=self.settings),
-                ("worldbank_validate", "2"): WorldBankValidation(
-                    self.audit, freshness_policy=self.freshness_policy),
-            })
-        return Orchestrator(self.store, engines, clock=self.clock,
-                            reuse_validator=(lambda spec, stage: reusable(
-                                self.audit, spec, stage, freshness_policy=self.freshness_policy))
-                            if self.gate_a else None)
+    def _runner(self, plan: TaskPlan):
+        from macro_data_platform.orchestration.composition import build_engine_registry
+
+        has_delivery = any(spec.engine == "worldbank_delivery" for spec in plan.stages)
+        registry = build_engine_registry(
+            self.settings, self.store, worldbank_transport=self.transport, clock=self.clock,
+            freshness_policy=self.freshness_policy, gate_a=self.gate_a, audit_store=self.audit,
+            additional_engines={("worldbank_delivery", "1"): _LinkStage(self)}
+            if has_delivery else None,
+        )
+        return registry.orchestrator_for(plan=plan)
 
     def prepare(self, task_id: str) -> dict:
         doc, _, plan = self._preflight(task_id)
         if plan is not None:
-            self._runner().plan(task_id, plan)
+            self._runner(plan).plan(task_id, plan)
             return self.store.get(task_id)
         return doc
 
     def run(self, task_id: str) -> dict:
         doc, confirmed, plan = self._preflight(task_id)
         if plan is not None:
-            self._runner().plan(task_id, plan)
-            return self._runner().run(task_id)
+            runner = self._runner(plan)
+            runner.plan(task_id, plan)
+            return runner.run(task_id)
         # A dedicated transaction, not a collector stage/engine, handles link-only work.
         with self.store.transaction() as connection:
             doc = self.store.load(connection, task_id)
@@ -230,4 +219,4 @@ class WorldBankRequestDispatcher:
         _, _, plan = self._preflight(task_id)
         if plan is None:
             raise ValueError("Link delivery has no collector attempt to resume")
-        return self._runner().resume(task_id, approved=approved)
+        return self._runner(plan).resume(task_id, approved=approved)

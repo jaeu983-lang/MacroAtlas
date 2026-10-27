@@ -1,7 +1,9 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
 기준: 2026-10-27 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
-출처별 runner가 같은 Orchestrator 계약을 사용하지만, 공통 전역 registry는 아직 없다. transport·parser·capacity 검사·storage는 엔진의 내부 부품이다.
+API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
+transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
+별도이므로 전용 runner를 유지한다.
 제품 요구사항·우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 실행 순서 요약은
 [로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
@@ -12,7 +14,8 @@ Orchestrator 및 source engine과 별도 control plane이다. 현재 중복 실�
 ```mermaid
 flowchart TD
     CLI[CLI / Python 진입점] --> PLAN[고정 요청 확인 / TaskPlan]
-    PLAN --> RUN[Orchestrator + HistoryStore]
+    PLAN --> ROOT[composition root / EngineRegistry]
+    ROOT --> RUN[Orchestrator + HistoryStore]
     RUN --> API[API 수집 stage]
     RUN --> FILE[파일 수집 / 로컬 intake stage]
     API --> HTTP[기관별 transport]
@@ -48,12 +51,12 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 
 | 진입점 | 저장되는 stage / 실제 호출 | 출력·다음 연결 |
 |---|---|---|
-| `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
-| `collect boj-fxer` | `build_boj_plan` → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
-| `watch tic/bis` | `build_gate_c_watch_plan` → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
+| `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → 공통 EngineRegistry → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
+| `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
+| `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
-| BLS/Census | Python API에서 BLSEngine/CensusEngine을 runner에 명시 등록 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI dispatch 대상에는 없음 |
-| `status` / `resume` | task 조회 / 저장된 workflow·engine plan으로 해당 runner 선택 | 새 source 범위를 만들지 않고 같은 task 재개. World Bank/BOJ/watch는 저장된 계획을 재개하고, 대용량 시험 task는 중단 worker의 종료를 확인해 미확정 결과를 기록 |
+| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; Python API로 계획 실행 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI collect 명령은 없음 |
+| `status` / `resume` | task 조회 / 저장 plan의 `(engine, version)`을 공통 EngineRegistry가 해석 | 새 source 범위를 만들지 않고 같은 task 재개. Workflow confirmation은 WorldBank dispatcher가 재검증하고, 대용량 시험·production은 중단 worker 확인과 checkpoint 검증을 위해 전용 recovery runner를 유지 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산과 duration profile/forecast 결합 → worker 직전 예상 표시 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음. 완료 요약에 actual stage seconds 포함 |
 | `large-estimate qualification/production ID [--event-seq N]` | SQLite와 로컬 표본의 read-only 조회 → 선택 엔진 이력으로 예측 | task/event/worker 실행 없이 시간 범위·신뢰도·표본 수만 반환 |
@@ -105,7 +108,7 @@ Orchestrator는 engine 호출 전후를 `perf_counter_ns()`로 재며 stage 결�
 
 SQLite phase는 해당 DB 작업 경계의 inclusive 측정이고 전체 stage와 일부 세부 phase는 겹칠 수 있으므로 phase 값을 더해 전체 시간으로 해석하지 않는다. Discovery·일반 tabular·평가 validator에는 아직 별도 leaf timing이 없으며 해당 stage가 Orchestrator에서 실행된 경우 전체 stage만 얻는다.
 
-읽기 전용 `macro-perf report --project-root .`은 execution scope·engine/version·stage·workload tier·evidence class·cache 상태·코드 SHA·환경별로 표본 수, 상태 수, p50/p95, 중앙 크기, 처리량을 집계한다. p95는 그룹에 20개 이상일 때만 표시하고, 그보다 적으면 `INSUFFICIENT_SAMPLE`이다. 현재 production 자연 요청 표본은 별도로 승인·수집되지 않았다. parser/exporter/knowledge는 보존 자료나 fixture로 반복 측정하고, live API 요청을 benchmark 용도로 만들지 않는다. 다음 성능 최적화나 EngineRegistry/composition 변경은 이 자료로 실제 병목이 확인된 뒤 선택한다.
+읽기 전용 `macro-perf report --project-root .`은 execution scope·engine/version·stage·workload tier·evidence class·cache 상태·코드 SHA·환경별로 표본 수, 상태 수, p50/p95, 중앙 크기, 처리량을 집계한다. p95는 그룹에 20개 이상일 때만 표시하고, 그보다 적으면 `INSUFFICIENT_SAMPLE`이다. 현재 production 자연 요청 표본은 별도로 승인·수집되지 않았다. parser/exporter/knowledge는 보존 자료나 fixture로 반복 측정하고, live API 요청을 benchmark 용도로 만들지 않는다. EngineRegistry는 현재 저장 plan으로 각 source adapter와 공통 Orchestrator를 조립하는 구조 정리다. 이 변경은 성능 개선 수치를 주장하지 않으며, cache·SQLite·raw 저장 최적화는 자연 API나 큰 보존 자료에서 병목이 재현될 때까지 보류한다.
 
 ## 대용량 엔진 연결 규칙
 

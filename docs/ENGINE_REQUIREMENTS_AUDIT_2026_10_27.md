@@ -6,7 +6,7 @@
 
 | 영역 | 판정 | 코드·검증에서 확인한 내용 | 남은 조건 |
 |---|---|---|---|
-| 공통 데이터 실행 엔진 | **부분 통합** | `Engine`/`StageResult` 계약과 공통 `Orchestrator`가 stage·attempt·retry/resume·task history를 관리한다. World Bank, BOJ, BLS/Census, 파일, 대용량 작업은 이 계약에 맞춘 adapter/worker다. | CLI와 provider별 runner factory가 각각 엔진 mapping을 구성한다. 전역 단일 registry/control-plane wiring은 아직 완전히 공통화되지 않았다. provider adapter는 출처별 전송·응답 차이 때문에 유지하는 편이 맞다. |
+| 공통 데이터 실행 엔진 | **provider composition 통합** | `EngineRegistry`가 World Bank·BOJ·BLS·Census·Gate C adapter factory를 `(engine, version)`으로 등록하고 saved plan에 맞는 공통 `Orchestrator`를 조립·재개한다. Workflow confirmation은 dispatcher에서 다시 검사한다. | 대용량 trial/production은 worker lock·checkpoint 복구가 달라 전용 runner를 유지한다. BLS/Census는 registry/Python API 대상이며 고정 CLI collect 명령이나 live fixture evidence가 추가된 것은 아니다. adapter는 출처별 전송·응답 차이 때문에 유지한다. |
 | 엔진별 성능·병목 계측 | **공통 계측 구현, 자연 기준선 수집 중** | Orchestrator stage monotonic wall, API network/raw/parse/quality/SQLite, CSV export timing을 privacy-safe `performance.sqlite`에 둔다. knowledge 결과에 `latency_ns`가 추가되고 hit/miss 및 SQLite 시간이 집계된다. `macro-perf report`는 read-only다. [offline fixture 161개 표본](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)은 경로 검증이며 live network 기준선이 아니다. | live network는 승인된 자연 요청에서만 표본화한다. 실사용 workload와 production 대용량 비교는 남아 있으며, worker qualification/production 시간은 scope를 분리한다. |
 | 피드백 별도 로그 | **구현됨** | `FeedbackStore`가 task/stage 연결, append-only revision, review 상태, 철회, 범위 필터를 SQLite에 기록하고 `macro-feedback` CLI가 관리한다. | 사용자가 검토하지 않은 내용은 지식 재사용에 쓰지 않는다. 로그에서 평가 사례나 공통 코드 규칙을 자동 생성하지 않는다. |
 | 주기별 최신성 | **구현됨, 기본 정책 제한** | 공통 `assess_freshness`가 daily/weekly/monthly/quarterly/semiannual/annual 허용일, period-end, exact series override, 정책 fingerprint를 기록하고 오래되거나 확인 불가한 결과를 차단한다. World Bank·BOJ·BLS·Census 경로에 연결돼 있다. | 기본 허용일은 운용상 기본값이지 각 시리즈 공표 달력 보증이 아니다. 실제 series별 공표 일정 검증과 모든 generic tabular 경로 적용은 남았다. |
@@ -36,7 +36,7 @@
 
 World Bank/BOJ/BLS/Census 공통 transport, raw 저장, parser, freshness/quality 경계와 CSV exporter에 선택 계측을 붙였다. CSV export 표본은 별도 DB를 써서 exporter의 task DB 읽기 전용·hash 불변 조건을 보존한다. KnowledgeStore는 기존 cache 및 candidate rows/bytes에 latency를 더해 반환하고, scope/text 없는 hit/miss 표본을 저장한다. `macro-perf report --project-root .`는 execution scope, engine/version, stage, workload tier, sample/evidence/cache class, code SHA, 환경별 p50/p95·처리량·표본 수를 보여주며 p95는 n≥20에서만 확정한다. phase는 inclusive 경계로 겹칠 수 있어 합산하지 않는다.
 
-fixture 기반 API 실행, 보존 task exporter, knowledge lookup으로 offline 표본을 모은다. 아직 live network latency를 입증하지 않으며 자연 사용자 요청 전송도 발생시키지 않는다. 대용량 qualification·production 기록은 기존 시간/메모리 보고에서 관리하고 일반 stage duration과 한 표본군에 합치지 않는다. 병목이 확인되기 전에는 Registry/composition이나 catalog/task 저장 최적화는 수행하지 않는다.
+fixture 기반 API 실행, 보존 task exporter, knowledge lookup으로 offline 표본을 모았다. 이는 live network latency를 입증하지 않으며 자연 사용자 요청 전송도 발생시키지 않는다. 계측 이후 통합 기획 §11 순서 8에 따라 registry/composition을 연결했지만, 이는 성능 최적화가 아니다. 대용량 qualification·production 기록은 기존 시간/메모리 보고에서 관리하고 일반 stage duration과 한 표본군에 합치지 않는다. catalog/task 저장 최적화는 실제 workload에서 큰 비용이 재현될 때까지 수행하지 않는다.
 
 1. 사용자가 명시적으로 검토한 피드백 또는 공개 근거에서 개인정보를 제거한 사례를 개발 세트에 추가한다. 유사하지만 정답이 다른 질문은 같은 contrast group에 넣는다. 검토 전 피드백은 옮기지 않는다.
 2. 실제 engine output을 사례 기준으로 정규화하는 outcome adapter와 기준안/후보안 비교기(C)를 만든다. validation·holdout 결과, false-confirmation 0건, forbidden action 0건이 확인되기 전에는 규칙을 반영하지 않는다.
