@@ -302,3 +302,21 @@ Orchestrator 연결 및 end-to-end 효율 증거가 없어 계속 미통과다.
 - BOJ의 별도 제한 collector task `759540fe-3656-42d6-bbef-3d3f05f4a5f4`는 metadata/data
   두 stage와 HTTP 200, 30 observations, 11 null을 확인했다. 이는 Gate C revision/recovery 쌍을
   충족하지 않으며 D-067 제한 판정의 범위를 바꾸지 않는다. 구현은 [`connectors/BOJ.md`](connectors/BOJ.md)에 있다.
+
+## 자연 발생 durable resume 추가 실측 — 2026-10-27
+
+보존 catalog의 World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에는 2026-10-26의
+`collect=FAILED_RETRYABLE`, `error_code=TRANSIENT`가 이미 저장돼 있었다. 원 요청의
+`Retry-After`는 없었고 plan의 `max_attempts`는 3, 사용된 task attempt는 1이었다. 2026-10-27에
+새 task를 만들지 않고 `macroatlas resume 84a1afd9-4b56-454f-96ea-f6e59f245afc --live`를 한 번 실행했다.
+
+같은 task의 attempt 2에서 같은 `collect` stage가 `SUCCEEDED`했고 후속 `validate`도 통과해 task가
+`COMPLETED`가 됐다. 이전 실패와 재개 성공의 stage run, audit, `TASK_RESUMED`, `STAGE_STARTED`,
+`STAGE_FINISHED`, `TASK_FINISHED` event가 catalog에 남아 있다. 수집 raw SHA-256은
+`219e79f17e08a93d64f747f3cdb7376d09349e5c8525d24f316532b86cccd6b1`이며 세 관측값 모두 검증을
+통과했다. unit/frequency unknown 경고는 그대로 보존됐다.
+
+이 결과는 **World Bank API collector에서 자연 transient failure를 저장한 뒤 same-task/same-stage로
+복구한 실측**이다. TIC/BIS file watch의 natural failure나 실제 source revision을 뜻하지 않으며,
+D-067 제한 범위 통과를 확대하지 않는다. TIC/BIS source revision은 별도 자연 raw pair가 생길 때까지
+미해결로 남는다.
