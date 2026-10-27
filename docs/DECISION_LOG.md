@@ -830,3 +830,13 @@ Run `20261027T063907Z-d01e9247`은 `NO_ACTIONABLE_CHANGE`, `cleanup=PASSED`, `ne
 push, PR handoff는 없었다. Worktree와 branch가 정리됐으며 90일 retention report는 `scanned=5`, `removed=0`, `preserved=5`를
 기록했다. 이는 최신 base의 no-op 정리 경로를 확인하며 Windows changed-candidate/failure 복구나 실제 scheduler 실행의 증거는 아니다.
 예약 task는 계속 비활성이다.
+
+## D-094 — World Bank GDP 공식 metadata 보존 및 unknown 유지
+
+2026-10-27. Official World Bank indicator metadata endpoint를 한 번 조회해 HTTP 200 응답과 manifest를
+[metadata response](evidence/worldbank_gdp_indicator_metadata_20261027.json) 및
+[request manifest](evidence/worldbank_gdp_indicator_metadata_20261027.manifest.json)에 보존했다. Exact indicator
+`NY.GDP.MKTP.CD`의 공식 name은 `GDP (current US$)`이며 source note는 현재 가격의 미국 달러라고 설명한다.
+그러나 response의 structured `unit` 값은 빈 문자열이고 frequency/periodicity field가 없다. 따라서 이 결과는
+indicator의 표시 의미를 확인하지만 정규화 unit/frequency 값을 증명하지 않는다. 저장된 2020–2022 observation,
+원본 manifest, 과거 quality report는 변경하지 않고 unit/frequency unknown을 유지한다.
