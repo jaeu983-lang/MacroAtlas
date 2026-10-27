@@ -1,8 +1,8 @@
 # MacroAtlas 개발자 안내서
 
-기준일: 2026-10-26. 사용자가 실행하는 기능은 [사용자 안내서](USER_GUIDE.md), 구현 순서는
-[제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를
-참조합니다. 과거 보고서의 상태 문구를 현재 구현 여부로 사용하지 않습니다.
+기준일: 2026-10-27. 통합 범위·우선순위는 [제품 기획](../PROJECT_PLAN.md), 사용자가 실행하는 기능은
+[사용자 안내서](USER_GUIDE.md), 간단 실행 요약은 [제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는
+[제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 과거 보고서의 상태 문구를 현재 구현 여부로 사용하지 않습니다.
 
 ## 개발 환경 준비
 
@@ -31,12 +31,14 @@ py -3 -m venv .venv
 | `src/macro_data_platform/cli.py` | 명시적으로 지원한 구조화 CLI와 고정 진입 경로 |
 | `contracts.py`, `workflow_contracts.py`, `workflow_extensions.py` | 요청·근거·결과·선택의 값 계약 |
 | `orchestration/` | task plan, stage runner, resume 및 실행 이력 연결 |
+| `performance/` | privacy-safe monotonic stage/phase 표본 저장과 read-only `macro-perf` 집계 |
 | `storage/` | SQLite task, raw-download, feedback, deferred record, artifact 관련 저장 |
 | `connectors/` | 기관 전송과 parser adapter |
 | `ingestion/` | connector를 실행 가능한 stage/engine으로 연결 |
 | `ingestion/csv_export.py` | 완료된 World Bank/BOJ task와 저장 원본을 읽기 전용 검증한 뒤 CSV/provenance 파일 생성 |
 | `discovery/` | 근거가 붙은 제한 후보 찾기와 명시 선택 보조 |
 | `analysis/` | 기록을 읽는 pattern 분석. 결과는 검토 후보이지 자동 지식이나 코드가 아님 |
+| `evaluation/` | 검토 사례와 development/validation/holdout split 형식 및 hash 검증기. 사례 채점·규칙 승격은 제공하지 않음 |
 | `tests/` | offline fixture, 계약, 상태 전이, 제한된 live 관련 단위 검증 |
 | `docs/` | 제품 범위, 실제 상태, 개발 설계, 날짜가 붙은 증거 |
 
@@ -79,8 +81,13 @@ manifest 필드를 대조하고 해당 한계를 sidecar provenance에 기록합
 ```bash
 python -m pytest
 python -m ruff check src tests
+macro-eval validate
 git diff --check
 ```
+
+`macro-eval validate`의 `READY`는 세 split의 구조·분리·hash 검증만 통과했다는 뜻이며 엔진 평가가 아닙니다. 현재 포함된 사례는 synthetic fixture라 `reviewed_feedback_split_coverage`가 `none`입니다. validation/holdout hash도 blind holdout이나 일반화 성능의 증거가 되지 않습니다. 상태 정의는 [평가 사례 규약](EVALUATION_CASES.md)을 확인하세요.
+
+`macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
 개별 테스트는 해당 테스트 모듈/이름으로 좁힌 뒤 마지막에 전체 suite를 실행합니다. 새 테스트는 사용자에게
 보이는 결과 계약, 상태 전이, 안전 경계를 검증해야 합니다. 구현 코드를 그대로 반복하는 테스트만 추가하지 않습니다.

@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from macro_data_platform.contracts import required
+from macro_data_platform.performance.metrics import PerformanceMetrics
 
 
 def json_snapshot(value: Any) -> Any:
@@ -63,3 +64,4 @@ class StageInput:
     upstream: Any
     input_refs: tuple[str, ...]
     knowledge_context: Any = None
+    metrics: PerformanceMetrics | None = None

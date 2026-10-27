@@ -2,10 +2,24 @@
 
 > 2026-10-27 갱신: updater 기본 코드는 PR #34 commit `543c719be506350ce57fd14358173e54ede812b3`에 들어갔다. PR #23–#26에서 evidence domain, provider scope, BLS metadata 한계를 정리했고 PR #28은 malformed task plan의 CSV export 차단을 추가했다. Linux updater candidate QA/PR handoff와 Windows no-op/cleanup pilot은 통과했다. Windows installer dry-run, updater no-op 및 교차 프로세스 lock 경합도 통과했다. Windows pilot base `aefd320`에서 no-op, cleanup, retention report도 재확인됐다. 기준 HEAD `7fbd67e`의 Actions run [40464384575](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40464384575) 및 merge commit `fb37234`의 run [40465191814](https://github.com/jaeu983-lang/MacroAtlas/actions/runs/40465191814)은 4개 job 모두 step 실행 전에 실패해 CI 검증 결과를 제공하지 않는다. candidate/failure 경로는 남긴다. Gate C 자연 증거와 updater pilot 범위는 각각 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md), [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md), [미해결 항목](UNRESOLVED_ITEMS.md)를 따른다.
 
-> **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 다음 작업 순서는
-> [제품 로드맵](ROADMAP_2026_10_26.md), 요구사항은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md),
+> **이 문서는 현재 구현·게이트·검증 증거의 요약 기준이다.** 요구사항·우선순위는
+> [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 요약 순서는 [제품 로드맵](ROADMAP_2026_10_26.md),
 > 역사 보고서는 당시의 증거, [`DECISION_LOG.md`](DECISION_LOG.md)는 설계 선택의 이력을 담는다.
 > 기본 규칙은 한 task에 한 회차이며, 실패하거나 관측되지 않은 증거를 통과로 취급하지 않는다.
+
+> **현재 통합 상태 (2026-10-27):** PR #52에서 TIC/BIS 반복 감시 자동화를 중지했고, PR #53
+> (`a4d22e9`)에서 평가 사례 형식·development/validation/holdout 분리·누수 및 frozen hash 검증기를
+> 합쳤다. 이후 작업 branch에서 각 split 두 건씩 synthetic 준비 사례와 provenance/선언된 feedback coverage 보고를 추가했다.
+> 현재 구조 검증은 통과하지만 세 split 모두 synthetic이어서 실제 user evidence나 엔진 후보 비교·규칙 승격은 통과하지 않았다. 해당 PR들의 CI는
+> Ubuntu/Windows × Python 3.11/3.12 8개 job 모두 통과했다. 남은 순서는 통합 기획서 §11을 따른다.
+
+> **엔진 시간 계측 상태:** §11 순서 7의 공통 계측은 구현됐다. Orchestrator stage는 monotonic elapsed와
+> API·raw·parse·quality·SQLite·CSV export의 가능한 하위 시간을 별도 `data/performance.sqlite`에 저장하고,
+> knowledge query는 latency와 cache hit/miss를 보고한다. `macro-perf report`는 privacy-safe 집계를 읽기 전용으로
+> 출력한다. live API 표본을 임의 생성하지 않았으며, source별 자연 기준선은 승인된 요청의 표본을 기다린다.
+> 세부 phase가 없는 Discovery와 기존 대용량 worker 자료는 별도 scope다. 161개의 fixture/stored 반복 결과는
+> [오프라인 기준선](ENGINE_PERFORMANCE_BASELINE_2026_10_27.md)에 기록했으며 실제 API 지연을 나타내지 않는다.
+> 이 측정 뒤 통합 기획 §11 순서 8에 따라 공통 EngineRegistry/composition root를 연결했다. 이는 saved plan의 등록·재개 구조를 단순화한 변경이며 성능 개선을 입증하지 않는다. cache·SQLite·raw-write 최적화는 실제 workload 병목이 재현될 때까지 보류한다.
 
 ## 현재 상태 — 2026-10-27
 
@@ -30,11 +44,10 @@ bounded profile과 엔진별 성공 task wall-time history로 범위·신뢰도�
 production 기록은 1건이고 새 paired forecast는 0건이므로 초기 보정 상태는 낮은 신뢰도다. 원격 Ubuntu/Windows ×
 Python 3.11/3.12 checks도 8/8 성공했다. 실제 read-only preview와 한계는 [22회차 보고서](ITERATION_22_REPORT.md)에 둔다.
 
-23회차 분석가 관찰 절차는 준비했지만, 2026-10-27 사용자 우선순위 변경에 따라 마지막 제품 검증으로 미뤘다.
-실행 가능한 구현 순서와 회차별 코드/test 범위는 [평가·엔진·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)의
-28–40회차 표를 따른다. feedback log는 이미 있으나 자동 case/code 반영은 없으며, 수동 case review를 29회차에 추가한다.
-series별 freshness gate는 33회차부터 구현한다. 28–39 gate와 세션 시나리오 갱신 전에는 참가자 세션을 실행하지 않는다. 이 문서 작성은
-평가·엔진·workbook 구현 완료를 뜻하지 않는다.
+23회차 분석가 관찰은 사용자의 순서 변경에 따라 마지막 제품 검증으로 미뤘다. 상세 실행 일정의 28–39회차 A–G gate를
+모두 통과한 뒤 40회차에 workbook·feedback 흐름을 대상으로 진행한다. 현재는 과거 CSV 시나리오와 관찰표만 준비돼 있으며,
+실제 참가자 세션과 사용성 판정은 없다. [23회차 계획](ITERATION_23_PLAN.md)과
+[상세 실행 일정](PRODUCT_EVALUATION_ENGINE_PLAN.md)을 따른다.
 
 17회차 [대용량 격리 시험](ITERATION_17_REPORT.md)을 구현했다. 정식 정규화는 미실행이며,
 애매한 후보도 명시 시험 후 미실행/시험 통과를 기록한다. 19개 합성 용량 사례와 BIS 보존 원본을 확인했다.
@@ -58,13 +71,15 @@ v1 검토 통과다. 통합 PR #1은 `9986472f983a70aacc86209ee54883cca558c5e9`�
 Gate C의 D-067 제한 범위는 바뀌지 않았다. 당시 exact-scope live watch에서 TIC와 BIS 원본은 모두
 `unchanged`였으며 그 실행 중 natural provider failure는 발생하지 않았다. 통제 변경과 simulated 503 재개는
 자동 시험으로 확인했다. 이후 World Bank API에서 natural failure→persist→same-task resume은 확인됐지만
-TIC/BIS source revision과 해당 file-watch scope의 retryable failure→resume은 별도 증거 대기다.
+TIC/BIS source revision과 해당 file-watch scope의 retryable failure→resume은 검증되지 않았다. 2026-10-27 사용자
+요청으로 TIC/BIS 변경상태 확인은 현재 필요 범위에서 제외했고 관련 반복 감시 자동화 두 개를 중지했다.
+Gate C 판정과 과거 증거는 그대로 보존하며 새 변경·복구를 검증했다고 간주하지 않는다.
 현재 watcher는 요청·stage를 네트워크 전송 전에 저장한다. 판정 범위와 실제 원본 증거는
 [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md)와 [source watch 기록](GATE_C_SOURCE_WATCH.md)을 따른다.
 최신 반복 감시 task `2733c6a3-abb8-4201-9735-b3354fd32bd9` (TIC)와
 `30786cba-1024-4d8b-a599-51942bd91c63` (BIS)도 모두 unchanged여서 Gate C 판정 변화가 없다.
 
-후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
+당시 계획한 후속 네 갈래는 (1) TIC/BIS exact-scope natural event watch, (2) BOJ FM08/FXERD01 한 달 collector,
 (3) bounded structured `macroatlas` CLI 및 같은 task의 status/resume, (4) Linux/Windows CI 검증이다.
 BOJ collector는 실제 metadata/data HTTP 200과 30행·11 null 값을 확인했지만 해당 시리즈·한 달에만
 적용된다. 일반 자연어 또는 기관 전반 지원으로 확대하지 않는다.
@@ -76,6 +91,10 @@ BOJ collector는 실제 metadata/data HTTP 200과 30행·11 null 값을 확인�
 | C / 10 | **제한 범위 통과** | live capture/hash, TIC controlled-copy guard, simulated 503→대기→재개 E2E, exact-scope TIC/BIS live watch를 확인. 자연 revision/recovery는 미검증. BOJ는 후속에서 FM08/FXERD01 한 달만 연결했다. [재검토](GATE_C_REVIEW_2026_10_26.md) |
 | D / 12 | **통과** | 동일 BLS/CPI task 흐름에서 명시 선택한 accepted, exact-scope `source_method`로 search stage를 생략해 반복 stage 실행을 2→1로 줄였다. 다른 기관, broader scope, conflict, inference, unreviewed, stale index는 차단; current instruction 우선. 30회 local E2E 측정은 [12회차 보고서](ITERATION_12_REPORT.md). |
 | E / 14 | **제한 범위 통과** | A–H/X01–X09 matrix, World Bank 대표 live 경로, simulated 복구, 보안 검토, 사용자 안내서/PPT를 검수했다. 미지원·미검증 경로를 별도 공개한다. [보고서](ITERATION_14_REPORT.md) |
+
+현재 범위 정정(2026-10-27): 사용자가 TIC/BIS 자료 변경상태 확인은 필요하지 않다고 지정했다.
+관련 반복 감시 자동화는 중지했고, 자연 변경 미관측 기록과 Gate C 제한 범위 판정은 그대로 둔다.
+이 항목은 현재 작업 완료 조건이나 정기 감시 대상이 아니다.
 
 후속 15회차는 코드·문서 및 Windows CI를 검증해 별도 review branch로 push한다. 이 작업은 실행 환경에
 publish하지 않는다.
@@ -105,13 +124,13 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 12 | institution-scoped SQLite projection, bounded refresh/lookup, explicit feedback selection through Orchestrator, scoped stage skip, current-instruction precedence | automatic feedback application, cross-institution promotion, UI-level consent, common-rule promotion |
 | 13 | 범위별 recurring proposal을 read-only `draft`로 생성하고 상한·근거를 검증 | 운영 이력 기반 후보와 실제 코드 자동 수정·승격은 미제공 |
 | 14 | Gate E 제한 범위 시나리오 검수, 지원 한계 안내, 사용자 설명서/PPT 완료 | 모든 기관 완전 지원, 환경 publish, main 병합 |
-| 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume, 일반 자연어·전체 기관 지원, environment publish |
+| 15 후속 | fixed-path structured CLI, BOJ FXERD01 monthly collector, persisted TIC/BIS watch, Windows CI | natural TIC/BIS revision 및 provider failure/resume은 과거 미검증이며 현재 변경 확인 요구사항에서 제외. 일반 자연어·전체 기관 지원, environment publish |
 | 17 | 불변 인계 event에 결합한 격리 시험 task, 자원 한도·미실행 응답, 19개 합성 용량 사례·BIS 원본 시험; 후속 보완에서 worker lock 상속·중단 결과 UNKNOWN 복구 | 정식 대용량 정규화·원격 수집·Windows resource worker·GB/TB 일반화 |
 | 16 | 비API 용량 가드·SQLite 인계 목록/이력·조회 CLI, BIS flat 보존 원본 정상 인계, 현행 Gate 재검증 | 자연 revision/recovery; 일반 CSV 전달은 후속 exporter 범위 |
 | 19 (완료) | BIS flat 한 건에 한정한 명시 승인 child handoff, Linux chunk/checkpoint worker, deferred event lifecycle, source/hash guard, read-only event sequence 조회; PR #6 통합·4조합 CI·보존 원본 production run 완료 | 다른 provider/format, Windows resource worker, semantic normalization, World Bank/BOJ CSV export |
 | 20 | 완료·품질 통과 World Bank/BOJ task의 UTF-8 CSV/provenance 전달, read-only revalidation, no-overwrite/path guard; PR #9 merge 및 4조합 CI 완료 | XLSX, BIS flat JSONL export, arbitrary provider, 독립 사용자 검증 |
 | 22 | 비API qualification과 BIS production/resume 전에 실행 시간·범위·신뢰도를 표시하고 실측 history로 shadow forecast를 계산; PR #10 통합 | 현재 catalog 표본 qualification 15, production 1, paired forecast 0. 예측 정확도는 낮은 신뢰도 상태 |
-| 23 | 저장 결과→CSV 관찰 protocol·시나리오·동의·익명 기록 절차 준비; PR #11 통합 | 실제 세션은 마지막 40회차로 보류. 28–39 gate 후 workbook/freshness/feedback scenario로 갱신해 실행 |
+| 23 (최종 검증; 상세 일정 40회차) | 저장 결과→파일 전달 업무 관찰 protocol·동의·익명 기록 절차 준비; PR #11 통합 | 실제 세션은 28–39회차 A–G gate 통과 후 수행. 시나리오를 검증된 workbook task/series로 갱신하고 참가자 증거 전 사용성 판단 금지 |
 | 24 | pytest/Ruff/diff/CLI/health를 공통 Python runner로 통합, Windows wrapper 및 report/log artifacts; PR #12 통합 | read-only analyzer와 updater→candidate QA handoff는 엔진 통합 계획의 후속 단계 |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
@@ -141,39 +160,36 @@ Ubuntu/Windows × Python 3.11/3.12 네 조합 모두 성공했다. 아래는 과
 | BIS 접속·Git push의 과거 ProxyError | 당시 기본 실행 네트워크 권한 제한을 확인하고 복구. 이후 source GET과 push 성공 | 실행 환경의 설정된 proxy/CA와 허용된 네트워크 사용 | 접속·push 성공 증거 확보. 재발 시 task 이력으로 진단 |
 | World Bank 직접 연결 실패 | 해결. `trust_env=False` 상태에서 설정 proxy가 빠져 있었음 | 명시 proxy/CA 전달 유지 | live 수집 및 transport 회귀 테스트 성공으로 충족 |
 | BIS flat CSV ZIP | cells=500010으로 정상 deferred. PR #6 통합 후 child task `c244a486-17e5-4b60-a82b-287f8a37bbe7`에서 보존 raw를 한 번 처리해 24,378×21 구조 보존 JSONL 생성. raw·request manifest 불변과 manifest/chunk 해시 확인 | 해당 BIS flat profile은 완료. 새 기관·포맷 및 의미 정규화는 별도 qualification/승인 후 계획 | 완료: 동일 raw/event provenance, child attempt/stage, `handed_off/resolved`, output hash 확인. Gate C natural change/resume과 분리 |
-| TIC/BIS watcher baseline scope | 2026-10-27 audit에서 profile drift를 발견해 복구. TIC는 TSV/header row 6, BIS는 `WS_GLI_csv_col.csv` 단일 member로 보존 baseline scope에 맞춤 | 제공된 exact baseline SHA만 비교 기준으로 사용 | profile 회귀 테스트 통과 후 one-shot live result를 별도 기록. 이 설정 수정만으로 natural revision 증거가 되지 않음 |
+| TIC/BIS watcher baseline scope | 2026-10-27 audit에서 profile drift를 발견해 복구. TIC는 TSV/header row 6, BIS는 `WS_GLI_csv_col.csv` 단일 member로 보존 baseline scope에 맞춤 | 자동 감시는 중지. 변경 확인이 다시 필요해질 때만 사용자가 요청한 단발 실행에 사용 | 기존 profile과 과거 검증을 보존. 이번 설정 수정이나 과거 `unchanged`는 새 변경 확인 또는 Gate C 승격을 뜻하지 않음 |
 | BOJ 응답 경로 오해 | 해결. 초기 로컬 validator가 nested VALUES 경로를 잘못 가정 | 실제 공식 응답 기반 parser 유지 | 고정 FM08/FXERD01 collector live 200, 30행·11 null 및 fixture 검증으로 충족 |
-| TIC/BIS 실제 원본 개정 | 미관측(`NOT_RUN`). 문서화된 exact-scope 실측은 둘 다 unchanged | 공식 게시 주기에 맞춰 수동 watch. 기존 baseline 보존 | 실제 raw hash 차이, changed/NEEDS_REVIEW, 양쪽 raw 보존, 새 normalized 출력 차단 확인 |
-| 자연 장애 후 durable resume | World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT`를 저장했고 2026-10-27 같은 task attempt 2에서 collect·validate 성공. 최초 `Retry-After` 없음, max_attempts 3 중 1회 사용 | 이 evidence는 World Bank API scope에 한정. TIC/BIS watch scope에서 자연 transient failure는 미관측 | 자연 failure와 same-task/stage success, 두 attempt와 event 이력이 보존됨. TIC/BIS source revision은 별도 충족 필요 |
+| TIC/BIS 실제 원본 개정 | 과거 exact-scope 결과는 둘 다 unchanged; 실제 변경 쌍은 미관측(`NOT_RUN`) | 사용자가 현재 확인을 불필요하다고 지정해 반복·수동 감시 계획에서 제외 | 활성 완료 조건이 아님. 과거 미관측 상태와 제한 Gate C 판정을 보존 |
+| 자연 장애 후 durable resume | World Bank task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT`를 저장했고 2026-10-27 같은 task attempt 2에서 collect·validate 성공. 최초 `Retry-After` 없음, max_attempts 3 중 1회 사용 | 이 evidence는 World Bank API scope에 한정. TIC/BIS watch scope의 자연 transient failure는 미관측이며, 주기 watch를 중지함 | World Bank 자연 same-task resume는 확인됨. 향후 사용자가 요청한 TIC/BIS task가 실패하면 해당 task를 보존·재개할 수 있으나 현재 추가 감시는 필요하지 않음 |
 | BOJ 다른 series·기간, 범용 검색/자연어, 일반 Windows 사용자 workflow | 미지원·미검증 범위. 현재 고정 CLI 성공으로 전체 지원을 주장할 수 없음 | 다음 제품 회차에서 한 가지 사용자 흐름과 수용 기준을 정해 구현 | 범위별 정상·오류·실사용 검증 및 지원 문서 갱신 |
 
 ### 실행 순서와 판정 규칙
 
 1. 완료: PR #1~#16의 검토·병합. 이 maintenance follow-up의 base HEAD는 `5ade536`; PR #9 `7723afe`는 당시 CSV 전달 병합점이다.
 2. 완료: 통합 checkout에서 기존 BIS flat event seq `1`을 한 번 처리하고 child task·manifest·chunk와 원본 불변성을 확인했다. 환경 게시는 별도 작업이다.
-3. TIC/BIS는 기존 scope로 게시 주기에 맞춰 확인한다. 자연 변경·장애가 없으면 unchanged/미관측으로
-   남기며 오류 유발이나 반복 요청으로 증거를 만들지 않는다. 일일 condition-watch 예약 감시를 활성화했다. 실행 시 workspace/baseline 접근을 먼저 확인하며, 의미 있는 변경·실패·조치 필요 시에만 알린다.
+3. TIC/BIS 변경상태 확인은 사용자 요청으로 현재 불필요하다고 정리했다. 관련 condition-watch 자동화 두 개는
+   중지했으며 정기 요청을 보내지 않는다. 과거 결과와 미관측 기록은 그대로 보존한다.
 4. 완료: 16회차 비API 분류·인계 목록, 18회차 QA 경로, 19회차 제한 BIS flat production handoff, 20회차 CSV 전달.
-5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 당시에는 실제 목표 사용자
-   관찰을 다음 제안으로 적었으나 D-095–D-097에서 순서를 변경했다. 현재 실제 관찰은 A–G, feedback bridge와 freshness gate를 마친 40회차로 보류한다.
-6. World Bank 자연 retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 여전히 미관측이며,
-   해당 pair가 생기면 exact scope, 양쪽 raw 보존, `changed/NEEDS_REVIEW`, 새 normalization 차단을 재검토한다.
-   현재 D-067 제한 범위를 확대하지 않는다.
+5. 완료(내부 dry run만): 보존 World Bank/BOJ task의 status→CSV 경로를 한 번 더 따라갔다. 실제 목표 사용자
+   관찰과 다음 제품 범위 결정은 참여자 확보 후 수행한다.
+6. World Bank natural retryable failure→same-task resume은 관측됐다. TIC/BIS actual source revision은 과거 미관측으로
+   기록돼 있으나 현재 요구사항에서 제외됐으며, 관련 감시 자동화도 중지했다. Gate C D-067 제한 범위는 유지한다.
 
 근거: [15회차 보고서](ITERATION_15_REPORT.md), [Gate C 증거표](GATE_C_REVIEW_2026_10_26.md),
 [source watch](GATE_C_SOURCE_WATCH.md), [BOJ 실측](BOJ_LIVE_RECHECK_2026_10_26.md).
 
-## 다음 작업 순서
+## 통합 기획서로 이어지는 현재 미완료 조건
 
-현행 우선순위와 완료 조건은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따릅니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
+현행 우선순위와 완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §11을 따릅니다. 이 문서는 실행 순서를 독립적으로 재정의하지 않습니다. 현행 기능 구현과 기록된 pilot 증거가 통합됐고,
 공통 유지보수 검사 경로, candidate SHA QA와 isolated updater handoff가 구현됐다. Linux updater candidate QA/PR handoff와 Windows installer dry-run, updater no-op/cleanup, OS lock 경합 pilot 및 base `f8693f0`의 updater·retention 테스트 34개가 통과했다. 최신 base `e25d944`에서 Windows updater 실제 run은 `NO_ACTIONABLE_CHANGE`와 cleanup 성공을 기록했다. PR #34에서 scheduler 운영 가드를 구현했다. GitHub Actions는 계정 사용 한도로 runner가 시작되지 않았다. Windows 사용자 세션 candidate/handoff와 scheduled invocation은 미검증이므로 task는 비활성 상태다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 근거를 기록한다.
-20회차 CSV 전달과 작성자 내부 dry run은 완료했다. 다음 제품 순서는 A–D와 수동 feedback-to-case(28–32),
-E 공통 시계열·frequency별 freshness·adapter(33–37), F/G workbook(38–39)이다. 실제 분석가 관찰은 마지막 40회차다. 이 문서와 로드맵이 달라 보이면 현재 증거는 이 문서,
-실행 순서는 로드맵과 [회차별 실행 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)을 따른다.
+20회차 CSV 전달은 구현·PR CI 검증을 마쳤고, 작성자 내부 dry run도 완료했다. 23회차 분석가 관찰은 통합 기획서의 마지막 제품 검증이다. 28–39회차 A–G 구현·검증과 시나리오 갱신이 끝나기 전에는 실행하지 않는다. 상세 회차와 완료 조건은 [제품 평가·시계열·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)을 따른다.
 
-자연 TIC/BIS 개정과 provider 장애는 실제 발생 시 같은 scope·같은 task로 기록하며 인위적으로 만들지 않습니다.
-이 미관측 항목은 Gate C 제한 범위를 전체 통과로 올리거나 고정 CLI·BOJ 검증을 막지 않습니다. 자연 감시는
-작업 순서와 별도로 계속합니다. A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
+TIC/BIS 자료 변경상태 확인은 현재 사용자 요구 범위에서 제외했고 관련 반복 감시를 중지했습니다.
+과거 미관측 기록은 Gate C 상태를 확대하지 않으며, 나중에 사용자가 다시 요청하면 단발 확인의 범위와 목적을 정합니다.
+A–H/X01–X09 세부 판정은 `REFERENCE_SCENARIOS.md`를 따릅니다.
 
 ## 저장소·배포 추적성
 
@@ -183,10 +199,10 @@ E 공통 시계열·frequency별 freshness·adapter(33–37), F/G workbook(38–
 
 ## 문서 사용 순서
 
-1. [`USER_GUIDE.md`](USER_GUIDE.md) / [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md): 사용자·개발자 안내.
-2. [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md): 다음 작업 순서.
-3. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 제품 장기 요구사항.
-4. 이 문서와 링크된 회차 보고서: 현재 게이트 및 당시 증거.
+1. [`PROJECT_PLAN.md`](../PROJECT_PLAN.md): 통합 요구사항·범위·우선순위.
+2. [`USER_GUIDE.md`](USER_GUIDE.md) / [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md): 사용자·개발자 안내.
+3. 이 문서와 링크된 회차 보고서: 구현 현황·Gate 및 실행 증거.
+4. [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md): 통합 순서의 짧은 요약.
 5. [`DECISION_LOG.md`](DECISION_LOG.md), `AGENTS.md`, `GUIDELINES.md`: 결정·작업·보안 규칙.
 
 아래 01~14 절은 회차의 상세 범위 및 이력이다. 위 현재 상태 표와 충돌해 보이면 보고서와
@@ -373,6 +389,13 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
   목록과 재개를 검증한다. 정의/단위가 다른 자료를 자동 병합하지 않는다.
 - 링크 재검증: 만료·권한 제한·조건 불일치·키 포함 URL을 재현해 공유를 중단하고,
   링크 제공 완료와 실제 수집/검증 완료를 다른 실행 근거로 기록한다.
+- 2026-10-27 제한 후속 구현: 주기별 최대 허용 일수와 정확한 시계열 override를 갖는
+  freshness gate를 World Bank/BLS/Census/BOJ 수집 검증에 연결했다. 가장 최근 관측기간
+  끝을 기준으로 `FRESH`/`STALE`/`FRESHNESS_UNVERIFIED`를 기록하며, 비신선 또는 판정 불가
+  관측값은 정규화 반환과 지원되는 CSV 출력에서 보류한다. CSV는 내보내기 시 재평가한다.
+  기본 허용일은 운영상 설정값이며 기관별 발표 일정 검증을 뜻하지 않는다. 세부 정책과
+  범위는 [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md). 로컬 fixture 회귀는 통과했으나
+  이 변경 자체의 live freshness 검증은 수행하지 않았다. Gate C 상태는 변경하지 않는다.
 
 ### Phase 4 — 피드백의 지식화 (11~12)
 
@@ -430,7 +453,7 @@ metadata live 경로와 SDMX/codebook adapter 범위만 구현됐으며, 아래 
 #### 14 | 격리 수정·검증·인간 승인·릴리스
 - 구현: 격리된 Git 브랜치에서 코드 변경 후보와 회귀 테스트; diff, 결과, 롤백 경로, 승인 게이트. 승인 전 main 병합/배포 금지.
 - 완료(Gate E): A~H 중 환경에서 지원 가능한 대표 시나리오 실행 결과·비지원 목록·복구 테스트·보안/비용 검토 포함한 v1 릴리스 보고서.
-- 최종 안내 산출물: PROJECT_PLAN.md §10.3에 따라 `docs/USER_GUIDE.md`와
+- 최종 안내 산출물: 통합 PROJECT_PLAN.md §12에 따라 `docs/USER_GUIDE.md`와
   `docs/MacroAtlas_User_Guide.pptx`를 실제 완성된 기능 기준으로 작성한다.
   실행 방법, 기관별 선택적 API 키 설정, 수집 결과 확인, 오류·한계를 포함한다.
   설명서의 대표 절차 재현 결과와 PPT 표시·내용 일치 검수를 완료 보고에 기록한다.

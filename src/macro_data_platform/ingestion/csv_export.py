@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import math
 import os
 import re
@@ -12,7 +13,9 @@ import stat
 import tempfile
 from contextlib import closing
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
+from time import perf_counter_ns
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.boj import (
@@ -25,10 +28,24 @@ from macro_data_platform.connectors.boj import (
 from macro_data_platform.connectors.statistical_http import MAX_BYTES, ApiDownload
 from macro_data_platform.connectors.worldbank import Download, GDPQuery, parse_gdp
 from macro_data_platform.contracts import EvidenceKind
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.ingestion.worldbank_quality import (
     normalize_worldbank,
     source_payload_digest,
 )
+from macro_data_platform.performance.metrics import (
+    PerformanceMetrics,
+    current_metrics,
+    measure_current,
+    measured_phase,
+    runtime_metadata,
+)
+from macro_data_platform.performance.storage import append_sample, build_sample
 from macro_data_platform.storage.audit import digest as _audit_digest
 from macro_data_platform.storage.statistical_downloads import (
     _comparison_fingerprint_for_source,
@@ -36,6 +53,7 @@ from macro_data_platform.storage.statistical_downloads import (
 )
 
 MAX_MANIFEST_BYTES = 64 * 1024
+_LOGGER = logging.getLogger(__name__)
 PACKAGE_ID = re.compile(r"^[a-f0-9]{32}$")
 CSV_COLUMNS = (
     "date",
@@ -58,6 +76,14 @@ CSV_COLUMNS = (
     "request_manifest_sha256",
     "source_change_status",
     "observation_status",
+    "freshness_status",
+    "freshness_frequency",
+    "freshness_frequency_basis",
+    "freshness_latest_period",
+    "freshness_evaluated_at",
+    "freshness_age_days",
+    "freshness_max_age_days",
+    "freshness_policy_id",
 )
 
 
@@ -75,19 +101,40 @@ def _state(value):
     return value.value if hasattr(value, "value") else value
 
 
+def _stable_quality(value):
+    """Ignore only clock-dependent freshness fields when checking saved evidence."""
+    if not isinstance(value, dict):
+        return value
+    result = json.loads(json.dumps(value, ensure_ascii=False, allow_nan=False))
+    freshness = result.get("freshness")
+    values = freshness if isinstance(freshness, list) else [freshness]
+    for item in values:
+        if isinstance(item, dict):
+            item.pop("evaluated_at", None)
+            item.pop("age_days", None)
+    return result
+
+
+def _quality_record_matches(validation, current_quality):
+    saved = {key: validation.get(key) for key in current_quality}
+    return _stable_quality(saved) == _stable_quality(current_quality)
+
+
 def _readonly_connection(settings):
     uri = settings.database_path.as_uri() + "?mode=ro"
     connection = sqlite3.connect(uri, uri=True)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA query_only=ON")
+    with measure_current("sqlite"):
+        connection.execute("PRAGMA query_only=ON")
     return connection
 
 
 def _load_task(connection, task_id):
-    row = connection.execute(
-        "SELECT document FROM tasks WHERE task_id=?",
-        (task_id,),
-    ).fetchone()
+    with measure_current("sqlite"):
+        row = connection.execute(
+            "SELECT document FROM tasks WHERE task_id=?",
+            (task_id,),
+        ).fetchone()
     if row is None:
         raise ValueError("unknown_task")
     try:
@@ -117,7 +164,12 @@ def _plan_by_engine(document, engines):
     }
     if [row.get("stage_id") for row in plan] != [expected_stage_ids[engine] for engine in engines]:
         raise ValueError("unsupported_task_plan")
-    if any(row.get("engine_version") != "1" for row in plan):
+    expected_engine_versions = {
+        "worldbank_collect_audit": "1", "worldbank_validate": "2",
+        "boj_metadata": "1", "boj_observations": "2",
+    }
+    if any(row.get("engine_version") != expected_engine_versions.get(row.get("engine"))
+           for row in plan):
         raise ValueError("unsupported_engine_version")
     stages = document.get("stages")
     if not isinstance(stages, list) or len(stages) != len(plan):
@@ -152,10 +204,11 @@ def _payload(stage):
 
 
 def _record(connection, record_id, kind, task_id, stage_run_id):
-    row = connection.execute(
-        "SELECT kind,task_id,stage_run_id,document FROM gate_a_records WHERE record_id=?",
-        (record_id,),
-    ).fetchone()
+    with measure_current("sqlite"):
+        row = connection.execute(
+            "SELECT kind,task_id,stage_run_id,document FROM gate_a_records WHERE record_id=?",
+            (record_id,),
+        ).fetchone()
     if (
         row is None
         or row["kind"] != kind
@@ -179,10 +232,11 @@ def _record(connection, record_id, kind, task_id, stage_run_id):
 
 
 def _audit_observations(connection, validation_id):
-    rows = connection.execute(
-        "SELECT document FROM gate_a_observations WHERE validation_id=? ORDER BY position",
-        (validation_id,),
-    ).fetchall()
+    with measure_current("sqlite"):
+        rows = connection.execute(
+            "SELECT document FROM gate_a_observations WHERE validation_id=? ORDER BY position",
+            (validation_id,),
+        ).fetchall()
     try:
         return [json.loads(row["document"]) for row in rows]
     except (TypeError, ValueError, RecursionError):
@@ -261,7 +315,8 @@ def _provider_files(settings, source, payload):
     return raw_bytes, manifest_bytes, manifest
 
 
-def _worldbank(connection, settings, task_id, document):
+def _worldbank(connection, settings, task_id, document, *, freshness_policy,
+               as_of):
     plans, stages = _plan_by_engine(document, ("worldbank_collect_audit", "worldbank_validate"))
     query_data = plans[0].get("input_data")
     if not isinstance(query_data, dict) or set(query_data) != {"start_year", "end_year"}:
@@ -357,10 +412,14 @@ def _worldbank(connection, settings, task_id, document):
         EvidenceKind(artifact["mode"]),
     )
     parsed = parse_gdp(download, query)
-    quality, expected_observations = normalize_worldbank(parsed, query, source_change)
+    quality, expected_observations = normalize_worldbank(
+        parsed, query, source_change, as_of=as_of, freshness_policy=freshness_policy,
+    )
+    if quality.get("freshness", {}).get("status") != FreshnessStatus.FRESH:
+        raise ValueError("freshness_requires_review")
     if quality.get("status") != "passed":
         raise ValueError("worldbank_revalidation_failed")
-    if any(validation.get(key) != value for key, value in quality.items()):
+    if not _quality_record_matches(validation, quality):
         raise ValueError("worldbank_validation_record_mismatch")
     observations = _audit_observations(connection, validation["record_id"])
     if (
@@ -395,6 +454,7 @@ def _worldbank(connection, settings, task_id, document):
         "source_change_status": source_change,
         "manifest_hash_status": "verified_against_audit_record",
         "quality_warnings": quality.get("warnings", []),
+        "freshness": quality.get("freshness"),
     }
     rows = []
     for row in observations:
@@ -464,7 +524,7 @@ def _verified_download(
     return raw, manifest_bytes, manifest, raw_sha, manifest_sha
 
 
-def _boj(connection, settings, task_id, document):
+def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
     plans, stages = _plan_by_engine(document, ("boj_metadata", "boj_observations"))
     metadata_request = plans[0].get("input_data")
     observation_request = plans[1].get("input_data")
@@ -560,9 +620,27 @@ def _boj(connection, settings, task_id, document):
         EvidenceKind(manifest["mode"]),
     )
     parsed = parse_boj_observations(data_download, query, metadata)
+    with measure_current("quality"):
+        freshness = assess_freshness(
+            [row["date"] for row in parsed["observations"]],
+            frequency=metadata.get("frequency"), series_id=query.series_code,
+            series_key={"database": query.database, "series_code": query.series_code},
+            as_of=as_of, policy=freshness_policy,
+        )
+    freshness_issue = (
+        "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
+        "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
+    )
+    parsed["quality"] = {
+        **parsed["quality"], "freshness": freshness,
+        "issues": [freshness_issue] if freshness_issue else [],
+        "status": "failed" if freshness_issue else "passed",
+    }
+    if freshness_issue:
+        raise ValueError("freshness_requires_review")
     if (
         data_payload.get("quality", {}).get("status") != "passed"
-        or data_payload.get("quality") != parsed.get("quality")
+        or not _quality_record_matches(data_payload.get("quality"), parsed.get("quality"))
         or data_payload.get("observations") != parsed.get("observations")
         or any(
             data_payload.get(key) != parsed.get(key)
@@ -618,6 +696,7 @@ def _boj(connection, settings, task_id, document):
             )
         ).hexdigest(),
         "quality_warnings": [],
+        "freshness": parsed["quality"]["freshness"],
     }
     rows = tuple(
         {
@@ -641,6 +720,7 @@ def _value_text(value):
     return str(value)
 
 
+@measured_phase("export")
 def _csv_bytes(dataset):
     buffer = io.StringIO(newline="")
     writer = csv.DictWriter(
@@ -649,6 +729,10 @@ def _csv_bytes(dataset):
     writer.writeheader()
     for observation in dataset.observations:
         source = dataset.source
+        freshness = dataset.quality.get("freshness")
+        if isinstance(freshness, list):
+            freshness = freshness[0] if len(freshness) == 1 else {}
+        freshness = freshness if isinstance(freshness, dict) else {}
         series_key = json.dumps(
             source["series_key"],
             ensure_ascii=False,
@@ -678,6 +762,14 @@ def _csv_bytes(dataset):
                 "request_manifest_sha256": source["manifest_sha256"],
                 "source_change_status": source["source_change_status"],
                 "observation_status": observation.get("observation_status"),
+                "freshness_status": freshness.get("status"),
+                "freshness_frequency": freshness.get("frequency"),
+                "freshness_frequency_basis": freshness.get("frequency_basis"),
+                "freshness_latest_period": freshness.get("latest_period"),
+                "freshness_evaluated_at": freshness.get("evaluated_at"),
+                "freshness_age_days": freshness.get("age_days"),
+                "freshness_max_age_days": freshness.get("max_age_days"),
+                "freshness_policy_id": freshness.get("policy_id"),
             }
         )
     return buffer.getvalue().encode("utf-8")
@@ -727,6 +819,7 @@ def _mkdir_export_parent(settings, target, export_root):
         raise ValueError("output_path_escape")
 
 
+@measured_phase("export")
 def _publish_pair(target, sidecar, csv_body, manifest_body):
     temp_csv = temp_manifest = None
     published_csv = published_manifest = False
@@ -780,11 +873,47 @@ def _publish_pair(target, sidecar, csv_body, manifest_body):
                     pass
 
 
-def export_task(settings: Settings, task_id: str, output, *, format="csv") -> dict:
+def export_task(settings: Settings, task_id: str, output, *, format="csv",
+                freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+                as_of: datetime | None = None) -> dict:
+    metrics = PerformanceMetrics()
+    metrics.observe_sample_class("stored")
+    started_ns = perf_counter_ns()
+    status = "FAILED"
+    result = None
+    try:
+        with metrics.activate():
+            result = _export_task(
+                settings, task_id, output, format=format,
+                freshness_policy=freshness_policy, as_of=as_of,
+            )
+        status = result.get("status", "UNKNOWN")
+        return result
+    finally:
+        duration_ns = max(0, perf_counter_ns() - started_ns)
+        metrics.observe_sample_class("stored")
+        try:
+            if settings.database_path.is_file():
+                append_sample(settings, build_sample(
+                    observed_at=datetime.now(UTC).isoformat(), execution_scope="csv_export",
+                    engine="csv_export", engine_version="1", stage="export", status=status,
+                    duration_ns=duration_ns, metrics=metrics.snapshot(),
+                    environment=runtime_metadata(str(settings.project_root)),
+                ))
+        except Exception:  # noqa: BLE001 - telemetry cannot change export outcome
+            _LOGGER.warning("performance telemetry sample could not be recorded")
+
+
+def _export_task(settings: Settings, task_id: str, output, *, format="csv",
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY,
+                 as_of: datetime | None = None) -> dict:
     if format != "csv":
         raise ValueError("unsupported_export_format")
     if not isinstance(task_id, str) or not task_id:
         raise ValueError("task_id_invalid")
+    evaluation_time = datetime.now(UTC) if as_of is None else as_of
+    if not isinstance(freshness_policy, FreshnessPolicy):
+        raise TypeError("freshness_policy_invalid")
     with closing(_readonly_connection(settings)) as connection:
         document = _load_task(connection, task_id)
         plan = document.get("plan")
@@ -792,11 +921,17 @@ def export_task(settings: Settings, task_id: str, output, *, format="csv") -> di
             raise ValueError("unsupported_task_plan")
         engines = [row.get("engine") for row in plan] if isinstance(plan, list) else []
         if engines == ["worldbank_collect_audit", "worldbank_validate"]:
-            dataset = _worldbank(connection, settings, task_id, document)
+            dataset = _worldbank(connection, settings, task_id, document,
+                                 freshness_policy=freshness_policy, as_of=evaluation_time)
         elif engines == ["boj_metadata", "boj_observations"]:
-            dataset = _boj(connection, settings, task_id, document)
+            dataset = _boj(connection, settings, task_id, document,
+                            freshness_policy=freshness_policy, as_of=evaluation_time)
         else:
             raise ValueError("unsupported_provider_task")
+
+    metrics = current_metrics()
+    if metrics is not None:
+        metrics.observe_input(rows=len(dataset.observations))
 
     relative, target, sidecar, export_root = _output_paths(settings, output)
     csv_body = _csv_bytes(dataset)
@@ -824,6 +959,11 @@ def export_task(settings: Settings, task_id: str, output, *, format="csv") -> di
     manifest_body = (
         json.dumps(manifest, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2) + "\n"
     ).encode("utf-8")
+    if metrics is not None:
+        metrics.observe_output(
+            byte_count=len(csv_body) + len(manifest_body), rows=len(dataset.observations),
+            columns=len(CSV_COLUMNS),
+        )
     _mkdir_export_parent(settings, target, export_root)
     _publish_pair(target, sidecar, csv_body, manifest_body)
     return {

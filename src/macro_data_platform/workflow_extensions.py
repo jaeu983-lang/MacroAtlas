@@ -49,12 +49,9 @@ def _public_url(value: str, *, evidence_reference: bool = False) -> None:
     except ValueError:
         raise ValueError("Invalid public data URL") from None
     # Sharing a signed/capability URL is not made safe by labelling it 'blocked'.
-    names = [re.sub(r"[^a-z0-9]", "", key.lower())
-             for key, _ in parse_qsl(parsed.query, keep_blank_values=True)]
-    secret_names = {"sig", "signature", "credential", "sessionid", "auth", "authkey",
-                    "accesskey", "secretkey", "bearer"}
+    names = [key for key, _ in parse_qsl(parsed.query, keep_blank_values=True)]
     fragment_keys = [key for key, _ in parse_qsl(parsed.fragment, keep_blank_values=True)]
-    _check(not any(name in secret_names or name.startswith(("xamz", "xgoog")) for name in names)
+    _check(not any(_credential_name(name) for name in names)
            and (not parsed.fragment or (evidence_reference
                 and not any(_credential_name(key) for key in fragment_keys))),
            "Data URL may contain credentials or an opaque fragment")

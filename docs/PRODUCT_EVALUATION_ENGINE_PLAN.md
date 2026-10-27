@@ -1,6 +1,6 @@
 # 제품 평가·시계열 엔진 통합·Excel 실행 계획
 
-기준일: 2026-10-27. 이 문서는 A–G를 실제 구현·검증하고 분석가 1–2명 관찰까지 끝낼 수 있도록 범위, 코드 경계, 순서, 완료 조건을 고정한다. 현재 상태는 **실행 전 계획**이다. 문서만으로 기능이 구현됐거나 사용자 관찰이 실행된 것은 아니다.
+기준일: 2026-10-27. 이 문서는 [`PROJECT_PLAN.md` §11](../PROJECT_PLAN.md)의 A–G 제품 작업을 회차별 구현·검증 일정으로 구체화한다. 제품 범위·정책·우선순위는 통합 기획서가 기준이며, 이 문서는 하위 실행 계획이다. 최종 40회차는 사용자가 요청한 23회차 분석가 관찰이다. 현재 상태는 **실행 전 계획**이며, 문서만으로 기능 구현이나 사용자 관찰을 완료했다고 보지 않는다.
 
 ## 1. 목표와 현재 범위
 
@@ -23,7 +23,7 @@
 | `ingestion/csv_export.py` | 완료·검증된 World Bank/BOJ task의 CSV와 provenance sidecar, read-only revalidation, 경로·덮어쓰기 방어 | XLSX 생성은 없다. `openpyxl`은 입력 XLSX parsing에 사용 중이며 프로젝트 의존성이다. |
 | `connectors/tabular_files.py`, `ingestion/tabular_files.py`, `ingestion/gate_c_watch.py`, large-file trial/production | 작은 표의 구조 parsing, Gate C 파일 변경 감시, BIS flat 제한 worker | 표 parsing은 경제적 series 의미를 판정하지 않는다. Gate C 감시·대용량 worker의 안전 lifecycle은 exporter/normalizer와 합치지 않는다. |
 
-구현 시작 시 최신 base와 작업 branch 상태를 다시 확인한다. 이 계획은 PR #49 변경을 포함할 브랜치에서 작성됐으며, 실제 구현 회차는 이 계획이 통합된 최신 base를 기준으로 새 branch/worktree를 만든다. 이전 task의 stage engine/version은 기존 resume 호환 기간 동안 registry에서 유지하고, 새 plan에만 새 engine version을 고정한다.
+각 구현 회차는 시작 시 최신 base와 작업 branch 상태를 확인하고 독립 branch/worktree에서 수행한다. 이전 task의 stage engine/version은 기존 resume 호환 기간 동안 registry에서 유지하고, 새 plan에만 새 engine version을 고정한다.
 
 ## 3. 목표 엔진 경계
 
@@ -148,7 +148,7 @@ MacroAtlas에는 이미 `FeedbackStore`가 있다. `macro-feedback add/list/revi
 
 ## 5. 순차 실행 계획
 
-아래 번호는 27회차 뒤에 제안하는 다음 구현 회차다. 이 계획과 PR #49가 검토·통합되기 전에는 28회차 구현을 시작하지 않는다. PR 병합 전이라도 작업이 필요하면 현재 PR과 섞지 않는 후속 branch를 쓴다.
+아래 번호는 27회차 뒤의 제품 구현·검증 순서다. 28–39회차 gate를 순서대로 통과한 뒤, 기존 명칭의 23회차 분석가 관찰을 최종 제품 검증으로 수행한다. 유지보수 pilot과 자연 Gate C evidence는 별도 workstream이며 A–G 제품 gate로 계산하지 않는다.
 
 | 회차 | 범위와 주요 산출물 | 필수 검증·통과 gate |
 |---|---|---|

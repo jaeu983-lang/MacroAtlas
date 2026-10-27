@@ -16,6 +16,7 @@ from macro_data_platform.contracts import (
     StageResult,
     StageStatus,
 )
+from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
 from macro_data_platform.workflow_contracts import (
     Candidate,
@@ -397,7 +398,7 @@ def build_confirmed_collection_plan(selection: ConfirmedSelection, settings: Set
         end = _period_year(selection.request.period_end)
         collection = TaskPlan((StageSpec("collect", "bls", {
             "series_ids": [candidate.series_id], "start_year": start, "end_year": end,
-        }),))
+        }, engine_version="2"),))
     elif candidate.institution_id == "census":
         request = selection.request
         if (not candidate.dataset_id or not candidate.series_id or request.dimensions is None
@@ -410,7 +411,7 @@ def build_confirmed_collection_plan(selection: ConfirmedSelection, settings: Set
             "year": start, "dataset": candidate.dataset_id,
             "variables": ["NAME", candidate.series_id],
             "geography": request.dimensions["for"][0],
-        }),))
+        }, engine_version="2"),))
     else:
         raise ValueError("selected institution has no registered observation connector")
     receipt = StageSpec("record_selection", "record_selection", {"selection": selection.to_dict()})
@@ -441,14 +442,20 @@ class SelectionReceiptEngine:
 
 
 def candidate_collection_engines(settings: Settings, *, worldbank_transport=None,
-                                 bls_transport=None, census_transport=None) -> dict:
+                                 bls_transport=None, census_transport=None,
+                                 clock=lambda: datetime.now(UTC),
+                                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY
+                                 ) -> dict:
     from macro_data_platform.ingestion.bls import BLSEngine
     from macro_data_platform.ingestion.census import CensusEngine
     from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
 
     return {
         ("record_selection", "1"): SelectionReceiptEngine(),
-        ("worldbank_gdp", "1"): WorldBankGDPEngine(settings, worldbank_transport),
-        ("bls", "1"): BLSEngine(settings, bls_transport),
-        ("census", "1"): CensusEngine(settings, census_transport),
+        ("worldbank_gdp", "2"): WorldBankGDPEngine(
+            settings, worldbank_transport, clock=clock, freshness_policy=freshness_policy),
+        ("bls", "2"): BLSEngine(
+            settings, bls_transport, clock=clock, freshness_policy=freshness_policy),
+        ("census", "2"): CensusEngine(
+            settings, census_transport, clock=clock, freshness_policy=freshness_policy),
     }

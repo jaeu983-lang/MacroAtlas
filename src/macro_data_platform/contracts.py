@@ -1,9 +1,10 @@
 """Iteration 01 value contracts; execution and persistence belong to iteration 02."""
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Generic, Protocol, TypeVar
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 
 class TaskStatus(str, Enum):
@@ -43,6 +44,20 @@ class EvidenceKind(str, Enum):
     FIXTURE = "fixture"
     LIVE_API = "live_api"
     LIVE_INGESTION = "live_ingestion"
+
+
+_CREDENTIAL_NAMES = {
+    "key", "apikey", "token", "accesstoken", "password", "secret", "authorization",
+    "appid", "applicationid", "userid", "clientsecret", "subscriptionkey", "sig",
+    "signature", "credential", "sessionid", "auth", "authkey", "accesskey", "secretkey",
+    "bearer",
+}
+
+
+def _credential_name(name: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]", "", name.lower())
+    return (normalized in _CREDENTIAL_NAMES
+            or normalized.startswith(("xamz", "xgoog")))
 
 
 def required(value: str, field: str) -> None:
@@ -85,10 +100,18 @@ class SourceEvidence:
     def __post_init__(self) -> None:
         for field in ("evidence_id", "source_agency", "original_ref"):
             required(getattr(self, field), field)
-        parsed = urlsplit(self.source_url)
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-            raise ValueError("source_url must be an HTTP(S) URL")
-        if parsed.username is not None or parsed.password is not None:
+        try:
+            parsed = urlsplit(self.source_url)
+            valid = (parsed.scheme in {"http", "https"} and parsed.hostname
+                     and parsed.username is None and parsed.password is None)
+            names = [name for name, _ in parse_qsl(
+                parsed.query, keep_blank_values=True, max_num_fields=256,
+            )]
+        except ValueError:
+            raise ValueError("source_url must be a credential-free HTTP(S) URL") from None
+        if not valid:
+            raise ValueError("source_url must be a credential-free HTTP(S) URL")
+        if any(_credential_name(name) for name in names):
             raise ValueError("source_url must not contain credentials")
         utc(self.retrieved_at)
         if not isinstance(self.kind, EvidenceKind):

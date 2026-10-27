@@ -11,6 +11,7 @@ from macro_data_platform.connectors.statistical_http import (
     request_json,
 )
 from macro_data_platform.contracts import ErrorCode, StageStatus
+from macro_data_platform.performance.metrics import measured_phase
 
 _VARIABLE = re.compile(r"^[A-Z][A-Z0-9_]{1,30}$")
 _GEOGRAPHY = re.compile(r"^(?:us:1|state:[0-9]{2})$")
@@ -50,6 +51,7 @@ class CensusTransport:
                            result.content_type, result.kind)
 
 
+@measured_phase("parse")
 def parse_census(download: ApiDownload, query: CensusQuery) -> dict:
     data = decode_json(download)
     if isinstance(data, str):

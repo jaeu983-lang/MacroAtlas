@@ -54,6 +54,21 @@ class FoundationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 SourceEvidence("e", "agency", url, datetime.now(UTC), kind, "ref")
 
+    def test_evidence_rejects_credential_query_parameters(self):
+        private = "placeholder-secret"
+        for parameter in ("api_key", "access-token", "app_id", "UserID", "%61pi_key",
+                          "sig", "signature", "credential", "session_id", "auth",
+                          "X-Amz-Signature", "X-Goog-Credential"):
+            url = f"https://example.org/data?{parameter}={private}"
+            with self.subTest(parameter=parameter), self.assertRaises(ValueError) as caught:
+                SourceEvidence("e", "agency", url, datetime.now(UTC),
+                               EvidenceKind.OFFICIAL_DOCS, "ref")
+            self.assertNotIn(private, str(caught.exception))
+
+        evidence = SourceEvidence("e", "agency", "https://example.org/data?source=2",
+                                  datetime.now(UTC), EvidenceKind.OFFICIAL_DOCS, "ref")
+        self.assertEqual(evidence.source_url, "https://example.org/data?source=2")
+
     def test_results_preserve_missing_payload_and_evidence(self):
         result = StageResult(StageStatus.NEEDS_REVIEW, evidence_refs=("e1",),
                              warnings=("unit unknown",))

@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 import requests
+from freshness_support import HISTORICAL_FIXTURE_POLICY
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.worldbank import (
@@ -58,6 +59,13 @@ def stage_input(data=None):
     if data is None:
         data = {"start_year": 2020, "end_year": 2022}
     return StageInput("fixture-task", "fixture request", "collect", data, None, ())
+
+
+def historical_fixture_engine(settings, transport=None):
+    return WorldBankGDPEngine(
+        settings, transport, clock=lambda: FIXTURE_TIME,
+        freshness_policy=HISTORICAL_FIXTURE_POLICY,
+    )
 
 
 def test_query_is_fixed_to_one_documented_host_country_indicator_and_source():
@@ -127,7 +135,7 @@ def test_parser_and_download_contract_reject_unrelated_identity_and_evidence_mod
 ])
 def test_http_failures_retain_raw_and_do_not_claim_success(tmp_path, status, stage_status, code):
     download = fixture_download(status=status, body=b'{"fixture":"error"}')
-    engine = WorldBankGDPEngine(Settings(tmp_path), FixtureTransport(download))
+    engine = historical_fixture_engine(Settings(tmp_path), FixtureTransport(download))
     result = engine.run(stage_input())
     assert result.status == stage_status
     assert result.error_code == code
@@ -173,7 +181,7 @@ def test_schema_and_request_mismatches_are_rejected_without_discarding_raw(tmp_p
     elif change == "nonstandard_nan":
         content[0]["unexpected"] = float("nan")
     body = json.dumps(content).encode()
-    result = WorldBankGDPEngine(Settings(tmp_path), FixtureTransport(
+    result = historical_fixture_engine(Settings(tmp_path), FixtureTransport(
         fixture_download(body=body),
     )).run(stage_input())
     assert result.status == StageStatus.NEEDS_REVIEW
@@ -186,7 +194,7 @@ def test_schema_and_request_mismatches_are_rejected_without_discarding_raw(tmp_p
                                               (b"\xff", "application/json")])
 def test_malformed_json_or_html_is_retained_for_review(tmp_path, body, content_type):
     download = fixture_download(body=body, content_type=content_type)
-    result = WorldBankGDPEngine(Settings(tmp_path), FixtureTransport(download)).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path), FixtureTransport(download)).run(stage_input())
     assert result.status == StageStatus.NEEDS_REVIEW
     assert (tmp_path / result.payload["raw_path"]).read_bytes() == body
 
@@ -219,14 +227,14 @@ def test_network_disabled_never_constructs_session_or_writes_raw(tmp_path, monke
     def unexpected_session():
         raise AssertionError("Disabled transport must not create a session")
     monkeypatch.setattr(requests, "Session", unexpected_session)
-    result = WorldBankGDPEngine(Settings(tmp_path)).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path)).run(stage_input())
     assert result.status == StageStatus.NEEDS_REVIEW
     assert result.error_code == ErrorCode.LICENSE_SECURITY
     assert not (tmp_path / "data").exists()
 
 
 def test_truthy_string_is_not_explicit_network_permission(tmp_path):
-    result = WorldBankGDPEngine(Settings(tmp_path, network_enabled="false")).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path, network_enabled="false")).run(stage_input())
     assert result.error_code == ErrorCode.LICENSE_SECURITY
     assert not (tmp_path / "data").exists()
 
@@ -236,7 +244,7 @@ def test_truthy_string_is_not_explicit_network_permission(tmp_path):
                                   {"start_year": 2020, "end_year": 2035}, [], "unexpected"])
 def test_invalid_engine_inputs_do_not_start_transport(tmp_path, data):
     transport = FixtureTransport(fixture_download())
-    result = WorldBankGDPEngine(Settings(tmp_path), transport).run(stage_input(data))
+    result = historical_fixture_engine(Settings(tmp_path), transport).run(stage_input(data))
     assert result.status == StageStatus.FAILED_TERMINAL
     assert not transport.calls
     assert "placeholder" not in str(result)
@@ -245,7 +253,7 @@ def test_invalid_engine_inputs_do_not_start_transport(tmp_path, data):
 def test_engine_rejects_transport_url_changes_without_saving(tmp_path):
     download = Download("https://example.org", b"{}", 200, FIXTURE_TIME,
                         "application/json", EvidenceKind.FIXTURE)
-    result = WorldBankGDPEngine(Settings(tmp_path), FixtureTransport(download)).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path), FixtureTransport(download)).run(stage_input())
     assert result.error_code == ErrorCode.LICENSE_SECURITY
     assert not (tmp_path / "data").exists()
 
@@ -313,7 +321,7 @@ def test_live_transport_explicitly_uses_configured_proxy_and_ca_bundle(tmp_path,
 def test_transport_errors_are_safe_and_make_no_automatic_retries(tmp_path, monkeypatch,
                                                               error, status, code):
     session, _ = mocked_session(monkeypatch, error=error)
-    result = WorldBankGDPEngine(Settings(tmp_path, network_enabled=True)).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path, network_enabled=True)).run(stage_input())
     assert result.status == status
     assert result.error_code == code
     assert "private detail" not in str(result)
@@ -334,7 +342,7 @@ def test_oversized_or_over_budget_download_is_not_saved_as_complete(tmp_path, mo
         monkeypatch.setattr("macro_data_platform.connectors.worldbank.time.monotonic",
                             lambda: next(ticks))
     mocked_session(monkeypatch, body=body, headers=headers)
-    result = WorldBankGDPEngine(Settings(tmp_path, network_enabled=True)).run(stage_input())
+    result = historical_fixture_engine(Settings(tmp_path, network_enabled=True)).run(stage_input())
     assert result.status != StageStatus.SUCCEEDED
     assert not (tmp_path / "data").exists()
 
@@ -346,7 +354,7 @@ def test_local_storage_failure_keeps_existing_raw_untouched(tmp_path, monkeypatc
     def fail_save(*args, **kwargs):
         raise OSError("private filesystem detail")
     monkeypatch.setattr("macro_data_platform.ingestion.worldbank.save_worldbank_download", fail_save)
-    result = WorldBankGDPEngine(Settings(tmp_path), FixtureTransport(
+    result = historical_fixture_engine(Settings(tmp_path), FixtureTransport(
         fixture_download(),
     )).run(stage_input())
     assert result.status == StageStatus.FAILED_TERMINAL
@@ -358,12 +366,13 @@ def test_local_storage_failure_keeps_existing_raw_untouched(tmp_path, monkeypatc
 def test_offline_vertical_slice_integrates_with_durable_orchestrator_and_manual_retry(tmp_path):
     settings = Settings(tmp_path)
     transport = FixtureTransport(fixture_download(status=503), fixture_download())
-    engine = WorldBankGDPEngine(settings, transport)
+    engine = historical_fixture_engine(settings, transport)
     store = HistoryStore(settings)
-    runner = Orchestrator(store, {("worldbank_gdp", "1"): engine})
+    runner = Orchestrator(store, {("worldbank_gdp", "2"): engine})
     task = runner.create("fixture GDP query")
     runner.plan(task.task_id, TaskPlan((StageSpec("collect", "worldbank_gdp",
-                                                {"start_year": 2020, "end_year": 2022}),)))
+                                                {"start_year": 2020, "end_year": 2022},
+                                                engine_version="2"),)))
     initial = runner.run(task.task_id)
     assert initial["status"] == TaskStatus.FAILED
     result = runner.resume(task.task_id)

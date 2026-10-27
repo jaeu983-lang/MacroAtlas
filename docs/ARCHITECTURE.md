@@ -1,12 +1,13 @@
 # 01회차: 공통 모델과 경계
 
-> 이 문서는 회차별 구현 구조와 역사적 선택을 설명한다. **현재 구현 현황·게이트·다음 작업의
-> 기준은 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)**이며, 05~10회차 상세는 해당 회차
+> 이 문서는 회차별 구현 구조와 역사적 선택을 설명한다. **현재 구현 현황·게이트의
+> 기준은 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)**이며, 제품 범위·요구사항·우선순위는
+> [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 05~10회차 상세는 해당 회차
 > 보고서를 따른다. 여기 적힌 “당시 미구현”은 별도 현재 상태 표기가 없는 한 그 회차 시점의 기록이다.
 > 사용자 문제에서 출발한 목표 구조와 향후 엔진 경계는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md),
-> 다음 실행 순서는 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
+> 짧은 실행 순서 요약은 [제품 로드맵](ROADMAP_2026_10_26.md)을 따른다.
 
-기준: PROJECT_PLAN.md §5–8, docs/IMPLEMENTATION_PLAN.md 01.
+당시 기준: [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](../PROJECT_PLAN_ORIGINAL_2026_10_24.md) §5–8, docs/IMPLEMENTATION_PLAN.md 01. 현재 통합 경계는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §4–10.
 
 기존 구현은 health.py의 레이아웃 점검과 pytest 테스트 2개뿐이었다.
 이번 회차는 표준 라이브러리 기반 계약과 경로 계산만 추가한다.
@@ -110,7 +111,7 @@ JSON 전체 갱신 방식은 대규모 이력에 최적화하지 않았으며 �
   세지 않는다. 상한 초과 시 NEEDS_REVIEW, approved=True로도 상한을 초기화하지 않는다.
   02회차 당시 수동 resume만 구현했다. 현재도 한 stage invocation은 HTTP 요청을 자동 재전송하지
   않는다. Retry-After가 있으면 Orchestrator가 명시적 resume를 최소 대기시간까지 막는다.
-  자동 sleep/backoff와 공용 rate limiter는 미구현이다. 세부 정책은 PROJECT_PLAN.md §8.2다.
+  자동 sleep/backoff와 공용 rate limiter는 미구현이다. 세부 정책은 통합 PROJECT_PLAN.md §6을 따른다.
 
 ### 재사용·취소·복구
 

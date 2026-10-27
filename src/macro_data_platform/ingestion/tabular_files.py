@@ -11,6 +11,7 @@ from macro_data_platform.connectors.tabular_files import (
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore, inspect_file
 from macro_data_platform.orchestration.models import StageInput
+from macro_data_platform.performance.metrics import current_metrics
 from macro_data_platform.storage.tabular_archives import (
     begin_tabular_package,
     complete_tabular_package,
@@ -106,6 +107,10 @@ class TabularFileEngine:
                 return _invalid("Tabular input must be between one byte and sixteen MiB.")
             with source_path.open("rb") as stream:
                 raw = stream.read(MAX_INPUT_BYTES)
+            metrics = current_metrics()
+            if metrics is not None:
+                metrics.observe_input(byte_count=len(raw))
+                metrics.observe_sample_class("stored")
             if len(raw) >= MAX_INPUT_BYTES:
                 from macro_data_platform.ingestion.non_api_capacity import decision
                 record = DeferredNonAPIStore(self.settings).register(

@@ -1,6 +1,6 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: updater 코드 기준은 PR #34 merge commit `543c719be506350ce57fd14358173e54ede812b3`이다. 이후 Windows updater pilot evidence는 [27회차 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했으며, 기관·dataset scope 근거는 PR #23–#26에서 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 남은 제품 과제는 Gate C 자연 원자료 변경, 대용량 예측 보정, 통계 의미 검증, 지원 확대와 사용자 관찰이다. updater scheduler의 실제 Windows 검증은 아래 별도 상태를 따른다.
+> 2026-10-27 갱신: updater 코드 기준은 PR #34 merge commit `543c719be506350ce57fd14358173e54ede812b3`이다. 이후 Windows updater pilot evidence는 [27회차 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했으며, 기관·dataset scope 근거는 PR #23–#26에서 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 현재 남은 제품 과제는 대용량 예측 보정, 통계 의미 검증, 지원 범위 확대와 사용자 관찰이다. TIC/BIS 자료 변경상태 확인은 사용자 요청으로 현재 범위에서 제외했으며 updater scheduler의 실제 Windows 검증은 아래 별도 상태를 따른다.
 
 후속 상태: Linux updater candidate QA/PR handoff와 Windows installer dry-run, no-op/cleanup, 교차 프로세스 lock 경합은 확인됐다. Windows no-op run `20261027T063907Z-d01e9247`은 base `aefd320`에서 cleanup과 retention 요약(`scanned=5, removed=0, preserved=5`)을 통과했다. Lock run `20261027T063105Z-60a54edf`는 네트워크 작업 없이 `ALREADY_RUNNING`을 반환했다. 사용자는 base `f8693f0`에서 updater·retention 대상 테스트 34개를 통과시키고, 최신 base `e25d944`에서 실제 updater run `20261027T084854Z-00b29eb9`의 `NO_ACTIONABLE_CHANGE`·cleanup 성공·retention (`scanned=7, removed=0, preserved=7`)을 확인했다. GitHub Actions는 기준 HEAD `7fbd67e` 및 merge commit `fb37234`의 4개 job이 step 실행 전에 실패해 자동 CI 결과를 제공하지 않았다. 실제 Windows 사용자-session candidate/handoff 및 scheduler invocation은 미확인이라 task는 비활성이다. [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 실행 결과를 기록한다.
 
@@ -10,6 +10,11 @@
 완료·unchanged였으며 자연 개정이나 provider 오류는 발생하지 않았다. 과거 FAILED/BLOCKED 라벨만으로
 현재 장애를 판정하지 않는다.
 다른 기관 접속 상태나 다음 게시 주기까지의 상태는 이 결과에 포함되지 않는다.
+
+2026-10-27 사용자 범위 갱신: TIC/BIS 자료 변경상태를 반복 확인할 필요가 없다는 요청에 따라
+`Gate C 자연 증거 감시`와 `Gate C Source Watch` 자동화를 중지했다. 기존 baseline, 과거 `unchanged`
+관측 및 Gate C 제한 판정은 그대로 보존한다. 변경 감지 기능의 과거 검증 이력은 기록으로 남지만,
+새 TIC/BIS 변경·장애를 확인하는 작업은 현재 활성 backlog가 아니다.
 
 ## 1. 데이터 처리·전달에 남은 작업
 
@@ -22,7 +27,7 @@
 | 시험 worker 강제 종료 복구 | lock 상속·미확정 NOT_EXECUTED 복구를 추가했고 당시 4조합 CI가 통과 | PR #4가 `25f3c87`에 이미 병합됨 | 완료된 제품 복구 항목. 서버 문제 아님 |
 | 대용량 인계 후 실행·상태 관리 | PR #6에서 BIS flat 전용 `handed_off/resolved`, 승인 child, chunk/hash checkpoint와 same-task resume 구조를 통합했고 실제 보존 raw task가 완료됨 | 다른 provider, Windows resource worker, 더 큰 입력·pagination은 별도 qualification 후 평가 | BIS flat 제한 경로 완료. 범용 대용량 지원은 남은 제품 범위 |
 | 추가 형식·기관과 Windows 대용량 worker | 현행 production worker는 BIS flat ZIP 한 경로의 Linux 자원 제한 실행만 지원. 다른 형식·기관 및 Windows 자원 worker는 지원 범위 밖 | 각 provider/format을 격리 qualification하고, Windows는 별도 process memory/time/cancel/orphan recovery 한도를 실제 Windows에서 입증한 뒤 한 경로씩 결정 | 제품 지원 범위 미구현. 서버 접속 오류로 분류하지 않음 |
-| 실제 분석가 업무 관찰 | 내부 status→CSV dry run과 23회차 관찰안은 준비됐으나 독립 참가자 관찰은 아직 없음. 사용자 우선순위에 따라 최종 검증으로 보류 | 28–32 A–D 평가 및 수동 feedback-to-case, 33–37 E 시계열/freshness/adapter, 38–39 F/G workbook 통과 후 scenario를 갱신하고 40회차에서 동의·익명 기록 | 28–39 gate와 freshness 검증된 비교용 series 준비 전 세션 미실행. 자기 검토를 사용자 검증으로 계산하지 않음 |
+| 실제 분석가 업무 관찰 | 내부 status→CSV dry run과 23회차 관찰안은 준비됐으나 독립 참가자 관찰은 아직 없음 | A–G 28–39회차 gate 후 최종 40회차에서 검증된 원본/비교 workbook과 feedback 기록 흐름을 관찰. 시나리오·task ID·기대 sheet를 실행 전에 갱신 | 참가자 evidence 대기. 자기 검토를 사용자 검증으로 계산하지 않음 |
 
 BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 flat JSONL 생성은 structural preservation이며
 경제 의미를 정규화하지 않는다. 보존 원본 production 실행은 완료됐지만 이 경로를 일반 exporter나 추가 형식 지원으로
@@ -34,8 +39,8 @@ BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 f
 |---|---|---|---|
 | World Bank GDP | task 0f968a54-9855-439c-aaf2-bb7022fb5c8c 수집/검증 완료 | 최신 지원 경로 접속 성공 | 새 실패가 발생하면 해당 task의 HTTP/TLS/proxy·Retry-After를 기준으로 진단 |
 | BOJ FM08/FXERD01 | task 96f82a80-e84b-4b34-b282-204fb642afae metadata/data 완료 | 최신 고정 경로 접속 성공 | 다른 series의 성공으로 확대하지 않음 |
-| TIC Table 5 | task 2720605a-199c-4355-ab2c-d18a8cfa27a3 완료·unchanged | 최신 고정 URL 접속 성공 | 게시 주기 감시 유지 |
-| BIS column ZIP | task e8a57a1a-b24e-4c5f-a4e7-ea557cc6a762 완료·unchanged | 최신 고정 URL 접속 성공 | 게시 주기 감시 유지 |
+| TIC Table 5 | task 2720605a-199c-4355-ab2c-d18a8cfa27a3 완료·unchanged | 마지막 기록된 고정 URL 접속 성공 | 정기 변경 확인 불필요. 필요 시 요청된 단발 작업에서 확인 |
+| BIS column ZIP | task e8a57a1a-b24e-4c5f-a4e7-ea557cc6a762 완료·unchanged | 마지막 기록된 고정 URL 접속 성공 | 정기 변경 확인 불필요. 필요 시 요청된 단발 작업에서 확인 |
 | 과거 ProxyError·World Bank 직접 연결 실패 | 당시 실행 권한/proxy 설정 문제를 확인·수정했고 이후 실측 성공 | 해결된 환경/전송 구성 문제. 현재 기관 서버 장애로 분류하지 않음 | 설정 proxy/CA 유지. 과거 실패 이력은 보존 |
 | 과거 BIS 503 | 당시 HTTP 응답 관측은 있었지만 실패 task 저장이 없었음. 이후 성공과 현재 column 성공 확인 | 과거 일시 제공자 오류. 현재 지속 장애 증거 없음 | 재발하면 저장된 task로 상태·응답·대기시간·재개 이력 확보 |
 | 기타 기관·인증 경로 | 이번 재검증에서 해당 기관 observation 요청을 보내지 않음 | 접속·인증 상태 미확인. 현재 401/403/차단을 주장할 근거 없음 | 공식 endpoint·요청 범위 및 구현 여부를 먼저 확정해 제한 실측 |
@@ -55,12 +60,12 @@ BIS flat의 정상 인계는 16회차 정책 구현 완료 증거다. 19회차 f
 
 | 항목 | 이번 관측 | 남은 조건 | 판정 |
 |---|---|---|---|
-| 실제 원자료 개정 감지 | 마지막 기록된 exact-scope 비교는 TIC/BIS 모두 unchanged | 같은 scope의 실제 변경 raw 쌍, `changed/NEEDS_REVIEW`, 양쪽 원본 보존 및 새 정규화 차단 | 미해결. 자연 개정 대기 |
-| 자연 장애 후 durable resume | World Bank API task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT` 이후 같은 task의 attempt 2로 재개해 collect·validate가 성공했다. 최초 Retry-After는 없었고 max_attempts=3 중 1회 사용 상태였다. | 이 실측은 World Bank API collector 범위다. TIC/BIS file watch에서의 natural retryable failure는 아직 관측되지 않았다. source-specific 증거가 요구되면 같은 URL/scope의 저장 task를 재개 | World Bank 범위의 자연 durable resume는 확보. Gate C 자연 source revision은 별도 미해결 |
+| TIC/BIS 원자료 개정 감지 | 마지막 기록 exact-scope 비교는 양쪽 모두 unchanged; 실제 변경 쌍은 없음 | 사용자가 현재 확인을 불필요하다고 지정해 반복 감시 자동화를 중지함 | 활성 작업에서 제외. 과거 자연 변경이 미관측이라는 Gate C 이력은 그대로 보존 |
+| 자연 장애 후 durable resume | World Bank API task `84a1afd9-4b56-454f-96ea-f6e59f245afc`에서 자연 `FAILED_RETRYABLE/TRANSIENT` 이후 같은 task의 attempt 2로 재개해 collect·validate가 성공했다. 최초 Retry-After는 없었고 max_attempts=3 중 1회 사용 상태였다. | World Bank 범위는 확인됨. TIC/BIS watch scope의 자연 retryable failure는 미관측이며, 정기 감시는 중지됨. 향후 사용자가 요청한 수집 중 실패하면 그 task를 보존해 재개 이력을 기록 | 현재 운영 장애가 아니며 추가 감시 과제가 아님. 사용자 재요청이 있으면 단발 task에서 증거를 남김 |
 
-변경·503 fixture는 동작 검증에 사용하며 자연 발생 실측을 대신하지 않는다. World Bank 재개는 별도의 자연
-실측으로 저장됐지만 TIC/BIS 변경 쌍을 대체하지 않는다. 이는 현재 서버 장애 또는 현재 데이터 손상이라는 판정이
-아니다.
+변경·503 fixture는 동작 검증에 사용하며 자연 발생 실측으로 다시 분류하지 않는다. World Bank 재개는 별도의 자연
+실측으로 보존한다. TIC/BIS 변경쌍과 file-watch 장애 이력은 관측되지 않았지만 현재 요구 범위에서 제외됐다.
+이는 현재 서버 장애 또는 현재 데이터 손상이라는 판정이 아니다.
 
 ## 5. 작업 상태와 원인을 혼동하지 않는 규칙
 
@@ -82,21 +87,18 @@ Linux에서는 첫 시도가 token refresh `401`로 중단됐지만 device-code 
 
 ## 다음 작업 우선순위
 
-현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
+현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [통합 제품 기획](../PROJECT_PLAN.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
 1. **완료:** 기능 구현과 기록된 pilot 증거가 통합됐다. updater 코드 기준은 `543c719be506350ce57fd14358173e54ede812b3`; 최신 Windows no-op run의 base는 `aefd320a67d0abb5779393b90d32f6d149efa77e`. Linux updater candidate path와 Windows no-op/cleanup/lock contention은 통과했으며 Gate C 자연 원자료 변경은 별도로 남아 있다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
-5. **최종 관찰 대기:** 분석가 1–2명의 실제 업무 관찰은 계획상 40회차이며 28–39회차가 먼저 통과해야 한다. 범위와 완료 조건은
-   [평가·엔진·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md), 진행 절차는 [23회차 계획](ITERATION_23_PLAN.md)에 있다.
-   관찰 후에 다음 provider·UI·자연어 범위를 정한다.
-6. **자연 증거:** TIC/BIS 감시는 기존 baseline과 exact scope로 유지한다. 실제 개정 쌍이 생기면 변경 raw 두 개, `changed/NEEDS_REVIEW`, 정규화 차단을 검토한다. World Bank 자연 resume는 확보됐으나 provider-specific Gate C 검토를 대체하지 않는다.
-7. **예측 보정:** 승인된 qualification/production이 실행될 때 예측·실제 stage time을 축적한다. paired 표본이 각 operation에서 3건에 도달할 때 모델 오차를 재평가한다. 표본 생성만을 위한 실행은 하지 않는다.
-8. **품질·범위 확대:** 실제 사용자 요구가 확인된 provider/format 하나씩 metadata 계약, 의미 검증, Linux/Windows 자원 한도와 복구 완료 기준을 정한 뒤 qualification한다.
+5. **최종 관찰 대기:** 분석가 1–2명의 실제 업무 관찰은 23회차이며, A–G 28–39회차 통과 후 마지막 40회차로 진행한다. 관찰 대상은 완성된 workbook과 feedback 기록 흐름이다. 절차는 [23회차 계획](ITERATION_23_PLAN.md)에 있고 세션은 미실행이다.
+6. **예측 보정:** 승인된 qualification/production이 실행될 때 예측·실제 stage time을 축적한다. paired 표본이 각 operation에서 3건에 도달할 때 모델 오차를 재평가한다. 표본 생성만을 위한 실행은 하지 않는다.
+7. **품질·범위 확대:** 실제 사용자 요구가 확인된 provider/format 하나씩 metadata 계약, 의미 검증, Linux/Windows 자원 한도와 복구 완료 기준을 정한 뒤 qualification한다.
 
-남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 추가 provider/format과 Windows resource worker는 미구현 기능이다. 실제 TIC/BIS 원자료 개정은 여전히 미관측이다. World Bank에서는 자연 transient failure를 저장한 task의 same-task resume가 확인됐다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
+남은 항목은 모두 같은 종류의 “실패”가 아니다. World Bank/BOJ 제한 CSV 전달과 19회차 BIS flat 단일 처리 경로는 완료됐다. 추가 provider/format과 Windows resource worker는 미구현 기능이다. TIC/BIS 원자료 변경은 과거 미관측으로 기록됐고, 현재 사용자 요청에 따라 정기 확인하지 않는다. World Bank에서는 자연 transient failure를 저장한 task의 same-task resume가 확인됐다. 과거 proxy 연결 문제는 설정을 바로잡은 뒤 성공 실측이 있어 해결된 이력으로 남긴다.
 
 근거: [현행 Gate 재검증](GATE_REAUDIT_AFTER_ITERATION_16.md), [인계 목록](NON_API_DEFERRED_CATALOG.json),
 [엔진 연결 설계](ENGINE_CONNECTIONS.md), [17회차 시험 계획](ITERATION_17_PLAN.md),

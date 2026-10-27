@@ -5,8 +5,8 @@
 1. 사용자는 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)부터 읽습니다.
 2. 개발자는 [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md),
    [`AGENTS.md`](AGENTS.md), [`GUIDELINES.md`](GUIDELINES.md)를 읽습니다.
-3. 현재 제품 우선순위는 [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md),
-   장기 요구사항은 [`PROJECT_PLAN.md`](PROJECT_PLAN.md)에서 확인합니다.
+3. 통합 기준인 [`PROJECT_PLAN.md`](PROJECT_PLAN.md)에서 현재 제품 범위·우선순위·완료 조건을 확인합니다.
+   [`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md)는 짧은 실행 요약입니다.
 4. 현재 구현·Gate 증거는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
    남은 문제의 종류는 [`docs/UNRESOLVED_ITEMS.md`](docs/UNRESOLVED_ITEMS.md)에서 확인합니다.
 5. 사용자·개발자 관점의 목표 시스템은 [`docs/PRODUCT_ARCHITECTURE.md`](docs/PRODUCT_ARCHITECTURE.md),
@@ -20,8 +20,8 @@ failure→durable resume은 실측되지 않았습니다. BOJ는 FM08/FXERD01 �
 series는 지원하지 않습니다. 현행 범위는 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), A–H/X01–X09
 세부 증거는 [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)를 확인합니다.
 
-구현 증거는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), 다음 순서는
-[`docs/ROADMAP_2026_10_26.md`](docs/ROADMAP_2026_10_26.md)를 따릅니다. 사용자는 `macroatlas --help`로
+구현 증거는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)를 따릅니다. 현재 TIC/BIS 변경 감시
+자동화는 중지됐으며 사용자가 필요할 때 요청하는 단발 명령만 남습니다. `macroatlas --help`로
 지원되는 고정 수집·감시 명령을 볼 수 있습니다.
 
 Git branch/commit 정보는 `git status -sb`, `git log -1 --oneline`,

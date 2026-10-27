@@ -1,19 +1,19 @@
 # 23회차 기획 — 목표 사용자 업무 관찰
 
-기준일: 2026-10-27. PR #10 통합 뒤 준비했으나, 사용자 우선순위 변경에 따라 이 회차를 최종 제품 검증으로 둔다. 분석가 1–2명의
-세션은 A–G 평가·엔진·시계열·Excel 선행 작업이 끝난 뒤 실행한다. 참가자 모집이나 관찰 세션은 아직 이뤄지지 않았다.
+기준일: 2026-10-27. 사용자의 순서 변경에 따라 이 회차는 다음 작업이 아니라 **마지막 제품 검증**이다.
+분석가 1–2명의 세션은 평가·시계열·최신성·원본/비교 Excel의 28–39회차 gate가 모두 통과한 뒤,
+통합 상세 일정상 40회차에 실행한다. 참가자를 모집하거나 관찰 세션을 실행한 것은 아니다.
 
-## 실행 선행 조건
+## 최종 세션 선행 조건
 
-`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 28–39회차 gate가 모두 통과되기 전에는 이 회차의 참가자 세션을 시작하지 않는다.
-실행은 계획상 마지막 40회차다. 현재 문서의 World Bank status→CSV 과제는 준비 자산으로 보존한다. 최종 관찰 전에 원본 workbook 저장과
-비교 workbook의 날짜 정렬·호환성·결측·frequency별 freshness 경고, 별도 feedback 기록 절차를 다루는 과제로 갱신한다. 각 과제는 정확한 task/series ID, 완성 CLI 명령, expected sheet,
-경고, 금지 동작, 성공·중단 조건을 고정 사례 버전과 맞춘다. holdout 사례와 정답지는 참가자에게 공개하지 않는다. 시나리오에 사용할 검증된
-동일 frequency/calendar의 복수 series가 준비되지 않으면 비교 과제를 위해 의미를 추정하거나 임의 데이터를 섞지 말고 세션을 연기한다.
+- `docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`의 28–39회차 gate가 모두 통과해야 한다. 계획서나 fixture만 준비된 상태는 통과 증거가 아니다.
+- 이 문서의 기존 World Bank status→CSV 시나리오는 준비 자산으로 남긴다. 세션 전에 완성된 원본/비교 workbook 명령과 실제 보존 task/series ID, 기대 sheet, 단위·주기·최신성 경고, 금지 동작, 성공·중단 조건으로 다시 쓴다.
+- holdout 사례와 정답지는 참가자에게 공개하지 않는다. feedback 기록 절차를 별도로 제시하고, 피드백만으로 평가 세트나 엔진 규칙이 바뀌지 않는다고 설명한다.
+- 검증된 동일 frequency/calendar의 비교 series가 없으면 의미를 추정하거나 임의 데이터를 만들지 말고 비교 과제를 제외하거나 세션을 연기한다.
+- 실행 당일 최신 base SHA로 폐기 가능한 checkout을 준비하고 저장 task/raw/manifest, 빈 출력 경로, 예상 결과를 다시 확인한다. 동의와 익명 기록을 유지한다.
 
-문서 작성 시점의 base 브랜치 `codex/iteration-04-gate-a`는 PR #47 병합 결과
-`72faf484181cb7a3b0813d5207f638f6b005c38f`를 가리킨다. 이 SHA는 계획 작성 당시의 참고점이다. 실제 세션을
-준비할 때는 항상 base 브랜치의 최신 commit SHA를 확인해 폐기용 checkout을 만들고 저장 task/raw/manifest를 다시 확인한다.
+아래의 task ID·명령·CSV 기대값은 과거 CSV 준비 시나리오의 기록이다. 최종 세션의 base branch/SHA,
+task ID, workbook 이름·sheet·기대 warning은 선행 구현이 완료된 뒤 최신 checkout에서 고정한다.
 
 ## 확인할 질문
 

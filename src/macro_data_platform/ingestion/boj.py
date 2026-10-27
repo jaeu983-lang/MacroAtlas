@@ -1,6 +1,7 @@
 """Orchestrator stages for the verified BOJ FXERD01 monthly API path."""
 import hashlib
 import json
+from datetime import UTC, datetime
 from typing import Protocol
 
 from macro_data_platform.config import Settings
@@ -13,7 +14,14 @@ from macro_data_platform.connectors.boj import (
 )
 from macro_data_platform.connectors.statistical_http import MAX_BYTES, ApiDownload, SourceFailure
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.orchestration import Orchestrator, StageInput, StageSpec, TaskPlan
+from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
 
@@ -79,9 +87,12 @@ class BOJMetadataEngine:
 
 
 class BOJObservationEngine:
-    def __init__(self, settings: Settings, transport: Transport | None = None):
+    def __init__(self, settings: Settings, transport: Transport | None = None, *,
+                 clock=lambda: datetime.now(UTC),
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY):
         self.settings = settings
         self.transport = transport if transport is not None else BOJTransport()
+        self.clock, self.freshness_policy = clock, freshness_policy
 
     def run(self, request: StageInput) -> StageResult[dict]:
         if self.settings.network_enabled is not True:
@@ -131,7 +142,30 @@ class BOJObservationEngine:
                                      if key in saved),
                                ("BOJ observation raw preservation failed.",), ErrorCode.INTERNAL_BUG)
         parsed.update({**saved, "mode": download.kind.value})
+        with measure_current("quality"):
+            freshness = assess_freshness(
+                [row["date"] for row in parsed["observations"]],
+                frequency=metadata.get("frequency"), series_id=query.series_code,
+                series_key={"database": query.database, "series_code": query.series_code},
+                as_of=self.clock(), policy=self.freshness_policy,
+            )
+        freshness_issue = (
+            "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
+            "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
+        )
+        parsed["quality"] = {
+            **parsed["quality"], "freshness": freshness,
+            "issues": [freshness_issue] if freshness_issue else [],
+            "status": "failed" if freshness_issue else "passed",
+        }
         refs = (saved["raw_path"], saved["manifest_path"])
+        if freshness_issue:
+            parsed["withheld_observation_count"] = len(parsed["observations"])
+            parsed["observations"] = []
+            return StageResult(
+                StageStatus.NEEDS_REVIEW, parsed, refs,
+                (freshness_issue, freshness["status"]), ErrorCode.QUALITY_FAILURE,
+            )
         return StageResult(StageStatus.SUCCEEDED, parsed, refs)
 
 
@@ -146,11 +180,11 @@ def build_boj_plan(query: BOJQuery) -> TaskPlan:
         StageSpec("collect", "boj_observations", {
             "database": query.database, "series_code": query.series_code,
             "month": query.month,
-        }, max_attempts=2),
+        }, engine_version="2", max_attempts=2),
     ))
 
 
-def _metadata_reusable(spec: StageSpec, candidate: dict, settings: Settings) -> bool:
+def metadata_reusable(spec: StageSpec, candidate: dict, settings: Settings) -> bool:
     if (spec.engine != "boj_metadata" or candidate.get("status") != StageStatus.SUCCEEDED
             or not isinstance(candidate.get("result"), dict)):
         return False
@@ -187,15 +221,19 @@ def _metadata_reusable(spec: StageSpec, candidate: dict, settings: Settings) -> 
 
 
 def make_boj_orchestrator(store: HistoryStore, settings: Settings,
-                          transport: Transport | None = None) -> Orchestrator:
-    if store.settings.database_path != settings.database_path:
-        raise ValueError("BOJ runner and history must use the same configured storage")
-    engines = {
-        ("boj_metadata", "1"): BOJMetadataEngine(settings, transport),
-        ("boj_observations", "1"): BOJObservationEngine(settings, transport),
-    }
-    return Orchestrator(store, engines, reuse_validator=(
-        lambda spec, candidate: _metadata_reusable(spec, candidate, settings)))
+                          transport: Transport | None = None, *,
+                          clock=lambda: datetime.now(UTC),
+                          freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY
+                          ) -> Orchestrator:
+    from macro_data_platform.orchestration.composition import build_engine_registry
+
+    registry = build_engine_registry(
+        settings, store, boj_transport=transport, clock=clock,
+        freshness_policy=freshness_policy,
+    )
+    return registry.orchestrator_for(engine_keys={
+        ("boj_metadata", "1"), ("boj_observations", "2"),
+    })
 
 
 def create_boj_task(store: HistoryStore, settings: Settings, query: BOJQuery,
