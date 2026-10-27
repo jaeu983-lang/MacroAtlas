@@ -1,0 +1,184 @@
+{
+  "draft_id": "rankable-holdout-urban-share-2021",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "holdout",
+  "case": {
+    "case_id": "draft-eval-v1-rankable-holdout-urban-share-2021",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-rankable-holdout-urban-share-2021",
+    "split": "holdout",
+    "case_type": "rankable",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-rankable-holdout-urban-share-2021",
+      "text": "Find the percentage of the US population living in urban areas in 2021.",
+      "concept": "United States urban population as a percent of total population",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2021",
+      "period_end": "2021",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Find the percentage of the US population living in urban areas in 2021.",
+      "2021년 미국의 도시 거주 인구 비율(총인구 대비)을 찾아줘.",
+      "Retrieve the urban population share indicator for the United States for 2021."
+    ],
+    "expected_state": "candidate_found",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:SP.URB.TOTL.IN.ZS"
+    ],
+    "forbidden_candidate_ids": [],
+    "expected_match_status": {
+      "worldbank:2:USA:SP.URB.TOTL.IN.ZS": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:SP.URB.TOTL.IN.ZS": {
+        "available_end": {
+          "state": "known",
+          "value": "2022"
+        },
+        "available_start": {
+          "state": "known",
+          "value": "2020"
+        },
+        "dataset_id": {
+          "state": "known",
+          "value": "2"
+        },
+        "definition": {
+          "state": "known",
+          "value": "Urban population refers to people living in urban areas as defined by national statistical offices. The data are collected and smoothed by United Nations Population Division."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        },
+        "institution_id": {
+          "state": "known",
+          "value": "worldbank"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SP.URB.TOTL.IN.ZS"
+        },
+        "unit": {
+          "state": "unknown"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-urban-population-share-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SP.URB.TOTL.IN.ZS?format=json",
+        "local_ref": "docs/evidence/worldbank_urban_population_share_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.889506+00:00",
+        "sha256": "ada77d666a1469f69379933d0597cdd420299806163905af52de79d538da95e6",
+        "claim": "Official World Bank metadata labels this series Urban population (% of total population) — USA, WDI; structured unit/frequency are not inferred from missing fields."
+      },
+      {
+        "evidence_id": "wdi-urban-population-share-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SP.URB.TOTL.IN.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_urban_population_share_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:42.229156+00:00",
+        "sha256": "f8ed56943b67cb1393883c34cd09f58049732cffba878d7e7e3c360a8572be5a",
+        "claim": "Official World Bank evidence for Urban population (% of total population) — USA, WDI; observation scope is limited to USA 2020–2022 where the evidence is an observation response."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  },
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SP.URB.TOTL.IN.ZS",
+    "institution_id": "worldbank",
+    "label": "Urban population (% of total population) — USA, WDI",
+    "definition": "Urban population refers to people living in urban areas as defined by national statistical offices. The data are collected and smoothed by United Nations Population Division.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SP.URB.TOTL.IN.ZS"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-urban-population-share-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SP.URB.TOTL.IN.ZS?format=json",
+        "retrieved_at": "2026-10-27T14:32:41.889506+00:00",
+        "original_ref": "docs/evidence/worldbank_urban_population_share_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SP.URB.TOTL.IN.ZS",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-urban-population-share-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.URB.TOTL.IN.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:32:42.229156+00:00",
+        "original_ref": "docs/evidence/worldbank_urban_population_share_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SP.URB.TOTL.IN.ZS",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+      "Observed availability evidence covers only USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  }
+}

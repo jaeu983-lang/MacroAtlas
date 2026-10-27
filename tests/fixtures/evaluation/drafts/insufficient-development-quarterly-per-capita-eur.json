@@ -1,0 +1,156 @@
+{
+  "draft_id": "insufficient-development-quarterly-per-capita-eur",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "case": {
+    "case_id": "draft-eval-v1-insufficient-development-quarterly-per-capita-eur",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-insufficient-development-quarterly-per-capita-eur",
+    "split": "development",
+    "case_type": "insufficient_evidence",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-insufficient-development-quarterly-per-capita-eur",
+      "text": "Give me quarterly US GDP per capita converted to euros for 2020–2022.",
+      "concept": "Quarterly US GDP per capita converted to EUR",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "quarterly",
+      "unit_policy": "convert",
+      "target_unit": "EUR",
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Give me quarterly US GDP per capita converted to euros for 2020–2022.",
+      "2020~2022년 미국 분기별 1인당 GDP를 유로로 환산해줘.",
+      "I need quarterly EUR-denominated GDP per person for the United States."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.PCAP.CD"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:NY.GDP.PCAP.CD": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:NY.GDP.PCAP.CD": {
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-gdp-pcap-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json",
+        "local_ref": "docs/evidence/worldbank_gdp_per_capita_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:23:47.657372+00:00",
+        "sha256": "96520c3a22b1f9da1c7456349a6e70b1643db88d427671faced17cb8b9eaf907",
+        "claim": "Official World Bank metadata labels this series GDP per capita (current US$) — USA, WDI; structured unit/frequency are not inferred from missing fields."
+      },
+      {
+        "evidence_id": "wdi-gdp-pcap-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+        "sha256": "759d5017b889445c19d80bf881a25d1c66b8b5820767e2eace5a538f482ab5c5",
+        "claim": "Official World Bank evidence for GDP per capita (current US$) — USA, WDI; observation scope is limited to USA 2020–2022 where the evidence is an observation response."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  },
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:NY.GDP.PCAP.CD",
+    "institution_id": "worldbank",
+    "label": "GDP per capita (current US$) — USA, WDI",
+    "definition": "Official WDI label and note: GDP is divided by the general population to form a per-capita estimate; values are in current prices and United States dollars.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "country": "USA",
+      "indicator": "NY.GDP.PCAP.CD",
+      "source": "2"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-gdp-pcap-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json",
+        "retrieved_at": "2026-10-27T14:23:47.657372+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_per_capita_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.PCAP.CD",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-gdp-pcap-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.PCAP.CD",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata distinguishes per-capita GDP from total GDP. The current MacroAtlas World Bank collector rejects this indicator, so it is a catalog distractor only.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the retained API metadata has an empty unit and no frequency field.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support NY.GDP.PCAP.CD."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  }
+}

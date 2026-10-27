@@ -902,3 +902,16 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 ## D-102 — 23회차 분석가 관찰을 A–G 제품 작업 뒤 최종 검증으로 둠
 
 2026-10-27. 사용자는 준비된 분석가 1–2명 관찰을 다음 단계가 아니라 모든 제품 구현·검증 뒤 마지막으로 배치하도록 요청했다. 통합 기획 `PROJECT_PLAN.md`가 단일 제품 기준이며, 새 `PRODUCT_EVALUATION_ENGINE_PLAN.md`는 그 §11의 A–G를 28–39회차로 구체화하는 하위 일정이다. 기존 23회차 관찰은 상세 일정의 40회차 최종 제품 검증으로 남긴다. 실제 세션 전에 workbook 구현 결과에 맞게 scenario task/series ID, 명령, 기대 sheet와 경고를 갱신한다. 계획·fixture·내부 dry run은 독립 분석가 관찰 evidence로 계산하지 않는다. 이 순서 변경은 workbook/freshness/feedback 기능의 구현 완료를 뜻하지 않으며, updater/scheduler pilot과 자연 Gate C evidence도 별도 상태로 유지한다.
+
+## D-103 — evidence-backed 평가 corpus와 assistant 초안을 별도 보관
+
+2026-10-27. Iteration 28은 기존 JSON-per-split synthetic scaffold를 유지하면서 별도의 immutable `EvaluationCase` v1 JSONL corpus,
+고정 candidate snapshot, evidence/file SHA-256 manifest와 split leakage audit을 추가한다. 고정 corpus는 목표 36개 중 9개이며
+초기 target 유형의 `near_match`가 0개라 gate는 `blocked`로 둔다. 별도 27개 assistant-simulated draft는 모두
+`independent_review_pending`이고 평가 corpus나 candidate catalog에 들어가지 않는다. hash 검증과 날짜 정규화 text audit은
+독립 의미 검토를 대신하지 않는다. `validate-corpus`는 evidence integrity와 gate 상태만 보고하고 검색 엔진을 실행하거나 draft를
+승격하지 않는다. 이 변경은 A의 일부 계약/fixture 준비이며 36-case gate, C/D 평가·승격 또는 사용자 관찰 통과를 뜻하지 않는다.
+
+## D-104 — 계획 기준 통합과 PR 묶음 축소
+
+2026-10-27. 사용자가 반복 계획·과거 다음 단계 문구·회차별 PR 수를 줄이고 기준을 통합하도록 요청했다. 제품 요구사항과 실행 순서는 `PROJECT_PLAN.md`에만 두고, `IMPLEMENTATION_PLAN.md`는 현행 상태 요약, `PRODUCT_EVALUATION_ENGINE_PLAN.md`는 상세 gate, 회차 보고서는 당시 실행 증거로 분리한다. 28–29, 30–32, 33–37, 38–39회차를 네 review PR 묶음으로 관리하며, 내부 회차 checkpoint와 실패 gate는 그대로 유지한다. 기존 열린 PR #50은 corpus gate가 통과한 것으로 취급하지 않으며, 27개 assistant-simulated 사례의 독립 검토·명시적 승격 전까지 draft 상태를 유지한다. PR의 push와 pull_request 이벤트가 중복 matrix를 실행하던 설정은 기본 branch push와 PR에서만 실행하도록 제한한다. 과거 보고서의 결과·수치는 소급 변경하지 않고, 과거의 다음 단계는 현행 순서가 아님을 문서 안내에 명시한다. 이 통합은 코드 기능 구현, 평가 gate 통과 또는 사람 검토 완료를 뜻하지 않는다.

@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/indicator/EN.POP.DNST?format=json",
+  "retrieved_at": "2026-10-27T14:41:17.712242+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Mon, 26 Oct 2026 17:09:16 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 1134,
+  "raw_path": "docs/evidence/worldbank_population_density_metadata_20261027.json",
+  "raw_sha256": "c5df1b392124d9113915d833c5d4a47e73d9c6b989de0e6a64a9487479f9040c"
+}

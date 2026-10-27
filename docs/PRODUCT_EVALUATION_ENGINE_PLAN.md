@@ -1,6 +1,6 @@
 # 제품 평가·시계열 엔진 통합·Excel 실행 계획
 
-기준일: 2026-10-27. 이 문서는 [`PROJECT_PLAN.md` §11](../PROJECT_PLAN.md)의 A–G 제품 작업을 회차별 구현·검증 일정으로 구체화한다. 제품 범위·정책·우선순위는 통합 기획서가 기준이며, 이 문서는 하위 실행 계획이다. 최종 40회차는 사용자가 요청한 23회차 분석가 관찰이다. 현재 상태는 **실행 전 계획**이며, 문서만으로 기능 구현이나 사용자 관찰을 완료했다고 보지 않는다.
+기준일: 2026-10-27. 이 문서는 [`PROJECT_PLAN.md` §11](../PROJECT_PLAN.md)의 A–G 제품 작업에 대한 상세 수용 기준이다. 제품 범위·정책·우선순위와 PR 묶음은 통합 기획서가 기준이다. 현재 Iteration 28 corpus는 9/36이라 gate blocked이며, 실행 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)와 회차 보고서에 기록한다. 기존 23회차 분석가 관찰은 마지막 40회차다.
 
 ## 1. 목표와 현재 범위
 
@@ -8,7 +8,7 @@
 
 이번 제품 범위는 현재 지원된 World Bank, BOJ, BLS, Census API 경로와 제한된 공식 파일 경로다. 신규 기관을 추가하거나 범용 자연어 agent/UI를 만드는 일은 포함하지 않는다. TIC/BIS 감시와 대용량 worker는 서로 다른 운영·보안 목적의 경로이므로 공통 관측값 모델에 억지로 넣지 않는다.
 
-한 번의 구현 task는 저장소 규칙대로 하나의 번호가 붙은 High 회차만 다룬다. 각 회차는 독립 PR, 테스트 결과, 현재 상태, 미완료 항목을 기록하고 gate가 실패하면 다음 회차로 넘어가지 않는다. 평가 코퍼스와 모든 실행은 로컬 fixture를 기본으로 하며, 평가는 네트워크·API key·task DB 쓰기·수집·제품 CSV/XLSX export를 하지 않는다. 필요할 때만 `.gitignore`된 `reports/evaluation/` 아래에 deterministic evaluation report를 쓴다. 사용자 피드백은 현재 운영/업무 상태를 기록하는 입력이며 SearchPolicy나 공통 규칙을 자동 수정하지 않는다.
+회차 번호는 순차 검증 checkpoint다. PR은 매 회차마다 만들지 않고 28–29, 30–32, 33–37, 38–39의 네 의존성 묶음으로 제출한다. 각 회차의 테스트·gate 결과는 묶음 안에서 따로 기록하며, 실패한 gate는 다음 단계의 완료로 처리하지 않는다. 자세한 패키징은 [`PROJECT_PLAN.md` §11](../PROJECT_PLAN.md)을 따른다. 평가 코퍼스와 모든 실행은 로컬 fixture를 기본으로 하며, 평가는 네트워크·API key·task DB 쓰기·수집·제품 CSV/XLSX export를 하지 않는다. 필요할 때만 `.gitignore`된 `reports/evaluation/` 아래에 deterministic evaluation report를 쓴다. 사용자 피드백은 현재 운영/업무 상태를 기록하는 입력이며 SearchPolicy나 공통 규칙을 자동 수정하지 않는다.
 
 ## 2. 지금 있는 것과 없는 것
 
@@ -166,7 +166,7 @@ MacroAtlas에는 이미 `FeedbackStore`가 있다. `macro-feedback add/list/revi
 | 39 | G: aligned comparison workbook과 허용 변환, period alignment/status 처리 | 같은 주기·calendar만 정렬; missing blank, no interpolation/forward-fill, gap/zero denominator status, transform/freshness policy version 기록, stale/latest unverified 값 차단, unsupported aggregation/frequency mismatch 거부 |
 | 40 | 최종 사용자 검증: 기존 “23회차” 프로토콜을 완성 workbook workflow로 갱신하고 분석가 1–2명 관찰 | 28–39 gate 통과, frozen scenario/expected sheet, 최신 base의 격리 checkout, freshness warning과 feedback 절차 이해 확인, 동의·익명 기록. 작은 표본은 사용성 관찰일 뿐 전체 사용자 성공률/시장 증거로 과장하지 않음 |
 
-각 회차 branch는 회차 하나만 포함한다. 최소 검사 명령은 `pytest`, `ruff check src tests scripts`, `git diff --check`, 관련 CLI help/smoke test 및 해당 provider의 전체 regression subset이다. 28–40회차 구현 시작 전 최신 base에서 전체 suite/Ruff를 baseline으로 한 번 실행하고 결과를 회차 28 보고서에 기록한다. 각 회차 report에는 base/candidate SHA, Python/OS, fixture와 live evidence의 구분, 변경 파일, 검사별 정확한 결과, 실패/미실행 이유를 기록한다. GitHub Actions가 계정 결제/사용 한도로 step 시작 전 차단되면 CI 통과로 쓰지 않는다. 로컬 검증 결과와 CI 미실행 상태를 각각 기록하고, project PR 정책상 필요한 사람 검토 전에는 gate를 통과 처리하지 않는다.
+각 PR 묶음은 같은 기능 경계에 속한 checkpoint만 포함한다. 최소 검사 명령은 `pytest`, `ruff check src tests scripts`, `git diff --check`, 관련 CLI help/smoke test 및 해당 provider의 전체 regression subset이다. 28–40회차 구현 시작 전 최신 base에서 전체 suite/Ruff를 baseline으로 한 번 실행하고 결과를 회차 28 보고서에 기록한다. 각 회차 report에는 base/candidate SHA, Python/OS, fixture와 live evidence의 구분, 변경 파일, 검사별 정확한 결과, 실패/미실행 이유를 기록한다. GitHub Actions가 계정 결제/사용 한도로 step 시작 전 차단되면 CI 통과로 쓰지 않는다. 로컬 검증 결과와 CI 미실행 상태를 각각 기록하고, project PR 정책상 필요한 사람 검토 전에는 gate를 통과 처리하지 않는다.
 
 ## 6. 공통 판정 규칙
 

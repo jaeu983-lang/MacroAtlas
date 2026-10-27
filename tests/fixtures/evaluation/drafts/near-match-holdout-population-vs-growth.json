@@ -1,0 +1,270 @@
+{
+  "draft_id": "near-match-holdout-population-vs-growth",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "holdout",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SP.POP.TOTL",
+    "institution_id": "worldbank",
+    "label": "Population, total — USA, WDI",
+    "definition": "Total population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. The values shown are midyear estimates.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SP.POP.TOTL"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-population-total-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json",
+        "retrieved_at": "2026-10-27T14:32:41.353825+00:00",
+        "original_ref": "docs/evidence/worldbank_population_total_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SP.POP.TOTL",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-population-total-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+        "original_ref": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SP.POP.TOTL",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+      "Observed availability evidence covers only USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "distractor_candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SP.POP.GROW",
+    "institution_id": "worldbank",
+    "label": "Population growth (annual %) — USA, WDI",
+    "definition": "Annual population growth rate for year t is the exponential rate of growth of midyear population from year t-1 to t, expressed as a percentage. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SP.POP.GROW"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-population-growth-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SP.POP.GROW?format=json",
+        "retrieved_at": "2026-10-27T14:41:17.250063+00:00",
+        "original_ref": "docs/evidence/worldbank_population_growth_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SP.POP.GROW",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-population-growth-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.GROW?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:41:17.668569+00:00",
+        "original_ref": "docs/evidence/worldbank_population_growth_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SP.POP.GROW",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "case": {
+    "case_id": "draft-eval-v1-near-match-holdout-population-vs-growth",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-near-match-holdout-population-vs-growth",
+    "split": "holdout",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-near-match-holdout-population-vs-growth",
+      "text": "Return the total number of US residents for 2022; do not return the annual population growth rate.",
+      "concept": "US resident population count for 2022",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Return the total number of US residents for 2022; do not return the annual population growth rate.",
+      "2022년 미국 총인구 수를 찾아줘. 인구 증가율이 아니라 사람 수가 필요해.",
+      "Locate the World Bank source for us resident population count for 2022 over the requested periods.",
+      "Keep us resident population count for 2022 separate from its similar measure."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:SP.POP.TOTL"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:SP.POP.GROW"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:SP.POP.TOTL": "review_required",
+      "worldbank:2:USA:SP.POP.GROW": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:SP.POP.TOTL": {
+        "definition": {
+          "state": "known",
+          "value": "Total population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. The values shown are midyear estimates."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SP.POP.TOTL"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:SP.POP.GROW": {
+        "definition": {
+          "state": "known",
+          "value": "Annual population growth rate for year t is the exponential rate of growth of midyear population from year t-1 to t, expressed as a percentage. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SP.POP.GROW"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-population-total-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json",
+        "local_ref": "docs/evidence/worldbank_population_total_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.353825+00:00",
+        "sha256": "2f8491efc00bf2c0995112ff8e87aba69e5e9d22d0880b22f7e3a4ec757ba05c",
+        "claim": "Official World Bank metadata/observation evidence for Population, total — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-total-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+        "sha256": "e19cf58538b55a25fe82cb6209de2dcefc0c374de1ffad319724b4673934ba09",
+        "claim": "Official World Bank metadata/observation evidence for Population, total — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-growth-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SP.POP.GROW?format=json",
+        "local_ref": "docs/evidence/worldbank_population_growth_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:17.250063+00:00",
+        "sha256": "410c9806e450f67653b837ced0851741d45763284d7621f94f29e930ee817c65",
+        "claim": "Official World Bank metadata/observation evidence for Population growth (annual %) — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-population-growth-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.GROW?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_population_growth_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:17.668569+00:00",
+        "sha256": "75e0780657c4b5dc52a684d36f683c854fbd3870dbbae0d2f6168eaeb0aa83a6",
+        "claim": "Official World Bank metadata/observation evidence for Population growth (annual %) — USA, WDI; scope is limited to the recorded USA series and periods."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

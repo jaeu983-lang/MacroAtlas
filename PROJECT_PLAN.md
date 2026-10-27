@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.1 | 기준일: 2026-10-27
+> 문서 ID: MDP-PLAN-002 | 버전: 2.2 | 기준일: 2026-10-27
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -64,7 +64,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
 | 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용 | 자동 사례 생성·코드 수정·공통 규칙 승격 없음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
-| 평가 사례 | versioned development/validation/holdout 형식·누수 및 frozen hash 검사기, split별 provenance 집계 | 세 set에 synthetic 준비 사례 6개가 있으며 선언된 reviewed-feedback split coverage는 none. 후보 엔진 실행·점수·승격은 아직 없음 |
+| 평가 사례 | 기존 split-set validator/scaffold 6개를 보존하고, 별도 evidence-backed `EvaluationCase` v1 JSONL corpus/manifest reader를 추가함 | v1 고정 corpus는 9/36(분할 누수 audit 통과), assistant-simulated 초안 27개는 독립 검토 전이라 미승격. Gate blocked; 엔진 후보 평가·규칙 승격 없음 |
 
 Gate A와 D는 해당 범위에서 통과했다. Gate B/C/E는 제한 범위 판정이다. Gate 판정의 상세 evidence는 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)와 각 회차 보고서를 따른다.
 
@@ -213,7 +213,11 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 | 12 | 확장 | 반복 실수요가 확인된 provider/file format 하나를 선정해 qualification한다. | 공식 source contract, 예산, cancel/orphan recovery, 단위 정상/실패 evidence를 하나의 범위에서 통과. 전 기관 지원으로 일반화하지 않음 |
 | 40 / 23회차 | 최종 사용자 검증 | 실제 분석가 1–2명이 검증된 원자료·비교 workbook과 피드백 기록 흐름을 관찰한다. | 28–39회차 A–G gate 통과, 참가자 동의·익명 기록, 업무 성공/실패·오해·수동 시간 기록. 참가자 evidence 없이 usability 통과 선언 금지. **마지막 제품 검증** |
 
-회차 한 번에는 하나의 번호가 붙은 High scope만 구현한다. 현재 gate가 실패하면 의존하는 다음 구현을 통과 처리하지 않는다. 순서를 바꿀 때는 영향·이유·새 수용 기준을 기록하고 미통과 gate는 그대로 남긴다.
+회차 번호는 순차 검증 checkpoint이며 매 회차마다 별도 PR을 만들지 않는다. review PR은 28–29(사례·feedback bridge), 30–32(evaluator·policy·승격), 33–37(typed series·freshness·provider 연결), 38–39(원자료·비교 workbook)의 네 묶음으로 제한한다. 묶음 내부 검증은 순서대로 수행하고 앞선 gate 실패를 뒤 단계 코드로 덮지 않는다. 40회차는 실제 분석가 관찰 결과를 기록하는 최종 검증이며 사전 구현 PR로 만들지 않는다.
+
+2026-10-27 원격 상태에서 57개 중 56개 PR은 이미 병합됐고 열린 PR은 #50 하나다. #50은 28회차 corpus 및 검토 대기 draft를 담은 draft PR이며 mergeable 상태는 evaluation gate 통과를 뜻하지 않는다. 독립 검토 전 draft는 고정 corpus/catalog에 승격하지 않는다.
+
+회차별 검사와 독립 증거 기록은 유지한다. 현재 gate가 실패하면 의존하는 다음 기능의 완료·승격 처리는 하지 않는다. 순서를 바꿀 때는 영향·이유·새 수용 기준을 기록하고 미통과 gate를 그대로 남긴다.
 
 ### 별도 유지보수 상태
 

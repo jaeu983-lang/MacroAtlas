@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+  "retrieved_at": "2026-10-27T14:32:40.240621+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Tue, 27 Oct 2026 14:32:40 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 790,
+  "raw_path": "docs/evidence/worldbank_cpi_inflation_usa_2020_2022_20261027.json",
+  "raw_sha256": "94dfa114fb1f9a63d76fbde701bc0fb4893a95901c7dbefe0a73322d8f6bac83"
+}

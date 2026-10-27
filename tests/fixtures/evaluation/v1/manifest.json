@@ -1,0 +1,36 @@
+{
+  "case_count": 9,
+  "corpus_version": "initial-v1-2026-10-27",
+  "counts_by_split": {
+    "development": 3,
+    "holdout": 3,
+    "validation": 3
+  },
+  "counts_by_type": {
+    "insufficient_evidence": 3,
+    "near_match": 0,
+    "rankable": 3,
+    "unrelated": 3
+  },
+  "files": {
+    "cases.jsonl": "3b06eb72c2cbebaf4a2f6174acfc017bacd94549330a76056762c6cb8adfcde5",
+    "catalog_snapshot.json": "1d9ba4eb3c03bf29ec36a97d975a466dc3348227498644d2ddfd519f2f7a5670",
+    "schema.json": "ace4c459c31e184073321b4894436752e0188b8b2589e4f78806479e405909cc"
+  },
+  "gate_blockers": [
+    "The fixed corpus still contains only 9 of 36 cases. A separate 27-case assistant-simulated draft pool matches the planned split/type quotas, but none has completed independent review or promotion.",
+    "The 9 near-match drafts remain outside the fixed catalog and evaluation set pending independent review; several candidates are unsupported by the current collector.",
+    "BLS and Census catalog records in current tests are synthetic fixtures, not retained official metadata snapshots suitable for positive gold labels."
+  ],
+  "gate_status": "blocked",
+  "intended_case_count": 36,
+  "intended_cases_per_split": 12,
+  "intended_cases_per_type_per_split": 3,
+  "manifest_version": 1,
+  "missing_case_types": [
+    "rankable",
+    "near_match",
+    "insufficient_evidence",
+    "unrelated"
+  ]
+}

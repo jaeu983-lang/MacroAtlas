@@ -1,0 +1,270 @@
+{
+  "draft_id": "worldbank-cpi-inflation-vs-index-near-match-20261027",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "validation",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:FP.CPI.TOTL.ZG",
+    "institution_id": "worldbank",
+    "label": "Inflation, consumer prices (annual %) — USA, WDI",
+    "definition": "Inflation as measured by the consumer price index reflects the annual percentage change in the cost to the average consumer of acquiring a basket of goods and services that may be fixed or changed at specified intervals, such as yearly.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "FP.CPI.TOTL.ZG"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-cpi-inflation-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL.ZG?format=json",
+        "retrieved_at": "2026-10-27T14:32:39.847667+00:00",
+        "original_ref": "docs/evidence/worldbank_cpi_inflation_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "FP.CPI.TOTL.ZG",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-cpi-inflation-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:32:40.240621+00:00",
+        "original_ref": "docs/evidence/worldbank_cpi_inflation_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "FP.CPI.TOTL.ZG",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+      "Observed availability evidence covers only USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "distractor_candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+    "institution_id": "worldbank",
+    "label": "Consumer price index (2010 = 100) — USA, WDI",
+    "definition": "Index of the prices of consumption goods and services, as compared to a certain reference period (2010=100).",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "FP.CPI.TOTL"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-cpi-index-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL?format=json",
+        "retrieved_at": "2026-10-27T14:32:40.592186+00:00",
+        "original_ref": "docs/evidence/worldbank_cpi_index_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "FP.CPI.TOTL",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-cpi-index-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:32:41.154670+00:00",
+        "original_ref": "docs/evidence/worldbank_cpi_index_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "FP.CPI.TOTL",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+      "Observed availability evidence covers only USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "case": {
+    "case_id": "draft-eval-v1-worldbank-cpi-inflation-vs-index-near-match",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-worldbank-cpi-inflation-vs-index-near-match",
+    "split": "validation",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-worldbank-cpi-inflation-vs-index-near-match",
+      "text": "Find the annual percentage change in US consumer prices, rather than the CPI index level, for 2020–2022.",
+      "concept": "Annual U.S. consumer-price inflation rate, measured as year-over-year percent change",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Find the annual percentage change in US consumer prices, rather than the CPI index level, for 2020–2022.",
+      "미국의 2020~2022년 소비자물가 연간 상승률을 찾아줘. 지수 수준 자체가 아니라 변화율이 필요해.",
+      "Annual inflation rate for the USA; exclude CPI index level.",
+      "I need year-over-year percentage changes, not an index normalized to 2010=100."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:FP.CPI.TOTL.ZG"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:FP.CPI.TOTL"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:FP.CPI.TOTL.ZG": "review_required",
+      "worldbank:2:USA:FP.CPI.TOTL": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:FP.CPI.TOTL.ZG": {
+        "definition": {
+          "state": "known",
+          "value": "Inflation as measured by the consumer price index reflects the annual percentage change in the cost to the average consumer of acquiring a basket of goods and services that may be fixed or changed at specified intervals, such as yearly."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "FP.CPI.TOTL.ZG"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:FP.CPI.TOTL": {
+        "definition": {
+          "state": "known",
+          "value": "Index of the prices of consumption goods and services, as compared to a certain reference period (2010=100)."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "FP.CPI.TOTL"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-cpi-inflation-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL.ZG?format=json",
+        "local_ref": "docs/evidence/worldbank_cpi_inflation_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:39.847667+00:00",
+        "sha256": "df9371a3b6c01e55a3f28991e62e1b1ebbe0cd2a7da94456be9938c7a2962233",
+        "claim": "공식 WDI metadata의 label은 Inflation, consumer prices (annual %)이며 unit 필드는 빈 문자열이다. source note는 지표의 의미를 설명하지만 별도 frequency field는 제공하지 않는다."
+      },
+      {
+        "evidence_id": "wdi-cpi-inflation-usa-2020-2022-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_cpi_inflation_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:40.240621+00:00",
+        "sha256": "94dfa114fb1f9a63d76fbde701bc0fb4893a95901c7dbefe0a73322d8f6bac83",
+        "claim": "공식 WDI USA 응답은 2020, 2021, 2022 세 기간을 포함한다. 이 증거는 해당 범위의 가용성만 뒷받침한다."
+      },
+      {
+        "evidence_id": "wdi-cpi-index-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL?format=json",
+        "local_ref": "docs/evidence/worldbank_cpi_index_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:40.592186+00:00",
+        "sha256": "13b1e3c4b2b72f7fb3a630b4dde37f0e68e6d5e78dc06b2437dfea0c0b93af46",
+        "claim": "공식 WDI metadata의 label은 Consumer price index (2010 = 100)이며 unit 필드는 빈 문자열이다. source note는 지표의 의미를 설명하지만 별도 frequency field는 제공하지 않는다."
+      },
+      {
+        "evidence_id": "wdi-cpi-index-usa-2020-2022-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_cpi_index_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:32:41.154670+00:00",
+        "sha256": "aa5bfd7d85a6d5c9e35de0c34be543236f0bef9d9b2729fbae5a9b640dfc5481",
+        "claim": "공식 WDI USA 응답은 2020, 2021, 2022 세 기간을 포함한다. 이 증거는 해당 범위의 가용성만 뒷받침한다."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

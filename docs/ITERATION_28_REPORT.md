@@ -1,0 +1,88 @@
+# 28회차 보고 — 평가 사례 v1 계약과 초기 코퍼스
+
+기준일: 2026-10-27
+
+작업 branch: `codex/iteration-28-evaluation-cases`
+
+범위: A — 평가 사례 형식과 근거가 있는 초기 사례
+
+## 구현
+
+- `EvaluationCase` v1 immutable value contract를 추가했다. 기존 `DataRequest` snapshot을 재사용하고 case/split/type/state,
+  query variants, 후보 기대 분류, 후보별 known/unknown/conflict 필드, 근거 pointer, 금지 동작, Excel 출력 기대를 검증한다.
+- UTF-8 JSONL reader는 중복 JSON key/case ID, 공백 행, 잘못된 version 및 초과 크기를 거부한다.
+- 고정 catalog reader는 `Candidate` snapshot을 검증하고 case의 후보 ID 참조를 대조한다. manifest는 case/schema/catalog hash와
+  분포를 검증하며 case evidence가 가리키는 저장 파일 SHA-256도 다시 확인한다.
+- 초기 Excel policy는 호환되지 않는 시계열 분리, 겹치는 값의 보존 또는 검토, source period, 집계·변환·보간·forward-fill 없음,
+  결측 빈칸을 기록한다. 이는 사례의 기대 정책이며 XLSX exporter 구현을 의미하지 않는다.
+- 피드백 참조는 `feedback_id`와 revision만 받는다. 이 변경은 FeedbackStore를 읽거나 고치지 않고, 사례를 자동 생성하거나 규칙을
+  수정하지 않는다.
+
+## 사례와 gate
+
+고정 snapshot에는 코드에서 사용 중인 World Bank USA GDP WDI 후보 하나만 들어 있다. 공식 indicator metadata response 및
+2020–2022 Gate A 실행 보고서의 로컬 hash를 연결했다. structured unit과 frequency는 source가 제공하지 않아 unknown으로 둔다.
+
+초기 코퍼스는 **9개**다.
+
+| split | rankable | near_match | insufficient_evidence | unrelated | 합계 |
+|---|---:|---:|---:|---:|---:|
+| development | 1 | 0 | 1 | 1 | 3 |
+| validation | 1 | 0 | 1 | 1 | 3 |
+| holdout | 1 | 0 | 1 | 1 | 3 |
+
+목표는 split당 12개, 각 유형 3개다. 고정 사례만 놓고 보면 초기 manifest gate는 계속 **blocked**이며 9개가 승격되어 있다.
+별도 draft pool에는 27개 assistant-simulated 사례를 작성했다. 각 split에 rankable 2, near_match 3, insufficient_evidence 2,
+unrelated 2개씩 있으며, fixed corpus 한 건씩과 합산하면 split/type별 3개 목표를 채운다. 27개 모두 독립 검토 대기라 고정 세트에
+포함하지 않았고 evaluator도 실행하지 않았다. 고정 9개와 draft pool 각각의 텍스트 audit은 0건이다. 이 audit은 텍스트 템플릿 점검이며 완전한 의미 유사도 판정은 아니다. 후속으로
+World Bank의 current/constant/PPP GDP, total/per-capita GDP, CPI/GDP-deflator inflation, unemployment/labor-force participation,
+population count/growth/density/urban share를 구분하는 공식 metadata와 USA 2020–2022 관측 응답을 보존했다. 이 근거를 사용한
+near-match draft 9개를 포함해 총 27개 초안을 만들었지만, 독립 검토 대기라 fixed catalog와 평가 코퍼스에는 아직 넣지 않았다.
+고정 GDP nominal 외의 candidate는 현 collector가 지원하지 않아 draft-only다. BLS/Census의 기존 테스트 payload는 synthetic fixture라서 공식
+candidate snapshot으로 둔갑시키지 않았다. Unrelated 기대는 초기 1-candidate snapshot에만 해당하며, MacroAtlas 전체 또는 공식
+기관에서 해당 통계가 없다는 주장을 하지 않는다. 이 gate 상태로 29회차 split/feedback bridge나 30회차 evaluator를 시작하지 않는다.
+
+## 변경 파일
+
+- `src/macro_data_platform/evaluation/`: case contract, JSONL/manifest/candidate reader, split leakage audit.
+- `tests/fixtures/evaluation/v1/`: v1 schema, 9개 case, 고정 catalog, 초기 manifest 및 hash.
+- `tests/fixtures/evaluation/drafts/`: SHA-256 draft manifest와 assistant-simulated, 독립 검토 대기 사례 27개(near-match 9개 포함). 평가 세트에 포함하지 않는다.
+- `docs/evidence/worldbank_*_20261027.json`: World Bank 공식 metadata와 USA 2020–2022 응답 원문 snapshot 및 수집 manifest.
+- `tests/test_evaluation_cases.py`: cross-field 거부, immutable snapshot, hash tamper, reader 경계 및 unreviewed draft 격리 검사.
+- `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`: D-095 결정과 현재 gate 상태.
+
+## 검증과 한계
+
+초기 코퍼스 구현 당시 전체 pytest **745 passed**, `ruff check .`, `git diff --check`, `compileall`이 통과했다. 이번 draft 확장에서는
+World Bank 공식 metadata·관측 응답 HTTP 200과 2020–2022 기간, case/candidate 계약 및 evidence SHA-256을 확인했다.
+`tests/test_evaluation_cases.py` 21개와 전체 pytest, Ruff, compileall, diff 검사가 통과했다. 27개 초안의 split/type 분포는 목표 quota와 일치하고, cross-split text-template audit은 0건이다.
+Split audit은 case family가 split을 넘는 경우와 연도·월 범위만 다른 반복 템플릿을
+탐지하며, 완전한 의미 유사도 판정은 아니다. 이 후속 작업은 product 수집, SQLite, raw store, export 경로를 실행하지 않았다.
+
+이 작업은 검색 점수·순위·거절 동작을 실행 평가하지 않는다. 피드백 수집/검토 bridge와 규칙 승격,
+freshness 및 Excel writer는 구현하지 않는다. Gate는 9개 고정 사례로 계속 차단되며, pending draft는 검토 후에만 승격할 수 있다.
+
+## 검토 판단
+
+코드·데이터 무결성 변경은 별도 review branch에서 검토할 수 있다. Iteration 28의 acceptance gate는 미통과이므로 다음 회차를
+시작할 준비가 된 것으로 선언하지 않는다. gate 해제에는 보존 가능한 official evidence가 있는 추가 후보와 유사하지만 다른
+기대 답을 갖는 verified distractor가 필요하다.
+
+## 후속 계약 확장
+
+후속 작업에서는 AI 모의 사례를 사람 관찰로 오인하지 않도록 Python value contract에 작성 provenance와 별도 evidence 종류를
+추가했다. Synthetic fixture evidence는 후보 ID와 로컬 SHA-256을 가리키며 official URI나 조회 시각을 가질 수 없다.
+기존 v1 JSONL·manifest·9개 사례는 그대로 유지한다. 별도 draft pool의 27개 case JSON과 공식 evidence hash를 manifest로 고정했다.
+이전에 제안된 unversioned 36개 모의 코퍼스는 holdout에 날짜만 바꾼 동일 템플릿이 반복되고 manifest가 없어 승격하지 않았다.
+현재 pool도 assistant-simulated이며 독립 검토 전이라 fixed corpus gate는 차단되고 엔진 회귀 평가는 실행하지 않았다.
+
+## 최신 통합 base 충돌 정리
+
+현재 base에도 기존 JSON-per-split scaffold validator가 추가돼 있어 동일한 `evaluation/cases.py` 경로를 두 구현이 차지하던 충돌을
+정리했다. 기존 validator는 `case_sets.py`로 옮기고 `validate` 명령 및 예전 import 경로를 유지한다. 근거 기반 v1 JSONL corpus는
+`cases.py`의 reader와 `validate-corpus` 명령으로 검사한다. 두 검사 경로는 서로의 사례를 자동 변환하지 않고, 새 명령은 manifest·근거
+무결성과 blocked gate만 보고한다. 이 변경은 기존 split scaffold나 v1 corpus를 수정·승격하지 않는다.
+
+충돌 통합 후 현재 base 기준 전체 `pytest`: **811 passed**, `ruff check src tests scripts`, `compileall` 및
+`git diff --check`가 통과했다. 업데이트된 planning 문서의 상대 링크도 확인했다. `validate-corpus`의 exit code 2는
+9/36 fixed corpus가 아직 blocked임을 뜻하며 코드 실행 평가 실패와 구분한다.

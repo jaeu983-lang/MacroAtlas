@@ -1,351 +1,252 @@
-"""Validation for isolated, versioned evaluation case sets.
-
-This module validates case curation and split hygiene. It does not execute a
-search engine, score a candidate rule, or promote feedback into production.
-"""
+"""Deterministic JSONL case and fixed-catalog snapshot readers."""
 
 import hashlib
 import json
-import re
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlsplit
+from types import MappingProxyType
+from typing import Any
 
-CASE_SCHEMA_VERSION = 1
-SET_SCHEMA_VERSION = 1
-SPLITS = ("development", "validation", "holdout")
-_MAX_SET_BYTES = 16 * 1024 * 1024
-_MAX_CASES_PER_SET = 10_000
-_MAX_TEXT = 4_000
-_REQUIRED_EVIDENCE = {
-    "source_url", "source_identifier", "definition", "unit", "frequency",
-    "observation_period", "retrieved_at", "raw_hash", "request_manifest",
+from macro_data_platform.evaluation.case_contracts import EvaluationCase
+from macro_data_platform.evaluation.case_sets import validate_case_sets
+from macro_data_platform.evaluation.split_audit import SplitLeakageIssue, audit_split_leakage
+from macro_data_platform.workflow_contracts import Candidate
+
+_MAX_CORPUS_BYTES = 8 * 1024 * 1024
+_MAX_CASE_BYTES = 256 * 1024
+_MANIFEST_FIELDS = {
+    "manifest_version", "corpus_version", "gate_status", "intended_case_count",
+    "intended_cases_per_split", "intended_cases_per_type_per_split", "case_count",
+    "counts_by_split", "counts_by_type", "missing_case_types", "gate_blockers", "files",
 }
-_EXPECTED_STATES = {"ANSWERABLE", "NEEDS_REVIEW", "NO_RESULT", "OUT_OF_SCOPE"}
-_EXCEL_POLICIES = {
-    "not_applicable", "source_series_worksheet", "separate_incompatible_series",
-    "alignment_sheet_with_explicit_transform",
-}
-_MISSING_VALUE_POLICIES = {"blank", "not_applicable"}
-_OVERLAP_POLICIES = {"preserve_separately", "review_required", "not_applicable"}
-_CASE_KEYS = {
-    "schema_version", "case_id", "case_version", "split", "review", "provenance",
-    "contrast_group", "question", "expected", "required_evidence", "forbidden_actions",
-    "excel_expectation",
-}
+_REQUIRED_FILES = {"cases.jsonl", "schema.json", "catalog_snapshot.json"}
+__all__ = ["EvaluationCorpus", "load_corpus", "read_cases", "validate_case_sets"]
 
 
-def _is_text(value, *, maximum=_MAX_TEXT):
-    return isinstance(value, str) and bool(value.strip()) and len(value) <= maximum
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON field")
+        result[key] = value
+    return result
 
 
-def _is_utc_timestamp(value):
-    if not isinstance(value, str) or len(value) > 40:
-        return False
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"Nonstandard JSON numeric constant: {value}")
+
+
+def sha256_bytes(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
+
+
+def _read_bounded(path: Path, maximum: int) -> bytes:
+    if path.stat().st_size > maximum:
+        raise ValueError("Evaluation corpus file exceeds its size limit")
+    with path.open("rb") as stream:
+        content = stream.read(maximum + 1)
+    if len(content) > maximum:
+        raise ValueError("Evaluation corpus file exceeds its size limit")
+    return content
+
+
+def read_cases(path: str | Path) -> tuple[EvaluationCase, ...]:
+    """Read validated UTF-8 JSONL cases without executing or mutating product state."""
+    source = Path(path)
+    content = _read_bounded(source, _MAX_CORPUS_BYTES)
     try:
-        from datetime import UTC, datetime
-
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
-        return False
-    return parsed.tzinfo is not None and parsed.utcoffset() == UTC.utcoffset(parsed)
-
-
-def _unique_text_list(value, *, field, errors, maximum_items=50):
-    if not isinstance(value, list) or len(value) > maximum_items:
-        errors.append(f"{field} must be a list of at most {maximum_items} strings")
-        return []
-    normalized = set()
-    valid = []
-    for index, item in enumerate(value):
-        if not _is_text(item, maximum=512):
-            errors.append(f"{field}[{index}] must be a non-empty string")
-            continue
-        key = " ".join(item.split()).casefold()
-        if key in normalized:
-            errors.append(f"{field} contains a duplicate value")
-            continue
-        normalized.add(key)
-        valid.append(item)
-    return valid
-
-
-def _keys(value, expected, field, errors):
-    if not isinstance(value, dict):
-        errors.append(f"{field} must be an object")
-        return False
-    missing, extra = expected - value.keys(), value.keys() - expected
-    if missing:
-        errors.append(f"{field} missing keys: {', '.join(sorted(missing))}")
-    if extra:
-        errors.append(f"{field} has unsupported keys: {', '.join(sorted(extra))}")
-    return not missing and not extra
-
-
-def _validate_case(case, *, split, where):
-    errors = []
-    if not _keys(case, _CASE_KEYS, where, errors):
-        return errors
-    if type(case["schema_version"]) is not int or case["schema_version"] != CASE_SCHEMA_VERSION:
-        errors.append(f"{where}.schema_version must be {CASE_SCHEMA_VERSION}")
-    if not _is_text(case["case_id"], maximum=128):
-        errors.append(f"{where}.case_id must be a non-empty string")
-    if type(case["case_version"]) is not int or case["case_version"] < 1:
-        errors.append(f"{where}.case_version must be a positive integer")
-    if case["split"] != split:
-        errors.append(f"{where}.split does not match its case-set file")
-
-    review = case["review"]
-    if _keys(review, {"status", "reviewer", "reviewed_at", "privacy_cleared"},
-             f"{where}.review", errors):
-        if review["status"] != "reviewed":
-            errors.append(f"{where}.review.status must be reviewed")
-        if not _is_text(review["reviewer"], maximum=128):
-            errors.append(f"{where}.review.reviewer must be a non-empty string")
-        if not _is_utc_timestamp(review["reviewed_at"]):
-            errors.append(f"{where}.review.reviewed_at must be a UTC timestamp")
-        if review["privacy_cleared"] is not True:
-            errors.append(f"{where}.review.privacy_cleared must be true")
-
-    provenance = case["provenance"]
-    if _keys(provenance, {"origin", "feedback_id", "evidence"},
-             f"{where}.provenance", errors):
-        origin = provenance["origin"]
-        if (not isinstance(origin, str)
-                or origin not in {"synthetic", "reviewed_feedback", "official_reference"}):
-            errors.append(f"{where}.provenance.origin is unsupported")
-        feedback_id = provenance["feedback_id"]
-        if feedback_id is not None and not _is_text(feedback_id, maximum=128):
-            errors.append(f"{where}.provenance.feedback_id must be null or a non-empty string")
-        if provenance["origin"] == "reviewed_feedback" and feedback_id is None:
-            errors.append(f"{where}.provenance.feedback_id is required for reviewed feedback")
-        evidence = provenance["evidence"]
-        if not isinstance(evidence, list) or len(evidence) > 20:
-            errors.append(f"{where}.provenance.evidence must contain at most 20 references")
-        else:
-            for index, ref in enumerate(evidence):
-                field = f"{where}.provenance.evidence[{index}]"
-                if not _keys(ref, {"source_url", "source_version", "captured_at"}, field, errors):
-                    continue
-                url = ref["source_url"]
-                try:
-                    parsed = urlsplit(url) if isinstance(url, str) else None
-                    safe_url = (parsed is not None and parsed.scheme == "https"
-                                and parsed.hostname is not None and parsed.username is None
-                                and parsed.password is None and parsed.query == ""
-                                and parsed.fragment == "")
-                except ValueError:
-                    safe_url = False
-                if not isinstance(url, str) or not safe_url or len(url) > 512:
-                    errors.append(f"{field}.source_url must be a clean HTTPS reference without query data")
-                if not _is_text(ref["source_version"], maximum=128):
-                    errors.append(f"{field}.source_version must be a non-empty string")
-                if not _is_utc_timestamp(ref["captured_at"]):
-                    errors.append(f"{field}.captured_at must be a UTC timestamp")
-        if provenance["origin"] == "official_reference" and not evidence:
-            errors.append(f"{where}.provenance.evidence is required for official references")
-
-    group = case["contrast_group"]
-    if group is not None and not _is_text(group, maximum=128):
-        errors.append(f"{where}.contrast_group must be null or a non-empty string")
-
-    question = case["question"]
-    if _keys(question, {"canonical", "variants"}, f"{where}.question", errors):
-        if not _is_text(question["canonical"]):
-            errors.append(f"{where}.question.canonical must be a non-empty string")
-        variants = _unique_text_list(question["variants"], field=f"{where}.question.variants",
-                                     errors=errors, maximum_items=20)
-        if isinstance(question["canonical"], str):
-            canonical = " ".join(question["canonical"].split()).casefold()
-            if any(" ".join(item.split()).casefold() == canonical for item in variants
-                   if isinstance(item, str)):
-                errors.append(f"{where}.question.variants repeats the canonical question")
-
-    expected = case["expected"]
-    if _keys(expected, {"state", "entities"}, f"{where}.expected", errors):
-        state = expected["state"]
-        if not isinstance(state, str) or state not in _EXPECTED_STATES:
-            errors.append(f"{where}.expected.state is unsupported")
-        entities = expected["entities"]
-        if not isinstance(entities, list) or len(entities) > 50:
-            errors.append(f"{where}.expected.entities must be a list of at most 50 entities")
-        else:
-            for index, entity in enumerate(entities):
-                field = f"{where}.expected.entities[{index}]"
-                if not _keys(entity, {"source_agency", "dataset_id", "series_id", "field"},
-                             field, errors):
-                    continue
-                for key in ("source_agency", "field"):
-                    if not _is_text(entity[key], maximum=256):
-                        errors.append(f"{field}.{key} must be a non-empty string")
-                for key in ("dataset_id", "series_id"):
-                    if entity[key] is not None and not _is_text(entity[key], maximum=256):
-                        errors.append(f"{field}.{key} must be null or a non-empty string")
-            if state == "ANSWERABLE" and not entities:
-                errors.append(f"{where}.expected.entities is required for ANSWERABLE cases")
-
-    required = _unique_text_list(case["required_evidence"], field=f"{where}.required_evidence",
-                                 errors=errors, maximum_items=20)
-    unsupported = set(required) - _REQUIRED_EVIDENCE
-    if unsupported:
-        errors.append(f"{where}.required_evidence has unsupported values: "
-                      f"{', '.join(sorted(unsupported))}")
-    _unique_text_list(case["forbidden_actions"], field=f"{where}.forbidden_actions",
-                      errors=errors, maximum_items=50)
-
-    excel = case["excel_expectation"]
-    if _keys(excel, {"policy", "missing_value", "overlap_conflict", "interpolate", "forward_fill"},
-             f"{where}.excel_expectation", errors):
-        if not isinstance(excel["policy"], str) or excel["policy"] not in _EXCEL_POLICIES:
-            errors.append(f"{where}.excel_expectation.policy is unsupported")
-        if (not isinstance(excel["missing_value"], str)
-                or excel["missing_value"] not in _MISSING_VALUE_POLICIES):
-            errors.append(f"{where}.excel_expectation.missing_value is unsupported")
-        if (not isinstance(excel["overlap_conflict"], str)
-                or excel["overlap_conflict"] not in _OVERLAP_POLICIES):
-            errors.append(f"{where}.excel_expectation.overlap_conflict is unsupported")
-        if type(excel["interpolate"]) is not bool or type(excel["forward_fill"]) is not bool:
-            errors.append(f"{where}.excel_expectation interpolation and fill flags must be booleans")
-        elif excel["interpolate"] or excel["forward_fill"]:
-            errors.append(f"{where}.excel_expectation cannot enable interpolation or forward-fill")
-    return errors
-
-
-def validate_case_sets(directory: str | Path) -> dict:
-    """Validate the three fixed split files and report whether they are usable.
-
-    The report distinguishes structurally valid but empty sets from a populated,
-    ready-to-evaluate case collection. Similar-case leakage is guarded using
-    explicit contrast groups and exact normalized question text; semantic
-    similarity still requires curator assignment to a contrast group.
-    """
-    root = Path(directory)
-    errors = []
-    summaries = {}
-    case_ids = {}
-    contrast_splits = {}
-    questions = {}
-    set_versions = {}
-    set_bytes = {}
-    for split in SPLITS:
-        path = root / f"{split}.json"
-        if not path.is_file():
-            errors.append(f"missing case-set file: {path.name}")
-            continue
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ValueError("Evaluation case file must be UTF-8") from None
+    if not text or not text.endswith("\n"):
+        raise ValueError("Evaluation case JSONL must end with a newline")
+    cases = []
+    seen = set()
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line or len(line.encode("utf-8")) > _MAX_CASE_BYTES:
+            raise ValueError(f"Invalid evaluation case line {line_number}")
         try:
-            if path.stat().st_size > _MAX_SET_BYTES:
-                raise ValueError("file exceeds size limit")
-            raw = path.read_bytes()
-            document = json.loads(raw.decode("utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
-            errors.append(f"{path.name}: cannot read valid JSON ({exc})")
-            continue
-        required_keys = {"schema_version", "split", "set_version", "cases"}
-        if not isinstance(document, dict) or set(document) != required_keys:
-            errors.append(f"{path.name}: expected keys {', '.join(sorted(required_keys))}")
-            continue
-        if type(document["schema_version"]) is not int or document["schema_version"] != SET_SCHEMA_VERSION:
-            errors.append(f"{path.name}: schema_version must be {SET_SCHEMA_VERSION}")
-        if document["split"] != split:
-            errors.append(f"{path.name}: split must be {split}")
-        if type(document["set_version"]) is not int or document["set_version"] < 1:
-            errors.append(f"{path.name}: set_version must be a positive integer")
-        cases = document["cases"]
-        if not isinstance(cases, list) or len(cases) > _MAX_CASES_PER_SET:
-            errors.append(f"{path.name}: cases must be a list of at most {_MAX_CASES_PER_SET}")
-            continue
-        valid_cases = 0
-        provenance_counts = {
-            "synthetic": 0,
-            "reviewed_feedback": 0,
-            "official_reference": 0,
-        }
-        for index, case in enumerate(cases):
-            where = f"{path.name}.cases[{index}]"
-            case_errors = _validate_case(case, split=split, where=where)
-            errors.extend(case_errors)
-            if case_errors:
-                continue
-            valid_cases += 1
-            origin = case["provenance"]["origin"]
-            provenance_counts[origin] += 1
-            case_id = case["case_id"]
-            if case_id in case_ids:
-                errors.append(f"{where}.case_id duplicates {case_ids[case_id]}")
-            else:
-                case_ids[case_id] = where
-            group = case["contrast_group"]
-            if group is not None:
-                previous_split = contrast_splits.setdefault(group, split)
-                if previous_split != split:
-                    errors.append(f"{where}.contrast_group leaks across {previous_split} and {split}")
-            texts = [case["question"]["canonical"], *case["question"]["variants"]]
-            for text in texts:
-                key = " ".join(text.split()).casefold()
-                previous_split = questions.setdefault(key, split)
-                if previous_split != split:
-                    errors.append(f"{where}.question duplicates exact text in {previous_split}")
-        summaries[split] = {
-            "set_version": document["set_version"],
-            "case_count": len(cases),
-            "valid_case_count": valid_cases,
-            "provenance_counts": provenance_counts,
-        }
-        set_versions[split] = document["set_version"]
-        set_bytes[split] = raw
+            value = json.loads(line, object_pairs_hook=_unique_object,
+                               parse_constant=_reject_json_constant)
+            case = EvaluationCase.from_dict(value)
+        except (ValueError, TypeError, KeyError, RecursionError):
+            raise ValueError(f"Invalid evaluation case line {line_number}") from None
+        if case.case_id in seen:
+            raise ValueError("Duplicate evaluation case identifier")
+        seen.add(case.case_id)
+        cases.append(case)
+    if not cases:
+        raise ValueError("Evaluation case file must not be empty")
+    return tuple(cases)
 
-    lock_path = root / "frozen.json"
-    frozen_status = {}
+
+@dataclass(frozen=True, repr=False)
+class EvaluationCorpus:
+    manifest: Mapping[str, Any]
+    cases: tuple[EvaluationCase, ...]
+    candidates: tuple[Candidate, ...]
+    case_sha256: str
+    catalog_sha256: str
+    split_leakage_issues: tuple[SplitLeakageIssue, ...]
+
+    def __repr__(self) -> str:
+        return "EvaluationCorpus(<values omitted>)"
+
+
+
+
+def _safe_corpus_file(root: Path, filename: Any) -> Path:
+    if not isinstance(filename, str) or filename not in _REQUIRED_FILES:
+        raise ValueError("Manifest references an unsupported corpus file")
+    path = (root / filename).resolve()
+    if path.parent != root.resolve():
+        raise ValueError("Corpus file escapes its version directory")
+    return path
+
+
+def _load_candidates(path: Path) -> tuple[Candidate, ...]:
     try:
-        if lock_path.stat().st_size > 64 * 1024:
-            raise ValueError("file exceeds size limit")
-        lock = json.loads(lock_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
-        errors.append(f"frozen.json: cannot read valid lock ({exc})")
-        lock = None
-    if lock is not None:
-        if (not isinstance(lock, dict)
-                or set(lock) != {"schema_version", "frozen_splits"}
-                or type(lock.get("schema_version")) is not int
-                or lock.get("schema_version") != SET_SCHEMA_VERSION
-                or not isinstance(lock.get("frozen_splits"), dict)
-                or set(lock["frozen_splits"]) != {"validation", "holdout"}):
-            errors.append("frozen.json: expected versioned validation and holdout hashes")
-        else:
-            for split, lock_record in lock["frozen_splits"].items():
-                where = f"frozen.json.frozen_splits.{split}"
-                if not _keys(lock_record, {"set_version", "sha256"}, where, errors):
-                    frozen_status[split] = "INVALID"
-                    continue
-                expected_hash = lock_record["sha256"]
-                if (type(lock_record["set_version"]) is not int
-                        or lock_record["set_version"] < 1
-                        or not isinstance(expected_hash, str)
-                        or not re.fullmatch(r"[0-9a-f]{64}", expected_hash)):
-                    errors.append(f"{where} must contain a positive version and SHA-256")
-                    frozen_status[split] = "INVALID"
-                    continue
-                current_hash = hashlib.sha256(set_bytes.get(split, b"")).hexdigest()
-                matches = (set_versions.get(split) == lock_record["set_version"]
-                           and split in set_bytes and current_hash == expected_hash)
-                frozen_status[split] = "MATCH" if matches else "MISMATCH"
-                if not matches:
-                    errors.append(f"{where} does not match the frozen case-set version/hash")
-    structurally_valid = not errors
-    ready = structurally_valid and all(summaries.get(split, {}).get("case_count", 0) > 0
-                                       for split in SPLITS)
-    feedback_counts = [summaries.get(split, {}).get("provenance_counts", {}).get(
-        "reviewed_feedback", 0) for split in SPLITS]
-    feedback_coverage = (
-        "complete" if ready and all(count > 0 for count in feedback_counts)
-        else "partial" if any(count > 0 for count in feedback_counts)
-        else "none"
-    )
-    return {
-        "schema_version": SET_SCHEMA_VERSION,
-        "status": "READY" if ready else "INVALID" if errors else "VALID_BUT_EMPTY",
-        "ready": ready,
-        "reviewed_feedback_split_coverage": feedback_coverage,
-        "sets": summaries,
-        "frozen_splits": frozen_status,
-        "errors": errors,
-    }
+        value = json.loads(_read_bounded(path, _MAX_CORPUS_BYTES).decode("utf-8"),
+                           object_pairs_hook=_unique_object,
+                           parse_constant=_reject_json_constant)
+        if not isinstance(value, dict) or set(value) != {"snapshot_version", "candidates"}:
+            raise ValueError
+        if value["snapshot_version"] != "catalog-v1":
+            raise ValueError
+        raw_candidates = value["candidates"]
+        if not isinstance(raw_candidates, list) or not raw_candidates or len(raw_candidates) > 500:
+            raise ValueError
+        candidates = tuple(Candidate.from_dict(item) for item in raw_candidates)
+    except (UnicodeDecodeError, ValueError, TypeError, KeyError, RecursionError):
+        raise ValueError("Invalid candidate catalog snapshot") from None
+    ids = [candidate.candidate_id for candidate in candidates]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Duplicate candidate identifier in catalog snapshot")
+    return candidates
+
+
+def _verify_evidence_files(cases: tuple[EvaluationCase, ...], repo_root: Path) -> None:
+    root = repo_root.resolve()
+    for case in cases:
+        for evidence in case.required_evidence:
+            candidate_path = (root / evidence["local_ref"]).resolve()
+            if root not in candidate_path.parents or not candidate_path.is_file():
+                raise ValueError("Evaluation evidence reference is missing or outside the repository")
+            if sha256_bytes(_read_bounded(candidate_path, _MAX_CORPUS_BYTES)) != evidence["sha256"]:
+                raise ValueError("Evaluation evidence SHA-256 mismatch")
+
+
+def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
+                ) -> EvaluationCorpus:
+    """Verify the immutable initial manifest, evidence files, and candidate references."""
+    root = Path(corpus_dir).resolve()
+    try:
+        manifest_bytes = _read_bounded(root / "manifest.json", 64 * 1024)
+        manifest = json.loads(manifest_bytes.decode("utf-8"),
+                              object_pairs_hook=_unique_object,
+                              parse_constant=_reject_json_constant)
+    except (OSError, UnicodeDecodeError, ValueError):
+        raise ValueError("Invalid evaluation corpus manifest") from None
+    if not isinstance(manifest, dict) or set(manifest) != _MANIFEST_FIELDS:
+        raise ValueError("Invalid evaluation corpus manifest fields")
+    if (type(manifest["manifest_version"]) is not int or manifest["manifest_version"] != 1
+            or not isinstance(manifest["corpus_version"], str)
+            or not manifest["corpus_version"]
+            or not isinstance(manifest["gate_status"], str)
+            or manifest["gate_status"] not in {"complete", "blocked"}
+            or type(manifest["intended_case_count"]) is not int
+            or manifest["intended_case_count"] <= 0
+            or type(manifest["intended_cases_per_split"]) is not int
+            or manifest["intended_cases_per_split"] <= 0
+            or type(manifest["intended_cases_per_type_per_split"]) is not int
+            or manifest["intended_cases_per_type_per_split"] <= 0
+            or type(manifest["case_count"]) is not int
+            or manifest["case_count"] <= 0
+            or not isinstance(manifest["missing_case_types"], list)
+            or not isinstance(manifest["gate_blockers"], list)
+            or not all(isinstance(item, str) and item for item in manifest["gate_blockers"])
+            or not isinstance(manifest["counts_by_split"], dict)
+            or not isinstance(manifest["counts_by_type"], dict)
+            or not isinstance(manifest["files"], dict)
+            or set(manifest["files"]) != _REQUIRED_FILES):
+        raise ValueError("Invalid evaluation corpus manifest values")
+
+    paths = {name: _safe_corpus_file(root, name) for name in _REQUIRED_FILES}
+    file_bytes = {name: _read_bounded(path, _MAX_CORPUS_BYTES)
+                  for name, path in paths.items()}
+    for name, content in file_bytes.items():
+        expected = manifest["files"][name]
+        if not isinstance(expected, str) or sha256_bytes(content) != expected:
+            raise ValueError("Evaluation corpus manifest hash mismatch")
+
+    try:
+        schema = json.loads(file_bytes["schema.json"].decode("utf-8"),
+                            object_pairs_hook=_unique_object,
+                            parse_constant=_reject_json_constant)
+    except (UnicodeDecodeError, ValueError):
+        raise ValueError("Invalid EvaluationCase v1 schema JSON") from None
+    if (not isinstance(schema, dict)
+            or schema.get("title") != "MacroAtlas EvaluationCase v1"
+            or schema.get("additionalProperties") is not False
+            or not isinstance(schema.get("required"), list)
+            or not all(isinstance(item, str) for item in schema["required"])
+            or not isinstance(schema.get("properties"), dict)
+            or set(schema["required"]) != EvaluationCase._BASE_FIELDS
+            or set(schema["properties"]) != EvaluationCase._BASE_FIELDS):
+        raise ValueError("EvaluationCase v1 schema does not match its contract")
+
+    cases = read_cases(paths["cases.jsonl"])
+    if len(cases) != manifest["case_count"]:
+        raise ValueError("Evaluation corpus case count mismatch")
+    actual_split_counts = {split: sum(case.split == split for case in cases)
+                           for split in ("development", "validation", "holdout")}
+    actual_type_counts = {case_type: sum(case.case_type == case_type for case in cases)
+                          for case_type in ("rankable", "near_match", "insufficient_evidence",
+                                            "unrelated")}
+    if (manifest["counts_by_split"] != actual_split_counts
+            or manifest["counts_by_type"] != actual_type_counts):
+        raise ValueError("Evaluation corpus distribution count mismatch")
+    expected_missing = [case_type for case_type in
+                        ("rankable", "near_match", "insufficient_evidence", "unrelated")
+                        if any(sum(case.split == split and case.case_type == case_type
+                                   for case in cases)
+                               != manifest["intended_cases_per_type_per_split"]
+                               for split in ("development", "validation", "holdout"))]
+    if manifest["missing_case_types"] != expected_missing:
+        raise ValueError("Evaluation corpus missing-type declaration mismatch")
+    if (manifest["intended_case_count"] != 3 * manifest["intended_cases_per_split"]
+            or manifest["intended_cases_per_split"]
+            != 4 * manifest["intended_cases_per_type_per_split"]):
+        raise ValueError("Invalid initial case distribution target")
+    complete = len(cases) == manifest["intended_case_count"] and not expected_missing
+    leakage_issues = audit_split_leakage(cases)
+    if leakage_issues and not any("split leakage" in item.casefold()
+                                  for item in manifest["gate_blockers"]):
+        raise ValueError("Evaluation manifest omits the detected split leakage blocker")
+    if complete and leakage_issues:
+        raise ValueError("Complete evaluation corpus cannot contain cross-split leakage")
+    if (manifest["gate_status"] == "complete") != complete:
+        raise ValueError("Evaluation corpus gate status does not match its case counts")
+    if not complete and not manifest["gate_blockers"]:
+        raise ValueError("Blocked evaluation corpus needs an explicit blocker")
+    if complete and manifest["gate_blockers"]:
+        raise ValueError("Complete evaluation corpus cannot retain unresolved gate blockers")
+    candidates = _load_candidates(paths["catalog_snapshot.json"])
+    candidate_ids = {candidate.candidate_id for candidate in candidates}
+    for case in cases:
+        references = (set(case.relevant_candidate_ids) | set(case.forbidden_candidate_ids)
+                      | set(case.expected_match_status) | set(case.expected_fields))
+        if not references.issubset(candidate_ids):
+            raise ValueError("Evaluation case references a candidate outside the fixed snapshot")
+
+    if repo_root is None:
+        repo_roots = [parent for parent in (root, *root.parents)
+                      if (parent / "AGENTS.md").is_file()]
+        if not repo_roots:
+            raise ValueError("Repository root is required to verify evidence references")
+        repo_root = repo_roots[0]
+    _verify_evidence_files(cases, Path(repo_root))
+    return EvaluationCorpus(MappingProxyType(manifest), cases, candidates,
+                            manifest["files"]["cases.jsonl"],
+                            manifest["files"]["catalog_snapshot.json"], leakage_issues)

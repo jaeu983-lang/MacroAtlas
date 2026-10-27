@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/indicator/SL.UEM.TOTL.ZS?format=json",
+  "retrieved_at": "2026-10-27T14:41:16.433068+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Tue, 27 Oct 2026 09:39:20 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 670,
+  "raw_path": "docs/evidence/worldbank_unemployment_rate_metadata_20261027.json",
+  "raw_sha256": "3ae370ed4bebba092338e94334c35add71490324ee57f1dfe81885dade51f52f"
+}

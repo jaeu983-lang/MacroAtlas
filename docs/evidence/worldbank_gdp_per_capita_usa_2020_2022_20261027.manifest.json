@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+  "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+  "http_status": 200,
+  "content_type": "application/json",
+  "last_modified": "Tue, 27 Oct 2026 14:23:50 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 763,
+  "raw_path": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+  "raw_sha256": "759d5017b889445c19d80bf881a25d1c66b8b5820767e2eace5a538f482ab5c5"
+}

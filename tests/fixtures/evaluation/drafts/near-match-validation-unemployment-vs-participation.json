@@ -1,0 +1,270 @@
+{
+  "draft_id": "near-match-validation-unemployment-vs-participation",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "validation",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SL.UEM.TOTL.ZS",
+    "institution_id": "worldbank",
+    "label": "Unemployment, total (% of total labor force) (modeled ILO estimate) — USA, WDI",
+    "definition": "Unemployment refers to the share of the labor force that is without work but available for and seeking employment.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SL.UEM.TOTL.ZS"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-unemployment-rate-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SL.UEM.TOTL.ZS?format=json",
+        "retrieved_at": "2026-10-27T14:41:16.433068+00:00",
+        "original_ref": "docs/evidence/worldbank_unemployment_rate_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SL.UEM.TOTL.ZS",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-unemployment-rate-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SL.UEM.TOTL.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:41:16.736659+00:00",
+        "original_ref": "docs/evidence/worldbank_unemployment_rate_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SL.UEM.TOTL.ZS",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "distractor_candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:SL.TLF.CACT.ZS",
+    "institution_id": "worldbank",
+    "label": "Labor force participation rate, total (% of total population ages 15+) (modeled ILO estimate) — USA, WDI",
+    "definition": "Labor force participation rate is the proportion of the population ages 15 and older that is economically active: all people who supply labor for the production of goods and services during a specified period.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "source": "2",
+      "country": "USA",
+      "indicator": "SL.TLF.CACT.ZS"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-labor-force-participation-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/SL.TLF.CACT.ZS?format=json",
+        "retrieved_at": "2026-10-27T14:41:16.808752+00:00",
+        "original_ref": "docs/evidence/worldbank_labor_force_participation_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "SL.TLF.CACT.ZS",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-labor-force-participation-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SL.TLF.CACT.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:41:17.196638+00:00",
+        "original_ref": "docs/evidence/worldbank_labor_force_participation_usa_2020_2022_20261027.json:USA-2020-2022",
+        "dataset_id": "2",
+        "series_id": "SL.TLF.CACT.ZS",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support this indicator."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "case": {
+    "case_id": "draft-eval-v1-near-match-validation-unemployment-vs-participation",
+    "case_version": 1,
+    "case_family_id": "family-draft-eval-v1-near-match-validation-unemployment-vs-participation",
+    "split": "validation",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-near-match-validation-unemployment-vs-participation",
+      "text": "I need the US unemployment rate in 2021, not the labor-force participation rate.",
+      "concept": "US unemployment rate as a share of the labor force",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "I need the US unemployment rate in 2021, not the labor-force participation rate.",
+      "2021년 미국 실업률을 찾아줘. 노동시장 참가율과는 구분해줘.",
+      "Locate the World Bank source for us unemployment rate as a share of the labor force over the requested periods.",
+      "Keep us unemployment rate as a share of the labor force separate from its similar measure."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:SL.UEM.TOTL.ZS"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:SL.TLF.CACT.ZS"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:SL.UEM.TOTL.ZS": "review_required",
+      "worldbank:2:USA:SL.TLF.CACT.ZS": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:SL.UEM.TOTL.ZS": {
+        "definition": {
+          "state": "known",
+          "value": "Unemployment refers to the share of the labor force that is without work but available for and seeking employment."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SL.UEM.TOTL.ZS"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:SL.TLF.CACT.ZS": {
+        "definition": {
+          "state": "known",
+          "value": "Labor force participation rate is the proportion of the population ages 15 and older that is economically active: all people who supply labor for the production of goods and services during a specified period."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "SL.TLF.CACT.ZS"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-unemployment-rate-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SL.UEM.TOTL.ZS?format=json",
+        "local_ref": "docs/evidence/worldbank_unemployment_rate_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:16.433068+00:00",
+        "sha256": "3ae370ed4bebba092338e94334c35add71490324ee57f1dfe81885dade51f52f",
+        "claim": "Official World Bank metadata/observation evidence for Unemployment, total (% of total labor force) (modeled ILO estimate) — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-unemployment-rate-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SL.UEM.TOTL.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_unemployment_rate_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:16.736659+00:00",
+        "sha256": "1b88fe7835d3474073eb87dea609ee77794c08ebd05aebf5d0ef6816c782a9f4",
+        "claim": "Official World Bank metadata/observation evidence for Unemployment, total (% of total labor force) (modeled ILO estimate) — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-labor-force-participation-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/SL.TLF.CACT.ZS?format=json",
+        "local_ref": "docs/evidence/worldbank_labor_force_participation_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:16.808752+00:00",
+        "sha256": "10154473c4d75dd636f728baf231162ddd5a12c910084f832a3b93fe55038fe7",
+        "claim": "Official World Bank metadata/observation evidence for Labor force participation rate, total (% of total population ages 15+) (modeled ILO estimate) — USA, WDI; scope is limited to the recorded USA series and periods."
+      },
+      {
+        "evidence_id": "wdi-labor-force-participation-observations-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/SL.TLF.CACT.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_labor_force_participation_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:41:17.196638+00:00",
+        "sha256": "fdcc11d93ed31b2c6129f3b0fd41c058e8a6550f88bbb02d0b41de88dedb143a",
+        "claim": "Official World Bank metadata/observation evidence for Labor force participation rate, total (% of total population ages 15+) (modeled ILO estimate) — USA, WDI; scope is limited to the recorded USA series and periods."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

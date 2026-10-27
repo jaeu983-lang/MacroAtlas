@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL.ZG?format=json",
+  "retrieved_at": "2026-10-27T14:32:39.847667+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Tue, 27 Oct 2026 04:20:10 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 632,
+  "raw_path": "docs/evidence/worldbank_cpi_inflation_metadata_20261027.json",
+  "raw_sha256": "df9371a3b6c01e55a3f28991e62e1b1ebbe0cd2a7da94456be9938c7a2962233"
+}

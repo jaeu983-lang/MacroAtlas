@@ -1,0 +1,209 @@
+{
+  "draft_id": "worldbank-gdp-total-vs-per-capita-near-match-20261027",
+  "draft_status": "independent_review_pending",
+  "authorship": {
+    "origin": "assistant_simulated",
+    "human_observed": false,
+    "independent_review_completed": false
+  },
+  "intended_split": "development",
+  "candidate": {
+    "schema_version": 1,
+    "candidate_id": "worldbank:2:USA:NY.GDP.PCAP.CD",
+    "institution_id": "worldbank",
+    "label": "GDP per capita (current US$) — USA, WDI",
+    "definition": "Official WDI label and note: GDP is divided by the general population to form a per-capita estimate; values are in current prices and United States dollars.",
+    "dataset_id": "2",
+    "series_id": null,
+    "series_key": {
+      "country": "USA",
+      "indicator": "NY.GDP.PCAP.CD",
+      "source": "2"
+    },
+    "countries": [
+      "USA"
+    ],
+    "dimensions": {},
+    "frequency": null,
+    "unit": null,
+    "available_start": "2020",
+    "available_end": "2022",
+    "metadata_revision": "2026-10-27",
+    "source_version": null,
+    "evidence": [
+      {
+        "evidence_id": "wdi-gdp-pcap-metadata-20261027",
+        "kind": "live_api",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json",
+        "retrieved_at": "2026-10-27T14:23:47.657372+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_per_capita_metadata_20261027.json",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.PCAP.CD",
+        "source_version": null
+      },
+      {
+        "evidence_id": "wdi-gdp-pcap-observations-20261027",
+        "kind": "live_ingestion",
+        "source_agency": "World Bank",
+        "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+        "original_ref": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+        "dataset_id": "2",
+        "series_id": "NY.GDP.PCAP.CD",
+        "source_version": null
+      }
+    ],
+    "rationale": "Official WDI metadata distinguishes per-capita GDP from total GDP. The current MacroAtlas World Bank collector rejects this indicator, so it is a catalog distractor only.",
+    "uncertainties": [
+      "Structured unit and frequency remain unknown because the retained API metadata has an empty unit and no frequency field.",
+      "Observed availability evidence is limited to USA 2020–2022.",
+      "Current MacroAtlas collection does not support NY.GDP.PCAP.CD."
+    ],
+    "verification_status": "metadata_verified",
+    "availability_status": "available",
+    "auth_requirement": "none",
+    "credential_env_var": null,
+    "support_status": "unsupported",
+    "supported_outputs": []
+  },
+  "case": {
+    "case_id": "draft-eval-v1-development-gdp-total-vs-per-capita-01",
+    "case_version": 1,
+    "case_family_id": "family-draft-gdp-total-vs-per-capita-01",
+    "split": "development",
+    "case_type": "near_match",
+    "request": {
+      "schema_version": 1,
+      "request_id": "draft-eval-v1-development-gdp-total-vs-per-capita-01",
+      "text": "Find total US GDP at current prices in US dollars for 2020–2022.",
+      "concept": "United States total GDP at current prices in US dollars",
+      "institution_hint": "worldbank",
+      "countries": [
+        "USA"
+      ],
+      "dimensions": {},
+      "period_start": "2020",
+      "period_end": "2022",
+      "frequency": "source",
+      "unit_policy": "preserve",
+      "target_unit": null,
+      "vintage_requirement": "latest_available"
+    },
+    "query_variants": [
+      "Find total US GDP at current prices in US dollars for 2020–2022.",
+      "미국의 2020~2022년 총 GDP를 당해연도 미국 달러 기준으로 찾아줘.",
+      "I need the whole-country GDP series, not GDP per person, in current USD."
+    ],
+    "expected_state": "review_required",
+    "relevant_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.MKTP.CD"
+    ],
+    "forbidden_candidate_ids": [
+      "worldbank:2:USA:NY.GDP.PCAP.CD"
+    ],
+    "expected_match_status": {
+      "worldbank:2:USA:NY.GDP.MKTP.CD": "review_required",
+      "worldbank:2:USA:NY.GDP.PCAP.CD": "review_required"
+    },
+    "expected_fields": {
+      "worldbank:2:USA:NY.GDP.MKTP.CD": {
+        "definition": {
+          "state": "known",
+          "value": "Total GDP in current prices, expressed in US dollars."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "NY.GDP.MKTP.CD"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      },
+      "worldbank:2:USA:NY.GDP.PCAP.CD": {
+        "definition": {
+          "state": "known",
+          "value": "GDP divided by population; per-capita estimate in current prices and US dollars."
+        },
+        "frequency": {
+          "state": "unknown"
+        },
+        "unit": {
+          "state": "unknown"
+        },
+        "series_key.indicator": {
+          "state": "known",
+          "value": "NY.GDP.PCAP.CD"
+        },
+        "geography": {
+          "state": "known",
+          "value": "USA"
+        }
+      }
+    },
+    "required_evidence": [
+      {
+        "evidence_id": "wdi-gdp-current-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json",
+        "local_ref": "docs/evidence/worldbank_gdp_indicator_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T06:51:46.588787+00:00",
+        "sha256": "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28",
+        "claim": "공식 WDI label은 GDP (current US$)이고 source note는 total GDP를 current prices, US dollars로 표현한다고 설명한다."
+      },
+      {
+        "evidence_id": "wdi-gdp-current-usa-2020-2022-20261024",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/ITERATION_04_REPORT.md",
+        "retrieved_at": "2026-10-24T15:29:32+00:00",
+        "sha256": "54b3335007ed011c540708be1eea5c8e6f1de3c4d4f26c8fba50d0d1bd7d683f",
+        "claim": "Gate A의 보존 보고서는 USA, source 2, NY.GDP.MKTP.CD의 2020–2022 관측 세 개를 기록한다."
+      },
+      {
+        "evidence_id": "wdi-gdp-per-capita-metadata-20261027",
+        "evidence_kind": "live_api",
+        "official_uri": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json",
+        "local_ref": "docs/evidence/worldbank_gdp_per_capita_metadata_20261027.json",
+        "retrieved_at": "2026-10-27T14:23:47.657372+00:00",
+        "sha256": "96520c3a22b1f9da1c7456349a6e70b1643db88d427671faced17cb8b9eaf907",
+        "claim": "공식 WDI label은 GDP per capita (current US$)이며 source note는 total GDP를 population으로 나눈 per-capita estimate라고 설명한다. unit API field는 빈 문자열이다."
+      },
+      {
+        "evidence_id": "wdi-gdp-per-capita-usa-2020-2022-20261027",
+        "evidence_kind": "live_ingestion",
+        "official_uri": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+        "local_ref": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+        "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+        "sha256": "759d5017b889445c19d80bf881a25d1c66b8b5820767e2eace5a538f482ab5c5",
+        "claim": "공식 WDI USA 응답은 2020, 2021, 2022 관측치를 반환한다. 이 증거는 해당 3개 기간에만 가용성 주장을 제한한다."
+      }
+    ],
+    "prohibited_actions": [
+      "auto_select_or_collect_without_explicit_confirmation",
+      "infer_unknown_unit_frequency_definition_or_availability",
+      "collect_a_candidate_that_was_not_explicitly_selected",
+      "overwrite_raw_data_or_existing_exports",
+      "merge_incompatible_series_or_fill_missing_values"
+    ],
+    "excel_policy": {
+      "grouping": "one_series_per_sheet",
+      "incompatible_series": "separate_sheets",
+      "overlap_conflict": "preserve_separately_or_review",
+      "date_basis": "source_period",
+      "aggregation": "none",
+      "transformation": "none",
+      "missing_values": "blank",
+      "interpolation": "none",
+      "forward_fill": "none"
+    },
+    "feedback_ref": null
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "request_method": "GET",
+  "source_url": "https://api.worldbank.org/v2/indicator/SP.URB.TOTL.IN.ZS?format=json",
+  "retrieved_at": "2026-10-27T14:32:41.889506+00:00",
+  "http_status": 200,
+  "content_type": "application/json;charset=utf-8",
+  "last_modified": "Mon, 26 Oct 2026 13:13:11 GMT",
+  "redirects_followed": false,
+  "timeout_seconds": 20,
+  "response_cap_bytes": 65536,
+  "request_headers": {
+    "Accept": "application/json",
+    "User-Agent": "MacroAtlas official metadata evidence check"
+  },
+  "byte_count": 719,
+  "raw_path": "docs/evidence/worldbank_urban_population_share_metadata_20261027.json",
+  "raw_sha256": "ada77d666a1469f69379933d0597cdd420299806163905af52de79d538da95e6"
+}

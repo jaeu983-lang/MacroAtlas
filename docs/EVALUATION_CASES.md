@@ -1,23 +1,25 @@
-# Curated engine evaluation cases
+# Evaluation scaffolds and evidence-backed cases
 
-This directory defines versioned case records and split hygiene. It is a
-reviewed test corpus, not an automatic learner. `macro-feedback` keeps the
-append-only runtime feedback log; accepted feedback does not enter these files
-unless a reviewer writes and privacy-clears a case explicitly.
+This documentation covers two separate inputs: the original JSON-per-split
+scaffold in `evaluation/sets/` and the evidence-backed JSONL v1 corpus in
+`tests/fixtures/evaluation/v1/`. Neither is an automatic learner.
+`macro-feedback` keeps the append-only runtime feedback log; accepted feedback
+does not enter an evaluation corpus unless a reviewer creates, verifies, and
+privacy-clears a case explicitly.
 The complete feedback→evaluation→promotion contract and priority order are in
 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), §7 and §11.
 
 ## Current state
 
-The three versioned manifests currently contain six synthetic contract cases,
-two per split. They cover the fixed World Bank and BOJ paths, a BLS CPI
+The original split-set scaffold has six synthetic contract cases, two per
+split. It covers the fixed World Bank and BOJ paths, a BLS CPI
 contrast between a qualified and ambiguous request, incompatible frequencies
 in Excel, and unknown-frequency freshness. They are author-generated fixtures,
 not user feedback or evidence that live providers returned the expected data.
 The reviewer field records the synthetic author's self-review; it is not an
 independent human review.
 
-The validation and holdout file bytes and versions are pinned in
+Its validation and holdout file bytes and versions are pinned in
 `evaluation/sets/frozen.json`. A change to either frozen set must include a
 deliberate, reviewed lock update in the same PR. The hash detects unreviewed
 drift; it does not make the public holdout secret or prevent an approved
@@ -28,8 +30,18 @@ authenticate feedback IDs against the SQLite feedback log. Neither status
 scores engine behavior. These six synthetic cases are scaffolding only and do
 not satisfy the user-evidence or generalization gate.
 
-Run the structural, split-leakage, provenance-count, and frozen-hash checks from
-the repository root:
+This scaffold is not the current gold evaluation corpus and does not evaluate
+engine behavior. The v1 evidence-backed corpus is the versioned JSONL source
+for the planned search-evaluation gate. Its current manifest contains 9 of 36
+target cases across the three splits and is explicitly `blocked`. One fixed
+World Bank candidate is retained with local official evidence hashes; the
+manifest does not claim broader catalog coverage. A separate 27-case pool is
+marked `independent_review_pending`. Those assistant-simulated drafts remain
+outside the fixed catalog and corpus; hash and text-template checks do not
+replace independent semantic review. No engine evaluator or rule promotion is
+implemented by these files.
+
+Validate the original scaffold from the repository root:
 
 ```text
 python -m macro_data_platform.evaluation.cli validate
@@ -41,7 +53,17 @@ After installing the project, the equivalent command is:
 macro-eval validate
 ```
 
-## Case record
+Validate the evidence-backed v1 corpus and its evidence file hashes with:
+
+```text
+python -m macro_data_platform.evaluation.cli validate-corpus
+```
+
+This command returns exit code 2 while the corpus gate is blocked or invalid.
+It reports verified inputs and gate blockers; it never promotes drafts or runs
+the search engine.
+
+## Legacy scaffold record
 
 Each case has a stable `case_id`, integer `case_version`, assigned split,
 canonical question and paraphrase variants, expected response state and source
@@ -103,6 +125,19 @@ Excel expectation fields are required even before an Excel exporter exists.
 `interpolate` and `forward_fill` must remain false. Use `blank` for missing
 values when an Excel output is applicable; overlapping incompatible series
 must be kept separate or sent for review.
+
+## Evidence-backed `EvaluationCase` v1 record
+
+The JSONL corpus uses the richer immutable contract in
+`src/macro_data_platform/evaluation/case_contracts.py`. Each record fixes its
+case family and split, type, `DataRequest` snapshot, query variants, expected
+state, relevant/forbidden candidate IDs, candidate match statuses, expected
+field states, evidence references, prohibited actions, and Excel policy.
+Evidence paths are repository-relative and hash checked; official references
+must be clean HTTPS URIs without credential-bearing query data. Unknown or
+conflicting expected fields require supporting evidence and a review-required
+candidate status. Agent/assistant authorship is preserved as simulated and
+cannot be marked human-observed.
 
 ## Not implemented by this step
 
