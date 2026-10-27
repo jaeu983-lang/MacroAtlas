@@ -178,9 +178,8 @@ def test_manifest_reports_partial_gate_without_promoting_it_to_complete():
     assert manifest["case_count"] == 9
     assert manifest["gate_status"] == "blocked"
     assert any("near-match distractor" in message for message in manifest["gate_blockers"])
-    assert any("split leakage" in message for message in manifest["gate_blockers"])
-    assert any(issue.kind == "query_template_crosses_splits"
-               for issue in corpus.split_leakage_issues)
+    assert not any("split leakage" in message for message in manifest["gate_blockers"])
+    assert corpus.split_leakage_issues == ()
 
 
 def test_split_audit_catches_year_only_query_variants_across_splits():

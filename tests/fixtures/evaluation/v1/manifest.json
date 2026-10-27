@@ -13,14 +13,13 @@
     "unrelated": 3
   },
   "files": {
-    "cases.jsonl": "131a9ad41a3c95a0640a8060632243423e49f04cfa50b4e7890cbba976d1c718",
+    "cases.jsonl": "3b06eb72c2cbebaf4a2f6174acfc017bacd94549330a76056762c6cb8adfcde5",
     "catalog_snapshot.json": "1d9ba4eb3c03bf29ec36a97d975a466dc3348227498644d2ddfd519f2f7a5670",
     "schema.json": "ace4c459c31e184073321b4894436752e0188b8b2589e4f78806479e405909cc"
   },
   "gate_blockers": [
     "Only one evidence-backed candidate is present in the current fixed catalog snapshot; 27 of 36 planned cases are not authored.",
     "An official near-match distractor draft exists but is not in the fixed catalog or evaluation set pending independent review; the corpus still has no near_match cases.",
-    "The starter corpus reuses date-normalized query templates across splits; split leakage blocks acceptance until cases are re-authored.",
     "BLS and Census catalog records in current tests are synthetic fixtures, not retained official metadata snapshots suitable for positive gold labels."
   ],
   "gate_status": "blocked",

@@ -120,7 +120,7 @@ task branch에 기록하지만 실행 환경에 publish하지 않는다.
 | 22 | 비API qualification과 BIS production/resume 전에 실행 시간·범위·신뢰도를 표시하고 실측 history로 shadow forecast를 계산; PR #10 통합 | 현재 catalog 표본 qualification 15, production 1, paired forecast 0. 예측 정확도는 낮은 신뢰도 상태 |
 | 23 | 저장 결과→CSV 업무 관찰 protocol·시나리오·동의와 익명 기록 절차 준비; PR #11 통합 | 실제 분석가 참가 세션 미실행. 실제 사용성 판단은 독립 참가자 관찰 후 수행 |
 | 24 | pytest/Ruff/diff/CLI/health를 공통 Python runner로 통합, Windows wrapper 및 report/log artifacts; PR #12 통합 | read-only analyzer와 updater→candidate QA handoff는 엔진 통합 계획의 후속 단계 |
-| 28 (gate 차단) | `EvaluationCase` v1 계약/validator/JSONL reader, 고정 WDI candidate snapshot, SHA-256 manifest와 근거 파일 검증; 9개 starter case, split leakage audit, 독립 검토 대기 near-match 초안 1개 | 초안은 평가 세트에 포함되지 않았다. 36개 목표 및 날짜 변경형 split leakage 미해결. 평가 실행기·피드백 bridge·rule promotion은 미구현. [28회차 보고서](ITERATION_28_REPORT.md) |
+| 28 (gate 차단) | `EvaluationCase` v1 계약/validator/JSONL reader, 고정 WDI candidate snapshot, SHA-256 manifest, split leakage audit; 9개 starter case와 독립 검토 대기 near-match 초안 1개 | 기존 9개 사례의 텍스트 누수는 재작성해 audit 0건. 초안은 평가 세트에 포함되지 않았으며 36개 목표·근거 있는 후보 부족은 남아 있다. evaluator·피드백 bridge·rule promotion은 미구현. [28회차 보고서](ITERATION_28_REPORT.md) |
 
 세부 구현 수치와 해당 당시 테스트 수는 각 회차 보고서에 둔다. 현재 전체 테스트 수는 최신
 검증 결과 섹션만 갱신한다.
