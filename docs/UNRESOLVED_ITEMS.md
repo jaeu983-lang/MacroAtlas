@@ -1,8 +1,8 @@
 # 현행 미해결 항목 — 데이터 처리와 서버 접속 분리
 
-> 2026-10-27 갱신: 이 maintenance follow-up의 base에는 PR #1–#16이 병합돼 있었고 HEAD는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`였다. PR #9의 `7723afe`는 당시 CSV 전달 병합점이며 PR #4의 worker 복구도 `25f3c87`로 통합됐다. 고정 World Bank GDP에 음수값 격리 및 indicator title/identity 검사를 추가했다. 이 보고서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
+> 2026-10-27 갱신: 최신 병합 HEAD는 PR #26의 `341a2f843cd0e0e3282279608a6e15d45d1fb2d5`이며 PR #1–#26이 통합됐다. PR #23–#25에서 qualification/운영 이력과 기관·dataset scope 근거를 보완했고 PR #26에서 BLS metadata 한계를 기록했다. 이 문서는 자연 증거·대용량 예측 보정·통계 의미 검증·지원 확대·사용자 관찰의 남은 조건을 정리한다.
 
-후속 상태: PR #17–#21도 병합됐다. 격리 updater→candidate QA→review PR handoff와 Codex CLI 옵션 호환성을 통합했고, 실제 updater 시도에서 확인한 Codex `401`을 `CODEX_AUTH_REQUIRED`와 재로그인 안내로 보고한다. PR #20은 현행 후속 상태를 계획 문서에 맞췄고, PR #21은 TIC/BIS watcher parser scope를 보존 baseline에 맞췄다. 최신 pilot 및 CI 결과는 [차단 보고서](ITERATION_26_PILOT_BLOCKER_REPORT.md)를 참조한다. 실제 updater pilot은 Codex CLI 재로그인 후 이어갈 수 있다.
+후속 상태: PR #17–#26이 모두 병합됐다. 27회차 Linux 수동 updater 시도에서 Codex `login status`는 로그인으로 표시됐지만 실제 요청은 token refresh `401`을 반환해 `CODEX_AUTH_REQUIRED`로 끝났다. Windows pilot은 아직 수행하지 않았고 scheduler도 비활성이다. 최신 실행과 사용자 조치는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
 
 기준일: 2026-10-27. 근거는 보존된 `data/catalog.sqlite`, raw/manifest, 최신 코드,
 과거 네 provider live 결과와 문서화된 TIC/BIS exact-scope 감시 기록이다. 당시 TIC task
@@ -77,19 +77,16 @@ plan·stage가 없는 CREATED snapshot들은 네트워크/데이터 실패로 �
 worktree로 격리하고 허용 경로를 검사한 뒤 candidate commit→동일 SHA QA→통과 시 push/PR 흐름을 연결한다. no-op에서는 작업
 worktree와 생성 branch를 정리하고, QA 실패·범위 밖 변경은 push하지 않는다. 자동 merge/publish 권한은 없다.
 
-남은 검증은 실제 Windows 환경에서 감독자가 시작하는 Codex pilot 1회와 scheduler 중복 실행·base ref·로그 보존 확인이다.
-Linux에서 첫 updater 시작은 Codex CLI의 approval 옵션 순서 오류로 prompt 전에 종료됐다. 인자 위치와 CLI preflight를 수정해 병합했지만,
-두 번째 실행은 Codex 서비스의 `401 Unauthorized`와 access token 갱신 실패로 prompt 전에 종료됐다. worktree는 clean임을 확인하고
-정리했으며 candidate/QA/push/PR은 만들지 않았다. 실제 updater pilot을 이어가려면 사용자가 Codex CLI에 다시 로그인해야 한다.
-이 인증 문제는 제품 data engine, Gate C 원자료 증거 또는 기관 서버 상태와 별도다. 근거는 [26회차 보고서](ITERATION_26_REPORT.md),
-[CLI 호환성 기록](ITERATION_26_FOLLOWUP_REPORT.md), [인증 차단 기록](ITERATION_26_PILOT_BLOCKER_REPORT.md)에 있다.
+남은 검증은 실제 Windows 환경에서 감독자가 시작하는 Codex pilot과 scheduler 중복 실행·base ref·로그 보존 확인이다.
+PR #26 뒤 Linux에서 한 번 더 실행했지만 token refresh `401`로 prompt 전에 종료됐다. 이번에는 실패 분석용 worktree/branch를 보존했고 candidate/QA/push/PR은 만들지 않았다. CLI 상태 명령의 “Logged in” 표시는 유효한 token refresh를 입증하지 않았다. 사용자는 대상 Windows 환경에서 Codex CLI를 다시 인증한 뒤 수동 pilot을 시작해야 한다.
+이 인증 문제는 제품 data engine, Gate C 원자료 증거 또는 기관 서버 상태와 별도다. 이전 실행은 [26회차 차단 기록](ITERATION_26_PILOT_BLOCKER_REPORT.md), 최신 실행은 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 있다.
 
 ## 다음 작업 우선순위
 
 현재 확인한 제품의 활성 transport 장애는 없다. 실행 순서의 기준은 [제품 로드맵](ROADMAP_2026_10_26.md)이며,
 대용량 시험 성공을 정식 정규화 완료로 취급하지 않는다.
 
-1. **완료:** PR #1~#21 병합. 이번 maintenance follow-up의 시작 base는 `5ade536bc09ff2fcf0e2204a226ab9c9a4bbe208`; PR #9 `7723afe`와 PR #4 `25f3c87`은 개별 병합점이다. PR #17–#19는 updater handoff와 인증 차단 보고, PR #20은 현행 상태 문서 정합성, PR #21은 Gate C watcher baseline scope 복구를 추가했다.
+1. **완료:** PR #1~#26 병합. 최신 base는 `341a2f843cd0e0e3282279608a6e15d45d1fb2d5`. PR #23–#25는 evidence domain과 source scope projection을 보완했고 PR #26은 BLS 공식 metadata 한계를 기록했다. updater pilot과 Gate C 자연 증거는 별도로 남아 있다.
 2. **완료:** 기존 BIS flat event seq `1`을 단일 child task에서 처리하고 output manifest/chunk 해시, 원본 불변성, child/deferral 이력을 확인했다.
 3. **완료:** World Bank/BOJ 검증 task CSV 전달. 666개 전체 test, Ruff, diff check와 실제 보존 task 2개의 로컬 export/hash 검증을 기록했다.
 4. **완료(내부 dry run):** 저장 task 두 건에서 status→CSV 전달 경로·출력 hash·경고를 재확인했다. 이는 사용자 조사 통과가 아니다.
