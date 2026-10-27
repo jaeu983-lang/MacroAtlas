@@ -815,3 +815,10 @@ installer dry-run은 base SHA, Anaconda Python 경로, 현재 user principal, `I
 `cleanup=PASSED`, `network_requested=false`로 끝났고 candidate/QA/push/PR은 없었다. Retention 요약은 90일, scanned 3,
 removed 0, preserved 3이었다. 이는 단일 정상 no-op 경로만 확인하며 concurrent lock contention, candidate handoff, failure resume,
 또는 scheduler 실행의 증거로 확대하지 않는다. 예약 task는 계속 비활성이다.
+
+## D-092 — Windows updater 교차 프로세스 lock 경합 실측
+
+2026-10-27. 사용자가 temporary Python holder로 OS lock을 점유한 동안 별도 PowerShell process에서 updater를 실행했다. Run
+`20261027T063105Z-60a54edf`는 `ALREADY_RUNNING`, `network_requested=false`, `changed_paths=[]`, `push_status=NOT_RUN`,
+`pull_request=null`을 반환했으며 저장소 수정이나 provider 요청은 없었다. 이는 Windows OS-level lock 경합 차단을 확인한 증거다.
+실제 Windows candidate QA/handoff, failure 복구 및 Task Scheduler invocation은 아직 검증하지 않았다. 예약 task는 계속 비활성이다.
