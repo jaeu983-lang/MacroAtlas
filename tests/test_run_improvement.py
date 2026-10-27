@@ -202,6 +202,57 @@ def test_noop_update_uses_temporary_worktree_and_never_pushes(monkeypatch, tmp_p
     assert branch.returncode != 0
 
 
+def test_noop_cleanup_recovers_empty_unregistered_worktree_and_deletes_base_branch(tmp_path):
+    _initialize_repository(tmp_path)
+    base_sha = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True
+    ).strip()
+    branch = "agent/improvement-test"
+    subprocess.run(["git", "branch", branch, base_sha], cwd=tmp_path, check=True)
+    worktree = tmp_path / "reports" / "run" / "checkout"
+    worktree.mkdir(parents=True)
+
+    cleanup_ok, details = maintenance._cleanup_noop(tmp_path, worktree, branch, base_sha)
+
+    assert cleanup_ok is True
+    assert details["worktree"]["remove_returncode"] != 0
+    assert details["worktree"]["registered_after_remove"] is False
+    assert details["worktree"]["recovery"] == "removed_empty_unregistered_directory"
+    assert details["branch"]["status"] == "deleted"
+    assert not worktree.exists()
+    assert subprocess.run(
+        ["git", "show-ref", "--verify", f"refs/heads/{branch}"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+    ).returncode != 0
+
+
+def test_noop_cleanup_preserves_nonempty_unregistered_worktree_and_branch(tmp_path):
+    _initialize_repository(tmp_path)
+    base_sha = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True
+    ).strip()
+    branch = "agent/improvement-test"
+    subprocess.run(["git", "branch", branch, base_sha], cwd=tmp_path, check=True)
+    worktree = tmp_path / "reports" / "run" / "checkout"
+    worktree.mkdir(parents=True)
+    (worktree / "keep.txt").write_text("preserve this file\n", encoding="utf-8")
+
+    cleanup_ok, details = maintenance._cleanup_noop(tmp_path, worktree, branch, base_sha)
+
+    assert cleanup_ok is False
+    assert details["worktree"]["registered_after_remove"] is False
+    assert details["worktree"]["recovery"] == "directory_not_empty_or_unremovable"
+    assert (worktree / "keep.txt").read_text(encoding="utf-8") == "preserve this file\n"
+    assert subprocess.run(
+        ["git", "show-ref", "--verify", f"refs/heads/{branch}"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+    ).returncode == 0
+
+
 def test_out_of_scope_change_is_preserved_locally_and_never_pushed(monkeypatch, tmp_path):
     _initialize_repository(tmp_path)
     monkeypatch.setattr(maintenance.shutil, "which", lambda _: "/fake/tool")
