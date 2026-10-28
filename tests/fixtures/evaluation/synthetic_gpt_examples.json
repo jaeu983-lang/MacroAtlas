@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "gpt-synthetic-gdp-per-capita-001",
+    "question": "US GDP per capita 2022",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": [
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.PCAP.CD",
+          "score": 100.0,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.CD",
+          "score": 87.5,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.PP.CD",
+          "score": 87.5,
+          "match_status": "review_required"
+        }
+      ]
+    },
+    "answer_origin": "engine",
+    "outcome": "answered",
+    "feedback": null,
+    "generator": "codex-gpt6",
+    "engine_version": "rank-candidates-baseline",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  },
+  {
+    "case_id": "gpt-synthetic-gold-001",
+    "question": "Find London gold spot price",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": [
+        {
+          "candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+          "score": 25.0,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:FP.CPI.TOTL.ZG",
+          "score": 25.0,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.DEFL.KD.ZG",
+          "score": 25.0,
+          "match_status": "review_required"
+        }
+      ]
+    },
+    "answer_origin": "engine",
+    "outcome": "needs_correction",
+    "feedback": "금 시세 질문에 관련 없는 World Bank 통계 후보가 반환됐다. 근거가 없는 후보는 확정하지 말고 관련 자료가 없다고 표시해야 한다.",
+    "generator": "codex-gpt6",
+    "engine_version": "rank-candidates-baseline",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  }
+]
