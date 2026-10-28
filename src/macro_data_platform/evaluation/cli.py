@@ -13,6 +13,8 @@ from macro_data_platform.evaluation.feedback_bridge import (
     write_feedback_case_draft,
 )
 from macro_data_platform.evaluation.search_baseline import (
+    DEFAULT_CANDIDATE_MINIMUM_SCORE,
+    DEFAULT_CANDIDATE_POLICY_VERSION,
     SearchPolicy,
     compare_development_policies,
     compare_validation_policies,
@@ -48,7 +50,9 @@ def main(argv=None):
         "--corpus-dir", type=Path, default=Path.cwd() / "tests/fixtures/evaluation/v2"
     )
     compare.add_argument("--repo-root", type=Path, default=None)
-    compare.add_argument("--candidate-min-score", type=float, default=70)
+    compare.add_argument(
+        "--candidate-min-score", type=float, default=DEFAULT_CANDIDATE_MINIMUM_SCORE
+    )
     validate_search = commands.add_parser(
         "search-validation", help="compare frozen policy behavior on validation only"
     )
@@ -56,7 +60,9 @@ def main(argv=None):
         "--corpus-dir", type=Path, default=Path.cwd() / "tests/fixtures/evaluation/v2"
     )
     validate_search.add_argument("--repo-root", type=Path, default=None)
-    validate_search.add_argument("--candidate-min-score", type=float, default=70)
+    validate_search.add_argument(
+        "--candidate-min-score", type=float, default=DEFAULT_CANDIDATE_MINIMUM_SCORE
+    )
     feedback_draft = commands.add_parser(
         "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
     )
@@ -113,7 +119,7 @@ def main(argv=None):
                         loaded,
                         SearchPolicy(version="lexical-baseline-v1"),
                         SearchPolicy(
-                            version="lexical-min-score-candidate-v1",
+                            version=DEFAULT_CANDIDATE_POLICY_VERSION,
                             minimum_score=args.candidate_min_score,
                         ),
                     )
@@ -128,7 +134,7 @@ def main(argv=None):
                         loaded,
                         SearchPolicy(version="lexical-baseline-v1"),
                         SearchPolicy(
-                            version="lexical-min-score-candidate-v1",
+                            version=DEFAULT_CANDIDATE_POLICY_VERSION,
                             minimum_score=args.candidate_min_score,
                         ),
                     )

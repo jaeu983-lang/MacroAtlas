@@ -19,6 +19,8 @@ _FIELDS = {
     "available_end",
 }
 _UNSUPPORTED = object()
+DEFAULT_CANDIDATE_MINIMUM_SCORE = 37.5
+DEFAULT_CANDIDATE_POLICY_VERSION = "lexical-min-score-candidate-v2"
 
 
 @dataclass(frozen=True)

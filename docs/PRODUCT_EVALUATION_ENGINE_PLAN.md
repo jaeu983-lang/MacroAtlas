@@ -38,7 +38,7 @@ Gate가 실패하면 36건으로 간주하지 않고 evaluator 단계로 넘어�
 
 ## 2. 검색 평가기와 정책 비교 — PR 묶음 2, C
 
-`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행하고, `macro-eval search-compare`는 그 split에서 baseline과 versioned `SearchPolicy`를 비교한다. `macro-eval search-validation`은 고정 baseline과 candidate를 validation 사례에서 비교하며 holdout을 열지 않는다. 현재 candidate 정책은 결과 수 제한과 minimum lexical score를 받는 평가용 wrapper이며, 제품 기본값은 바꾸지 않는다. 명령들은 기대 상태, 관련 후보 누락, unrelated abstention, 금지 후보 반환, false-exact, 지원 필드의 구조적 일치를 기록한다. 구조적 일치는 통계 의미의 동등성 검증이 아니다. 후보 반환은 확정이 아니다. validation 결과는 측정됐더라도 금지 동작 실행 trace와 자연 사용자 사례가 검증되지 않아 C gate 통과나 rule promotion을 뜻하지 않는다.
+`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행하고, `macro-eval search-compare`는 그 split에서 baseline과 versioned `SearchPolicy`를 비교한다. `macro-eval search-validation`은 고정 baseline과 candidate를 validation 사례에서 비교하며 holdout을 열지 않는다. 현재 candidate v2는 minimum lexical score 37.5를 적용하는 평가용 wrapper이며, 제품 기본값은 바꾸지 않는다. 고정 synthetic/AI-reviewed 사례에서 candidate는 development와 validation 모두 unrelated 후보 반환 8/8을 0/8로 낮추면서 rankable·near-match 순위, 상태·필드 일치율을 baseline과 같게 유지했다. false-exact와 forbidden-exact는 두 split 모두 0건이었다. 이는 고정 fixture의 순위 gate를 통과한 결과이며 자연 질문 정확도나 semantic equivalence를 증명하지 않는다. 실제 금지 행동 trace가 없으므로 전체 Gate C와 정책 승격은 아직 차단돼 있다.
 
 새 ranker를 만들지 않는다. 기존 discovery/series_search.py의 rank_candidates를 baseline으로 사용하고, candidate 변경은 SearchPolicy 버전 주입으로 분리한다. 평가 입력은 case, catalog, policy의 고정 snapshot이며 네트워크·자격증명·task/raw DB 쓰기·제품 export가 없어야 한다.
 
