@@ -4,7 +4,7 @@
 
 ## 기준선
 
-- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `21086bf` (PR #78 merge; 2026-10-28). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
+- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `b6a25e1` (PR #79 merge; 2026-10-28). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
 - PR #50은 825f2aa, PR #58은 4b26bc9로 병합됐다. PR #58의 merge commit은 Ubuntu/Windows × Python 3.11/3.12 Actions 네 작업이 통과했다.
 - PR #58 변경 기준 로컬 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY이고, 기존 v1 corpus validator는 9/36 BLOCKED였다.
 - 요청에 따라 GPT-6가 27개 draft를 원본 hash, 공식 evidence, 기대 state/candidate/field, 금지 행동, Excel policy, split과 privacy 기준으로 하나씩 검토했다. 26건은 그대로 승인, 1건은 definition 기대값 2곳을 바로잡아 case version 2로 승인했다. 검토자 유형은 AI로 ledger에 표시했다.
@@ -23,11 +23,11 @@
 | GPT 합성 사례 | 이 대화의 GPT가 만든 질문과 엔진 결과·피드백을 실제 사용자 원장과 분리해 기록한다. 별도 OpenAI API는 필요하지 않다. 새 AI 개발 사례 4건은 fixture에 보존하고 synthetic DB에 import했다. | 합성 기록은 AI 사례이며 실제 사용자 관찰이 아니다. 개발용으로만 비교하며 v2 quota, validation 또는 holdout 사례 수에 더하지 않는다. |
 | 피드백 | SQLite FeedbackStore의 revision 원장, 명시 review와 incomplete case seed에 더해 전체 revision의 고정 snapshot과 수동 분류 batch import/list/show를 구현했다. 입력/출력 count·key·hash 및 원본 revision hash가 다르면 저장을 거부한다. | AI 호출과 비식별화는 운영자가 수동으로 수행한다. 실제 사용자 feedback의 AI 분류 batch와 자연 사용자 사례는 아직 검증되지 않았다. 지시문과 코드는 자동 수정되지 않는다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
-| 최신성 | FreshnessPolicy와 assess_freshness가 있고 World Bank·BOJ·BLS·Census 경로와 CSV 재검증에 연결된다. BOJ live 응답에서 미래 날짜 null placeholder를 freshness anchor에서 제외하도록 수정·재검증했다. | source release calendar로 검증된 series policy와 공통 typed TimeSeries/Observation은 없다. 일반 tabular input도 freshness gate 범위 밖이다. |
+| 최신성·typed series | `TimeSeries`/`Observation` 공통 계약은 World Bank GDP/WDI 및 BOJ 월별/범위 adapter에서 구조 검증된다. null은 `missing`, 0은 관측값으로 보존하고 단위·currency unknown을 추정하지 않는다. freshness 결과에 series override/frequency fallback 근거도 구분해 기록한다. | typed 계약은 아직 BLS·Census·파일 adapter와 저장/export 경로에 연결되지 않았다. 기관 release calendar로 검증된 exact-series policy가 없고 frequency tolerance는 초기 fallback이다. Gate E 미완료. |
 | 출력 | 품질 통과 World Bank GDP·BOJ FXERD01 one-month/range task의 CSV와 provenance sidecar를 내보낸다. XLSX parser는 입력 전용이다. | 원자료 XLSX와 다중 시계열 정렬 workbook이 없다. |
 | 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본은 161개다. | live latency 표본은 승인된 자연 요청에서만 모은다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |
 
-2026-10-28의 bounded API live smoke, AI 개발 질문 비교, CLI·registry·테스트 환경 결과는 [엔진 실행 검증 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 정리했다.
+2026-10-28의 bounded API live smoke, AI 개발 질문 비교, CLI·registry·테스트 환경 결과는 [엔진 실행 검증 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 정리했다. 공통 typed series checkpoint는 [35회차 보고](ITERATION_35_REPORT.md)를 따른다.
 
 ## 제품 Gate
 
@@ -37,7 +37,7 @@
 | feedback bridge B | snapshot·수동 batch 구현, fixture 검증; 실제 사용자 검증 미완료. 합성 질문/피드백 6건은 별도 ignored DB에 있고 4건은 tracked fixture로 재생 가능 | feedback revision 원장을 계속 보존. 선택 seed는 privacy attestation을 거쳐 development draft만 출력한다. 실제 사용자 sample은 아직 없고 OpenAI API는 요구되지 않음 |
 | 평가 C | PASS — fixed v2 search scope, 2026-10-28. holdout lock은 `COMPLETED` | dev/validation/holdout 전체 false-exact·forbidden-exact 0. 금지 동작 위반 0; holdout 36 query에서 확인 없는 계획은 전부 차단. Holdout rankable Top-1 +2, unrelated abstention +8, near-match 유지, 유형 퇴행 없음. candidate p95 1.508ms/100ms, baseline 대비 1.184배/1.5배, 외부 호출·비용 0. 후보 자동 승격은 없으며 provider/raw/export 내부 동작·통계적 동등성·사람 관찰은 미측정 |
 | 승격 D | 원장·CLI 구현, AI 권고 hold, Gate D 미완료 | `macro-promotion`은 C artifact/hash/metrics를 검증하고 append-only hash-chain 원장에 accept/hold/reject 또는 rollback을 남긴다. AI가 별도 decision log에 `hold/evidence_follow_up_needed` 권고를 남겼다. 공식 승격 원장은 비어 있고 실제 사람 결정은 없다. accept에는 Gate C PASS, 서로 다른 사람의 self-attestation, 적용 commit이 필요하다. rollback은 적용 commit 뒤의 새 commit을 요구한다. 도구는 신원을 인증하지 않고 기본 정책을 바꾸지 않는다. |
-| Series·freshness E | 부분 구현 | typed Series/Observation을 정의하고 공식 release evidence와 series별 정책을 연결한다. 미상 policy는 `FRESHNESS_UNVERIFIED`, 초과는 `STALE`; 두 상태는 latest result/export에서 차단 |
+| Series·freshness E | 부분 구현 — 공통 계약과 World Bank·BOJ 검증 연결 | BLS·Census·파일 adapter와 저장/export 연결, official release evidence를 가진 exact-series 정책, 미상/초과 최신성 값 차단을 검증해야 Gate E를 통과한다. 현재 frequency fallback은 결과에 명시된다. |
 | 원자료 XLSX F | 미구현 | validated typed series만 입력. 원값·period·missing/zero·unit/frequency·source/raw hash/provenance를 보존하고 no-overwrite/path/formula safety를 검증 |
 | 비교 XLSX G | 미구현 | compatibility contract를 통과한 series만 정렬. 원자료 sheet는 보존, 별도 alignment sheet에 명시 변환·calendar·결측 정책을 남기며 자동 보간/forward-fill 없음 |
 | 최종 관찰 | 대기 | A–G 통과 뒤 AI 가상 분석가 시나리오를 임시 Gate 증거로 사용할 수 있다. 실제 분석가 관찰 여부는 따로 기록 |
@@ -52,4 +52,4 @@
 
 Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. AI는 해당 제한을 근거로 `hold/evidence_follow_up_needed`를 권고했으며 [결정 로그 D-121](DECISION_LOG.md)에 AI 의견으로 분리 기록했다. 이는 공식 promotion ledger의 사람 결정이 아니므로 후보는 계속 미승격이고 Gate D는 미완료다. 도구는 사람 신원과 독립 검토의 실체를 인증하지 않는다. provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
 
-기본 브랜치의 대조 기준 commit은 [`21086bf`](https://github.com/jaeu983-lang/MacroAtlas/commit/21086bf2cd2f67ea53c963f738625becd506845e)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.
+기본 브랜치의 대조 기준 commit은 [`b6a25e1`](https://github.com/jaeu983-lang/MacroAtlas/commit/b6a25e1b75e7f70410b563d71a393d6aea8b2165)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

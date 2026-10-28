@@ -1,8 +1,11 @@
 """Iteration 01 value contracts; execution and persistence belong to iteration 02."""
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from math import isfinite
+from types import MappingProxyType
 from typing import Generic, Protocol, TypeVar
 from urllib.parse import parse_qsl, urlsplit
 
@@ -116,6 +119,131 @@ class SourceEvidence:
         utc(self.retrieved_at)
         if not isinstance(self.kind, EvidenceKind):
             raise ValueError("invalid evidence kind")  # noqa: TRY004 - public validation contract
+
+
+class ObservationStatus(str, Enum):
+    OBSERVED = "observed"
+    MISSING = "missing"
+    SUPPRESSED = "suppressed"
+    NOT_APPLICABLE = "not_applicable"
+
+
+_SERIES_FREQUENCIES = {
+    "daily", "weekly", "monthly", "quarterly", "semiannual", "annual",
+}
+_FREQUENCY_BASES = {"source_metadata", "request_contract", "period_format", "unknown"}
+
+
+@dataclass(frozen=True)
+class Observation:
+    """One source period with explicit missingness and the provider's parsed value."""
+
+    period: str
+    raw_value: str | int | float | None
+    status: ObservationStatus
+
+    def __post_init__(self) -> None:
+        required(self.period, "period")
+        if not isinstance(self.status, ObservationStatus):
+            raise ValueError("invalid observation status")  # noqa: TRY004 - contract validation
+        if isinstance(self.raw_value, bool) or not isinstance(
+            self.raw_value, (str, int, float, type(None)),
+        ):
+            raise TypeError("raw_value must be a source string, finite number or null")
+        if isinstance(self.raw_value, float) and not isfinite(self.raw_value):
+            raise ValueError("raw_value must be finite")
+        if self.status == ObservationStatus.OBSERVED and self.raw_value is None:
+            raise ValueError("observed values cannot be null")
+        if self.status == ObservationStatus.MISSING and self.raw_value is not None:
+            raise ValueError("missing values must preserve a null source value")
+
+
+@dataclass(frozen=True)
+class TimeSeries:
+    """Common source-preserving contract used between provider adapters and outputs.
+
+    ``raw_value`` is the parsed provider scalar. The raw response remains the authority
+    for byte-exact numeric spelling and is addressed by ``raw_ref``/``manifest_ref``.
+    """
+
+    source_agency: str
+    dataset_id: str
+    series_id: str
+    dimensions: Mapping[str, str]
+    calendar: str
+    observations: tuple[Observation, ...]
+    retrieved_at: datetime
+    source_url: str
+    raw_ref: str
+    manifest_ref: str
+    unit: str | None = None
+    currency: str | None = None
+    frequency: str | None = None
+    frequency_basis: str = "unknown"
+    source_revision: str | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("source_agency", "dataset_id", "series_id", "calendar", "raw_ref",
+                     "manifest_ref"):
+            required(getattr(self, name), name)
+        if not isinstance(self.dimensions, Mapping):
+            raise TypeError("dimensions must be a mapping")
+        if any(not isinstance(key, str) or not key.strip()
+               or not isinstance(value, str) or not value.strip()
+               for key, value in self.dimensions.items()):
+            raise ValueError("dimension names and values must be nonempty strings")
+        object.__setattr__(self, "dimensions", MappingProxyType(dict(self.dimensions)))
+        if self.frequency is not None and self.frequency not in _SERIES_FREQUENCIES:
+            raise ValueError("frequency must use a canonical supported value")
+        if self.frequency_basis not in _FREQUENCY_BASES:
+            raise ValueError("frequency_basis is invalid")
+        if (self.frequency is None) != (self.frequency_basis == "unknown"):
+            raise ValueError("unknown frequency and frequency basis must agree")
+        for name in ("unit", "currency", "source_revision"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"{name} must be nonempty when supplied")
+        utc(self.retrieved_at)
+        try:
+            parsed = urlsplit(self.source_url)
+            valid_url = (parsed.scheme in {"http", "https"} and parsed.hostname
+                         and parsed.username is None and parsed.password is None)
+            names = [name for name, _ in parse_qsl(
+                parsed.query, keep_blank_values=True, max_num_fields=256,
+            )]
+        except ValueError:
+            raise ValueError("source_url must be a credential-free HTTP(S) URL") from None
+        if not valid_url or any(_credential_name(name) for name in names):
+            raise ValueError("source_url must be a credential-free HTTP(S) URL")
+        if not isinstance(self.observations, tuple) or not self.observations:
+            raise ValueError("observations must be a nonempty tuple")
+        if any(not isinstance(item, Observation) for item in self.observations):
+            raise ValueError("observations must contain Observation values")
+
+    def to_dict(self) -> dict:
+        """Return a deterministic JSON-compatible representation."""
+        return {
+            "schema_version": "time-series-v1",
+            "source_agency": self.source_agency,
+            "dataset_id": self.dataset_id,
+            "series_id": self.series_id,
+            "dimensions": dict(sorted(self.dimensions.items())),
+            "calendar": self.calendar,
+            "unit": self.unit,
+            "currency": self.currency,
+            "frequency": self.frequency,
+            "frequency_basis": self.frequency_basis,
+            "source_revision": self.source_revision,
+            "retrieved_at": self.retrieved_at.isoformat(),
+            "source_url": self.source_url,
+            "raw_ref": self.raw_ref,
+            "manifest_ref": self.manifest_ref,
+            "observations": [
+                {"period": item.period, "raw_value": item.raw_value,
+                 "status": item.status.value}
+                for item in self.observations
+            ],
+        }
 
 
 T = TypeVar("T")

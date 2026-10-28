@@ -22,6 +22,7 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.metadata.series import normalize_boj_series
 from macro_data_platform.orchestration import Orchestrator, StageInput, StageSpec, TaskPlan
 from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.history import HistoryStore
@@ -144,6 +145,14 @@ class BOJObservationEngine:
                                      if key in saved),
                                ("BOJ observation raw preservation failed.",), ErrorCode.INTERNAL_BUG)
         parsed.update({**saved, "mode": download.kind.value})
+        try:
+            normalize_boj_series(parsed)
+        except (TypeError, ValueError):
+            return StageResult(
+                StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
+                ("BOJ response did not satisfy the common time-series contract.",),
+                ErrorCode.SCHEMA_CHANGED,
+            )
         with measure_current("quality"):
             freshness = assess_freshness(
                 [row["date"] for row in parsed["observations"] if row["value"] is not None],
@@ -235,6 +244,14 @@ class BOJRangeObservationEngine:
                                ("BOJ observation raw preservation failed.",), ErrorCode.INTERNAL_BUG)
 
         parsed.update({**saved, "mode": download.kind.value})
+        try:
+            normalize_boj_series(parsed)
+        except (TypeError, ValueError):
+            return StageResult(
+                StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
+                ("BOJ response did not satisfy the common time-series contract.",),
+                ErrorCode.SCHEMA_CHANGED,
+            )
         with measure_current("quality"):
             freshness = assess_freshness(
                 [row["date"] for row in parsed["observations"] if row["value"] is not None],
