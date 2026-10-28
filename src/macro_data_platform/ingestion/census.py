@@ -8,6 +8,7 @@ from macro_data_platform.connectors.statistical_http import ApiDownload, SourceF
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.statistical_quality import validate_census_result
+from macro_data_platform.metadata.series import normalize_census_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
 
@@ -72,6 +73,14 @@ class CensusEngine:
             return StageResult(StageStatus.FAILED_TERMINAL, error_code=ErrorCode.INTERNAL_BUG,
                                warnings=("Census raw response preservation failed.",))
         parsed.update({**saved, "mode": download.kind.value})
+        try:
+            normalize_census_series(parsed)
+        except (TypeError, ValueError):
+            return StageResult(
+                StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
+                ("Census response did not satisfy the common time-series contract.",),
+                ErrorCode.SCHEMA_CHANGED,
+            )
         quality = validate_census_result(
             parsed, saved["source_change_status"], as_of=self.clock(),
             freshness_policy=self.freshness_policy,

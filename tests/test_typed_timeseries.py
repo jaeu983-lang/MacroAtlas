@@ -8,7 +8,9 @@ from macro_data_platform.contracts import (
     TimeSeries,
 )
 from macro_data_platform.metadata.series import (
+    normalize_bls_series,
     normalize_boj_series,
+    normalize_census_series,
     normalize_worldbank_series,
 )
 
@@ -38,8 +40,8 @@ def test_common_contract_keeps_zero_and_missing_distinct_and_serializes_stably()
     assert serialized["schema_version"] == "time-series-v1"
     assert serialized["dimensions"] == {"country": "CA"}
     assert serialized["observations"] == [
-        {"period": "2025", "raw_value": 0, "status": "observed"},
-        {"period": "2024", "raw_value": None, "status": "missing"},
+        {"period": "2025", "raw_value": 0, "status": "observed", "source_period": None},
+        {"period": "2024", "raw_value": None, "status": "missing", "source_period": None},
     ]
     with pytest.raises(TypeError):
         series.dimensions["country"] = "US"
@@ -114,3 +116,68 @@ def test_boj_adapter_keeps_source_unit_and_daily_frequency():
     assert series.frequency == "daily"
     assert series.frequency_basis == "source_metadata"
     assert series.observations[1].status == ObservationStatus.MISSING
+
+
+def test_bls_adapter_preserves_source_period_codes_and_unknown_metadata():
+    series, = normalize_bls_series({
+        "source_agency": "U.S. Bureau of Labor Statistics", "dataset_id": None,
+        "series_ids": ["CUUR0000SA0"], "unit": None, "frequency": None,
+        "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "raw_path": "data/raw/bls.json", "manifest_path": "data/raw/bls.manifest.json",
+        "observations": [{"seriesID": "CUUR0000SA0", "data": [
+            {"year": "2024", "period": "M01", "value": "0"},
+            {"year": "2024", "period": "M02", "value": ""},
+        ]}],
+    })
+
+    assert series.dataset_id is None
+    assert series.series_id == "CUUR0000SA0"
+    assert series.frequency == "monthly"
+    assert series.frequency_basis == "period_format"
+    assert series.observations[0].period == "2024-01"
+    assert series.observations[0].source_period == "2024:M01"
+    assert series.observations[0].raw_value == "0"
+    assert series.observations[0].status == ObservationStatus.OBSERVED
+    assert series.observations[1].raw_value == ""
+    assert series.observations[1].status == ObservationStatus.MISSING
+    assert series.unit is None and series.currency is None
+
+
+def test_bls_adapter_marks_mixed_annual_average_and_month_periods_unknown():
+    series, = normalize_bls_series({
+        "source_agency": "U.S. Bureau of Labor Statistics", "dataset_id": None,
+        "series_ids": ["CUUR0000SA0"], "unit": None, "frequency": None,
+        "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "raw_path": "data/raw/bls.json", "manifest_path": "data/raw/bls.manifest.json",
+        "observations": [{"seriesID": "CUUR0000SA0", "data": [
+            {"year": "2024", "period": "M01", "value": "308.417"},
+            {"year": "2024", "period": "M13", "value": "310.000"},
+        ]}],
+    })
+
+    assert series.frequency is None
+    assert series.frequency_basis == "unknown"
+    assert [row.source_period for row in series.observations] == ["2024:M01", "2024:M13"]
+
+
+def test_census_adapter_keeps_each_estimate_variable_and_geography_separate():
+    series, = normalize_census_series({
+        "source_agency": "U.S. Census Bureau", "dataset_id": "acs/acs1", "year": 2024,
+        "variable_ids": ["NAME", "B01001_001E"], "geography": "us:1",
+        "geography_dimensions": {"us": "1"}, "unit": None,
+        "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.census.gov/data/2024/acs/acs1",
+        "raw_path": "data/raw/census.json", "manifest_path": "data/raw/census.manifest.json",
+        "observations": [{"NAME": "United States", "us": "1", "B01001_001E": "0"}],
+    })
+
+    assert series.dataset_id == "acs/acs1"
+    assert series.series_id == "B01001_001E"
+    assert series.dimensions == {"us": "1"}
+    assert series.observations[0].period == "2024"
+    assert series.observations[0].source_period == "2024"
+    assert series.observations[0].raw_value == "0"
+    assert series.observations[0].status == ObservationStatus.OBSERVED
+    assert series.frequency is None and series.unit is None and series.currency is None
