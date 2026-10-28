@@ -22,6 +22,7 @@ def test_simulated_evidence_measures_both_policies_without_claiming_user_or_gate
     report = compare(corpus, cases, expected)
     assert report["gate_evidence"] is True and report["gate_passed"] is False
     assert report["origin"] == "ai_simulated" and report["human_observed"] is False
+    assert report["review_independence"] == "same_assistant" and report["reviewer_id"] == "codex-gpt6"
     assert report["measurements"]["baseline"]["matches"] == 1
     assert report["measurements"]["candidate"]["matches"] == 2
     assert {"holdout", "downstream_actions", "false_exact", "non_target_regression", "split_leakage",
@@ -30,7 +31,7 @@ def test_simulated_evidence_measures_both_policies_without_claiming_user_or_gate
 
 def test_simulated_cases_cannot_be_disguised_as_holdout_or_human():
     corpus, cases, expected = inputs()
-    for change in ({"split": "holdout"}, {"human_observed": True}):
+    for change in ({"split": "holdout"}, {"human_observed": True}, {"decision": "rejected"}):
         with pytest.raises(ValueError, match="AI-simulated"):
             compare(corpus, cases, {**expected, **change})
     bad = deepcopy(cases)

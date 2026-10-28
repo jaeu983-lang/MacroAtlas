@@ -5,6 +5,10 @@
   "human_observed": false,
   "reviewer_type": "ai_assistant",
   "reviewer_model": "GPT-6",
+  "reviewer_id": "codex-gpt6",
+  "review_independence": "same_assistant",
+  "reviewed_at": "2026-10-28T12:22:29+00:00",
+  "decision": "accepted",
   "cases": [
     {
       "case_id": "gpt-synthetic-gdp-per-capita-001",

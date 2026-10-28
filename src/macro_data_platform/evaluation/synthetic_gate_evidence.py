@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter_ns
 
@@ -15,14 +16,24 @@ from macro_data_platform.workflow_contracts import DataRequest
 def compare(corpus, cases, expectations):
     if (not isinstance(cases, list) or not 1 <= len(cases) <= 500 or not isinstance(expectations, dict)
             or set(expectations) != {"schema_version", "split", "origin", "human_observed",
-                                     "reviewer_type", "reviewer_model", "cases"}
+                                     "reviewer_type", "reviewer_model", "reviewer_id", "reviewed_at",
+                                     "review_independence", "decision", "cases"}
             or type(expectations["schema_version"]) is not int or expectations["schema_version"] != 1
             or expectations["split"] != "development"
             or expectations["origin"] != "ai_simulated" or expectations["human_observed"] is not False
             or expectations["reviewer_type"] != "ai_assistant"
             or not isinstance(expectations["reviewer_model"], str)
-            or not expectations["reviewer_model"].strip() or not isinstance(expectations["cases"], list)):
+            or not expectations["reviewer_model"].strip()
+            or not isinstance(expectations["reviewer_id"], str) or not expectations["reviewer_id"].strip()
+            or expectations["review_independence"] not in {"same_assistant", "independent_ai"}
+            or expectations["decision"] != "accepted" or not isinstance(expectations["cases"], list)):
         raise ValueError("invalid AI-simulated development evidence")
+    try:
+        reviewed_at = datetime.fromisoformat(expectations["reviewed_at"])
+        if reviewed_at.tzinfo is None or reviewed_at.utcoffset() != UTC.utcoffset(reviewed_at):
+            raise ValueError
+    except (ValueError, TypeError):
+        raise ValueError("review time must be UTC") from None
     by_id = {}
     for case in cases:
         _validate(case)
@@ -70,7 +81,9 @@ def compare(corpus, cases, expectations):
                                          separators=(",", ":")).encode()).hexdigest()
     return {"status": "AI_SIMULATED_DEVELOPMENT_EVIDENCE", "origin": "ai_simulated",
             "human_observed": False, "reviewer_type": expectations["reviewer_type"],
-            "reviewer_model": expectations["reviewer_model"], "split": "development",
+            "reviewer_model": expectations["reviewer_model"], "reviewer_id": expectations["reviewer_id"],
+            "reviewed_at": expectations["reviewed_at"],
+            "review_independence": expectations["review_independence"], "split": "development",
             "gate_evidence": True, "gate_passed": False,
             "case_sha256": digest(cases), "expectations_sha256": digest(expectations),
             "catalog_sha256": corpus.catalog_sha256, "measurements": measurements,
