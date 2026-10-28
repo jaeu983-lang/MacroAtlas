@@ -206,7 +206,7 @@ def test_engine_validates_explicit_file_series_mapping_without_guessing_metadata
     inbox = settings._inside("data/inbox")
     inbox.mkdir(parents=True)
     (inbox / "series.csv").write_text(
-        "year,value,country\n2020,0,USA\n2021,,USA\n", encoding="utf-8",
+        "year,value,country\n2025,0,USA\n2026,,USA\n", encoding="utf-8",
     )
     request = StageInput("typed-file", "map an explicit series", "tabular_file", {
         "relative_path": "data/inbox/series.csv", "format": "csv",
@@ -219,7 +219,7 @@ def test_engine_validates_explicit_file_series_mapping_without_guessing_metadata
         },
     }, None, ())
 
-    result = TabularFileEngine(settings).run(request)
+    result = TabularFileEngine(settings, clock=lambda: NOW).run(request)
 
     assert result.status is StageStatus.SUCCEEDED
     contract = result.payload["series_contract"]
@@ -234,6 +234,107 @@ def test_engine_validates_explicit_file_series_mapping_without_guessing_metadata
     assert contract["raw_ref"] == result.payload["raw_path"]
     assert contract["manifest_ref"] == result.payload["manifest_path"]
     assert result.payload["source_url"] is None
+    assert result.payload["quality"]["freshness"]["status"] == "FRESH"
+    assert result.payload["quality"]["freshness"]["frequency_basis"] == "request_contract"
+    assert result.payload["quality"]["freshness"]["latest_period"] == "2025"
+
+
+def test_stale_explicit_file_series_is_archived_but_requires_review(tmp_path):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "old-series.csv").write_text("year,value\n2020,42\n", encoding="utf-8")
+    request = StageInput("stale-file", "map stale series", "tabular_file", {
+        "relative_path": "data/inbox/old-series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "GDP", "period_column": "year", "value_column": "value",
+            "frequency": "annual",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings, clock=lambda: NOW).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.error_code.value == "QUALITY_FAILURE"
+    assert result.payload["quality"]["freshness"]["status"] == "STALE"
+    assert result.payload["quality"]["freshness"]["latest_period"] == "2020"
+    assert result.payload["withheld_observation_count"] == 1
+    assert "observations" not in result.payload
+    assert result.payload["raw_path"]
+    assert (tmp_path / result.payload["raw_path"]).read_text() == "year,value\n2020,42\n"
+
+
+def test_explicit_file_series_without_frequency_is_unverified(tmp_path):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "unknown-series.csv").write_text("period,value\n2025,1\n", encoding="utf-8")
+    request = StageInput("unverified-file", "map unknown series", "tabular_file", {
+        "relative_path": "data/inbox/unknown-series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "UNKNOWN", "period_column": "period", "value_column": "value",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings, clock=lambda: NOW).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.payload["quality"]["freshness"]["status"] == "FRESHNESS_UNVERIFIED"
+    assert result.payload["quality"]["freshness"]["reason"] == "frequency_unknown"
+    assert result.payload["withheld_observation_count"] == 1
+
+
+def test_explicit_file_series_with_only_missing_values_has_no_freshness_anchor(tmp_path):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "missing-series.csv").write_text("year,value\n2025,\n", encoding="utf-8")
+    request = StageInput("missing-file", "map missing series", "tabular_file", {
+        "relative_path": "data/inbox/missing-series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "MISSING", "period_column": "year", "value_column": "value",
+            "frequency": "annual",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings, clock=lambda: NOW).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.payload["quality"]["freshness"]["status"] == "FRESHNESS_UNVERIFIED"
+    assert result.payload["quality"]["freshness"]["reason"] == "observation_period_missing"
+
+
+def test_file_series_override_without_linked_evidence_does_not_use_fallback(tmp_path):
+    from macro_data_platform.ingestion.freshness import FreshnessPolicy, series_key_override_key
+
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "series.csv").write_text("year,value\n2025,1\n", encoding="utf-8")
+    series_key = {
+        "source_agency": "Example Statistical Office",
+        "series_id": "GDP",
+        "dataset_id": "national-accounts",
+    }
+    override_key = series_key_override_key(series_key)
+    policy = FreshnessPolicy(series_overrides={override_key: 5000})
+    request = StageInput("override-file", "map override series", "tabular_file", {
+        "relative_path": "data/inbox/series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "GDP", "dataset_id": "national-accounts",
+            "period_column": "year", "value_column": "value", "frequency": "annual",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings, clock=lambda: NOW, freshness_policy=policy).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.payload["quality"]["freshness"]["status"] == "FRESHNESS_UNVERIFIED"
+    assert result.payload["quality"]["freshness"]["reason"] == "series_override_evidence_missing"
 
 
 def test_engine_preserves_file_but_rejects_invalid_series_mapping(tmp_path):

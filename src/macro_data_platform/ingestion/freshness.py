@@ -278,6 +278,7 @@ def assess_freshness(
     periods,
     *,
     frequency: str | None,
+    frequency_basis: str | None = None,
     as_of: datetime | date | None = None,
     series_id: str | None = None,
     series_key: Mapping[str, str] | None = None,
@@ -298,12 +299,22 @@ def assess_freshness(
     else:
         raise ValueError("as_of must be a date or timezone-aware datetime")
 
+    allowed_frequency_bases = {
+        None, "source_metadata", "request_contract", "period_format", "unknown",
+    }
+    if frequency_basis not in allowed_frequency_bases:
+        raise ValueError("frequency_basis is invalid")
     normalized_frequency = normalize_frequency(frequency)
-    frequency_basis = "source_metadata" if normalized_frequency else None
+    resolved_frequency_basis = (
+        frequency_basis if normalized_frequency and frequency_basis not in {None, "unknown"}
+        else "source_metadata" if normalized_frequency else None
+    )
     if normalized_frequency is None:
         normalized_frequency = frequency_from_period_format(period_format)
         if normalized_frequency is not None:
-            frequency_basis = "observation_period_format"
+            resolved_frequency_basis = "observation_period_format"
+        elif frequency_basis == "unknown":
+            resolved_frequency_basis = "unknown"
 
     maximum, override_key = policy.max_age_days(
         normalized_frequency, series_id=series_id, series_key=series_key
@@ -313,7 +324,7 @@ def assess_freshness(
         "policy_id": policy.policy_id,
         "policy_fingerprint_sha256": policy.fingerprint_sha256,
         "frequency": normalized_frequency,
-        "frequency_basis": frequency_basis,
+        "frequency_basis": resolved_frequency_basis,
         "policy_basis": None,
         "latest_period": None,
         "period_end": None,

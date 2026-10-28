@@ -1012,3 +1012,7 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 ## D-122 — Exact-series freshness override는 검토된 근거에 연결
 
 2026-10-28. Typed 시계열 adapter가 늘어도 계열별 최신성 한도는 실제 출처의 주기·release calendar·발표 지연 근거 없이 적용하면 안 된다. `FreshnessPolicy` v2는 override key에 `FreshnessEvidence`(근거 유형, HTTPS reference, captured SHA256/time, citation, review status)를 연결한다. 근거가 없거나 pending/rejected이면 그 override를 frequency fallback으로 대체하지 않고 해당 freshness를 `FRESHNESS_UNVERIFIED`로 멈춘다. Evidence의 `approved` 필드는 reviewer attestation을 기록할 뿐 reviewer 신원, 문서 URL과 digest의 일치, 독립 검토를 인증하지 않는다. URL을 fetch하지 않으며 현재 source-specific approved record도 추가하지 않았다. 따라서 동작 변화는 허위 override 허용을 fail-closed하는 정책 enforcement이고, Gate D 승격이나 Gate E 완료의 증거는 아니다. Gate E에는 공식 evidence 수집·hash 확인·검토 승인, file freshness, typed observations 저장/export, 실제 source별 calendar/lag fixtures가 계속 필요하다.
+
+## D-123 — 명시 매핑 파일 시계열에 freshness 적용
+
+2026-10-28. 기존 `TabularFileEngine`은 `series_mapping`이 주어진 파일을 `TimeSeries`로 구조 검증했지만 최신 관측기간 평가는 하지 않았다. 명시된 cadence와 `ObservationStatus.OBSERVED` 값의 최신 period만 공통 freshness evaluator에 전달한다. series identity는 source agency/dataset/series/dimensions를 포함한 canonical key를 만들어 exact override 결합에 사용한다. `FRESH`는 quality evidence를 결과에 포함하고, `STALE` 또는 `FRESHNESS_UNVERIFIED`는 archive/raw/manifest 참조를 보존하면서 `NEEDS_REVIEW`로 막는다. freshness가 없거나 cadence가 미상인 일반 unmapped 파일은 기존 수집 동작을 유지한다. 검증은 고정 clock/fixture 테스트이며 실제 기관 release calendar를 검증하지 않았다. Typed observations 자체의 영속화/export, source-specific approved evidence와 Gate E 완료 판정은 남아 있다.

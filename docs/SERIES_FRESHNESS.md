@@ -71,11 +71,13 @@ statistical outliers, or establish cross-source equivalence.
 
 ## Implemented paths and limits
 
-The shared evaluator is connected to the current World Bank, BLS, Census, and
-BOJ ingestion paths. CSV revalidation/export currently supports the World Bank
-and BOJ task formats. These are local deterministic tests and code-path
+The shared evaluator is connected to the current World Bank, BLS, Census, BOJ,
+and explicitly mapped local tabular-file paths. A file mapping must declare its
+period/value columns and cadence; the runtime does not infer these fields. A
+stale or unverified mapped file is preserved for review and does not complete
+successfully. CSV revalidation/export currently supports the World Bank and BOJ
+task formats. These are local deterministic tests and code-path
 coverage; they do not establish live API freshness behavior or validate each
-source's publication calendar. Bloomberg is not an integrated connector in
-this repository. Generic manually supplied tabular data also has no normalized
-series-frequency contract in the current implementation, so it is not covered
-by this gate.
+source's publication calendar. Unmapped generic tabular data has no normalized
+series-frequency contract and is not covered by this gate. Bloomberg is not an
+integrated connector in this repository.
