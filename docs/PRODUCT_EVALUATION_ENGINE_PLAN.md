@@ -26,6 +26,20 @@
 
 이 제한 bridge 구현은 fixture 기반으로 검증됐다. 실제 사용 관찰이나 36-case v2 corpus 변경을 뜻하지 않는다.
 
+### 피드백 원장과 주기적 AI 분류 — 미구현 요구
+
+`FeedbackStore.feedback_revisions`가 이전 질문을 포함하는 원본 append-only 원장이다. 새 피드백과 수정 revision은 계속 누적하며 분류나 엔진 승격 때문에 원문 revision을 덮어쓰거나 삭제하지 않는다. AI 분류는 별도 파생 저장소로, 원장과 분리된 `classification_run_id`와 source `(feedback_id, revision)` 링크를 갖는다. 기존 category 필드를 AI가 수정하지 않는다.
+
+분류 실행은 저장된 snapshot/watermark를 고정해 시작한다. 자유 태그와 비정형 요약을 허용하되, 개인정보를 제거한 입력만 사용하고 원문은 결과에 복사하지 않는다. 모델·prompt·taxonomy 버전, 입력 snapshot hash, 시작/완료 시각, 행별 처리시간을 기록하며 batch latency와 모델 사용량/비용은 로컬 snapshot·분류 후처리 시간과 분리한다. 표본이 충분할 때 p50/p95를 보고한다. 분류할 수 없는 행도 `unclassified` 결과로 남겨 누락시키지 않는다. 새로 들어온 행은 실행 중 snapshot에 섞지 않고 다음 run에서 처리한다.
+
+데이터 보존 수용 기준:
+- 입력은 현재 revision만이 아니라 snapshot에 포함된 각 feedback revision이다. 같은 질문이 revision에 반복되어도 조용히 deduplicate하지 않는다.
+- 입력 revision 수와 분류 결과 행 수가 같고, `(feedback_id, revision)` key 집합이 완전히 같아야 한다. 중복·누락은 0건이어야 한다. 실패·보류 행도 `unclassified`로 계수한다.
+- source row count와 canonical content hash를 실행 전후 대조한다. 분류 실행은 source table의 row, revision, text, original category를 바꾸지 않는다.
+- 분류 결과가 추가되므로 저장소 전체의 물리적 byte 수는 늘 수 있다. 보존해야 하는 불변조건은 원본 데이터의 양과 내용이 그대로이고, 파생 분류가 입력을 1:1로 덮는다는 점이다.
+
+분류는 우선 운영자가 명령한 배치로 가끔 실행한다. 이후 cadence가 필요해도 이전 batch와 결과를 보존하고 변경된 source revision만 새 snapshot에 넣는다. 실제 사용자 문구를 외부 AI 서비스로 보내는 정책은 현재 없다. 모델 연결 전에는 privacy scope, 승인된 model, 비용 한도와 보존 방식을 별도로 정해야 한다. 분류 결과도 사례·프롬프트·코드 변경을 자동 승인하거나 적용하지 않는다.
+
 통과 조건:
 - fixed corpus 36건, development/validation/holdout 각각 12건, 각 case type은 split마다 3건
 - 각 사례의 expected state·필드·후보·필수 근거·금지 행동·Excel 정책이 증거와 일치

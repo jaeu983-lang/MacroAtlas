@@ -4,9 +4,11 @@ This documentation covers three separate inputs: the original JSON-per-split
 scaffold in `evaluation/sets/`, the initial evidence-backed JSONL v1 corpus in
 `tests/fixtures/evaluation/v1/`, and the GPT-reviewed v2 corpus in
 `tests/fixtures/evaluation/v2/`. None is an automatic learner.
-`macro-feedback` keeps the append-only runtime feedback log; accepted feedback
+`macro-feedback` keeps an append-only feedback revision log; accepted feedback
 does not enter an evaluation corpus unless a reviewer creates, verifies, and
-privacy-clears a case explicitly.
+privacy-clears a case explicitly. Periodic AI categorization of prior revisions
+is not implemented. When added, classifications must be versioned derived data
+with exact one-to-one source revision coverage; the source log stays unchanged.
 Product requirements are in [PROJECT_PLAN.md](../PROJECT_PLAN.md); the current implementation order is in [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md).
 
 ## Current state
