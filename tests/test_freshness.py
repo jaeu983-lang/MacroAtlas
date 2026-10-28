@@ -27,6 +27,7 @@ def test_frequency_specific_threshold_boundaries(frequency, period, fresh, stale
     assert fresh_result["status"] == FreshnessStatus.FRESH
     assert stale_result["status"] == FreshnessStatus.STALE
     assert fresh_result["policy_id"] == DEFAULT_FRESHNESS_POLICY.policy_id
+    assert fresh_result["policy_basis"] == "frequency_fallback"
     assert len(fresh_result["policy_fingerprint_sha256"]) == 64
     assert fresh_result["age_days"] <= fresh_result["max_age_days"]
     assert stale_result["age_days"] > stale_result["max_age_days"]
@@ -71,6 +72,8 @@ def test_missing_or_invalid_freshness_evidence_is_unverified(
         periods, frequency=frequency, period_format=period_format, as_of=date(2026, 10, 24),
     )
     assert result["status"] == FreshnessStatus.FRESHNESS_UNVERIFIED
+    if reason in {"frequency_unknown", "frequency_tolerance_unconfigured"}:
+        assert result["policy_basis"] == "unconfigured"
     assert result["reason"] == reason
 
 
@@ -84,6 +87,7 @@ def test_per_series_override_takes_precedence_and_is_recorded():
     assert result["status"] == FreshnessStatus.FRESH
     assert result["max_age_days"] == 1500
     assert result["series_override_key"] == override_key
+    assert result["policy_basis"] == "series_override"
     assert result["policy_id"] == policy.policy_id
 
 
@@ -100,6 +104,7 @@ def test_series_id_override_precedes_series_key_override():
     assert result["status"] == FreshnessStatus.STALE
     assert result["series_override_key"] == "series_id:FXERD01"
     assert result["max_age_days"] == 1
+    assert result["policy_basis"] == "series_override"
 
 
 @pytest.mark.parametrize("value", [True, -1, 36501, 1.5])

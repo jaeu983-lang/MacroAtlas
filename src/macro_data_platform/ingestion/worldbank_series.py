@@ -18,6 +18,7 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.metadata.series import normalize_worldbank_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.raw_downloads import save_worldbank_download
@@ -74,6 +75,14 @@ class WorldBankSeriesEngine:
                                ErrorCode.INTERNAL_BUG)
 
         payload = {**parsed, **paths, "mode": download.kind.value}
+        try:
+            normalize_worldbank_series(payload)
+        except (TypeError, ValueError):
+            return StageResult(
+                StageStatus.NEEDS_REVIEW, payload, refs,
+                ("World Bank response did not satisfy the common time-series contract.",),
+                ErrorCode.SCHEMA_CHANGED,
+            )
         with measure_current("quality"):
             freshness = assess_freshness(
                 [row["date"] for row in parsed["observations"]

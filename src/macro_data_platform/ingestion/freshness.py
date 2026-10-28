@@ -200,6 +200,7 @@ def assess_freshness(
         "policy_fingerprint_sha256": policy.fingerprint_sha256,
         "frequency": normalized_frequency,
         "frequency_basis": frequency_basis,
+        "policy_basis": None,
         "latest_period": None,
         "period_end": None,
         "age_days": None,
@@ -209,11 +210,14 @@ def assess_freshness(
         "reason": None,
     }
     if normalized_frequency is None:
+        result["policy_basis"] = "unconfigured"
         result["reason"] = "frequency_unknown"
         return result
     if maximum is None:
+        result["policy_basis"] = "unconfigured"
         result["reason"] = "frequency_tolerance_unconfigured"
         return result
+    result["policy_basis"] = "series_override" if override_key else "frequency_fallback"
     if not isinstance(periods, (tuple, list)) or not periods:
         result["reason"] = "observation_period_missing"
         return result
