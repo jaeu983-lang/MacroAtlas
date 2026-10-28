@@ -974,3 +974,13 @@ BLS는 요청당 20개까지의 series ID와 최대 20년의 구간, Census는 A
 2026-10-28. PR #74에서 exact-ID BLS/Census collection CLI가 병합된 뒤에도 사용자가 검색 기능을 바로 실행할 수 없다는 점을 확인했다. 기존 `CandidateSearchEngine`을 `macroatlas search` 명령과 공통 EngineRegistry에 연결해 검색 요청·결과를 task history에 보존한다. 검색은 network를 사용하지 않고 고정 WDI seed와 이미 보존되어 hash가 검증된 BLS/Census metadata archive만 읽는다. 결과는 후보·근거·unknown 필드를 표시하며 자동 선택이나 수집은 하지 않는다.
 
 검색 알고리즘과 Gate C 정책은 변경하지 않는다. 전체 provider catalog 갱신, 한국어 의미검색, 후보 자동 선택, API 호출·raw write·export는 범위 밖이다. 기존 lexical rank가 `exact`여도 동등성 증명이 아니며, 사용자에게 `review_required` 등 검토 정보를 그대로 표시한다. 검색 query와 결과는 `data/catalog.sqlite`에 저장된다. Fixture 기준 CLI/search/registry 회귀로 검증하며 이는 live API 또는 전체 catalog 지원 증거가 아니다.
+
+## D-117 — World Bank WDI exact series의 제한 raw-only 경로
+
+2026-10-28. 사용자가 지원 경로가 지나치게 작다고 지적해, 기존 GDP 전용 검증을 일반 지표에 재사용하지 않고 `worldbank_series/1`을 별도 EngineRegistry adapter로 추가한다. `macroatlas collect worldbank-series`는 사용자가 country ISO3·WDI source ID 2·indicator ID·연도 범위를 모두 지정하고 `--live`를 명시해야 한다. 범위는 WDI의 단일 연간 시계열, 연속 1–10년, 1960–2100, 고정 공식 World Bank host, JSON 한 페이지·1 MiB로 제한한다. 요청은 공통 TaskPlan/Orchestrator/HistoryStore를 사용한다.
+
+원본 HTTP entity bytes와 요청 manifest를 덮어쓰지 않고 보존한다. parser는 응답 source/country/indicator/year identity, pagination, duplicate period, JSON number/null 상태만 확인하고 원 행·순서·빈 unit·unknown metadata를 유지한다. source semantics, unit, currency, frequency, immutable vintage는 추측하지 않는다. 공통 annual freshness 정책은 non-null 관측을 대상으로 적용하며 `STALE`/`FRESHNESS_UNVERIFIED` 행은 task result에서 보류한다. GDP-specific negative-value 검사, 후보 검색·자동 선택, CSV/XLSX 전달과 Gate D–G 판정은 이 경로에 포함하지 않는다.
+
+Fixture parser/engine/CLI와 query boundary 테스트를 수행했다. 이어서 제한 public API 확인으로 Canada `SP.POP.TOTL`, WDI source 2, 2024–2025를 한 번 요청해 task `390eeac8-2ed6-40cc-84e5-b2ea5900c488`에 보존했다. 2개 관측 행, 최신 period `2025`, age 301일, freshness `FRESH`, task `COMPLETED`였다. 응답 바이트와 manifest는 로컬 ignored `data/` 아래에 남아 있으며 commit하지 않는다. 이 한 건은 선택한 요청의 live 경로만 확인하며 다른 지표의 가용성·의미·이용 조건을 증명하지 않는다. 제품 Gate D–G는 바꾸지 않았다.
+
+실행 경계와 source documentation은 [WDI exact-series 연결 설명](connectors/WORLDBANK_SERIES.md)에 둔다. 기존 `connectors/WORLDBANK.md`는 frozen evaluation cases가 byte-level evidence로 참조하므로 수정하지 않는다.

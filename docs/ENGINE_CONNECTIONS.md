@@ -1,6 +1,6 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-28, PR #72가 병합된 기본 브랜치 `f1ff206` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+기준: 2026-10-28, PR #75가 병합된 기본 브랜치 `febe195` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
 transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
 별도이므로 전용 runner를 유지한다.
@@ -52,6 +52,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | 진입점 | 저장되는 stage / 실제 호출 | 출력·다음 연결 |
 |---|---|---|
 | `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → 공통 EngineRegistry → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
+| `collect worldbank-series` | exact country/source/indicator/year validation → saved `TaskPlan` → 공통 EngineRegistry → `worldbank_series/1` | 1 series·1–10 annual periods. HTTP entity raw + manifest, identity/schema/freshness 검증; unit/meaning unknown. CSV/XLSX export 미지원 |
 | `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
 | `collect bls` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `bls/1` | exact series IDs·연도 범위, credential-free raw/manifest, 제한 quality/freshness result; catalogue semantics는 unknown으로 유지 |
 | `collect census` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `census/1` | acs/acs1·acs/acs5, 지정 variable·geography, credential-free raw/manifest; 전체 variable catalog/search는 없음 |

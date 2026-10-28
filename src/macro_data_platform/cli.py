@@ -12,7 +12,11 @@ from macro_data_platform.config import Settings
 from macro_data_platform.connectors.bls import BLSQuery
 from macro_data_platform.connectors.boj import BOJQuery
 from macro_data_platform.connectors.census import CensusQuery
-from macro_data_platform.connectors.worldbank import API_DOCS, GDPQuery
+from macro_data_platform.connectors.worldbank import (
+    API_DOCS,
+    GDPQuery,
+    WorldBankSeriesQuery,
+)
 from macro_data_platform.contracts import EvidenceKind
 from macro_data_platform.ingestion.boj import (
     build_boj_plan,
@@ -57,6 +61,17 @@ def build_parser() -> argparse.ArgumentParser:
     worldbank.add_argument("--end-year", type=int, required=True)
     worldbank.add_argument("--live", action="store_true", required=True,
                             help="explicitly permit the fixed public API request")
+    worldbank_series = sources.add_parser(
+        "worldbank-series", help="one explicitly selected annual World Bank series (raw only)",
+    )
+    worldbank_series.add_argument("--country", required=True, metavar="ISO3")
+    worldbank_series.add_argument("--indicator", required=True, metavar="ID")
+    worldbank_series.add_argument("--source-id", required=True, metavar="2",
+                                  help="World Development Indicators source ID (currently 2)")
+    worldbank_series.add_argument("--start-year", type=int, required=True)
+    worldbank_series.add_argument("--end-year", type=int, required=True)
+    worldbank_series.add_argument("--live", action="store_true", required=True,
+                                  help="explicitly permit this public API request")
     boj = sources.add_parser("boj-fxer", help="BOJ FM08 FXERD01 monthly observations")
     boj.add_argument("--month", required=True, help="one month as YYYYMM")
     boj.add_argument("--live", action="store_true", required=True,
@@ -204,12 +219,14 @@ def _worldbank_task(store: HistoryStore, settings: Settings,
 
 def _run_registered_api_query(store: HistoryStore, settings: Settings, engine: str,
                               input_data: dict, *, bls_transport=None, census_transport=None,
+                              worldbank_transport=None,
                               clock=lambda: datetime.now(UTC), freshness_policy=None) -> dict:
-    """Persist and run one locally validated BLS/Census query through the shared registry."""
+    """Persist and run one bounded source query through the shared engine registry."""
     plan = TaskPlan((StageSpec("collect", engine, input_data),))
     registry = build_engine_registry(
         settings, store, bls_transport=bls_transport, census_transport=census_transport,
-        clock=clock, freshness_policy=freshness_policy,
+        worldbank_transport=worldbank_transport, clock=clock,
+        freshness_policy=freshness_policy,
     )
     runner = registry.orchestrator_for(plan=plan)
     if engine == "bls":
@@ -218,6 +235,10 @@ def _run_registered_api_query(store: HistoryStore, settings: Settings, engine: s
     elif engine == "census":
         label = (f"Census {input_data['dataset']} {input_data['year']}, "
                  f"{input_data['geography']}")
+    elif engine == "worldbank_series":
+        label = (f"World Bank source {input_data['source_id']} "
+                 f"{input_data['country_iso3']} {input_data['indicator_id']}, "
+                 f"{input_data['start_year']}:{input_data['end_year']}")
     else:
         raise ValueError("unsupported statistical API engine")
     task = runner.create(label)
@@ -246,6 +267,12 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
     elif isinstance(duration_estimate, dict):
         summary["duration_estimate"] = duration_estimate
     if isinstance(input_data, dict):
+        if isinstance(input_data.get("indicator_id"), str):
+            summary["source"] = "worldbank"
+            summary["source_id"] = input_data.get("source_id")
+            summary["country"] = input_data.get("country_iso3")
+            summary["indicator_id"] = input_data["indicator_id"]
+            summary["year_range"] = [input_data.get("start_year"), input_data.get("end_year")]
         if isinstance(input_data.get("series_ids"), list):
             summary["series_ids"] = input_data["series_ids"]
             summary["year_range"] = [input_data.get("start_year"), input_data.get("end_year")]
@@ -626,6 +653,22 @@ def dispatch(args, *, boj_transport=None, bls_transport=None, census_transport=N
             freshness_policy=freshness_policy,
         )
         return _exit_code(doc := dispatcher.run(task_id)), _summary(doc)
+
+    if args.command == "collect" and args.source == "worldbank-series":
+        query = WorldBankSeriesQuery(
+            args.country, args.indicator, args.source_id, args.start_year, args.end_year,
+        )
+        doc = _run_registered_api_query(
+            store, settings, "worldbank_series", {
+                "country_iso3": query.country_iso3,
+                "indicator_id": query.indicator_id,
+                "source_id": query.source_id,
+                "start_year": query.start_year,
+                "end_year": query.end_year,
+            }, worldbank_transport=worldbank_transport, clock=clock,
+            freshness_policy=freshness_policy,
+        )
+        return _exit_code(doc), _summary(doc)
 
     if args.command == "collect" and args.source == "boj-fxer":
         query = BOJQuery(args.month)
