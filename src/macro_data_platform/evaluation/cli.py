@@ -53,6 +53,12 @@ def main(argv=None):
     compare.add_argument(
         "--candidate-min-score", type=float, default=DEFAULT_CANDIDATE_MINIMUM_SCORE
     )
+    compare.add_argument(
+        "--candidate-policy",
+        choices=("threshold-v2", "semantic-v1"),
+        default="threshold-v2",
+    )
+    compare.add_argument("--timing-repetitions", type=int, default=0)
     validate_search = commands.add_parser(
         "search-validation", help="compare frozen policy behavior on validation only"
     )
@@ -63,6 +69,12 @@ def main(argv=None):
     validate_search.add_argument(
         "--candidate-min-score", type=float, default=DEFAULT_CANDIDATE_MINIMUM_SCORE
     )
+    validate_search.add_argument(
+        "--candidate-policy",
+        choices=("threshold-v2", "semantic-v1"),
+        default="threshold-v2",
+    )
+    validate_search.add_argument("--timing-repetitions", type=int, default=0)
     feedback_draft = commands.add_parser(
         "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
     )
@@ -114,14 +126,21 @@ def main(argv=None):
                 report = evaluate_development(loaded)
                 ready = True
             elif args.command == "search-compare":
+                semantic = args.candidate_policy == "semantic-v1"
                 try:
                     report = compare_development_policies(
                         loaded,
                         SearchPolicy(version="lexical-baseline-v1"),
                         SearchPolicy(
-                            version=DEFAULT_CANDIDATE_POLICY_VERSION,
+                            version=(
+                                "semantic-disambiguation-v1"
+                                if semantic
+                                else DEFAULT_CANDIDATE_POLICY_VERSION
+                            ),
                             minimum_score=args.candidate_min_score,
+                            semantic_disambiguation=semantic,
                         ),
+                        timing_repetitions=args.timing_repetitions,
                     )
                 except ValueError as exc:
                     report = {"status": "INVALID_POLICY", "errors": [str(exc)]}
@@ -129,14 +148,21 @@ def main(argv=None):
                 else:
                     ready = True
             elif args.command == "search-validation":
+                semantic = args.candidate_policy == "semantic-v1"
                 try:
                     report = compare_validation_policies(
                         loaded,
                         SearchPolicy(version="lexical-baseline-v1"),
                         SearchPolicy(
-                            version=DEFAULT_CANDIDATE_POLICY_VERSION,
+                            version=(
+                                "semantic-disambiguation-v1"
+                                if semantic
+                                else DEFAULT_CANDIDATE_POLICY_VERSION
+                            ),
                             minimum_score=args.candidate_min_score,
+                            semantic_disambiguation=semantic,
                         ),
+                        timing_repetitions=args.timing_repetitions,
                     )
                 except ValueError as exc:
                     report = {"status": "INVALID_POLICY", "errors": [str(exc)]}

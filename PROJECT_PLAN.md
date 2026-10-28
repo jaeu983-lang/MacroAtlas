@@ -62,7 +62,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
 | 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용, 승인 피드백의 비식별 case seed CLI | 자동 사례 생성·corpus 편입·코드 수정·공통 규칙 승격 없음. 실제 사용자 피드백 seed는 아직 생성되지 않음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
-| 평가·사례 | legacy scaffold 6건, v1 이력 9/36 BLOCKED, GPT 검토 v2 36/36, development/validation ranking 비교기 | AI 합성 사례도 출처를 명시해 Gate 평가 증거로 사용한다. C 전체 gate는 downstream 금지 행동과 holdout 단회 확인 등이 빠져 미통과. D promotion/rollback 기록은 미구현 |
+| 평가·사례 | legacy scaffold 6건, v1 이력 9/36 BLOCKED, GPT 검토 v2 36/36, 검색·확인경계 trace·성능 예산 평가기와 one-time holdout runner | 후보는 평가 전용이다. development/validation 자격 결과와 holdout 단회 결과가 모두 확인되기 전까지 C 미통과. D promotion/rollback 기록은 미구현 |
 
 기존 source gate A와 D는 해당 범위에서 통과했고 B/C/E는 제한 범위 판정이다. 이는 아래 제품 평가 A–G와 다른 구분이며, 현재 구현 상태는 구현 현황표를 따른다.
 
@@ -119,7 +119,7 @@ flowchart LR
 | Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | monotonic stage/선택 phase 계측, 별도 privacy-safe 표본 DB, knowledge latency와 읽기 전용 보고기를 구현한다. 자연 API 기준선과 일부 leaf timing은 미수집이며 fixture 반복 자료로 p95가 20개를 넘기기 전 확정하지 않는다. |
 | Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
-| Evaluation·rule review | 같은 버전 사례로 검색 결과를 비교하고 검토 provenance와 적용·rollback을 기록한다. | v2 사례 36건과 development/validation 검색 비교기는 구현됐다. C는 downstream 금지행동·frozen holdout·시간/비용 기준이 빠져 미통과이고, D의 promotion/rollback ledger는 미구현이다. 실제 사용자 관찰 사례는 없다. |
+| Evaluation·rule review | 같은 버전 사례로 검색 결과와 확인 전 수집 계획 경계를 비교하고 적용·rollback을 기록한다. | development/validation, proposal-to-plan 거부 trace, 고정 로컬 p50/p95·표본·비용 한도, hash 고정 one-time holdout runner가 구현됐다. 후보는 평가 전용이며 holdout 결과 전까지 C 미통과다. D의 promotion/rollback ledger는 미구현이다. 실제 사용자 관찰 사례는 없다. |
 | Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
 | Developer maintenance workflow | 저장소 개선 후보를 격리 branch/worktree에서 수정·검증해 사람이 검토할 PR로 만든다. | 제품 데이터 Orchestrator와 별도 control plane. 일부 QA/updater 흐름은 있으나 자동 merge·배포는 없음. |
 
@@ -165,7 +165,7 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 - raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
 - 추후 AI 분류는 운영자가 고정한 지시문을 사용하고 원장과 분리된 versioned 파생 결과만 쓴다. snapshot의 모든 `(feedback_id, revision)`을 정확히 한 번 포함하며 입력/출력 count·key set·canonical hash를 대조한다. 중복 질문 revision을 deduplicate하거나 누락 행을 버리지 않으며 분류 불가 행은 `unclassified`로 보존한다. 분류 실행은 원문 revision/category나 지시문을 수정하지 않는다. **AI 지시문을 바꾸는 일은 자동화하지 않는다. 운영자가 별도로 수정하라고 명시한 경우에만 사람이 수동으로 지시문을 편집·버전 고정하고, 동일한 고정 사례로 변경 전후의 답변 품질·지시 준수·실행 시간 및 모델 비용을 비교한다. 적용 여부는 운영자가 결정한다.** 모델 호출 시간·비용과 로컬 snapshot/검증 시간은 분리 계측한다. 외부 모델 전송, 스케줄러, 모델 자격증명은 별도 승인 전 미구현이다.
 
-FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feedback-draft`는 ID와 revision을 지정한 현재 수락된 `user_instruction`만 받고, 사용자가 입력한 sanitized question과 명시 privacy attestation을 포함한 local development seed를 만든다. 원문 피드백, task ID, scope, evidence는 복사하지 않으며 초안은 전체 EvaluationCase가 아니고 corpus에 자동 추가되지 않는다. 실제 사용자 피드백은 아직 seed하지 않았다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. Search baseline/candidate의 development·validation 비교기는 구현됐으나 전체 C Gate는 downstream 행동 trace와 frozen holdout 확인 등이 빠져 미통과다. D 승격·rollback record는 미구현이다. 자세한 case schema는 사례 계약 문서를 따른다.
+FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feedback-draft`는 ID와 revision을 지정한 현재 수락된 `user_instruction`만 받고, 사용자가 입력한 sanitized question과 명시 privacy attestation을 포함한 local development seed를 만든다. 원문 피드백, task ID, scope, evidence는 복사하지 않으며 초안은 전체 EvaluationCase가 아니고 corpus에 자동 추가되지 않는다. 실제 사용자 피드백은 아직 seed하지 않았다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. Gate C는 후보별 순위·기대 상태·금지 후보와 false-exact, 실제 collection-plan builder의 확인 누락 거부, 로컬 latency/cost를 측정하고 hash 고정된 holdout을 한 번 평가한다. validation은 후보 조정에 사용돼 blind evidence가 아니며 공개 저장소의 holdout도 비밀은 아니다. holdout 단회 결과 전까지 C 미통과이고, D 승격·rollback record는 미구현이다. 자세한 case schema는 사례 계약 문서를 따른다.
 
 ## 8. 지식 검색과 제한적 재사용
 
@@ -197,7 +197,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계하지 않고 **2026-10-28 기본 브랜치 `569cbd3`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-28 기본 브랜치 `072d3d3`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다.
 
 선행 순서는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 공통 시계열·최신성(E) → 원자료 XLSX(F) → 비교 XLSX(G) → 분석가 관찰`이다. 한 Gate의 완료 조건을 충족하지 못하면 그 Gate의 상태를 제한/미완료로 남기고 후속 제품 Gate를 완료 처리하지 않는다. 구현 checkpoint나 테스트 통과만으로 Gate 승격을 주장하지 않는다.
 

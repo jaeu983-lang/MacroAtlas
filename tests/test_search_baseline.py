@@ -45,7 +45,20 @@ def test_development_baseline_runs_all_variants_without_validation_or_holdout(mo
     assert safety["explicit_confirmation_required"] == len(expected)
     assert safety["confirmation_bypasses"] == 0
     assert safety["selection_or_collection_payloads"] == 0
-    assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
+    prohibited = report["prohibited_action_measurement"]
+    assert prohibited["status"] == "PASS"
+    assert prohibited["trace"]["unconfirmed_collection_plan_attempts"] == len(expected)
+    assert prohibited["trace"]["blocked_before_task_creation"] == len(expected)
+    assert prohibited["trace"]["unconfirmed_collection_plans_created"] == 0
+    actions = prohibited["trace"]["prohibited_actions"]
+    assert all(item["status"] == "PASS" for item in actions.values())
+    assert actions["infer_unknown_unit_frequency_definition_or_availability"][
+        "unknown_fields_inferred"
+    ] == 0
+    assert actions["overwrite_raw_data_or_existing_exports"]["unreached_queries"] == len(expected)
+    assert actions["merge_incompatible_series_or_fill_missing_values"][
+        "unreached_queries"
+    ] == len(expected)
 
 
 def test_baseline_is_repeatable_and_reports_unrelated_candidates():
@@ -126,7 +139,7 @@ def test_abstention_and_unmatched_behavior_are_reported_separately(monkeypatch):
     assert unrelated["unrelated_abstentions"] == unrelated["unrelated_queries"]
     assert unrelated["unrelated_with_candidates"] == 0
     assert rankable["relevant_missing_queries"] == rankable["rankable_queries"]
-    assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
+    assert report["prohibited_action_measurement"]["status"] == "PASS"
     assert report["execution_boundary"].startswith("fixed_catalog_candidate_search_stage")
 
 
@@ -150,6 +163,22 @@ def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):
     assert group["forbidden_candidate_returns"] == len(case.query_variants)
     assert group["forbidden_exact_candidates"] == len(case.query_variants)
     assert group["expected_state_matches"] == 0
+
+
+def test_unconfirmed_collection_boundary_regression_marks_gate_c_failed(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.build_confirmed_collection_plan",
+        lambda proposal, settings: object(),
+    )
+
+    report = evaluate_development(corpus)
+
+    assert report["prohibited_action_measurement"]["status"] == "FAIL"
+    assert (
+        report["prohibited_action_measurement"]["trace"]["unconfirmed_collection_plans_created"]
+        == report["prohibited_action_measurement"]["trace"]["search_queries"]
+    )
 
 
 def test_candidate_policy_improves_unrelated_without_regressing_development_metrics():
@@ -228,5 +257,30 @@ def test_validation_comparison_never_runs_holdout_and_marks_it_unmeasured(monkey
     assert report["baseline"]["input_sha256"] == report["candidate"]["input_sha256"]
     import pytest
 
-    with pytest.raises(ValueError, match="Only development and validation"):
+    with pytest.raises(ValueError, match="frozen one-time runner"):
         evaluate_split(corpus, split="holdout")
+
+
+def test_gate_c_timing_is_paired_and_reports_per_case_type_samples():
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    report = compare_development_policies(
+        corpus,
+        SearchPolicy(version="baseline"),
+        SearchPolicy(version="semantic-v1", minimum_score=37.5, semantic_disambiguation=True),
+        timing_repetitions=2,
+    )
+
+    timing = report["timing"]
+    assert timing["repetitions"] == 2
+    assert timing["samples_per_policy_equal"] is True
+    assert timing["external_calls"] == 0
+    assert timing["estimated_external_cost_usd"] == 0
+    assert timing["by_policy"]["baseline"]["sample_count"] == 68
+    assert timing["by_policy"]["candidate"]["sample_count"] == 68
+    assert set(timing["by_policy"]["candidate"]["by_case_type"]) == {
+        "rankable",
+        "near_match",
+        "insufficient_evidence",
+        "unrelated",
+    }
+    assert "timing_cost_budget" not in report["not_measured"]
