@@ -1,0 +1,85 @@
+[
+  {
+    "case_id": "chatgpt-engine-smoke-gdp-total-001",
+    "question": "What was U.S. GDP in current U.S. dollars in 2024?",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": [
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.KD",
+          "score": 54.55,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.PP.CD",
+          "score": 54.55,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:NY.GDP.PCAP.CD",
+          "score": 54.55,
+          "match_status": "review_required"
+        }
+      ]
+    },
+    "answer_origin": "engine",
+    "outcome": "needs_correction",
+    "feedback": "The requested nominal total GDP series is absent from the top results. Keep the result unresolved and ask for review; do not substitute another GDP measure.",
+    "generator": "GPT-6-in-conversation",
+    "engine_version": "lexical-min-score-candidate-v2",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  },
+  {
+    "case_id": "chatgpt-engine-smoke-cpi-rate-001",
+    "question": "How fast did consumer prices rise in the United States in 2024?",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": [
+        {
+          "candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+          "score": 44.44,
+          "match_status": "review_required"
+        },
+        {
+          "candidate_id": "worldbank:2:USA:FP.CPI.TOTL.ZG",
+          "score": 44.44,
+          "match_status": "review_required"
+        }
+      ]
+    },
+    "answer_origin": "engine",
+    "outcome": "needs_correction",
+    "feedback": "The request asks for a rate, but the index and inflation-rate series tie. State the ambiguity and request clarification instead of treating the first candidate as a resolved answer.",
+    "generator": "GPT-6-in-conversation",
+    "engine_version": "lexical-min-score-candidate-v2",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  },
+  {
+    "case_id": "chatgpt-engine-smoke-boj-policy-rate-001",
+    "question": "What was the Bank of Japan policy interest rate in January 2024?",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": []
+    },
+    "answer_origin": "engine",
+    "outcome": "answered",
+    "feedback": null,
+    "generator": "GPT-6-in-conversation",
+    "engine_version": "lexical-min-score-candidate-v2",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  },
+  {
+    "case_id": "chatgpt-engine-smoke-japan-gdp-001",
+    "question": "What was Japan's GDP per person in 2023, in yen?",
+    "observed_answer": {
+      "scope": "candidate_search_only",
+      "results": []
+    },
+    "answer_origin": "engine",
+    "outcome": "answered",
+    "feedback": null,
+    "generator": "GPT-6-in-conversation",
+    "engine_version": "lexical-min-score-candidate-v2",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448"
+  }
+]

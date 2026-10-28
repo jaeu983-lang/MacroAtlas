@@ -119,7 +119,7 @@ flowchart LR
 | Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | monotonic stage/선택 phase 계측, 별도 privacy-safe 표본 DB, knowledge latency와 읽기 전용 보고기를 구현한다. 자연 API 기준선과 일부 leaf timing은 미수집이며 fixture 반복 자료로 p95가 20개를 넘기기 전 확정하지 않는다. |
 | Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
-| Evaluation·rule review | 같은 버전 사례로 검색 결과를 비교하고 검토 provenance와 적용·rollback을 기록한다. | legacy scaffold 6건, 역사적 v1 9/36 BLOCKED, GPT-reviewed v2 36/36 READY. 검색 evaluator와 promotion record는 미구현이며 사용자 관찰형 사례도 없다. |
+| Evaluation·rule review | 같은 버전 사례로 검색 결과를 비교하고 검토 provenance와 적용·rollback을 기록한다. | v2 사례 36건과 development/validation 검색 비교기는 구현됐다. C는 downstream 금지행동·frozen holdout·시간/비용 기준이 빠져 미통과이고, D의 promotion/rollback ledger는 미구현이다. 실제 사용자 관찰 사례는 없다. |
 | Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
 | Developer maintenance workflow | 저장소 개선 후보를 격리 branch/worktree에서 수정·검증해 사람이 검토할 PR로 만든다. | 제품 데이터 Orchestrator와 별도 control plane. 일부 QA/updater 흐름은 있으나 자동 merge·배포는 없음. |
 
@@ -139,7 +139,7 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 
 ## 6. 최신성·품질·복구 정책
 
-최신성은 수집 시각이나 metadata update가 아니라 가장 최신 **관측 period**를 사용해 평가한다. 현재 기본 허용일은 daily 7, weekly 21, monthly 120, quarterly 240, semiannual 183, annual 730일이다. 정확한 series ID 또는 canonical series key override가 기본 frequency를 대체할 수 있다. policy ID/hash, frequency 근거, 최신 period, age, 허용 일수, 평가 시각을 결과 evidence에 기록한다.
+최신성은 수집 시각이나 metadata update가 아니라 실제 값이 있는 가장 최신 **관측 period**를 사용해 평가한다. null·결측 placeholder의 period는 원본과 결과에 보존하지만 최신 관측일로 보지 않는다. 값이 모두 결측이면 freshness는 미확정이다. 현재 기본 허용일은 daily 7, weekly 21, monthly 120, quarterly 240, semiannual 183, annual 730일이다. 정확한 series ID 또는 canonical series key override가 기본 frequency를 대체할 수 있다. policy ID/hash, frequency 근거, 최신 period, age, 허용 일수, 평가 시각을 결과 evidence에 기록한다.
 
 이 값은 초기 operational defaults다. 기관별 release calendar와 series-specific publication lag를 검증한 값은 아니다. latest period가 없거나 frequency/period가 불명확하거나 미래 period면 `FRESHNESS_UNVERIFIED`, 허용일을 넘으면 `STALE`이다. 두 상태의 관측값은 normalized result 및 export에서 제외하고 원본만 검토용으로 유지한다.
 
@@ -158,6 +158,7 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 - 피드백은 task, stage, scope, category, knowledge kind, evidence와 append-only revision으로 저장한다. 사용자가 남긴 피드백은 자동으로 엔진 코드나 전역 지식으로 반영하지 않는다.
 - 사례는 원 질문과 변형, 기대 state와 기관/dataset/series/field, 필수 근거, 금지 동작, Excel 기대 정책, 생성 provenance를 가진다. 검토자 유형·정체성(AI 또는 사람), 판정, privacy clearance는 원본 초안 hash를 참조하는 별도 review ledger에 둔다. AI 검토는 실제 사용자 관찰이나 규칙의 사람 승인을 대체하지 않는다.
 - 사용자의 결정에 따라 **AI가 가상 사용자로 작성·검토한 사례도 Gate 판정의 사례 증거로 인정한다.** 출처·검토자가 AI임을 명시하고 실제 사람이 관찰된 것처럼 기록하지 않는다. 이미 보고 조정한 사례와 중복 사례는 development에만 사용하며, 독립 validation/holdout의 사례 수를 부풀리지 않는다. 사례 증거의 인정은 미측정 금지 동작이나 holdout을 통과 처리한다는 뜻이 아니다.
+- AI가 만든 시험 질문과 피드백은 현재 대화의 GPT가 작성할 수 있으며 별도 OpenAI API나 `OPENAI_API_KEY`가 필요하지 않다. 실제 엔진 결과를 질문에 대한 답으로 기록하고, 충분히 답한 사례에는 억지 피드백을 만들지 않는다. provenance를 `ai_simulated`로 명시하고 실제 사용자 피드백·관찰과 분리한다.
 - 비슷하지만 기대 답이 다른 질문은 같은 contrast group에 둔다. development, validation, holdout은 별도 파일로 관리한다. validation/holdout 변경은 의도적 리뷰와 version/hash 변경을 같은 PR에 남긴다.
 - baseline과 candidate는 동일한 case version에서 실행한다. 유형별 state/target accuracy, candidate ranking, false confirmation, 금지 동작을 비교한다. promotion gate는 목표 유형 개선, 다른 유형 퇴행 없음, false confirmation 0건, 금지 동작 0건이다.
 - 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.

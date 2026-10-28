@@ -31,9 +31,11 @@ policy used.
 
 ## Decision and data handling
 
-The evaluator finds the newest observation period and converts it to its
-calendar period end. For example, a monthly `2026-06` observation is evaluated
-as of June 30, not June 1. A result is `FRESH` when its age is within the
+The evaluator finds the newest period with an actual value and converts it to
+its calendar period end. A row whose value is null or missing remains preserved
+but does not make that period an available observation. If every value is
+missing, freshness is `FRESHNESS_UNVERIFIED`. For example, a monthly `2026-06`
+observation is evaluated as of June 30, not June 1. A result is `FRESH` when its age is within the
 configured maximum, `STALE` when it exceeds that maximum, and
 `FRESHNESS_UNVERIFIED` when the frequency, tolerance, or period evidence is
 missing or invalid, or the observation period is in the future. When source
@@ -50,9 +52,10 @@ re-evaluates freshness at export time and requires a matching successful
 quality record, so a series that became stale after collection is blocked.
 
 No values are interpolated, forward-filled, or otherwise changed by this gate.
-It assesses the newest available period only; it does not prove that all
-expected periods are present, detect statistical outliers, or establish
-cross-source equivalence.
+Null and missing source rows are still retained in the raw and parsed series;
+only the freshness anchor excludes them. The gate assesses the newest available
+period only; it does not prove that all expected periods are present, detect
+statistical outliers, or establish cross-source equivalence.
 
 ## Implemented paths and limits
 

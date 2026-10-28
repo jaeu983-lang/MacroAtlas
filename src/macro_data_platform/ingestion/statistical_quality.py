@@ -12,7 +12,8 @@ from macro_data_platform.performance.metrics import measured_phase
 
 def _bls_periods(series: dict) -> tuple[list[str], str | None]:
     rows = series.get("data", [])
-    coded = [(row.get("year"), row.get("period")) for row in rows]
+    coded = [(row.get("year"), row.get("period")) for row in rows
+             if row.get("value") not in {None, ""}]
     monthly = [(year, period) for year, period in coded
                if isinstance(period, str) and period.startswith("M") and period != "M13"]
     if monthly:
@@ -132,7 +133,10 @@ def validate_census_result(
     if parsed.get("metadata_status") != "verified":
         warnings.append("variable_metadata_unverified")
     freshness = [assess_freshness(
-        [str(parsed["year"])], frequency=parsed.get("frequency"), period_format="YYYY",
+        ([str(parsed["year"])] if any(
+            row.get(variable) not in {None, ""} for row in observations
+        ) else []),
+        frequency=parsed.get("frequency"), period_format="YYYY",
         series_key={"dataset": parsed["dataset_id"], "variable": variable,
                     "geography": parsed["geography"]},
         as_of=as_of, policy=freshness_policy,

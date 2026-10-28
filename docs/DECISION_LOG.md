@@ -940,3 +940,11 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 ## D-109 — AI 합성 사용 사례를 표시된 Gate 증거로 인정
 
 2026-10-28. 사용자의 요청에 따라 GPT가 작성·검토한 가상 사용자 사례도 AI 출처를 명시한 Gate 사례 증거로 사용한다. 최종 분석가 작업 흐름 관찰도 AI 시뮬레이션을 임시 증거로 사용할 수 있다. 실제 사람의 질문·관찰이나 독립 분석가 관찰로 표시하지 않는다. 이미 관찰했거나 기존 development 사례와 겹치는 입력은 development에서만 비교하고 v2 quota, validation 또는 holdout에 중복 집계하지 않는다. 이 결정은 금지 동작 trace, frozen holdout 등 미측정 조건을 통과시킨 것이 아니며, 정책 자동 승격도 허용하지 않는다.
+
+## D-110 — 합성 질문·피드백 작성에 별도 OpenAI API를 요구하지 않음
+
+2026-10-28. 사용자는 `OPENAI_API_KEY` 없이 진행하고 별도 GPT API 실행 대신 현재 대화의 GPT가 시험 질문을 작성하고 고정 엔진 결과를 검토해 필요한 경우에만 가상 피드백을 쓰도록 정했다. 실제 사용자 질문·피드백과 분리된 `ai_simulated` 개발 기록만 만든다. 충분히 답한 사례에는 피드백을 억지로 만들지 않는다. 2026-10-28의 새 사례 4건은 separate synthetic SQLite와 재현용 fixture에 보관했으며 기대 판정은 같은 GPT가 검토한 development evidence다. 이는 validation/holdout, 실제 사용자 관찰, 또는 사람의 승격 승인이 아니다. 선택적 API helper가 저장소에 있다는 사실은 제품 사용의 요구사항이 아니다.
+
+## D-111 — BOJ 최신성 평가에서 null calendar placeholder 제외
+
+2026-10-28. BOJ FM08/FXERD01의 2026-10 live 응답은 31개 날짜 행과 14개 null 값을 포함했고, 월말의 미래 날짜도 null이었다. 기존 freshness 계산은 마지막 날짜를 최신 period로 사용해 미래 관측으로 오인하고 전부 보류했다. 최신성은 실제 값이 있는 가장 최근 날짜로 계산하되 null 원본행은 보존하도록 고쳤고, World Bank·BLS·Census 수집 및 World Bank/BOJ 재검증 경로도 같은 기준으로 맞췄다. 같은 API scope 재검증에서 최신 실제 BOJ 값 2026-10-26, age 2일, `FRESH`가 확인됐고 31개 행/14개 결측값은 유지됐다. 이는 기존 freshness 구현의 결측값 처리 수정이지 Gate E 완료가 아니다. typed series, 신뢰된 release calendar와 계열별 실제 발표정책은 남아 있으며 Gate C도 미통과다.

@@ -303,7 +303,7 @@ def test_bls_duplicate_period_is_quarantined_and_missing_value_is_reported(tmp_p
     assert Path(tmp_path, result.payload["raw_path"]).exists()
 
 
-def test_census_geography_mismatch_is_quarantined_and_nulls_are_preserved(tmp_path):
+def test_census_geography_mismatch_is_quarantined_and_nulls_remain_in_raw(tmp_path):
     download = make_download(CENSUS_URL, [
         ["NAME", "B01001_001E", "state"], ["California", None, "36"],
     ])
@@ -313,10 +313,14 @@ def test_census_geography_mismatch_is_quarantined_and_nulls_are_preserved(tmp_pa
 
     assert result.status is StageStatus.NEEDS_REVIEW
     assert result.error_code is ErrorCode.QUALITY_FAILURE
-    assert result.payload["quality"]["issues"] == ["requested_geography_mismatch"]
+    assert result.payload["quality"]["issues"] == [
+        "requested_geography_mismatch", "freshness_unverified",
+    ]
     assert result.payload["quality"]["missing_value_count"] == 1
-    assert result.payload["observations"][0]["B01001_001E"] is None
-    assert Path(tmp_path, result.payload["raw_path"]).exists()
+    assert result.payload["observations"] == []
+    assert result.payload["withheld_observation_count"] == 1
+    raw = Path(tmp_path, result.payload["raw_path"])
+    assert json.loads(raw.read_text(encoding="utf-8"))[1][1] is None
 
 
 @pytest.mark.parametrize(("source", "engine_cls", "input_data", "download"), [

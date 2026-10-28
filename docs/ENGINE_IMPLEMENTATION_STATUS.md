@@ -1,6 +1,7 @@
 # 엔진 구현 현황과 데이터 접근 한계
 
-> 코드 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `569cbd3` (2026-10-28). 이 문서는 런타임 코드와 현재 제품 현황을
+> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `1843145` (PR #70 merge; 2026-10-28). 이후 엔진 실행 검증은
+> [2026-10-28 smoke 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 보존한다. 이 문서는 런타임 코드와 현재 제품 현황을
 > 처음부터 끝까지 연결해 설명한다. **지원되지 않는 일**은 기관 API/데이터 계약 또는 접근 권한 때문에 현재
 > 인터페이스로 할 수 없는 일, **미구현**은 기술적으로 확장 가능하지만 코드에 아직 연결하지 않은 일로 나눈다.
 > provider 제한은 현재 어댑터의 검증 범위와 공식 API 형태를 뜻하며 기관 전체 데이터의 한계를 뜻하지 않는다.
@@ -23,7 +24,7 @@ MacroAtlas는 자유 질문에 바로 답을 생성하는 완성형 대화형 �
 | 4. 공통 실행 | `orchestration/registry.py`, `composition.py`, `runner.py` | `(engine, version)` registry가 저장된 plan을 조립한다. 선형 stage를 순차 실행하고 상태·시도·근거·결과를 SQLite에 기록한다. 성공 prefix 재사용은 fingerprint·TTL·검증기 조건을 모두 요구한다. | 일반 DAG·분산 worker queue·강제 중단·자동 HTTP 재시도/backoff는 없다. Retry-After와 재개는 수동이다. 외부 파일/HTTP와 SQLite를 하나의 원자적 트랜잭션으로 묶지 못한다. |
 | 5. source 호출 | `connectors/*`, `ingestion/*` | WB·BOJ·BLS·Census 어댑터가 각 고정 요청을 만들고 응답 구조를 검사한다. 공통 HTTP 전송·raw 저장·stage 결과 계약을 공유한다. | 기관별 endpoint·식별자·응답 스키마는 다르므로 adapter는 남는다. 일반 series를 임의 요청하거나 기관 웹사이트를 자동 탐색하지 않는다. |
 | 6. 원본/메타데이터 | `storage/raw_downloads.py`, `statistical_downloads.py`, `metadata_archives.py` | 다운로드 원본과 credential-free manifest를 저장하고 해시·출처·수집 시점을 연결한다. 메타데이터 원본과 제한 정규화본도 별도 보존한다. | 범용 관측치 카탈로그와 모든 원본의 장기 보존·버전 마이그레이션은 완성되지 않았다. 저장 성공은 경제적 의미 검증을 뜻하지 않는다. |
-| 7. 구조·품질·최신성 | `connectors/*` parser, `ingestion/statistical_quality.py`, `freshness.py` | 구조/식별자, 수치·결측, 중복/범위, 원본 변경 여부, 최신성 평가를 시행한다. 위험한 관측은 NEEDS_REVIEW로 차단하고 freshness 미확인·stale 값은 일부 API 경로에서 비운다. | 공통 typed TimeSeries/Observation, 신뢰할 release calendar, 모든 파일·시계열의 의미/단위 검증은 없다. 주파수별 기본 허용 일수는 정책이지 기관의 실제 발표 일정 증명은 아니다. |
+| 7. 구조·품질·최신성 | `connectors/*` parser, `ingestion/statistical_quality.py`, `freshness.py` | 구조/식별자, 수치·결측, 중복/범위, 원본 변경 여부, 최신성 평가를 시행한다. freshness anchor는 non-null 값이 있는 최신 period를 사용하며 결측 원본행은 보존한다. | 공통 typed TimeSeries/Observation, 신뢰할 release calendar, 모든 파일·시계열의 의미/단위 검증은 없다. 주파수별 기본 허용 일수는 정책이지 기관의 실제 발표 일정 증명은 아니다. |
 | 8. 사용자 출력 | `ingestion/csv_export.py`, `cli.py` | 완료된 검증 World Bank GDP와 BOJ FXER task를 read-only 검증 후 CSV 및 provenance sidecar로 출력한다. | BLS/Census export, 원자료 XLSX 출력, 다중 series 정렬/비교 XLSX는 미구현. 값·단위·빈도 호환성을 추측해 합치지 않는다. |
 | 9. 평가/피드백 | `evaluation/*`, `storage/feedback.py`, `feedback_cli.py` | 버전·해시·split을 가진 사례 검증, baseline/candidate 검색 비교, append-only 피드백 revision, 명시 리뷰와 불완전 case draft 생성을 지원한다. AI 분류기는 구현되지 않았다. | 사용자 피드백은 자동 채택되지 않는다. AI 지시문도 자동 변경하지 않는다. 운영자가 명시 지시하면 사람이 수동 편집하고 고정 사례에서 답변 품질·지시 준수·시간·비용을 전후 비교한다. 승격/rollback 전체 Gate C/D는 미완료다. |
 | 10. 운영 성능 | `performance/*`, `large_file_*` | stage와 지원되는 phase를 monotonic clock으로 계측하고 비민감 집계(p50/p95·처리량·표본 수)를 출력한다. Linux 대용량 별도 qualification/production worker가 있다. | live 성능 표본은 승인된 자연 요청만 가능하며 아직 충분한 운영 표본이 아니다. 대용량은 BIS GLI 단일 flat ZIP profile뿐이고 경제 의미 해석은 안 한다. |
@@ -49,7 +50,7 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 | Orchestrator / History | [`runner.py`](../src/macro_data_platform/orchestration/runner.py), [`history.py`](../src/macro_data_platform/storage/history.py): 순차 실행, idempotency key, task/stage attempt, 오류 상태, 수동 retry/resume, 성공 prefix 재사용 | 분산 동시성·lease·worker 강제 종료·자동 retry/backoff 없음. 외부 side effect exactly-once 보장 안 됨. |
 | Candidate Search | [`series_search.py`](../src/macro_data_platform/discovery/series_search.py), [`evaluation/cli.py`](../src/macro_data_platform/evaluation/cli.py): 로컬 catalog ranking, 근거/상태/불확실성 보존, 제한·abstention 및 오프라인 평가 비교 | 실시간 전체 catalog 수집·다국어 의미 검색·LLM 질문 해석 없음. 검색 순위 자체는 채택 근거가 아님. |
 | World Bank WDI collector | 미국 WDI GDP 현재달러 단일 indicator, 명시 기간, raw/manifest, 구조 파싱, 품질/freshness, 확인된 workflow | WDI 전체가 아님. API scope에서 국가/지표/query shape가 고정되고 한 요청 1–10 연속 연도/1 page/1 MiB 제한. |
-| BOJ FX collector | FM08/FXERD01, metadata와 관측값 단계 분리, 월별 수집, 변경 감지, 재개 | 다른 DB/series·범위 수집·getDataLayer·탐색은 미지원. 직접 확인된 건 2026-09 한 달. |
+| BOJ FX collector | FM08/FXERD01, metadata와 관측값 단계 분리, 월별 수집, 변경 감지, 재개. 2026-10 live 응답에서 future null calendar row를 freshness 계산에서 제외하고, 31행/14 null을 보존한 채 최신 실제 값 2026-10-26으로 freshness 통과를 확인했다. | 다른 DB/series·범위 수집·getDataLayer·탐색은 미지원. 월별 요청만 지원하므로 일간 series에 대해 여러 달을 한 번에 요청하지 못한다. |
 | BLS collector | Public Data API v2, 1–20 series ID, 1–20년 구간, optional `BLS_API_KEY`, raw/manifest·parse·품질/freshness | catalog 탐색으로 의미/단위가 확인된 series만 안전하게 쓸 수 있다. 응답에 frequency/unit은 unknown. 장기·다수 series는 여러 요청 설계와 예산 검증이 필요. |
 | Census collector | ACS1/ACS5 한 해, 1–50 variable, 미국 전체 또는 단일 주 geography, 필수 Census key, raw/manifest·parse·품질/freshness | 임의 census dataset·geography 조합·시간 범위·다중 지역 batching은 미지원. 변수 정의/단위 미확인 응답은 의미가 확정되지 않음. |
 | Metadata engines | BLS 1 series metadata, Census ACS 1 variable metadata, 입력 SDMX 구조 및 제한 normalization/archive | provider 전체 메타데이터 수집·주기적 동기화·차원 간 자동 맵핑은 없음. 메타데이터 API 호출도 데이터 검색 전체를 대신하지 않음. |

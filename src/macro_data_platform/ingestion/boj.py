@@ -144,7 +144,7 @@ class BOJObservationEngine:
         parsed.update({**saved, "mode": download.kind.value})
         with measure_current("quality"):
             freshness = assess_freshness(
-                [row["date"] for row in parsed["observations"]],
+                [row["date"] for row in parsed["observations"] if row["value"] is not None],
                 frequency=metadata.get("frequency"), series_id=query.series_code,
                 series_key={"database": query.database, "series_code": query.series_code},
                 as_of=self.clock(), policy=self.freshness_policy,

@@ -157,7 +157,8 @@ class WorldBankRequestDispatcher:
             if payload.get("quality", {}).get("status") != "passed":
                 raise ValueError("completed World Bank result has no passed freshness evidence")
             freshness = assess_freshness(
-                [row.get("date") for row in payload.get("observations", [])],
+                [row.get("date") for row in payload.get("observations", [])
+                 if row.get("value") is not None],
                 frequency=payload.get("frequency"), period_format=payload.get("period_format"),
                 series_id=payload.get("series_id"), series_key=payload.get("series_key"),
                 as_of=self._now(), policy=self.freshness_policy,
