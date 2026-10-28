@@ -4,7 +4,7 @@
 
 ## 기준선
 
-- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `64fe051` (PR #87 merge; 2026-10-28). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
+- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `5b73bec` (PR #88 merge; 2026-10-28). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
 - PR #50은 825f2aa, PR #58은 4b26bc9로 병합됐다. PR #58의 merge commit은 Ubuntu/Windows × Python 3.11/3.12 Actions 네 작업이 통과했다.
 - PR #58 변경 기준 로컬 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY이고, 기존 v1 corpus validator는 9/36 BLOCKED였다.
 - 요청에 따라 GPT-6가 27개 draft를 원본 hash, 공식 evidence, 기대 state/candidate/field, 금지 행동, Excel policy, split과 privacy 기준으로 하나씩 검토했다. 26건은 그대로 승인, 1건은 definition 기대값 2곳을 바로잡아 case version 2로 승인했다. 검토자 유형은 AI로 ledger에 표시했다.
@@ -23,7 +23,7 @@
 | GPT 합성 사례 | 이 대화의 GPT가 만든 질문과 엔진 결과·피드백을 실제 사용자 원장과 분리해 기록한다. 별도 OpenAI API는 필요하지 않다. 새 AI 개발 사례 4건은 fixture에 보존하고 synthetic DB에 import했다. | 합성 기록은 AI 사례이며 실제 사용자 관찰이 아니다. 개발용으로만 비교하며 v2 quota, validation 또는 holdout 사례 수에 더하지 않는다. |
 | 피드백 | SQLite FeedbackStore의 revision 원장, 명시 review와 incomplete case seed에 더해 전체 revision의 고정 snapshot과 수동 분류 batch import/list/show를 구현했다. 입력/출력 count·key·hash 및 원본 revision hash가 다르면 저장을 거부한다. | AI 호출과 비식별화는 운영자가 수동으로 수행한다. 실제 사용자 feedback의 AI 분류 batch와 자연 사용자 사례는 아직 검증되지 않았다. 지시문과 코드는 자동 수정되지 않는다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
-| 최신성·typed series | `TimeSeries`/`Observation` 공통 계약은 World Bank GDP/WDI, BOJ monthly/range, BLS, Census adapter와 명시적 file mapping에서 구조 검증된다. API와 explicit file mapping freshness 결과를 계산하고 통과 시 hash-linked typed artifact를 저장한다. FreshnessPolicy v2 exact override는 `FreshnessEvidence` URL/hash/capture/citation/review metadata와 연결하고 미승인 근거를 fail-closed 처리한다. BLS CPI와 Census ACS1의 release calendar snapshot 및 60/400일 한도 후보를 만들었으나 별도 독립 검토 전 비활성이다. | 일반 파일은 명시 mapping이 없으면 freshness 대상이 아니다. 실제 승인된 source-specific tolerance는 아직 없고 reviewer identity는 런타임에서 인증되지 않는다. World Bank/BOJ official lag 근거도 없으며, typed artifact XLSX 출력이 없어 Gate E 미완료다. 현재 주기 tolerance는 fallback이다. |
+| 최신성·typed series | `TimeSeries`/`Observation` 공통 계약은 World Bank GDP/WDI, BOJ monthly/range, BLS, Census adapter와 명시적 file mapping에서 구조 검증된다. API와 explicit file mapping freshness 결과를 계산하고 통과 시 hash-linked typed artifact를 저장한다. FreshnessPolicy v2 exact override는 `FreshnessEvidence` URL/hash/capture/citation/review metadata와 연결하고 미승인 근거를 fail-closed 처리한다. BLS CPI 60일 후보는 AI가 `retain_pending`으로 검토했고, Census ACS1 400일 후보는 보존 원문의 10월 14일 press-kit 날짜와 10월 29일 예정 공개일을 혼동했으며 정상 2024 값을 다음 공개 전 266일간 stale 처리하므로 AI가 `reject_candidate`로 판정했다. 두 override는 비활성이다. | 일반 파일은 명시 mapping이 없으면 freshness 대상이 아니다. 실제 승인된 source-specific tolerance는 아직 없고 reviewer identity는 런타임에서 인증되지 않는다. World Bank/BOJ official lag 근거도 없으며, typed artifact XLSX 출력이 없어 Gate E 미완료다. 현재 주기 tolerance는 fallback이다. |
 | 출력 | 품질 통과 World Bank GDP·BOJ FXERD01 one-month/range task의 CSV와 provenance sidecar를 내보낸다. XLSX parser는 입력 전용이다. | 원자료 XLSX와 다중 시계열 정렬 workbook이 없다. |
 | 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본은 161개다. | live latency 표본은 승인된 자연 요청에서만 모은다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |
 
@@ -52,4 +52,4 @@
 
 Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. AI는 해당 제한을 근거로 `hold/evidence_follow_up_needed`를 권고했으며 [결정 로그 D-121](DECISION_LOG.md)에 AI 의견으로 분리 기록했다. 이는 공식 promotion ledger의 사람 결정이 아니므로 후보는 계속 미승격이고 Gate D는 미완료다. 도구는 사람 신원과 독립 검토의 실체를 인증하지 않는다. provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
 
-기본 브랜치의 대조 기준 commit은 [`64fe051`](https://github.com/jaeu983-lang/MacroAtlas/commit/64fe0512b9368e1242a6b231418b8a7bfc7cfcf1)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.
+기본 브랜치의 대조 기준 commit은 [`5b73bec`](https://github.com/jaeu983-lang/MacroAtlas/commit/5b73bec798672a8ee411d0820006e7447f199227)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

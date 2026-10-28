@@ -100,6 +100,7 @@ def test_captured_release_calendar_fixtures_match_the_citations():
     assert "November 2026 Dec. 10, 2026 08:30 AM" in bls
     census = visible["census_acs_release_dates.html"]
     assert "2025 American Community Survey 1-year Estimates October 14, 2026" in census
+    assert "Documentation for the 2025 American Community Survey 1-year estimates and 1-year Supplemental Estimates is now available. Data will be released on October 29." in census
 
 
 def test_freshness_override_candidates_are_not_activated_or_reviewed():
@@ -108,6 +109,11 @@ def test_freshness_override_candidates_are_not_activated_or_reviewed():
     assert candidate["review_status"] == "pending_independent_review"
     assert candidate["activation_rule"].startswith("Do not load")
     assert DEFAULT_FRESHNESS_POLICY.series_overrides == {}
+
+    bls = next(row for row in candidate["candidates"]
+               if row["series_scope"]["source_agency"] == "U.S. Bureau of Labor Statistics")
+    assert bls["ai_review"]["reviewer_type"] == "AI"
+    assert bls["ai_review"]["decision"] == "retain_pending"
 
     overrides = {row["override_key"]: row["proposed_max_age_days"]
                  for row in candidate["candidates"]}
@@ -128,6 +134,9 @@ def test_freshness_override_candidates_are_not_activated_or_reviewed():
 
     census = next(row for row in candidate["candidates"]
                   if row["series_scope"]["source_agency"] == "U.S. Census Bureau")
+    assert census["ai_review"]["reviewer_type"] == "AI"
+    assert census["ai_review"]["decision"] == "reject_candidate"
+    assert census["ai_review"]["activation_effect"] == "none"
     census_key = series_key_override_key({
         "dataset": "acs/acs1", "variable": "B01001_001E", "geography": "state:06",
     })
@@ -142,7 +151,7 @@ def test_freshness_override_candidates_are_not_activated_or_reviewed():
     assert census_result["policy_evidence_status"] == "pending_review"
 
 
-def test_proposed_series_threshold_boundaries_are_local_only():
+def test_proposed_bls_boundary_and_rejected_census_limit_are_local_only():
     candidate = _load_candidate()
     # This synthetic approval exercises the proposed boundaries; it does not alter the
     # pending review status or load the candidate into production policy.
@@ -173,15 +182,24 @@ def test_proposed_series_threshold_boundaries_are_local_only():
     census_key = {
         "dataset": "acs/acs1", "variable": "B01001_001E", "geography": "state:06",
     }
-    census_at_limit = assess_freshness(
-        ["2025"], frequency=None, period_format="YYYY", series_key=census_key,
-        as_of=date(2027, 2, 4), policy=policy,
+    census_stale_start = assess_freshness(
+        ["2024"], frequency=None, period_format="YYYY", series_key=census_key,
+        as_of=date(2026, 2, 5), policy=policy,
     )
-    census_past_limit = assess_freshness(
-        ["2025"], frequency=None, period_format="YYYY", series_key=census_key,
-        as_of=date(2027, 2, 5), policy=policy,
+    census_at_next_release = assess_freshness(
+        ["2024"], frequency=None, period_format="YYYY", series_key=census_key,
+        as_of=date(2026, 10, 29), policy=policy,
     )
-    assert census_at_limit["age_days"] == 400
-    assert census_at_limit["status"] == FreshnessStatus.FRESH
-    assert census_past_limit["age_days"] == 401
-    assert census_past_limit["status"] == FreshnessStatus.STALE
+    assert census_stale_start["age_days"] == 401
+    assert census_stale_start["status"] == FreshnessStatus.STALE
+    assert census_at_next_release["age_days"] == 667
+    assert census_at_next_release["status"] == FreshnessStatus.STALE
+
+    # The production annual fallback remains safe through the listed next release.
+    fallback_at_next_release = assess_freshness(
+        ["2024"], frequency=None, period_format="YYYY", series_key=census_key,
+        as_of=date(2026, 10, 29),
+    )
+    assert fallback_at_next_release["age_days"] == 667
+    assert fallback_at_next_release["max_age_days"] == 730
+    assert fallback_at_next_release["status"] == FreshnessStatus.FRESH
