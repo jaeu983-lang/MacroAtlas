@@ -14,7 +14,13 @@ from macro_data_platform.connectors.tabular_files import (
     SUPPORTED_FORMATS,
     parse_tabular_document,
 )
-from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
+from macro_data_platform.contracts import ErrorCode, ObservationStatus, StageResult, StageStatus
+from macro_data_platform.ingestion.freshness import (
+    DEFAULT_FRESHNESS_POLICY,
+    FreshnessPolicy,
+    FreshnessStatus,
+    assess_freshness,
+)
 from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore, inspect_file
 from macro_data_platform.metadata.series import normalize_tabular_series
 from macro_data_platform.orchestration.models import StageInput
@@ -82,8 +88,10 @@ def _safe_provenance(data: dict) -> bool:
 
 class TabularFileEngine:
     """Register as (\"tabular_file\", \"1\"); files must be under data/inbox/."""
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, *, clock=lambda: datetime.now(UTC),
+                 freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY):
         self.settings = settings
+        self.clock, self.freshness_policy = clock, freshness_policy
 
     def run(self, request: StageInput) -> StageResult[dict]:
         data = request.input_data
@@ -199,11 +207,30 @@ class TabularFileEngine:
         }
         if "series_mapping" in data:
             try:
+                retrieved_at = self.clock()
                 typed = normalize_tabular_series(
                     headers=table.headers, rows=table.rows, mapping=data["series_mapping"],
                     source_agency=data["source_agency"], source_url=data.get("source_url"),
-                    retrieved_at=datetime.now(UTC), raw_ref=saved["raw_path"],
+                    retrieved_at=retrieved_at, raw_ref=saved["raw_path"],
                     manifest_ref=saved["manifest_path"],
+                )
+                series_key = {
+                    "source_agency": typed.source_agency,
+                    "series_id": typed.series_id,
+                }
+                if typed.dataset_id is not None:
+                    series_key["dataset_id"] = typed.dataset_id
+                series_key.update({
+                    f"dimension:{name}": value for name, value in typed.dimensions.items()
+                })
+                freshness = assess_freshness(
+                    [observation.period for observation in typed.observations
+                     if observation.status == ObservationStatus.OBSERVED],
+                    frequency=typed.frequency,
+                    frequency_basis=typed.frequency_basis,
+                    series_key=series_key,
+                    as_of=retrieved_at,
+                    policy=self.freshness_policy,
                 )
             except (TypeError, ValueError):
                 return StageResult(
@@ -221,6 +248,22 @@ class TabularFileEngine:
                 "source_url": typed.source_url, "raw_ref": typed.raw_ref,
                 "manifest_ref": typed.manifest_ref,
             }
+            issue = (
+                "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
+                "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
+            )
+            payload["quality"] = {
+                "status": "failed" if issue else "passed",
+                "issues": [issue] if issue else [],
+                "freshness": freshness,
+            }
+            if issue:
+                payload["withheld_observation_count"] = len(typed.observations)
+                return StageResult(
+                    StageStatus.NEEDS_REVIEW, payload,
+                    (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
+                    (issue, freshness["status"]), ErrorCode.QUALITY_FAILURE,
+                )
         return StageResult(
             StageStatus.SUCCEEDED, payload,
             (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
