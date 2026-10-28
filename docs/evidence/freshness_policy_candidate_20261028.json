@@ -1,0 +1,69 @@
+{
+  "activation_rule": "Do not load these candidates into FreshnessPolicy. A separate reviewer must inspect the archived sources and approve or reject each proposed threshold explicitly.",
+  "base_policy_id": "frequency_max_age_v2",
+  "candidate_id": "freshness-candidates-20261028",
+  "candidates": [
+    {
+      "evidence": {
+        "archive_member": "bls_cpi_release_schedule.html",
+        "captured_at": "2026-10-28T23:16:39.745427+00:00",
+        "citation": "Schedule of Releases for the Consumer Price Index: October 2026 reference month releases November 10, 2026; November 2026 releases December 10, 2026, both scheduled for 08:30 AM.",
+        "evidence_id": "bls-cpi-release-schedule-20261028",
+        "evidence_type": "official_release_calendar",
+        "review_status": "pending_review",
+        "reviewed_at": null,
+        "reviewer_id": null,
+        "source_sha256": "cece37b1f964eed1cd51215764a55fb26e310da31b441ab9c65758989c9afc17",
+        "source_url": "https://www.bls.gov/schedule/news_release/cpi.htm"
+      },
+      "frequency": "monthly",
+      "override_key": "series_id:CUUR0000SA0",
+      "proposed_max_age_days": 60,
+      "reason": "The official CPI schedule shows about ten days from a reference month end to release for the cited months; 60 days is a proposed 50-day additional delay buffer, not a limit stated by BLS.",
+      "series_scope": {
+        "description": "CPI-U, U.S. city average, all items, not seasonally adjusted",
+        "series_id": "CUUR0000SA0",
+        "source_agency": "U.S. Bureau of Labor Statistics"
+      }
+    },
+    {
+      "evidence": {
+        "archive_member": "census_acs_release_dates.html",
+        "captured_at": "2026-10-28T23:16:40.441125+00:00",
+        "citation": "2025 American Community Survey 1-year estimates release is listed for October 14, 2026.",
+        "evidence_id": "census-acs-1-year-release-20261028",
+        "evidence_type": "official_release_calendar",
+        "review_status": "pending_review",
+        "reviewed_at": null,
+        "reviewer_id": null,
+        "source_sha256": "abfda5e20c0f135423cdd39229c20614575ca4490e88c8272bc1982dc7fec1b5",
+        "source_url": "https://www.census.gov/programs-surveys/acs/news/data-releases.html"
+      },
+      "frequency": "annual_reference_period",
+      "override_key": "series_key:{\"dataset\":\"acs/acs1\",\"geography\":\"state:06\",\"variable\":\"B01001_001E\"}",
+      "proposed_max_age_days": 400,
+      "reason": "The official release page lists 2025 ACS 1-year estimates on 2026-10-14 (287 days after reference year end); 400 days is a proposed 113-day buffer, not a published freshness guarantee.",
+      "series_scope": {
+        "dataset": "acs/acs1",
+        "geography": "state:06",
+        "source_agency": "U.S. Census Bureau",
+        "variable": "B01001_001E"
+      }
+    }
+  ],
+  "enabled": false,
+  "not_candidates": [
+    {
+      "reason": "The preserved official indicator metadata confirms identity and meaning but does not expose periodicity or a publication calendar; retain the existing annual period-format fallback and do not create an override.",
+      "scope": "World Bank WDI USA NY.GDP.MKTP.CD, source 2"
+    },
+    {
+      "reason": "Existing official metadata confirms DAILY frequency, but no official publication-lag tolerance was found; retain the existing seven-day daily fallback and do not create an override.",
+      "scope": "BOJ FM08/FXERD01"
+    }
+  ],
+  "review_status": "pending_independent_review",
+  "schema_version": "freshness-policy-candidate-v1",
+  "source_capture_archive": "docs/evidence/freshness_source_capture_20261028.tar.gz",
+  "source_capture_archive_sha256": "37992523c4c9a9c62ca550a8ab6f12ce18ea714966fc8c724b0f97ac04907dbb"
+}

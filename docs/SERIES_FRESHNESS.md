@@ -86,3 +86,25 @@ coverage; they do not establish live API freshness behavior or validate each
 source's publication calendar. Unmapped generic tabular data has no normalized
 series-frequency contract and is not covered by this gate. Bloomberg is not an
 integrated connector in this repository.
+
+## Pending source-specific tolerance review
+
+The archived review packet
+[`freshness_policy_candidate_20261028.json`](evidence/freshness_policy_candidate_20261028.json)
+contains the BLS CPI and Census ACS 1-year release-calendar captures in
+[`freshness_source_capture_20261028.tar.gz`](evidence/freshness_source_capture_20261028.tar.gz).
+It proposes a 60-day limit for BLS `CUUR0000SA0` and 400 days for Census
+`acs/acs1`, variable `B01001_001E`, California (`state:06`). Those margins are
+design proposals; the agencies do not publish these numbers as freshness limits.
+Both candidates remain `pending_review`, and `enabled` is false. Runtime policy
+does not load them. A separate reviewer must inspect the archived documents and
+accept or reject the proposed margins before any override is applied.
+
+The current defaults therefore remain active: daily 7 days, monthly 120 days,
+and annual 730 days. BOJ `FM08/FXERD01` has official DAILY frequency metadata,
+but no reviewed publication-lag threshold. The preserved World Bank WDI GDP
+metadata does not state periodicity or a release calendar. Those paths continue
+to use the labeled frequency/period-format fallback without a series override.
+The evidence hashes bind the captured pages, and the archive is checked into the
+repository; the runtime still does not authenticate the reviewer or verify
+remote source URLs.
