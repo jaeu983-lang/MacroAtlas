@@ -94,20 +94,37 @@ def test_gpt_review_key_mismatch_is_rejected_before_any_database_write(tmp_path,
 def test_gpt_transport_uses_explicit_key_and_validates_output(monkeypatch):
     class Response:
         status_code = 200
-        content = b"{}"
 
-        def json(self):
-            return {"output": [{"type": "message", "content": [
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def iter_content(self, chunk_size):
+            import json
+
+            yield json.dumps({"output": [{"type": "message", "content": [
                 {"type": "output_text", "text": '[{"id":"q1","question":"GDP"}]'}]}],
-                "usage": {"input_tokens": 2, "output_tokens": 3}}
+                "usage": {"input_tokens": 2, "output_tokens": 3}}).encode()
 
-    def post(url, **kwargs):
-        assert url == "https://api.openai.com/v1/responses"
-        assert kwargs["headers"]["Authorization"] == "Bearer test-key"
-        assert kwargs["allow_redirects"] is False
-        return Response()
+    class Session:
+        trust_env = True
 
-    monkeypatch.setattr("macro_data_platform.evaluation.synthetic_gpt.requests.post", post)
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, url, **kwargs):
+            assert self.trust_env is False
+            assert url == "https://api.openai.com/v1/responses"
+            assert kwargs["headers"]["Authorization"] == "Bearer test-key"
+            assert kwargs["allow_redirects"] is False and kwargs["stream"] is True
+            return Response()
+
+    monkeypatch.setattr("macro_data_platform.evaluation.synthetic_gpt.requests.Session", Session)
     rows, usage = _call_gpt("test-key", "test-model", "instruction", {"count": 1})
     assert rows == [{"id": "q1", "question": "GDP"}] and usage["output_tokens"] == 3
 

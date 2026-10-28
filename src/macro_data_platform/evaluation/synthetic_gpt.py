@@ -44,15 +44,30 @@ def _response_text(payload):
 
 
 def _call_gpt(key, model, instruction, data):
-    response = requests.post(
-        "https://api.openai.com/v1/responses",
-        headers={"Authorization": f"Bearer {key}"},
-        json={"model": model, "input": instruction + "\n" + json.dumps(data, ensure_ascii=False),
-              "max_output_tokens": 4000}, timeout=45, allow_redirects=False,
-    )
-    if response.status_code != 200 or len(response.content) > 1_000_000:
-        raise ValueError("GPT request failed or exceeded the response budget")
-    payload = response.json()
+    proxies = {scheme: value for scheme in ("http", "https")
+               if (value := (os.environ.get(f"{scheme.upper()}_PROXY")
+                             or os.environ.get(f"{scheme}_proxy")))}
+    verify = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("CURL_CA_BUNDLE") or True
+    with requests.Session() as session:
+        session.trust_env = False
+        with session.post(
+            "https://api.openai.com/v1/responses",
+            headers={"Authorization": f"Bearer {key}"},
+            json={"model": model, "input": instruction + "\n" + json.dumps(data, ensure_ascii=False),
+                  "max_output_tokens": 4000}, timeout=45, allow_redirects=False,
+            proxies=proxies, verify=verify, stream=True,
+        ) as response:
+            if response.status_code != 200:
+                raise ValueError("GPT request failed")
+            body = bytearray()
+            for chunk in response.iter_content(chunk_size=65536):
+                body.extend(chunk)
+                if len(body) > 1_000_000:
+                    raise ValueError("GPT response exceeded the response budget")
+    try:
+        payload = json.loads(body)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise ValueError("GPT returned invalid JSON") from exc
     return _response_text(payload), payload.get("usage", {})
 
 
