@@ -24,7 +24,7 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 ## 현재 지원 경로
 
 - World Bank WDI: 고정 미국 GDP 경로와, 사용자가 국가·indicator ID를 직접 고르는 1개 annual series 원자료 경로(source ID 2, 각 1~10개 연도).
-- BOJ: FM08/FXERD01 한 달.
+- BOJ: FM08/FXERD01 한 달 또는 같은 일간 시리즈의 연속 1–12개월 범위.
 - `macroatlas search`: 네트워크 없이 고정 WDI 후보와 로컬에 보존된 BLS/Census metadata를 검색합니다. 기관 전체 catalog 검색은 아닙니다.
 - TIC/BIS: 필요할 때 명시적으로 실행하는 지정 파일 intake. 자료 변경상태의 반복·예약 확인은 사용자
   요청에 따라 중지했다.
@@ -55,6 +55,7 @@ python3 -m venv .venv
 ```bash
 .venv/bin/macroatlas collect worldbank-gdp --start-year 2020 --end-year 2022 --live
 .venv/bin/macroatlas collect worldbank-series --country CAN --source-id 2 --indicator SP.POP.TOTL --start-year 2024 --end-year 2025 --live
+.venv/bin/macroatlas collect boj-fxer-range --start-month 202609 --end-month 202610 --live
 .venv/bin/macroatlas status <TASK_ID>
 .venv/bin/macroatlas export <TASK_ID> --format csv --output data/exports/worldbank.csv
 ```
@@ -65,6 +66,7 @@ python3 -m venv .venv
 
 `worldbank-series`는 exact ID로 요청한 응답 JSON과 manifest를 보존하는 제한 경로입니다. 단위·의미를
 추론하지 않고 freshness 미통과 값은 task 결과에서 보류합니다. 이 경로는 CSV/XLSX export를 지원하지 않습니다.
+BOJ range 결과는 freshness 통과 후 기존 CSV export 경로를 사용할 수 있습니다.
 
 고정 후보를 찾아볼 때는 `.venv/bin/macroatlas search "GDP USA" --institution worldbank --country USA`
 처럼 실행합니다. 이 명령은 로컬 catalog만 읽고 선택·수집하지 않습니다.

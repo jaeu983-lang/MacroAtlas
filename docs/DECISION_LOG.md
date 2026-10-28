@@ -984,3 +984,9 @@ BLS는 요청당 20개까지의 series ID와 최대 20년의 구간, Census는 A
 Fixture parser/engine/CLI와 query boundary 테스트를 수행했다. 이어서 제한 public API 확인으로 Canada `SP.POP.TOTL`, WDI source 2, 2024–2025를 한 번 요청해 task `390eeac8-2ed6-40cc-84e5-b2ea5900c488`에 보존했다. 2개 관측 행, 최신 period `2025`, age 301일, freshness `FRESH`, task `COMPLETED`였다. 응답 바이트와 manifest는 로컬 ignored `data/` 아래에 남아 있으며 commit하지 않는다. 이 한 건은 선택한 요청의 live 경로만 확인하며 다른 지표의 가용성·의미·이용 조건을 증명하지 않는다. 제품 Gate D–G는 바꾸지 않았다.
 
 실행 경계와 source documentation은 [WDI exact-series 연결 설명](connectors/WORLDBANK_SERIES.md)에 둔다. 기존 `connectors/WORLDBANK.md`는 frozen evaluation cases가 byte-level evidence로 참조하므로 수정하지 않는다.
+
+## D-118 — BOJ FXERD01 연속 월간 구간 수집 경로
+
+2026-10-28. PR #76 병합 후 지원 경로 확대의 다음 제한 변경으로 기존 BOJ 한 달 `boj_observations/2` 계약은 유지하고, `boj_observations_range/1`을 추가했다. 새 `collect boj-fxer-range` 명령은 FM08/FXERD01만 허용하고 연속된 1–12개월을 검증한다. 응답은 요청 구간·series identity·단조 증가 날짜·중복·유한 수/`null`을 확인한 뒤 raw/manifest 보존, freshness, 저장 task 재개, CSV raw 재검증을 기존 공통 orchestration에 연결한다.
+
+Fixture/CLI/export 대상으로 한정 회귀와 전체 검증은 PR에서 기록한다. Live로 202609–202610을 한 차례 조회해 task `da20c2c3-aa05-48ab-99c1-d2232308dd46`에 61행·25 null을 보존했고, 최신 유효 날짜 `2026-10-26`의 일간 freshness는 `FRESH`였다. CSV export도 raw 재검증 후 61행·25 missing으로 완료했다. 출력은 ignored `data/`에 두어 commit하지 않았다. 이는 선택한 구간만 검증하며 다른 BOJ 계열·자연 실패 재개·변경 revision 검토는 미검증이다. Gate C 범위와 D–G 완료 상태는 바꾸지 않는다.

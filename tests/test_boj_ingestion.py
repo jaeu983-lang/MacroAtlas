@@ -17,23 +17,34 @@ from macro_data_platform.connectors.boj import (
     SERIES_NAME,
     UNIT,
     BOJQuery,
+    BOJRangeQuery,
     parse_boj_metadata,
     parse_boj_observations,
+    parse_boj_range_observations,
 )
 from macro_data_platform.connectors.statistical_http import ApiDownload, SourceFailure
 from macro_data_platform.contracts import ErrorCode, EvidenceKind, StageStatus
 from macro_data_platform.ingestion.boj import (
     build_boj_plan,
+    build_boj_range_plan,
 )
 from macro_data_platform.ingestion.boj import (
     make_boj_orchestrator as _make_boj_orchestrator,
+)
+from macro_data_platform.ingestion.boj import (
+    make_boj_range_orchestrator as _make_boj_range_orchestrator,
 )
 from macro_data_platform.storage.history import HistoryStore
 
 NOW = datetime(2026, 10, 26, tzinfo=UTC)
 QUERY = BOJQuery("202609")
+RANGE_QUERY = BOJRangeQuery("202609", "202610")
 make_boj_orchestrator = partial(
     _make_boj_orchestrator, clock=lambda: NOW,
+    freshness_policy=HISTORICAL_FIXTURE_POLICY,
+)
+make_boj_range_orchestrator = partial(
+    _make_boj_range_orchestrator, clock=lambda: NOW,
     freshness_policy=HISTORICAL_FIXTURE_POLICY,
 )
 
@@ -64,6 +75,14 @@ def observations_document(values=(159.77, None), *, request_date="20261026"):
             "VALUES": {"SURVEY_DATES": [20260901, 20260902], "VALUES": list(values)},
         }],
     }
+
+
+def range_observations_document():
+    document = observations_document((159.77, None, 150.25))
+    document["RESULTSET"][0]["VALUES"]["SURVEY_DATES"] = [
+        20260901, 20260902, 20261001,
+    ]
+    return document
 
 
 class FixtureTransport:
@@ -99,6 +118,63 @@ class BOJQueryTests(unittest.TestCase):
         ]:
             with self.subTest(values=values), self.assertRaises(ValueError):
                 BOJQuery(**values)
+
+
+class BOJRangeQueryTests(unittest.TestCase):
+    def test_range_query_is_fixed_to_one_verified_series_and_bounds_twelve_months(self):
+        self.assertIn("code=FXERD01", RANGE_QUERY.data_url)
+        self.assertIn("startDate=202609", RANGE_QUERY.data_url)
+        self.assertIn("endDate=202610", RANGE_QUERY.data_url)
+        for start, end in [
+            ("202613", "202701"), ("202610", "202609"),
+            ("202501", "202601"), ("20260", "202609"),
+        ]:
+            with self.subTest(start=start, end=end), self.assertRaises(ValueError):
+                BOJRangeQuery(start, end)
+
+    def test_range_parser_preserves_rows_and_checks_requested_calendar_span(self):
+        metadata = parse_boj_metadata(api_download(METADATA_ENDPOINT, metadata_document()),
+                                      RANGE_QUERY.metadata_query)
+        parsed = parse_boj_range_observations(
+            api_download(DATA_ENDPOINT, range_observations_document()), RANGE_QUERY, metadata,
+        )
+        self.assertEqual([row["date"] for row in parsed["observations"]], [
+            "2026-09-01", "2026-09-02", "2026-10-01",
+        ])
+        self.assertEqual([row["value"] for row in parsed["observations"]], [159.77, None, 150.25])
+        self.assertEqual(parsed["period_start"], "2026-09-01")
+        self.assertEqual(parsed["period_end"], "2026-10-31")
+        self.assertEqual(parsed["quality"]["missing_value_count"], 1)
+
+    def test_range_parser_rejects_out_of_range_duplicate_and_out_of_order_dates(self):
+        metadata = parse_boj_metadata(api_download(METADATA_ENDPOINT, metadata_document()),
+                                      RANGE_QUERY.metadata_query)
+        for dates in ([20260901, 20261101], [20260901, 20260901],
+                      [20261001, 20260901]):
+            document = range_observations_document()
+            document["RESULTSET"][0]["VALUES"]["SURVEY_DATES"] = list(dates)
+            document["RESULTSET"][0]["VALUES"]["VALUES"] = [1.0] * len(dates)
+            with self.subTest(dates=dates), self.assertRaises(SourceFailure):
+                parse_boj_range_observations(
+                    api_download(DATA_ENDPOINT, document), RANGE_QUERY, metadata,
+                )
+
+    def test_range_plan_uses_shared_registry_and_preserves_exact_month_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            settings = Settings(Path(directory), network_enabled=True)
+            store = HistoryStore(settings)
+            transport = FixtureTransport(observation_body=range_observations_document())
+            runner = make_boj_range_orchestrator(store, settings, transport)
+            task = runner.create("BOJ FXERD01 two-month fixture")
+            runner.plan(task.task_id, build_boj_range_plan(RANGE_QUERY))
+            result = runner.run(task.task_id)
+            self.assertEqual(result["status"], "COMPLETED")
+            payload = result["stages"][-1]["result"]["payload"]
+            self.assertEqual(len(payload["observations"]), 3)
+            self.assertEqual(transport.observation_calls, 1)
+            manifest = json.loads(Path(directory, payload["manifest_path"]).read_text())
+            self.assertEqual(manifest["request"]["start_month"], "202609")
+            self.assertEqual(manifest["request"]["end_month"], "202610")
 
     def test_metadata_and_observations_preserve_null_and_source_metadata(self):
         metadata = parse_boj_metadata(api_download(METADATA_ENDPOINT, metadata_document()), QUERY)

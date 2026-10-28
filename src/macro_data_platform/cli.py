@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.bls import BLSQuery
-from macro_data_platform.connectors.boj import BOJQuery
+from macro_data_platform.connectors.boj import BOJQuery, BOJRangeQuery
 from macro_data_platform.connectors.census import CensusQuery
 from macro_data_platform.connectors.worldbank import (
     API_DOCS,
@@ -20,7 +20,9 @@ from macro_data_platform.connectors.worldbank import (
 from macro_data_platform.contracts import EvidenceKind
 from macro_data_platform.ingestion.boj import (
     build_boj_plan,
+    build_boj_range_plan,
     make_boj_orchestrator,
+    make_boj_range_orchestrator,
 )
 from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.gate_c_watch import (
@@ -76,6 +78,13 @@ def build_parser() -> argparse.ArgumentParser:
     boj.add_argument("--month", required=True, help="one month as YYYYMM")
     boj.add_argument("--live", action="store_true", required=True,
                      help="explicitly permit the official API requests")
+    boj_range = sources.add_parser(
+        "boj-fxer-range", help="BOJ FM08/FXERD01 daily observations across 1–12 months",
+    )
+    boj_range.add_argument("--start-month", required=True, help="first month as YYYYMM")
+    boj_range.add_argument("--end-month", required=True, help="last month as YYYYMM")
+    boj_range.add_argument("--live", action="store_true", required=True,
+                           help="explicitly permit the official API requests")
     bls = sources.add_parser("bls", help="selected BLS Public Data API v2 series IDs")
     bls.add_argument("--series-id", action="append", required=True, metavar="ID",
                      help="BLS series ID; repeat for multiple series (max 20)")
@@ -262,11 +271,23 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
     }
     plan = doc.get("plan")
     input_data = plan[0].get("input_data") if isinstance(plan, list) and plan else None
+    if isinstance(plan, list):
+        range_stage = next((row for row in plan if isinstance(row, dict)
+                            and row.get("engine") == "boj_observations_range"), None)
+        range_input = range_stage.get("input_data") if isinstance(range_stage, dict) else None
+        if isinstance(range_input, dict):
+            summary["source"] = "boj"
+            summary["series_code"] = range_input.get("series_code")
+            summary["month_range"] = [range_input.get("start_month"), range_input.get("end_month")]
     if isinstance(input_data, dict) and isinstance(input_data.get("duration_estimate"), dict):
         summary["duration_estimate"] = input_data["duration_estimate"]
     elif isinstance(duration_estimate, dict):
         summary["duration_estimate"] = duration_estimate
     if isinstance(input_data, dict):
+        if isinstance(input_data.get("start_month"), str):
+            summary["source"] = "boj"
+            summary["series_code"] = input_data.get("series_code")
+            summary["month_range"] = [input_data.get("start_month"), input_data.get("end_month")]
         if isinstance(input_data.get("indicator_id"), str):
             summary["source"] = "worldbank"
             summary["source_id"] = input_data.get("source_id")
@@ -677,6 +698,18 @@ def dispatch(args, *, boj_transport=None, bls_transport=None, census_transport=N
         )
         task = runner.create(f"BOJ {query.database}/{query.series_code} observations {query.month}")
         runner.plan(task.task_id, build_boj_plan(query))
+        doc = runner.run(task.task_id)
+        return _exit_code(doc), _summary(doc)
+
+    if args.command == "collect" and args.source == "boj-fxer-range":
+        query = BOJRangeQuery(args.start_month, args.end_month)
+        runner = make_boj_range_orchestrator(
+            store, settings, boj_transport, clock=clock, freshness_policy=freshness_policy,
+        )
+        label = (f"BOJ {query.database}/{query.series_code} observations "
+                 f"{query.start_month}:{query.end_month}")
+        task = runner.create(label)
+        runner.plan(task.task_id, build_boj_range_plan(query))
         doc = runner.run(task.task_id)
         return _exit_code(doc), _summary(doc)
 

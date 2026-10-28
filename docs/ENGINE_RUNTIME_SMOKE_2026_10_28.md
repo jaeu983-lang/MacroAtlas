@@ -72,10 +72,24 @@ workspace during the check.
 
 ## Post-merge WDI series follow-up
 
-After PR #75 merged, `worldbank_series/1` was added for one explicitly selected
+After PR #76 merged, `worldbank_series/1` was added for one explicitly selected
 World Development Indicators series. A live Canada `SP.POP.TOTL` query for
 2024–2025 completed as task `390eeac8-2ed6-40cc-84e5-b2ea5900c488`: two rows,
 latest period 2025, age 301 days, `FRESH`. The raw response and request manifest
 remain in ignored local `data/`; they were not committed. The 903-test full
 suite, Ruff, and `git diff --check` passed for this follow-up. This single query
 does not verify other WDI indicators, their meanings, or dataset terms.
+
+## Post-merge BOJ monthly-range follow-up
+
+After PR #76 merged, `boj_observations_range/1` and the `collect boj-fxer-range`
+command were added for the same fixed FM08/FXERD01 daily series, with a limit of
+one to twelve consecutive calendar months. The existing single-month route and
+saved-task contract remain available. A live September–October 2026 query
+completed as task `da20c2c3-aa05-48ab-99c1-d2232308dd46`: 61 calendar rows,
+25 preserved nulls, latest non-null date 2026-10-26, age two days, and daily
+freshness `FRESH`. CSV export revalidated the stored raw response and completed
+with 61 rows and 25 missing values. The ignored local CSV and provenance files
+were not committed. This confirms only the selected query, not other BOJ series,
+changed-response review, or natural failure/resume behavior; product Gate D–G
+status is unchanged.
