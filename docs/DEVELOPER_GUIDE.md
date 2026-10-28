@@ -38,11 +38,12 @@ py -3 -m venv .venv
 | `ingestion/csv_export.py` | 완료된 World Bank/BOJ task와 저장 원본을 읽기 전용 검증한 뒤 CSV/provenance 파일 생성 |
 | `discovery/` | 근거가 붙은 제한 후보 찾기와 명시 선택 보조 |
 | `analysis/` | 기록을 읽는 pattern 분석. 결과는 검토 후보이지 자동 지식이나 코드가 아님 |
-| `evaluation/` | 검토 사례와 development/validation/holdout split 형식 및 hash 검증기. 사례 채점·규칙 승격은 제공하지 않음 |
+| `evaluation/` | 사례 split/hash 검증, development/validation 검색 ranker 비교, feedback에서 불완전 draft 생성. 규칙 승격/rollback은 미구현 |
 | `tests/` | offline fixture, 계약, 상태 전이, 제한된 live 관련 단위 검증 |
 | `docs/` | 제품 범위, 실제 상태, 개발 설계, 날짜가 붙은 증거 |
 
-현재 실제 호출표는 [ENGINE_CONNECTIONS.md](ENGINE_CONNECTIONS.md)를, 공통 모델과 초기 구현 이력은
+실제 호출표는 [ENGINE_CONNECTIONS.md](ENGINE_CONNECTIONS.md)를, 엔진별 코드·접근 한계는
+[ENGINE_IMPLEMENTATION_STATUS.md](ENGINE_IMPLEMENTATION_STATUS.md)를, 공통 모델과 초기 구현 이력은
 [ARCHITECTURE.md](ARCHITECTURE.md)를 참조합니다.
 
 ## 요청에서 결과까지

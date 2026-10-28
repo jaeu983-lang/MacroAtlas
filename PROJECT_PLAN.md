@@ -107,7 +107,7 @@ flowchart LR
 - **대용량 worker:** 작은 tabular parser와 다른 memory/time/checkpoint 경계를 가진다. qualification 통과는 production 승인이 아니다.
 - **개발자 maintenance:** 분석 proposal → 격리 수정 → candidate SHA QA → branch/PR까지만 지원할 수 있다. 제품 task·원본·credential과 분리하며 자동 merge·배포하지 않는다.
 - **현재 통합 공백:** 고정 CLI collect 명령은 World Bank/BOJ 범위이고 BLS/Census는 등록된 Python engine 경로만 있다. 새 provider는 connector/engine adapter와 registry 등록·회귀 사례를 함께 추가한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
-- **Iteration 29 엔진 정비:** 파일 용량 판정의 transport·parser·preflight 경로를 공유 `CapacityFinding`으로 연결했다. 구조화 reason/observed/threshold/inspection point/disposition을 기록하고 parser 오류 문구로 용량을 추측하지 않는다. 바뀐 용량 상한은 없다. 이 작업은 현재 작업 branch의 구현이며 기본 branch 편입과 제품 Gate 통과는 별도다.
+- **Iteration 29 엔진 정비:** 파일 용량 판정의 transport·parser·preflight 경로를 공유 `CapacityFinding`으로 연결했다. 구조화 reason/observed/threshold/inspection point/disposition을 기록하고 parser 오류 문구로 용량을 추측하지 않는다. 바뀐 용량 상한은 없다. PR #64가 2026-10-28 기본 branch `codex/iteration-04-gate-a`에 병합됐다. 제품 Gate 통과와는 별개다.
 
 | 엔진/계층 | 맡는 일 | 현재 상태 |
 |---|---|---|

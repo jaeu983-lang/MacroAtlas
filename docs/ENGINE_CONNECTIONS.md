@@ -1,11 +1,11 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-27 현행 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+기준: 2026-10-28, 기본 브랜치 `acc972b` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
 transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
 별도이므로 전용 runner를 유지한다.
-제품 요구사항·우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 실행 순서 요약은
-[로드맵](ROADMAP_2026_10_26.md)을 따른다.
+제품 요구사항·우선순위·실행 순서는 [통합 제품 기획](../PROJECT_PLAN.md), 관측된 현재 코드 상태는
+[구현 현황](IMPLEMENTATION_PLAN.md)을 따른다. 축약된 [로드맵](ROADMAP_2026_10_26.md)은 인덱스이며 독립 backlog가 아니다.
 
 이 문서는 사용자 데이터 제품의 실행 경로를 다룬다. 저장소 코드를 분석·수정·QA하는 개발자 유지보수 흐름은 제품
 Orchestrator 및 source engine과 별도 control plane이다. 현재 중복 실행기와 통합 목표는

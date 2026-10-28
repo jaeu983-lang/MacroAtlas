@@ -1,4 +1,4 @@
-"""Shared typed findings for bounded file and table processing."""
+"""Shared typed findings for bounded file processing; see docs/ENGINE_IMPLEMENTATION_STATUS.md."""
 import math
 from dataclasses import dataclass
 from enum import StrEnum
