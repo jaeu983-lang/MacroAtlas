@@ -962,3 +962,9 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 2026-10-28. 사용자의 다음 단계 실행 요청에 따라 `evaluation/promotion.py`와 `storage/promotion.py`를 추가했다. `macro-promotion`은 고정 Gate C qualification, manifest, one-use lock, holdout result의 self-hash와 cross-binding을 검사하고 case/split/catalog/budget/policy hashes 및 금지행동·검색·시간 집계만 추적되는 append-only JSONL hash-chain ledger에 기록한다. 질문·사례 본문이나 자유 텍스트 피드백은 복사하지 않는다. Accept는 C PASS, 서로 다른 decision maker/reviewer ID의 명시 human self-attestation, 적용 commit을 요구한다. Rollback은 활성 acceptance를 참조하고 적용 commit 뒤의 새 commit을 요구한다. Hold/reject는 정책을 적용하지 않으며 도구는 기본 규칙을 바꾸지 않는다.
 
 검증은 frozen Gate C artifacts의 현재 Git commit hash/cleanliness, manifest·qualification·lock·result의 교차 hash, ledger event chain을 확인한다. 도구는 사람 신원이나 reviewer 독립성을 인증할 수 없어 self-attestation으로 기록한다. 테스트는 frozen evidence binding, hash 변조 거부, Gate C fail accept 차단, 독립 reviewer와 rollback 상태 전이, append-only/tamper 감지를 검증한다. 이 구현 단계에서는 운영자의 accept/hold/reject를 대신 선택하지 않고 ledger에 결정을 기록하거나 후보를 승격하지 않았다. 실제 사람 decision이 없어 Gate D는 미완료이며 semantic candidate는 계속 평가 전용이다. provider/raw/export 경로도 실행하지 않았다.
+
+## D-115 — 기존 BLS·Census 엔진을 제한 CLI로 노출
+
+2026-10-28. 사용자는 현재 기관 지원 경로가 너무 작다고 지적했다. 기존에 EngineRegistry에 등록됐지만 Python 호출만 필요하던 BLS·Census API engine을 `macroatlas collect bls`와 `macroatlas collect census`에서 exact query로 실행할 수 있게 했다. 입력은 각 connector의 `BLSQuery`·`CensusQuery` 계약으로 task 생성 전에 검증하고, `--live`를 필수로 하며, 저장 `TaskPlan`·공통 EngineRegistry·Orchestrator와 기존 `resume` 경로를 사용한다. credentials는 프로세스 환경에서만 읽고 query/task/manifest에 넣지 않는다.
+
+BLS는 요청당 20개까지의 series ID와 최대 20년의 구간, Census는 ACS1/ACS5 한 해, 최대 50개 variable(`NAME` 포함), `us:1` 또는 `state:NN` 범위만 받는다. 기관 전체 catalog 탐색, variable 의미 확정, XLSX/CSV export는 추가되지 않았고, fixture 검증은 실제 API 성공 증거가 아니다. 제품 Gate D–G의 상태를 바꾸지 않는다. CLI fixture, 공통 engine 회귀 포함 전체 878개 pytest, Ruff, `git diff --check`가 통과했다.

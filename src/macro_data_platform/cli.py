@@ -9,7 +9,9 @@ from pathlib import Path
 from uuid import uuid4
 
 from macro_data_platform.config import Settings
+from macro_data_platform.connectors.bls import BLSQuery
 from macro_data_platform.connectors.boj import BOJQuery
+from macro_data_platform.connectors.census import CensusQuery
 from macro_data_platform.connectors.worldbank import API_DOCS, GDPQuery
 from macro_data_platform.contracts import EvidenceKind
 from macro_data_platform.ingestion.boj import (
@@ -22,7 +24,12 @@ from macro_data_platform.ingestion.gate_c_watch import (
     make_gate_c_watch_orchestrator,
 )
 from macro_data_platform.ingestion.worldbank_request import WorldBankRequestDispatcher
-from macro_data_platform.orchestration import WorkflowService, build_engine_registry
+from macro_data_platform.orchestration import (
+    StageSpec,
+    TaskPlan,
+    WorkflowService,
+    build_engine_registry,
+)
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.workflow_contracts import (
     Candidate,
@@ -54,6 +61,22 @@ def build_parser() -> argparse.ArgumentParser:
     boj.add_argument("--month", required=True, help="one month as YYYYMM")
     boj.add_argument("--live", action="store_true", required=True,
                      help="explicitly permit the official API requests")
+    bls = sources.add_parser("bls", help="selected BLS Public Data API v2 series IDs")
+    bls.add_argument("--series-id", action="append", required=True, metavar="ID",
+                     help="BLS series ID; repeat for multiple series (max 20)")
+    bls.add_argument("--start-year", type=int, required=True)
+    bls.add_argument("--end-year", type=int, required=True)
+    bls.add_argument("--live", action="store_true", required=True,
+                     help="explicitly permit the official API request")
+    census = sources.add_parser("census", help="selected Census ACS API variables and geography")
+    census.add_argument("--year", type=int, required=True)
+    census.add_argument("--dataset", choices=("acs/acs1", "acs/acs5"), required=True)
+    census.add_argument("--variable", action="append", required=True, metavar="ID",
+                        help="Census variable; repeat as needed and include NAME (max 50)")
+    census.add_argument("--geography", required=True,
+                        help="supported geography: us:1 or state:NN")
+    census.add_argument("--live", action="store_true", required=True,
+                        help="explicitly permit the official API request")
 
     watch = commands.add_parser("watch", help="check an exact-scope TIC or BIS source file")
     watch.add_argument("source", choices=("tic", "bis"))
@@ -150,6 +173,29 @@ def _worldbank_task(store: HistoryStore, settings: Settings,
     return service.create_work(doc["task_id"], expected_revision=1)["task_id"]
 
 
+def _run_registered_api_query(store: HistoryStore, settings: Settings, engine: str,
+                              input_data: dict, *, bls_transport=None, census_transport=None,
+                              clock=lambda: datetime.now(UTC), freshness_policy=None) -> dict:
+    """Persist and run one locally validated BLS/Census query through the shared registry."""
+    plan = TaskPlan((StageSpec("collect", engine, input_data),))
+    registry = build_engine_registry(
+        settings, store, bls_transport=bls_transport, census_transport=census_transport,
+        clock=clock, freshness_policy=freshness_policy,
+    )
+    runner = registry.orchestrator_for(plan=plan)
+    if engine == "bls":
+        label = (f"BLS selected series {','.join(input_data['series_ids'])}, "
+                 f"{input_data['start_year']}:{input_data['end_year']}")
+    elif engine == "census":
+        label = (f"Census {input_data['dataset']} {input_data['year']}, "
+                 f"{input_data['geography']}")
+    else:
+        raise ValueError("unsupported statistical API engine")
+    task = runner.create(label)
+    runner.plan(task.task_id, plan)
+    return runner.run(task.task_id)
+
+
 def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
     stages = doc.get("stages", [])
     last = stages[-1] if stages else None
@@ -170,6 +216,15 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
         summary["duration_estimate"] = input_data["duration_estimate"]
     elif isinstance(duration_estimate, dict):
         summary["duration_estimate"] = duration_estimate
+    if isinstance(input_data, dict):
+        if isinstance(input_data.get("series_ids"), list):
+            summary["series_ids"] = input_data["series_ids"]
+            summary["year_range"] = [input_data.get("start_year"), input_data.get("end_year")]
+        if isinstance(input_data.get("variables"), list):
+            summary["dataset"] = input_data.get("dataset")
+            summary["year"] = input_data.get("year")
+            summary["geography"] = input_data.get("geography")
+            summary["variables"] = input_data["variables"]
     if doc.get("trial_only") or doc.get("production_handoff"):
         from macro_data_platform.ingestion.large_file_duration import actual_stage_seconds
         actual_seconds = actual_stage_seconds(doc)
@@ -193,7 +248,13 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
         if key in payload:
             summary[key] = payload[key]
     if isinstance(payload.get("observations"), list):
-        summary["observation_count"] = len(payload["observations"])
+        observations = payload["observations"]
+        if all(isinstance(series, dict) and isinstance(series.get("data"), list)
+               for series in observations):
+            summary["series_count"] = len(observations)
+            summary["observation_count"] = sum(len(series["data"]) for series in observations)
+        else:
+            summary["observation_count"] = len(observations)
     return summary
 
 
@@ -378,7 +439,8 @@ def _settings(root: Path, *, live: bool) -> Settings:
     return Settings(root, data_dir=data_dir, network_enabled=live)
 
 
-def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transport=None,
+def dispatch(args, *, boj_transport=None, bls_transport=None, census_transport=None,
+             file_transport=None, worldbank_transport=None,
              clock=lambda: datetime.now(UTC),
              freshness_policy: FreshnessPolicy = DEFAULT_FRESHNESS_POLICY) -> tuple[int, dict]:
     root = args.project_root.resolve()
@@ -513,6 +575,29 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
         doc = runner.run(task.task_id)
         return _exit_code(doc), _summary(doc)
 
+    if args.command == "collect" and args.source == "bls":
+        query = BLSQuery(tuple(args.series_id), args.start_year, args.end_year)
+        doc = _run_registered_api_query(
+            store, settings, "bls", {
+                "series_ids": list(query.series_ids),
+                "start_year": query.start_year,
+                "end_year": query.end_year,
+            }, bls_transport=bls_transport, clock=clock,
+            freshness_policy=freshness_policy,
+        )
+        return _exit_code(doc), _summary(doc)
+
+    if args.command == "collect" and args.source == "census":
+        query = CensusQuery(args.year, args.dataset, tuple(args.variable), args.geography)
+        doc = _run_registered_api_query(
+            store, settings, "census", {
+                "year": query.year, "dataset": query.dataset,
+                "variables": list(query.variables), "geography": query.geography,
+            }, census_transport=census_transport, clock=clock,
+            freshness_policy=freshness_policy,
+        )
+        return _exit_code(doc), _summary(doc)
+
     if args.command == "watch":
         runner = make_gate_c_watch_orchestrator(store, settings, file_transport)
         task = runner.create(f"Gate C same-scope live source watch: {args.source}")
@@ -573,6 +658,7 @@ def dispatch(args, *, boj_transport=None, file_transport=None, worldbank_transpo
             else:
                 registry = build_engine_registry(
                     settings, store, worldbank_transport=worldbank_transport,
+                    bls_transport=bls_transport, census_transport=census_transport,
                     boj_transport=boj_transport, file_transport=file_transport,
                     clock=clock, freshness_policy=freshness_policy, gate_a=True,
                 )

@@ -8,8 +8,8 @@
 [엔진별 구현·접근 한계](ENGINE_IMPLEMENTATION_STATUS.md)를 기준으로 합니다. 개발 절차는
 [개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 축약된 옛 계획 문서는 색인이고, 회차 보고서는 작성 당시 증거입니다.
 
-MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
-시계열, TIC/BIS 지정 파일 intake를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
+MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank·BOJ 경로, 제한된
+BLS·Census ACS query, TIC/BIS 지정 파일 intake를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
 기관 전반 검색과 제품 자체 무인 스케줄링은 제공하지 않습니다. TIC/BIS 변경상태의 반복 확인은 현재 필요하지
 않다는 요청에 따라 중지했으며, `watch` 명령은 사용자가 단발 실행을 요청할 때만 사용합니다.
 
@@ -61,6 +61,8 @@ git diff --check
 ```powershell
 .\.venv\Scripts\macroatlas.exe collect worldbank-gdp --start-year 2020 --end-year 2022 --live
 .\.venv\Scripts\macroatlas.exe collect boj-fxer --month 202609 --live
+.\.venv\Scripts\macroatlas.exe collect bls --series-id CUUR0000SA0 --start-year 2024 --end-year 2024 --live
+.\.venv\Scripts\macroatlas.exe collect census --year 2022 --dataset acs/acs1 --variable NAME --variable B01001_001E --geography state:06 --live
 .\.venv\Scripts\macroatlas.exe watch tic --live
 .\.venv\Scripts\macroatlas.exe watch bis --live
 .\.venv\Scripts\macroatlas.exe status <TASK_ID>
@@ -73,6 +75,27 @@ Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실�
 BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지정된 공식 파일 URL과 기존 parser
 범위만 확인합니다. 자동 예약 실행은 없고 현재 반복 감시도 중지된 상태입니다. 명령은 URL이나 임의 기관을
 입력받지 않습니다.
+
+BLS와 Census 명령은 이미 등록된 Python API 엔진을 공통 CLI/task 경로에서 실행합니다. BLS에는
+`--series-id`를 한 개 이상 반복해 지정하고, 한 요청에 최대 20개 ID·1~20년 구간을 사용할 수 있습니다.
+요청한 ID의 정의·단위·주기는 catalogue로 검증하지 않으므로 응답에도 미확인으로 남을 수 있습니다.
+`BLS_API_KEY`는 series-data 요청에서 선택 사항입니다. Census ACS는 `acs/acs1` 또는 `acs/acs5`, 한 해,
+최대 50개 variable ID와 `us:1` 또는 `state:NN` geography만 받으며 `NAME`을 포함해야 합니다.
+`CENSUS_API_KEY`를 프로세스 환경변수로 설정해야 합니다. 두 API 모두 자동 series 검색, 임의 dataset,
+지리 수준 전체, 공식 catalogue 해석 또는 XLSX export를 제공하지 않습니다. 예시의 2022 Census 연도는
+사용자가 요청 범위와 API 공개 가능성을 확인한 뒤 바꿔야 합니다. endpoint, transport cap, 오류 처리와
+응답 검사 상세는 [BLS/Census 연결 설명](connectors/US_STATISTICS_APIS.md)을 보세요.
+
+PowerShell에서 키는 저장소에 쓰지 않고 현재 터미널 세션에 설정합니다.
+
+```powershell
+$env:CENSUS_API_KEY = "<Census API key>"
+$env:BLS_API_KEY = "<optional BLS API key>"
+```
+
+Linux/macOS에서는 같은 터미널에서 `export CENSUS_API_KEY='…'`를 사용합니다. 키 값은 명령 기록, task,
+manifest 또는 로그에 저장되지 않도록 connector가 URL과 payload에서 제거합니다. `--live`는 외부 요청을
+명시적으로 허용하며, 키의 존재나 명령의 실행만으로 품질 통과를 보장하지 않습니다.
 
 각 실행은 JSON 요약에 task ID, 상태, stage, 품질 상태, 저장 경로를 표시합니다. `status`는 네트워크를
 사용하지 않고 task를 조회합니다. transient 실패가 생기면 프로세스를 다시 연 뒤 같은 task ID로
@@ -133,8 +156,8 @@ World Bank/BOJ task CSV export 외의 범용 CSV/XLSX 변환기는 제공하지 
 | 접근 경로 | 현재 범위 | 키 정책 |
 |---|---|---|
 | World Bank WDI | 위에 적힌 미국 GDP 고정 수집 경로 | 키 불필요 |
-| BLS Public Data API v2 | 선택한 series ID의 제한된 Python API 수집; metadata와 통계 의미는 별도 확인 | 일반 series-data 조회는 `BLS_API_KEY` 선택 사항. 일부 catalogue 요청은 등록 키 필요 |
-| Census ACS API | 제한된 ACS query connector | `CENSUS_API_KEY` 필수 |
+| BLS Public Data API v2 | 선택 series ID·연도 구간의 CLI/Python 수집; metadata와 통계 의미는 별도 확인 | 일반 series-data 조회는 `BLS_API_KEY` 선택 사항. 일부 catalogue 요청은 등록 키 필요 |
+| Census ACS API | 지정 ACS dataset·variable·연도·geography의 CLI/Python 수집 | `CENSUS_API_KEY` 필수 |
 | TIC/BIS 파일 | 고정 URL live 재수집·로컬 intake·대용량 인계 목록. BIS flat은 현재 정책에 따라 deferred | API 키 없음 |
 | BOJ JSON API | FM08/FXERD01 한 달 metadata·observations collector와 durable task 연결 | 키를 보내지 않음 |
 | IMF·BEA·ECB/Eurostat·중국 기관 등의 전체 수집 | 현행 connectors/CLI에 해당 observation 경로가 미구현. 현재 서버 접근 차단 판정이 아님 | 문서·키 설정만으로 수집 성공을 주장하지 않음 |

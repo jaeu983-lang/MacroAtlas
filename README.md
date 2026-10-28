@@ -27,7 +27,7 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 - TIC/BIS: 필요할 때 명시적으로 실행하는 지정 파일 intake. 자료 변경상태의 반복·예약 확인은 사용자
   요청에 따라 중지했다.
 - BIS GLI flat ZIP: 같은 원본 qualification과 별도 승인을 통과한 보존 파일 한 건을 구조 보존 JSONL로 처리.
-- 제한된 BLS/Census connector는 Python API 경로이며 고정 `macroatlas` CLI 수집 명령은 아닙니다.
+- BLS Public Data API v2와 Census ACS는 정확한 series/variable ID를 지정하는 제한 CLI·Python API 경로를 제공합니다.
 - task 상태 확인·같은 task 재개와 비API 파일 인계 목록·제한 격리 시험을 제공합니다.
 - 비API 대용량 qualification과 BIS production 실행은 worker 시작 직전에 예상 시간·범위·신뢰도·실측 수를 표시합니다.
   `large-estimate` preview는 task를 만들거나 실행하지 않고 예측만 확인합니다.
@@ -55,6 +55,10 @@ python3 -m venv .venv
 .venv/bin/macroatlas status <TASK_ID>
 .venv/bin/macroatlas export <TASK_ID> --format csv --output data/exports/worldbank.csv
 ```
+
+정확한 API 식별자를 알고 있으면 BLS와 Census ACS도 CLI로 수집할 수 있습니다. 기관 전체 검색이나
+식별자 의미의 자동 판정은 포함하지 않습니다. 명령 형식·범위·API key 설정은
+[사용자 안내서](docs/USER_GUIDE.md)를 참조하세요.
 
 비API 대용량 작업의 예측만 확인하려면 `macroatlas large-estimate qualification <DEFERRAL_ID>` 또는
 `macroatlas large-estimate production <DEFERRAL_ID> --event-seq <SEQ>`를 사용합니다. production 실행 전 예상은

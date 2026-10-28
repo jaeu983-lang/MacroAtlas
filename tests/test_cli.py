@@ -69,6 +69,30 @@ class WorldBankFixture:
                         EvidenceKind.FIXTURE)
 
 
+class BLSFixture:
+    def fetch(self, query):
+        body = {"status": "REQUEST_SUCCEEDED", "messageCodes": [], "Results": {"series": [
+            {"seriesID": series_id, "data": [{
+                "year": str(query.end_year), "period": "M09", "value": "1.2",
+            }]} for series_id in query.series_ids
+        ]}}
+        return ApiDownload(
+            "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+            json.dumps(body).encode(), 200, NOW, "application/json", EvidenceKind.FIXTURE,
+        )
+
+
+class CensusFixture:
+    def fetch(self, query):
+        geography = query.geography.split(":", 1)[0]
+        body = [list(query.variables) + [geography],
+                ["United States" if query.geography == "us:1" else "California"
+                 for _ in query.variables] + [query.geography.split(":", 1)[1]]]
+        endpoint = f"https://api.census.gov/data/{query.year}/{query.dataset}"
+        return ApiDownload(endpoint, json.dumps(body).encode(), 200, NOW,
+                           "application/json", EvidenceKind.FIXTURE)
+
+
 class StructuredCLITests(unittest.TestCase):
     def test_boj_cli_runs_fixed_scoped_request_and_prints_task_summary(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -114,6 +138,54 @@ class StructuredCLITests(unittest.TestCase):
             self.assertEqual(result["status"], "COMPLETED")
             self.assertEqual([stage["status"] for stage in result["stages"]],
                              ["SUCCEEDED", "SUCCEEDED"])
+
+    def test_bls_cli_runs_selected_series_through_shared_registry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "pyproject.toml").write_text("[project]\nname='fixture'\n")
+            args = build_parser().parse_args([
+                "--project-root", directory, "collect", "bls",
+                "--series-id", "CUUR0000SA0", "--series-id", "CUUR0000SA1",
+                "--start-year", "2026", "--end-year", "2026", "--live",
+            ])
+            status, result = dispatch(
+                args, bls_transport=BLSFixture(), clock=lambda: NOW,
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(result["status"], "COMPLETED")
+            self.assertEqual(result["series_ids"], ["CUUR0000SA0", "CUUR0000SA1"])
+            self.assertEqual(result["series_count"], 2)
+            self.assertEqual(result["observation_count"], 2)
+
+    def test_census_cli_runs_selected_acs_query_through_shared_registry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "pyproject.toml").write_text("[project]\nname='fixture'\n")
+            args = build_parser().parse_args([
+                "--project-root", directory, "collect", "census", "--year", "2024",
+                "--dataset", "acs/acs1", "--variable", "NAME", "--variable", "B01001_001E",
+                "--geography", "state:06", "--live",
+            ])
+            status, result = dispatch(
+                args, census_transport=CensusFixture(), clock=lambda: NOW,
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(result["status"], "COMPLETED")
+            self.assertEqual(result["dataset"], "acs/acs1")
+            self.assertEqual(result["geography"], "state:06")
+            self.assertEqual(result["observation_count"], 1)
+
+    def test_bls_and_census_collect_require_explicit_live_flag(self):
+        commands = [
+            ["collect", "bls", "--series-id", "CUUR0000SA0",
+             "--start-year", "2024", "--end-year", "2024"],
+            ["collect", "census", "--year", "2024", "--dataset", "acs/acs1",
+             "--variable", "NAME", "--geography", "us:1"],
+        ]
+        for command in commands:
+            with self.subTest(command=command), self.assertRaises(SystemExit) as caught:
+                build_parser().parse_args(command)
+            self.assertEqual(caught.exception.code, 2)
 
     def test_status_command_is_local_and_does_not_make_network_requests(self):
         with tempfile.TemporaryDirectory() as directory:

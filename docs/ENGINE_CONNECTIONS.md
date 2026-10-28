@@ -53,9 +53,11 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 |---|---|---|
 | `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → 공통 EngineRegistry → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
 | `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
+| `collect bls` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `bls/1` | exact series IDs·연도 범위, credential-free raw/manifest, 제한 quality/freshness result; catalogue semantics는 unknown으로 유지 |
+| `collect census` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `census/1` | acs/acs1·acs/acs5, 지정 variable·geography, credential-free raw/manifest; 전체 variable catalog/search는 없음 |
 | `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
-| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; Python API로 계획 실행 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 현재 고정 CLI collect 명령은 없음 |
+| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; exact query CLI와 Python API가 같은 plan 경로 사용 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 전체 카탈로그 검색과 결과 export는 없음 |
 | `status` / `resume` | task 조회 / 저장 plan의 `(engine, version)`을 공통 EngineRegistry가 해석 | 새 source 범위를 만들지 않고 같은 task 재개. Workflow confirmation은 WorldBank dispatcher가 재검증하고, 대용량 시험·production은 중단 worker 확인과 checkpoint 검증을 위해 전용 recovery runner를 유지 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산과 duration profile/forecast 결합 → worker 직전 예상 표시 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음. 완료 요약에 actual stage seconds 포함 |
