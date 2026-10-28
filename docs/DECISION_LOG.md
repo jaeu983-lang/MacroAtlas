@@ -1002,3 +1002,9 @@ Live Canada `SP.POP.TOTL`, 1990–2025 조회는 task `2ad0c8e6-9b2f-4251-9b00-0
 2026-10-28. PR #77에서 연결한 `boj_observations_range/1`의 임의 12개월 제한을 120개월로 높였다. FM08/FXERD01 고정 identity, 연속 월 검증, 2 MiB HTTP raw limit, 60,000-point 공식 cap보다 작은 단일 응답, 기존 freshness·resume·CSV raw 재검증을 유지한다. 121개월 이상은 task 생성 전에 query validation에서 거절한다. 기존 one-month contract에는 변경이 없다.
 
 Live 201611–202610 요청은 task `00c40451-2a11-4966-aa9a-32e4d3bfb0ac`로 완료했다. 3,652 calendar rows와 1,215 null을 보존했고 최신 유효 날짜 `2026-10-26`, age 2일, daily freshness `FRESH`였다. CSV 재검증 export도 같은 행/null 수로 완료했다. Raw/manifest/CSV/provenance는 ignored `data/`에 두었고 commit하지 않는다. 이는 이 시리즈와 이 구간만 확인한다. Gate C·D–G 상태는 변경하지 않는다.
+
+## D-121 — Gate D에 대한 AI 권고: hold
+
+2026-10-28. 사용자가 AI에게 다음 판정을 맡겨, GPT가 Gate C의 고정 평가 결과와 범위를 검토했다. 후보 `semantic-disambiguation-v1`은 Gate C 고정 범위에서 false-exact·금지행동 위반 0, holdout rankable Top-1 +2, unrelated abstention +8, near-match 동률, candidate p95 1.508 ms를 기록했다. 반면 확인 근거는 local catalog 검색과 proposal-to-plan 경계에 한정되고 실제 사용자 피드백, provider/API·raw-write·export 내부 경로, 실제 분석가 사용은 검증하지 않았다.
+
+AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증거만으로 제품 기본 규칙을 승격할 근거가 충분하지 않다고 판단했다. 기본 정책은 바꾸지 않았다. `macro-promotion inspect`와 `verify`는 `PASS`였고 promotion ledger는 event 0, active acceptance 없음, historical evidence `PASS`였다. 이 항목은 AI-authored 권고이며 formal promotion ledger의 사람 결정이나 Gate D 완료로 간주하지 않는다. 공식 ledger의 human decision을 기록하려면 실제 결정권자와 독립 검토자의 self-attestation이 여전히 필요하다.

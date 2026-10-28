@@ -106,6 +106,17 @@ series, changed revisions, or natural failure/resume behavior. Product Gate D–
 is unchanged. After both range expansions, the full local pytest suite passed
 911 tests; Ruff and `git diff --check` passed.
 
+## Post-merge Gate D review
+
+After PR #78 merged, `macro-promotion inspect` and `verify` both returned
+`PASS`; the formal promotion ledger has zero events, no active acceptance, and
+historical Gate C evidence verifies against Git. The AI reviewer recommends
+`hold` with reason `evidence_follow_up_needed`: the passing scope is fixed local
+search and confirmation-boundary behavior, while provider/raw-write/export and
+real analyst use remain outside the evidence. This recommendation is kept in
+the decision log as AI-authored; it is not a human decision, promotion-ledger
+event, policy change, or Gate D completion.
+
 ## Post-merge BOJ monthly-range follow-up
 
 After PR #76 merged, `boj_observations_range/1` and the `collect boj-fxer-range`
