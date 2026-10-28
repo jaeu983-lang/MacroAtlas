@@ -33,7 +33,7 @@
 | 사례 corpus A | 통과 (v2) | 36건 quota, 27 review ledger rows, original/case/evidence hash, privacy, split/family 검사를 통과 |
 | feedback bridge B | snapshot·수동 batch 구현, fixture 검증; 실제 사용자 검증 미완료. 합성 질문/피드백 6건은 별도 ignored DB에 있고 4건은 tracked fixture로 재생 가능 | feedback revision 원장을 계속 보존. 선택 seed는 privacy attestation을 거쳐 development draft만 출력한다. 실제 사용자 sample은 아직 없고 OpenAI API는 요구되지 않음 |
 | 평가 C | PASS — fixed v2 search scope, 2026-10-28. holdout lock은 `COMPLETED` | dev/validation/holdout 전체 false-exact·forbidden-exact 0. 금지 동작 위반 0; holdout 36 query에서 확인 없는 계획은 전부 차단. Holdout rankable Top-1 +2, unrelated abstention +8, near-match 유지, 유형 퇴행 없음. candidate p95 1.508ms/100ms, baseline 대비 1.184배/1.5배, 외부 호출·비용 0. 후보 자동 승격은 없으며 provider/raw/export 내부 동작·통계적 동등성·사람 관찰은 미측정 |
-| 승격 D | 미구현 | Gate C 판정 뒤 사람이 독립 reviewer와 함께 case/policy hash·지표·결정·적용 commit·rollback commit을 append-only ledger에 남긴다. 자동 promotion 없음 |
+| 승격 D | 원장·CLI 구현, Gate D 미완료 | `macro-promotion`은 C artifact/hash/metrics를 검증하고 append-only hash-chain 원장에 accept/hold/reject 또는 rollback을 남긴다. accept에는 Gate C PASS, 서로 다른 사람의 self-attestation, 적용 commit이 필요하다. rollback은 적용 commit 뒤의 새 commit을 요구한다. 현재 원장은 비어 있으며 도구는 신원을 인증하지 않고 기본 정책을 바꾸지 않는다. |
 | Series·freshness E | 부분 구현 | typed Series/Observation을 정의하고 공식 release evidence와 series별 정책을 연결한다. 미상 policy는 `FRESHNESS_UNVERIFIED`, 초과는 `STALE`; 두 상태는 latest result/export에서 차단 |
 | 원자료 XLSX F | 미구현 | validated typed series만 입력. 원값·period·missing/zero·unit/frequency·source/raw hash/provenance를 보존하고 no-overwrite/path/formula safety를 검증 |
 | 비교 XLSX G | 미구현 | compatibility contract를 통과한 series만 정렬. 원자료 sheet는 보존, 별도 alignment sheet에 명시 변환·calendar·결측 정책을 남기며 자동 보간/forward-fill 없음 |
@@ -47,6 +47,6 @@
 
 ## 다음 Gate
 
-Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. 후보 규칙은 자동 승격하지 않았다. 다음 순서는 D의 독립 검토·승격/rollback 기록이며, provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
+Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. `macro-promotion`과 append-only decision ledger가 추가됐지만 실제 사람 결정은 아직 기록되지 않아 후보는 계속 미승격이고 Gate D는 미완료다. 신원 확인과 독립 검토의 실체는 운영자가 확인해야 한다. provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
 
 기본 브랜치의 대조 기준 commit은 [`072d3d3`](https://github.com/jaeu983-lang/MacroAtlas/commit/072d3d38e470ce2f9c979970b556aab05fb0a34c)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

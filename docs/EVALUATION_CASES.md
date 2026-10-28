@@ -169,5 +169,7 @@ The validator does not authenticate source evidence or approve a rule. Developme
 ranking scores on the v2 set are offline fixture measurements, not evidence of
 production accuracy or analyst usability. The one-time holdout command measures
 the fixed ranker candidate only; it does not prove statistical equivalence or
-exercise source API, raw-write, export, or human workflow. Rule promotion and
-rollback remain explicit decisions with no automatic feedback-to-code path.
+exercise source API, raw-write, export, or human workflow. The `macro-promotion`
+CLI verifies the frozen evidence hashes and records explicit accept/hold/reject
+and rollback events. It does not authenticate identities or change default policy;
+the current ledger has no human decision, so the candidate remains unpromoted.
