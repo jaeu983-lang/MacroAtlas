@@ -15,7 +15,7 @@
 | 영역 | 현재 코드 | 남은 조건 |
 |---|---|---|
 | 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
-| 검색 | CandidateSearchEngine과 rank_candidates가 고정 catalog를 검색한다. `macro-eval search-baseline`과 `search-compare`는 v2 development split에서 input/case/catalog/policy hash, Top-1/MRR, 기대 상태, unrelated abstention, forbidden 반환, false-exact, status/field 구조 일치와 정책 delta를 측정한다. | candidate 정책은 평가 전용 minimum-score wrapper다. 금지 행동 trace, 엔진 확정 의미, validation/holdout, 실제 사용자 사례와 정책별 독립 검토 및 명시 승격/rollback은 미완료다. |
+| 검색 | CandidateSearchEngine과 rank_candidates가 고정 catalog를 검색한다. `search-baseline`/`search-compare`는 development, `search-validation`은 validation split의 input/case/catalog/policy hash, Top-1/MRR, 기대 상태, unrelated abstention, forbidden 반환, false-exact, status/field 구조 일치와 정책 delta를 측정한다. | candidate 정책은 평가 전용 minimum-score wrapper다. 금지 행동 trace, 엔진 확정 의미, holdout 단회 평가, 자연 사용자 사례와 정책별 독립 검토 및 명시 승격/rollback은 미완료다. |
 | 피드백 | SQLite append-only FeedbackStore, 명시 review CLI와 `macro-eval feedback-draft`가 있다. 현재 accepted/current revision의 `user_instruction`만 explicit privacy attestation과 sanitized question으로 local seed를 만들 수 있다. | 실제 사용자 feedback을 seed하지 않았다. seed는 incomplete이며 full case authoring/review 뒤에도 별도 편입이 필요하다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
 | 최신성 | FreshnessPolicy와 assess_freshness가 있고 World Bank·BOJ·BLS·Census 경로와 CSV 재검증에 연결된다. | source release calendar로 검증된 series policy와 공통 typed TimeSeries/Observation은 없다. 일반 tabular input도 freshness gate 범위 밖이다. |
@@ -28,7 +28,7 @@
 |---|---|---|
 | 사례 corpus A | 통과 (v2) | 36건 quota, 27 review ledger rows, original/case/evidence hash, privacy, split/family 검사를 통과 |
 | feedback bridge B | 제한 구현·fixture 검증 | 선택한 최신 accepted user instruction + privacy attestation만 local development seed로 출력. raw text/task/scope/evidence 제외, incomplete draft, 자동 corpus 편입 없음. 실제 사용자 sample 미관측 |
-| 평가 C | development ranker 비교 구현·Gate 미통과 | 동일 input/case/catalog으로 baseline과 candidate를 비교하고 유형별 ranking, 기대 상태, abstention, forbidden 후보, false-exact와 필드 구조 일치를 기록한다. 금지 행동 trace, 자연 사용자 사례, validation/holdout 및 promotion review는 미완료 |
+| 평가 C | development/validation ranker 비교 구현·Gate 미통과 | 동일 input/case/catalog으로 baseline과 candidate를 비교하고 유형별 ranking, 기대 상태, abstention, forbidden 후보, false-exact와 필드 구조 일치를 기록한다. 금지 행동 trace, 자연 사용자 사례, frozen candidate holdout 단회 평가 및 promotion review는 미완료 |
 | 승격 D | 미구현 | validation 통과, frozen holdout 단회 확인, reviewer와 적용·rollback commit 기록 |
 | Series·freshness E | 부분 구현 | 공통 typed model과 source-aware freshness를 provider별로 연결. latest 요청의 STALE/FRESHNESS_UNVERIFIED 값을 차단 |
 | 원자료 XLSX F | 미구현 | source 값·결측·provenance 유지, no-overwrite와 freshness 확인 |

@@ -74,7 +74,7 @@ def _state_matches(case, rows, returned_ids):
     )
 
 
-def _development_input_sha256(corpus):
+def _split_input_sha256(corpus, split):
     payload = [
         {
             "case_id": case.case_id,
@@ -83,18 +83,25 @@ def _development_input_sha256(corpus):
             "query_variants": list(case.query_variants),
         }
         for case in corpus.cases
-        if case.split == "development"
+        if case.split == split
     ]
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None = None) -> dict:
+def evaluate_split(
+    corpus: EvaluationCorpus,
+    policy: SearchPolicy | None = None,
+    *,
+    split: str,
+) -> dict:
     """Measure rank and unmatched behavior without running collection or promotion."""
+    if split not in {"development", "validation"}:
+        raise ValueError("Only development and validation splits may be evaluated here")
     policy = policy or SearchPolicy()
     groups = {}
     for case in corpus.cases:
-        if case.split != "development":
+        if case.split != split:
             continue
         group = groups.setdefault(
             case.case_type,
@@ -186,10 +193,18 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
         denominator = group["rankable_queries"]
         group["mrr"] = round(group["reciprocal_rank_sum"] / denominator, 6) if denominator else None
         group["reciprocal_rank_sum"] = round(group["reciprocal_rank_sum"], 6)
+    not_measured = [
+        "engine_confirmation",
+        "prohibited_action_execution",
+        "semantic_equivalence",
+        "holdout",
+    ]
+    if split == "development":
+        not_measured.append("validation")
     return {
         "status": "POLICY_MEASUREMENT_ONLY",
-        "split": "development",
-        "input_sha256": _development_input_sha256(corpus),
+        "split": split,
+        "input_sha256": _split_input_sha256(corpus, split),
         "case_sha256": corpus.case_sha256,
         "catalog_sha256": corpus.catalog_sha256,
         "policy": asdict(policy),
@@ -202,14 +217,12 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
             "reason": "The offline ranker exposes no product-action trace to evaluate prohibited actions.",
             "case_count": sum(group["cases"] for group in groups.values()),
         },
-        "not_measured": [
-            "engine_confirmation",
-            "prohibited_action_execution",
-            "semantic_equivalence",
-            "validation",
-            "holdout",
-        ],
+        "not_measured": not_measured,
     }
+
+
+def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None = None) -> dict:
+    return evaluate_split(corpus, policy, split="development")
 
 
 def compare_development_policies(
@@ -218,8 +231,38 @@ def compare_development_policies(
     candidate: SearchPolicy,
 ) -> dict:
     """Compare two policies on the same development cases and catalog snapshot."""
-    baseline_report = evaluate_development(corpus, baseline)
-    candidate_report = evaluate_development(corpus, candidate)
+    return compare_split_policies(corpus, baseline, candidate, split="development")
+
+
+def compare_validation_policies(
+    corpus: EvaluationCorpus,
+    baseline: SearchPolicy,
+    candidate: SearchPolicy,
+) -> dict:
+    """Compare frozen candidate behavior on validation without touching holdout."""
+    return compare_split_policies(corpus, baseline, candidate, split="validation")
+
+
+def compare_split_policies(
+    corpus: EvaluationCorpus,
+    baseline: SearchPolicy,
+    candidate: SearchPolicy,
+    *,
+    split: str,
+) -> dict:
+    if split not in {"development", "validation"}:
+        raise ValueError("Only development and validation splits may be compared")
+    baseline_report = evaluate_split(corpus, baseline, split=split)
+    candidate_report = evaluate_split(corpus, candidate, split=split)
+    not_measured = [
+        "engine_confirmation",
+        "prohibited_action_execution",
+        "semantic_equivalence",
+        "promotion_eligibility",
+        "holdout",
+    ]
+    if split == "development":
+        not_measured.append("validation")
     deltas = {}
     for case_type, before in baseline_report["groups"].items():
         after = candidate_report["groups"][case_type]
@@ -246,20 +289,13 @@ def compare_development_policies(
             else None
         )
     return {
-        "status": "DEVELOPMENT_COMPARISON_ONLY",
-        "split": "development",
+        "status": "SPLIT_COMPARISON_ONLY",
+        "split": split,
         "input_sha256": baseline_report["input_sha256"],
         "case_sha256": corpus.case_sha256,
         "catalog_sha256": corpus.catalog_sha256,
         "baseline": baseline_report,
         "candidate": candidate_report,
         "deltas": deltas,
-        "not_measured": [
-            "engine_confirmation",
-            "prohibited_action_execution",
-            "semantic_equivalence",
-            "promotion_eligibility",
-            "validation",
-            "holdout",
-        ],
+        "not_measured": not_measured,
     }

@@ -38,11 +38,11 @@ Gate가 실패하면 36건으로 간주하지 않고 evaluator 단계로 넘어�
 
 ## 2. 검색 평가기와 정책 비교 — PR 묶음 2, C
 
-`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행해 유형별 Top-1 분자·분모, MRR, unrelated 후보 반환과 false-exact 후보를 보고한다. `macro-eval search-compare`는 같은 사례·catalog hash로 baseline과 versioned `SearchPolicy`를 비교한다. 현재 candidate 정책은 결과 수 제한과 minimum lexical score를 고정 입력으로 받는 평가용 wrapper이며, 새 순위 규칙이나 제품 기본값을 바꾸지 않는다. 두 명령은 기대 match status와 지원 필드의 구조적 일치도를 함께 세며 후보 미반환과 미지원·conflict 필드를 별도로 기록한다. 구조적 일치는 통계 의미의 동등성 검증이 아니다. 후보 반환은 확정이 아니다. 이 단계는 validation/holdout, 실제 확정·금지 동작과 제품 승격 적격성을 측정하지 않으므로 C gate 통과나 rule promotion을 뜻하지 않는다. 검색 평가기와 초기 정책 비교 구현은 완료했으며 C gate 완료에는 미측정 항목과 자연 사용자 사례 검토가 남아 있다.
+`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행하고, `macro-eval search-compare`는 그 split에서 baseline과 versioned `SearchPolicy`를 비교한다. `macro-eval search-validation`은 고정 baseline과 candidate를 validation 사례에서 비교하며 holdout을 열지 않는다. 현재 candidate 정책은 결과 수 제한과 minimum lexical score를 받는 평가용 wrapper이며, 제품 기본값은 바꾸지 않는다. 명령들은 기대 상태, 관련 후보 누락, unrelated abstention, 금지 후보 반환, false-exact, 지원 필드의 구조적 일치를 기록한다. 구조적 일치는 통계 의미의 동등성 검증이 아니다. 후보 반환은 확정이 아니다. validation 결과는 측정됐더라도 금지 동작 실행 trace와 자연 사용자 사례가 검증되지 않아 C gate 통과나 rule promotion을 뜻하지 않는다.
 
 새 ranker를 만들지 않는다. 기존 discovery/series_search.py의 rank_candidates를 baseline으로 사용하고, candidate 변경은 SearchPolicy 버전 주입으로 분리한다. 평가 입력은 case, catalog, policy의 고정 snapshot이며 네트워크·자격증명·task/raw DB 쓰기·제품 export가 없어야 한다.
 
-보고서에는 input/case/catalog/policy SHA, 전체 및 case type별 분자·분모, Top-1/MRR, 기대 상태 일치, 관련 후보 누락, unrelated abstention, forbidden candidate 반환, false-exact, 구조적 필드 일치를 기록한다. 금지 행동 실행은 ranker에 관측 가능한 action trace가 없으므로 아직 `NOT_MEASURED`다. 동일 입력의 보고서는 결정적이어야 한다. unknown을 정답으로 추측하거나 지원하지 않는 collector 경로를 성공으로 채점하지 않는다.
+보고서에는 input/case/catalog/policy SHA, 전체 및 case type별 분자·분모, Top-1/MRR, 기대 상태 일치, 관련 후보 누락, unrelated abstention, forbidden candidate 반환, false-exact, 구조적 필드 일치를 기록한다. 금지 행동 실행은 ranker에 관측 가능한 action trace가 없으므로 `NOT_MEASURED`다. 동일 입력의 보고서는 결정적이어야 한다. unknown을 정답으로 추측하거나 지원하지 않는 collector 경로를 성공으로 채점하지 않는다.
 
 통과 조건은 목표 case type 개선, 비목표 유형 퇴행 0, false-exact 0, 금지 동작 0이다. 통과하지 못하면 policy를 승격하지 않는다.
 

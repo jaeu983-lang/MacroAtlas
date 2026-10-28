@@ -15,6 +15,7 @@ from macro_data_platform.evaluation.feedback_bridge import (
 from macro_data_platform.evaluation.search_baseline import (
     SearchPolicy,
     compare_development_policies,
+    compare_validation_policies,
     evaluate_development,
 )
 from macro_data_platform.storage.feedback import FeedbackStore
@@ -48,6 +49,14 @@ def main(argv=None):
     )
     compare.add_argument("--repo-root", type=Path, default=None)
     compare.add_argument("--candidate-min-score", type=float, default=70)
+    validate_search = commands.add_parser(
+        "search-validation", help="compare frozen policy behavior on validation only"
+    )
+    validate_search.add_argument(
+        "--corpus-dir", type=Path, default=Path.cwd() / "tests/fixtures/evaluation/v2"
+    )
+    validate_search.add_argument("--repo-root", type=Path, default=None)
+    validate_search.add_argument("--candidate-min-score", type=float, default=70)
     feedback_draft = commands.add_parser(
         "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
     )
@@ -101,6 +110,21 @@ def main(argv=None):
             elif args.command == "search-compare":
                 try:
                     report = compare_development_policies(
+                        loaded,
+                        SearchPolicy(version="lexical-baseline-v1"),
+                        SearchPolicy(
+                            version="lexical-min-score-candidate-v1",
+                            minimum_score=args.candidate_min_score,
+                        ),
+                    )
+                except ValueError as exc:
+                    report = {"status": "INVALID_POLICY", "errors": [str(exc)]}
+                    ready = False
+                else:
+                    ready = True
+            elif args.command == "search-validation":
+                try:
+                    report = compare_validation_policies(
                         loaded,
                         SearchPolicy(version="lexical-baseline-v1"),
                         SearchPolicy(

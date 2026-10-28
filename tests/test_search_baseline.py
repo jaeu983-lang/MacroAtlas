@@ -4,7 +4,9 @@ from macro_data_platform.evaluation.cases import load_corpus
 from macro_data_platform.evaluation.search_baseline import (
     SearchPolicy,
     compare_development_policies,
+    compare_validation_policies,
     evaluate_development,
+    evaluate_split,
 )
 
 
@@ -87,7 +89,7 @@ def test_policy_comparison_uses_same_development_queries_and_reports_policy_hash
         for variant in case.query_variants
     ]
     assert seen == expected + expected
-    assert report["status"] == "DEVELOPMENT_COMPARISON_ONLY"
+    assert report["status"] == "SPLIT_COMPARISON_ONLY"
     assert report["baseline"]["case_sha256"] == report["candidate"]["case_sha256"]
     assert report["baseline"]["catalog_sha256"] == report["candidate"]["catalog_sha256"]
     assert report["baseline"]["policy_sha256"] != report["candidate"]["policy_sha256"]
@@ -139,3 +141,32 @@ def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):
     assert group["forbidden_candidate_returns"] == len(case.query_variants)
     assert group["forbidden_exact_candidates"] == len(case.query_variants)
     assert group["expected_state_matches"] == 0
+
+
+def test_validation_comparison_never_runs_holdout_and_marks_it_unmeasured(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    seen = []
+
+    def no_results(request, candidates, *, limit):
+        seen.append(request.request_id)
+        return []
+
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.rank_candidates", no_results
+    )
+    report = compare_validation_policies(
+        corpus,
+        SearchPolicy(version="baseline"),
+        SearchPolicy(version="candidate", minimum_score=70),
+    )
+    expected_cases = [case for case in corpus.cases if case.split == "validation"]
+    expected = [case.case_id for case in expected_cases for _ in case.query_variants]
+    assert seen == expected + expected
+    assert report["split"] == "validation"
+    assert "holdout" in report["not_measured"]
+    assert "validation" not in report["not_measured"]
+    assert report["baseline"]["input_sha256"] == report["candidate"]["input_sha256"]
+    import pytest
+
+    with pytest.raises(ValueError, match="Only development and validation"):
+        evaluate_split(corpus, split="holdout")
