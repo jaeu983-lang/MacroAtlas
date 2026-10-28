@@ -6,12 +6,16 @@ from unittest.mock import Mock
 
 import pytest
 
+from macro_data_platform.capacity import CapacityLimitExceeded
 from macro_data_platform.cli import build_parser, dispatch
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors import official_files
+from macro_data_platform.connectors import tabular_files as tabular_connector
 from macro_data_platform.connectors.official_files import FileCapacityFailure, OfficialFileTransport
+from macro_data_platform.connectors.tabular_files import parse_tabular_document
 from macro_data_platform.contracts import StageStatus
 from macro_data_platform.ingestion import non_api_capacity as capacity
+from macro_data_platform.ingestion import tabular_files as tabular_ingestion
 from macro_data_platform.ingestion.gate_c_watch import (
     build_gate_c_watch_plan,
     make_gate_c_watch_orchestrator,
@@ -116,10 +120,40 @@ def test_transport_capacity_records_reason_and_stops_reading(monkeypatch, header
     monkeypatch.setattr(official_files.requests, 'Session', lambda: session)
     with pytest.raises(FileCapacityFailure) as caught:
         OfficialFileTransport().fetch('bis')
-    assert caught.value.capacity['observed'] == 8
+    finding = caught.value.capacity
+    assert finding.reason.value == 'download_bytes'
+    assert finding.observed == 8
+    assert finding.threshold == 8
+    assert finding.inspection_point == ('content_length' if header == '8' else 'bounded_stream')
+    assert finding.disposition.value == 'deferred'
     if header == '8':
         response.iter_content.assert_not_called()
     assert session.get.call_count == 1
+
+
+def test_tabular_capacity_is_typed_and_records_exact_reason(monkeypatch):
+    monkeypatch.setattr(tabular_connector, 'MAX_ROWS', 2)
+    with pytest.raises(CapacityLimitExceeded) as caught:
+        parse_tabular_document(b'a\n1\n2\n', 'csv')
+    finding = caught.value.finding
+    assert finding.reason.value == 'rows'
+    assert finding.observed == finding.threshold == 2
+    assert finding.inspection_point == 'parser.table.rows'
+    assert finding.disposition.value == 'inspection_required'
+
+
+def test_non_capacity_parser_message_containing_limit_is_not_deferred(tmp_path, monkeypatch):
+    settings = Settings(tmp_path)
+    inbox = settings._inside('data/inbox')
+    inbox.mkdir(parents=True)
+    (inbox / 'bad.csv').write_bytes(b'a,b\n1,2\n')
+    monkeypatch.setattr(tabular_ingestion, 'inspect_file', lambda *_args, **_kwargs: None)
+    result = TabularFileEngine(settings).run(StageInput('task', 'bad delimiter', 'parse', {
+        'relative_path': 'data/inbox/bad.csv', 'format': 'csv', 'delimiter': '::',
+    }, None, ()))
+    assert result.status == StageStatus.NEEDS_REVIEW
+    assert 'non_api_deferral' not in (result.payload or {})
+    assert capacity.DeferredNonAPIStore(settings).list() == []
 
 
 def test_download_deferral_persists_same_task_and_cli_reason(tmp_path):
@@ -135,6 +169,9 @@ def test_download_deferral_persists_same_task_and_cli_reason(tmp_path):
     record = capacity.DeferredNonAPIStore(settings).list()[0]
     assert record['task_id'] == task.task_id
     assert record['reason'] == 'download_bytes'
+    assert record['observed'] == record['threshold'] == 16 * 1024 * 1024
+    assert record['disposition'] == 'deferred'
+    assert record['inspection_point'] == 'content_length'
     assert not (tmp_path / 'data/processed').exists()
     (tmp_path / 'pyproject.toml').write_text('[project]\nname="fixture"\n')
     args = build_parser().parse_args(['--project-root', str(tmp_path), 'status', task.task_id])

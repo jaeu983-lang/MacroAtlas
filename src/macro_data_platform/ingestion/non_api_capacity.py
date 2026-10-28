@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
 
+from macro_data_platform.capacity import CapacityDisposition, CapacityFinding, CapacityReason
 from macro_data_platform.connectors.tabular_files import (
     MAX_CELLS,
     MAX_COLUMNS,
@@ -23,15 +24,14 @@ from macro_data_platform.connectors.tabular_files import (
 POLICY_VERSION = 'non_api_v1'
 
 
-def decision(reason, value=None, threshold=None, status='deferred'):
-    return {'reason': reason, 'observed': value, 'threshold': threshold, 'status': status,
-            'policy_version': POLICY_VERSION,
-            'unit': {'input_bytes': 'bytes', 'member_bytes': 'bytes',
-                     'download_bytes': 'bytes', 'zip_uncompressed_bytes': 'bytes',
-                     'zip_entries': 'entries', 'zip_ratio': 'ratio', 'rows': 'rows',
-                     'columns': 'columns', 'cells': 'cells', 'field_chars': 'characters'
-                     }.get(reason),
-            'inspection_point': 'bounded_preflight'}
+def decision(reason, value=None, threshold=None, status='deferred', *,
+             inspection_point='bounded_preflight'):
+    """Serialize one shared typed capacity finding for durable deferral records."""
+    finding = (reason if isinstance(reason, CapacityFinding) else CapacityFinding(
+        CapacityReason(reason), value, threshold, inspection_point,
+        CapacityDisposition(status),
+    ))
+    return finding.to_record(policy_version=POLICY_VERSION)
 
 
 def inspect_file(path, format_name, options):

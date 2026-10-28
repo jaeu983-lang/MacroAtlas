@@ -9,7 +9,7 @@ transport·parser·capacity 검사·storage는 출처별 engine adapter의 내�
 
 이 문서는 사용자 데이터 제품의 실행 경로를 다룬다. 저장소 코드를 분석·수정·QA하는 개발자 유지보수 흐름은 제품
 Orchestrator 및 source engine과 별도 control plane이다. 현재 중복 실행기와 통합 목표는
-[엔진 통합·분리 개선안](ENGINE_CONSOLIDATION_PLAN.md)을 따른다.
+[통합 제품 기획](../PROJECT_PLAN.md) §4를 따른다.
 
 ```mermaid
 flowchart TD
@@ -128,14 +128,16 @@ SQLite phase는 해당 DB 작업 경계의 inclusive 측정이고 전체 stage�
    World Bank/BOJ CSV exporter 입력으로 승격하지 않는다. exporter는 provider별 검증 artifact만 읽는다.
    원본 다운로드·파싱·resume·출처 검사를 exporter에 다시 구현하지 않는다.
 
-## 코드 대조에서 확인한 연결 공백과 최소 보완 순서
+## 코드 대조 결과와 남은 공백
+
+Iteration 29에서 transport/parser/preflight 용량 판정을 공유 `CapacityFinding`으로 연결했다. `CapacityReason`,
+observed/threshold, inspection point, disposition을 deferral record에 직렬화하며 parser error-message 검색은 없다.
 
 | 현재 공백 | 연결 전에 필요한 보완 |
 |---|---|
 | 정식 production handoff는 BIS flat ZIP 단일 source profile만 지원 | 다른 agency/file type은 별도 qualification·예산·안전 경계를 정하기 전까지 `NOT_EXECUTED` |
 | stage 실행 ID는 runner 내부에 있고 현재 StageInput에는 없음 | 19회차 handoff는 immutable origin task/event와 child stage를 연결함. 세부 stage_run lineage 확장은 후속 검토 |
 | task stage 완료와 output 파일 작성은 SQLite/파일 시스템에 따로 저장됨 | idempotent child task, atomic checkpoint/manifest, 재개 시 hash 검증으로 crash 창을 복구. 일반 cross-store transaction은 보장하지 않음 |
-| capacity 상수는 parser 모듈에 있고 parser 한도 분류 일부는 오류 문자열에 의존 | 작은 공통 policy/reason 모듈로 정리. transport/parser/engine이 같은 typed capacity reason 사용 |
 | 보안/데이터/용량에 모두 NEEDS_REVIEW가 사용됨 | 상태를 늘려 라우팅하지 말고 고정된 reason·result kind로 분기. 범용 resume가 자동 handoff하지 않음 |
 | 작은 파일 저장도 용량 상한을 갖고 있음 | 작은 parser/storage 재호출 없이 대용량 전용 budget·segmented artifact manifest로 보존 |
 | 대용량 output의 경제 의미·단위 해석과 CSV 전달은 없음 | 현재 World Bank/BOJ 검증 task만 CSV exporter에 연결됐다. 대용량 artifact export와 다른 provider는 별도 범위 |

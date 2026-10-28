@@ -2,6 +2,12 @@
 from datetime import datetime
 from urllib.parse import urlsplit
 
+from macro_data_platform.capacity import (
+    CapacityDisposition,
+    CapacityFinding,
+    CapacityLimitExceeded,
+    CapacityReason,
+)
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.tabular_files import (
     MAX_INPUT_BYTES,
@@ -112,10 +118,12 @@ class TabularFileEngine:
                 metrics.observe_input(byte_count=len(raw))
                 metrics.observe_sample_class("stored")
             if len(raw) >= MAX_INPUT_BYTES:
-                from macro_data_platform.ingestion.non_api_capacity import decision
                 record = DeferredNonAPIStore(self.settings).register(
                     data, request.task_id, request.stage_id,
-                    decision("input_bytes", len(raw), MAX_INPUT_BYTES))
+                    CapacityFinding(
+                        CapacityReason.INPUT_BYTES, len(raw), MAX_INPUT_BYTES,
+                        "intake.bounded_read", CapacityDisposition.DEFERRED,
+                    ).to_record())
                 return StageResult(StageStatus.NEEDS_REVIEW, {"non_api_deferral": record},
                                    warnings=("Input grew beyond the bounded file budget.",),
                                    error_code=ErrorCode.SCHEMA_CHANGED)
@@ -149,16 +157,15 @@ class TabularFileEngine:
                 zip_member=data.get("zip_member"), header_row=data.get("header_row", 1),
             )
             saved = complete_tabular_package(self.settings, package, table)
-        except (TypeError, ValueError) as failure:
-            if any(word in str(failure) for word in ("limit", "exceed")):
-                from macro_data_platform.ingestion.non_api_capacity import decision
-                record = DeferredNonAPIStore(self.settings).register(
-                    data, request.task_id, request.stage_id,
-                    decision("parser_capacity_limit", status="inspection_required"))
-                return StageResult(StageStatus.NEEDS_REVIEW,
-                                   {"non_api_deferral": record, **package},
-                                   warnings=("Parsing stopped at its bounded capacity guard.",),
-                                   error_code=ErrorCode.SCHEMA_CHANGED)
+        except CapacityLimitExceeded as failure:
+            record = DeferredNonAPIStore(self.settings).register(
+                data, request.task_id, request.stage_id,
+                failure.finding.to_record())
+            return StageResult(StageStatus.NEEDS_REVIEW,
+                               {"non_api_deferral": record, **package},
+                               warnings=("Parsing stopped at its bounded capacity guard.",),
+                               error_code=ErrorCode.SCHEMA_CHANGED)
+        except (TypeError, ValueError):
             return StageResult(
                 StageStatus.NEEDS_REVIEW,
                 {"package_id": package["package_id"], "raw_path": package["raw_path"],
