@@ -50,6 +50,7 @@ def build_engine_registry(
     from macro_data_platform.ingestion.worldbank_quality import (
         reusable as worldbank_reusable,
     )
+    from macro_data_platform.ingestion.worldbank_series import WorldBankSeriesEngine
     from macro_data_platform.storage.audit import AuditStore
 
     policy = freshness_policy or DEFAULT_FRESHNESS_POLICY
@@ -57,6 +58,8 @@ def build_engine_registry(
     audit = (audit_store or AuditStore(store, clock=clock)) if gate_a else None
 
     registry.register("worldbank_gdp", "2", lambda: WorldBankGDPEngine(
+        settings, worldbank_transport, clock=clock, freshness_policy=policy))
+    registry.register("worldbank_series", "1", lambda: WorldBankSeriesEngine(
         settings, worldbank_transport, clock=clock, freshness_policy=policy))
     registry.register("boj_metadata", "1", lambda: BOJMetadataEngine(settings, boj_transport),
                       reuse_validator=lambda spec, stage: metadata_reusable(spec, stage, settings))

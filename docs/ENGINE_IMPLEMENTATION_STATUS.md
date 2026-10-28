@@ -1,6 +1,6 @@
 # 엔진 구현 현황과 데이터 접근 한계
 
-> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `9ace7f7` (PR #73 merge; 2026-10-28). 이후 엔진 실행 검증은
+> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `febe195` (PR #75 merge; 2026-10-28). 이후 엔진 실행 검증은
 > [2026-10-28 smoke 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 보존한다. 이 문서는 런타임 코드와 현재 제품 현황을
 > 처음부터 끝까지 연결해 설명한다. **지원되지 않는 일**은 기관 API/데이터 계약 또는 접근 권한 때문에 현재
 > 인터페이스로 할 수 없는 일, **미구현**은 기술적으로 확장 가능하지만 코드에 아직 연결하지 않은 일로 나눈다.
@@ -49,7 +49,7 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 | Engine contract / Registry | [`contracts.py`](../src/macro_data_platform/contracts.py), [`registry.py`](../src/macro_data_platform/orchestration/registry.py), [`composition.py`](../src/macro_data_platform/orchestration/composition.py): `StageInput → StageResult`, engine/version 고정 등록, 공통 조립 및 saved plan resume | registry는 호출 가능한 engine 인스턴스를 조립한다. 자격증명 발급, provider 접근권한, 자동 선택은 담당하지 않는다. |
 | Orchestrator / History | [`runner.py`](../src/macro_data_platform/orchestration/runner.py), [`history.py`](../src/macro_data_platform/storage/history.py): 순차 실행, idempotency key, task/stage attempt, 오류 상태, 수동 retry/resume, 성공 prefix 재사용 | 분산 동시성·lease·worker 강제 종료·자동 retry/backoff 없음. 외부 side effect exactly-once 보장 안 됨. |
 | Candidate Search | [`series_search.py`](../src/macro_data_platform/discovery/series_search.py), [`cli.py`](../src/macro_data_platform/cli.py), [`evaluation/cli.py`](../src/macro_data_platform/evaluation/cli.py): 로컬 catalog ranking CLI, 근거/상태/불확실성 보존, 제한·abstention 및 오프라인 평가 비교 | 실시간 전체 catalog 수집·다국어 의미 검색·LLM 질문 해석 없음. 검색 순위 자체는 채택 근거가 아니며 별도 수집 확인이 필요. |
-| World Bank WDI collector | 미국 WDI GDP 현재달러 단일 indicator, 명시 기간, raw/manifest, 구조 파싱, 품질/freshness, 확인된 workflow | WDI 전체가 아님. API scope에서 국가/지표/query shape가 고정되고 한 요청 1–10 연속 연도/1 page/1 MiB 제한. |
+| World Bank WDI collector | 확인된 미국 GDP current-dollar workflow와 `worldbank_series/1` exact country/source/indicator annual raw-only query. 둘 다 공통 EngineRegistry/Orchestrator, raw/manifest, 구조 검사 및 freshness를 사용한다. | General path는 1 series·1–10 연속 연도·1 page·1 MiB다. metadata 검색, 단위·의미 검증 및 CSV/XLSX export는 없다. GDP 전용 품질 규칙은 일반 지표에 적용하지 않는다. |
 | BOJ FX collector | FM08/FXERD01, metadata와 관측값 단계 분리, 월별 수집, 변경 감지, 재개. 2026-10 live 응답에서 future null calendar row를 freshness 계산에서 제외하고, 31행/14 null을 보존한 채 최신 실제 값 2026-10-26으로 freshness 통과를 확인했다. | 다른 DB/series·범위 수집·getDataLayer·탐색은 미지원. 월별 요청만 지원하므로 일간 series에 대해 여러 달을 한 번에 요청하지 못한다. |
 | BLS collector | Public Data API v2, exact ID 지정 CLI/Python query, 1–20 series ID, 1–20년 구간, optional `BLS_API_KEY`, raw/manifest·parse·품질/freshness | CLI는 series catalogue를 검색하지 않는다. ID 의미/단위가 확인된 series만 안전하게 쓸 수 있다. 응답에 frequency/unit은 unknown. 장기·다수 series는 여러 요청 설계와 예산 검증이 필요. |
 | Census collector | ACS1/ACS5 exact variable 지정 CLI/Python query, 한 해, 1–50 variable, 미국 전체 또는 단일 주 geography, 필수 Census key, raw/manifest·parse·품질/freshness | 임의 Census dataset·geography 조합·시간 범위·다중 지역 batching은 미지원. 변수 정의/단위 미확인 응답은 의미가 확정되지 않음. |
@@ -98,5 +98,5 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 
 상세 게이트·통과 판정: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). 데이터 제품 요구와 원칙: [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 공통 구조·CLI 및 성능 연결: [`ENGINE_CONNECTIONS.md`](ENGINE_CONNECTIONS.md), [`ARCHITECTURE.md`](ARCHITECTURE.md).
-기관별 검증 기록: [`connectors/WORLDBANK.md`](connectors/WORLDBANK.md), [`connectors/BOJ.md`](connectors/BOJ.md),
+기관별 검증 기록: [`connectors/WORLDBANK.md`](connectors/WORLDBANK.md), [추가 WDI series 경로](connectors/WORLDBANK_SERIES.md), [`connectors/BOJ.md`](connectors/BOJ.md),
 [`LARGE_FILE_ENGINE.md`](LARGE_FILE_ENGINE.md). 실행 명령은 README와 각 provider 기록을 따른다.

@@ -70,6 +70,18 @@ class WorldBankFixture:
                         EvidenceKind.FIXTURE)
 
 
+class WorldBankSeriesFixture:
+    def fetch(self, query):
+        body = [{"page": 1, "pages": 1, "per_page": 100, "total": 1,
+                 "sourceid": query.source_id, "lastupdated": "2026-10-08"},
+                [{"indicator": {"id": query.indicator_id, "value": "Fixture series"},
+                  "country": {"id": query.country_iso3, "value": "Fixture country"},
+                  "countryiso3code": query.country_iso3, "date": str(query.end_year),
+                  "value": 12.5, "unit": "", "obs_status": "", "decimal": 1}]]
+        return Download(query.url, json.dumps(body).encode(), 200, NOW, "application/json",
+                        EvidenceKind.FIXTURE)
+
+
 class BLSFixture:
     def fetch(self, query):
         body = {"status": "REQUEST_SUCCEEDED", "messageCodes": [], "Results": {"series": [
@@ -139,6 +151,26 @@ class StructuredCLITests(unittest.TestCase):
             self.assertEqual(result["status"], "COMPLETED")
             self.assertEqual([stage["status"] for stage in result["stages"]],
                              ["SUCCEEDED", "SUCCEEDED"])
+
+    def test_worldbank_series_cli_runs_explicit_selection_through_registry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "pyproject.toml").write_text("[project]\nname='fixture'\n")
+            args = build_parser().parse_args([
+                "--project-root", directory, "collect", "worldbank-series",
+                "--country", "CAN", "--indicator", "SP.POP.TOTL", "--source-id", "2",
+                "--start-year", "2025", "--end-year", "2025", "--live",
+            ])
+            status, result = dispatch(
+                args, worldbank_transport=WorldBankSeriesFixture(), clock=lambda: NOW,
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(result["status"], "COMPLETED")
+            self.assertEqual(result["source_id"], "2")
+            self.assertEqual(result["country"], "CAN")
+            self.assertEqual(result["indicator_id"], "SP.POP.TOTL")
+            self.assertEqual(result["observation_count"], 1)
+            self.assertTrue(result["raw_path"].startswith("data/raw/worldbank/"))
 
     def test_bls_cli_runs_selected_series_through_shared_registry(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -62,6 +62,7 @@ git diff --check
 .\.venv\Scripts\macroatlas.exe search "GDP USA" --institution worldbank --country USA --period-start 2020 --period-end 2022
 .\.venv\Scripts\macroatlas.exe search "CPI" --institution bls
 .\.venv\Scripts\macroatlas.exe collect worldbank-gdp --start-year 2020 --end-year 2022 --live
+.\.venv\Scripts\macroatlas.exe collect worldbank-series --country CAN --source-id 2 --indicator SP.POP.TOTL --start-year 2024 --end-year 2025 --live
 .\.venv\Scripts\macroatlas.exe collect boj-fxer --month 202609 --live
 .\.venv\Scripts\macroatlas.exe collect bls --series-id CUUR0000SA0 --start-year 2024 --end-year 2024 --live
 .\.venv\Scripts\macroatlas.exe collect census --year 2022 --dataset acs/acs1 --variable NAME --variable B01001_001E --geography state:06 --live
@@ -72,8 +73,13 @@ git diff --check
 .\.venv\Scripts\macroatlas.exe export <TASK_ID> --format csv --output data/exports/result.csv
 ```
 
-Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. World Bank 명령은
+Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. `worldbank-gdp`는
 미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`만 지원하며 1~10개 연도 범위로 제한됩니다.
+`worldbank-series`는 사용자가 uppercase ISO3 국가와 indicator ID를 명시하는 별도 raw-only 경로입니다.
+source ID는 WDI의 `2`로 고정하고, 요청당 한 series·1~10개 연도·1 page·1 MiB 제한을 둡니다. URL, 국가/지표
+탐색, source 선택, 단위·의미 추론은 하지 않습니다. 원본 응답과 request manifest를 보존하고, 파싱한
+행은 freshness 통과 전에는 task에서 보류합니다. 이 경로는 CSV/XLSX export 대상이 아닙니다.
+fixture 범위와 한 건의 live 검증 근거는 [World Bank series 연결 설명](connectors/WORLDBANK_SERIES.md)에 있습니다.
 BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지정된 공식 파일 URL과 기존 parser
 범위만 확인합니다. 자동 예약 실행은 없고 현재 반복 감시도 중지된 상태입니다. 명령은 URL이나 임의 기관을
 입력받지 않습니다.

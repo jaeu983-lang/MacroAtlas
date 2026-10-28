@@ -18,11 +18,12 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
   [구현 현황](docs/IMPLEMENTATION_PLAN.md)을 기준으로 합니다.
 - 실제 호출 경계와 기관별 접근 제한은 [엔진 연결표](docs/ENGINE_CONNECTIONS.md),
   [엔진 구현·데이터 접근 한계](docs/ENGINE_IMPLEMENTATION_STATUS.md)에 정리했습니다.
+- World Bank exact-series raw-only 경로와 제한은 [연결 설명](docs/connectors/WORLDBANK_SERIES.md)을 확인하세요.
 - 전체 문서의 역할과 과거 보고서 읽는 법은 [문서 안내](docs/README.md)에 있습니다.
 
 ## 현재 지원 경로
 
-- World Bank WDI: 미국 GDP `NY.GDP.MKTP.CD`, source 2, 1~10개 연도.
+- World Bank WDI: 고정 미국 GDP 경로와, 사용자가 국가·indicator ID를 직접 고르는 1개 annual series 원자료 경로(source ID 2, 각 1~10개 연도).
 - BOJ: FM08/FXERD01 한 달.
 - `macroatlas search`: 네트워크 없이 고정 WDI 후보와 로컬에 보존된 BLS/Census metadata를 검색합니다. 기관 전체 catalog 검색은 아닙니다.
 - TIC/BIS: 필요할 때 명시적으로 실행하는 지정 파일 intake. 자료 변경상태의 반복·예약 확인은 사용자
@@ -53,6 +54,7 @@ python3 -m venv .venv
 
 ```bash
 .venv/bin/macroatlas collect worldbank-gdp --start-year 2020 --end-year 2022 --live
+.venv/bin/macroatlas collect worldbank-series --country CAN --source-id 2 --indicator SP.POP.TOTL --start-year 2024 --end-year 2025 --live
 .venv/bin/macroatlas status <TASK_ID>
 .venv/bin/macroatlas export <TASK_ID> --format csv --output data/exports/worldbank.csv
 ```
@@ -60,6 +62,9 @@ python3 -m venv .venv
 정확한 API 식별자를 알고 있으면 BLS와 Census ACS도 CLI로 수집할 수 있습니다. 기관 전체 검색이나
 식별자 의미의 자동 판정은 포함하지 않습니다. 명령 형식·범위·API key 설정은
 [사용자 안내서](docs/USER_GUIDE.md)를 참조하세요.
+
+`worldbank-series`는 exact ID로 요청한 응답 JSON과 manifest를 보존하는 제한 경로입니다. 단위·의미를
+추론하지 않고 freshness 미통과 값은 task 결과에서 보류합니다. 이 경로는 CSV/XLSX export를 지원하지 않습니다.
 
 고정 후보를 찾아볼 때는 `.venv/bin/macroatlas search "GDP USA" --institution worldbank --country USA`
 처럼 실행합니다. 이 명령은 로컬 catalog만 읽고 선택·수집하지 않습니다.

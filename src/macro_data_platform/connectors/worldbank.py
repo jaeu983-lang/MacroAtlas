@@ -2,6 +2,7 @@
 import json
 import math
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -56,6 +57,43 @@ class GDPQuery:
 
 
 @dataclass(frozen=True)
+class WorldBankSeriesQuery:
+    """One explicitly selected annual World Bank indicator series."""
+
+    country_iso3: str
+    indicator_id: str
+    source_id: str
+    start_year: int
+    end_year: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.country_iso3, str) or not re.fullmatch(
+            r"[A-Z]{3}", self.country_iso3, flags=re.ASCII,
+        ):
+            raise ValueError("country_iso3 must be an uppercase ISO3 code")
+        if not isinstance(self.indicator_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9_.-]{1,64}", self.indicator_id, flags=re.ASCII,
+        ):
+            raise ValueError("indicator_id contains unsupported characters")
+        if self.source_id != SOURCE:
+            raise ValueError("only World Development Indicators source 2 is supported")
+        if (
+            type(self.start_year) is not int or type(self.end_year) is not int
+            or not 1960 <= self.start_year <= self.end_year <= 2100
+            or self.end_year - self.start_year >= 10
+        ):
+            raise ValueError("request requires 1 to 10 years in 1960..2100")
+
+    @property
+    def url(self) -> str:
+        params = {"source": self.source_id,
+                  "date": f"{self.start_year}:{self.end_year}",
+                  "format": "json", "per_page": "100", "page": "1"}
+        return ("https://api.worldbank.org/v2/country/"
+                f"{self.country_iso3}/indicator/{self.indicator_id}?{urlencode(params)}")
+
+
+@dataclass(frozen=True)
 class Download:
     source_url: str
     body: bytes
@@ -81,7 +119,7 @@ class WorldBankTransport:
         self.settings = settings
 
     @measured_phase("network")
-    def fetch(self, query: GDPQuery) -> Download:
+    def fetch(self, query: GDPQuery | WorldBankSeriesQuery) -> Download:
         if self.settings.network_enabled is not True:
             raise ConnectorFailure(StageStatus.NEEDS_REVIEW, ErrorCode.LICENSE_SECURITY,
                                    "Network access is not enabled for this collection.")
@@ -208,6 +246,75 @@ def parse_gdp(download: Download, query: GDPQuery) -> dict[str, Any]:
         "frequency": None, "unit": None, "period_format": "YYYY", "page_metadata": meta,
         "observations": rows, "api_documentation_url": API_DOCS,
         "attribution": "World Bank, World Development Indicators; see original source metadata.",
+        "license_note": "Dataset-specific terms apply; no blanket license inferred.",
+        "terms_url": TERMS_URL,
+    }
+
+
+@measured_phase("parse")
+def parse_series(download: Download, query: WorldBankSeriesQuery) -> dict[str, Any]:
+    """Validate identity and annual rows while preserving the provider's original data."""
+    check_http(download)
+    if download.source_url != query.url:
+        raise schema_failure("Response request identity does not match the selected query.")
+    media_type = download.content_type.split(";", 1)[0].strip().lower()
+    if media_type not in {"application/json", "text/json"}:
+        raise schema_failure("Expected a documented JSON response.")
+    try:
+        def reject_constant(value):
+            raise ValueError("Nonstandard JSON numeric constant")
+        content = json.loads(download.body, parse_constant=reject_constant)
+    except (ValueError, UnicodeError, RecursionError):
+        raise schema_failure("Response is not valid JSON; original bytes retained.") from None
+    if (
+        not isinstance(content, list) or len(content) != 2
+        or not isinstance(content[0], dict) or not isinstance(content[1], list)
+        or "message" in content[0]
+    ):
+        raise schema_failure("Unexpected World Bank envelope or API error response.")
+    meta, rows = content
+    if (
+        type(meta.get("page")) is not int or meta["page"] != 1
+        or type(meta.get("pages")) is not int or meta["pages"] != 1
+        or type(meta.get("total")) is not int or meta["total"] != len(rows)
+        or not 1 <= len(rows) <= query.end_year - query.start_year + 1
+    ):
+        raise schema_failure("Empty, inconsistent or multi-page response; partial success refused.")
+    source_id = meta.get("sourceid")
+    if not ((type(source_id) is str and source_id == query.source_id)
+            or (type(source_id) is int and source_id == int(query.source_id))):
+        raise schema_failure("Response source identifier differs from the request.")
+    seen_years = set()
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("indicator"), dict):
+            raise schema_failure("Observation structure changed.")
+        if (row["indicator"].get("id") != query.indicator_id
+                or row.get("countryiso3code") != query.country_iso3):
+            raise schema_failure("Observation country or indicator differs from the request.")
+        year = row.get("date")
+        if (not isinstance(year, str) or len(year) != 4 or not year.isascii()
+                or not year.isdecimal() or not query.start_year <= int(year) <= query.end_year):
+            raise schema_failure("Observation year differs from the selected annual window.")
+        if year in seen_years:
+            raise schema_failure("Response contains duplicate annual observations.")
+        seen_years.add(year)
+        if "value" not in row:
+            raise schema_failure("Observation value field is missing.")
+        value = row["value"]
+        if value is not None and (
+            type(value) not in {int, float} or (type(value) is float and not math.isfinite(value))
+        ):
+            raise schema_failure("Observation value must be a finite JSON number or null.")
+    return {
+        "source_agency": "World Bank", "dataset_id": query.source_id,
+        "indicator_id": query.indicator_id, "series_id": None,
+        "series_key": {"source": query.source_id, "country": query.country_iso3,
+                       "indicator": query.indicator_id},
+        "source_url": query.url, "retrieved_at": download.retrieved_at.isoformat(),
+        "source_version": None, "source_last_updated": meta.get("lastupdated"),
+        "frequency": None, "unit": None, "period_format": "YYYY", "page_metadata": meta,
+        "observations": rows, "api_documentation_url": API_DOCS,
+        "attribution": "World Bank; original dataset-specific metadata and conditions apply.",
         "license_note": "Dataset-specific terms apply; no blanket license inferred.",
         "terms_url": TERMS_URL,
     }

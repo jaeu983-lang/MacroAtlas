@@ -69,3 +69,13 @@ AI-simulated interactions after import (two earlier examples and the four
 tracked examples above). AI examples are stored separately from real-user
 feedback. The actual user-feedback `catalog.sqlite` did not exist in this
 workspace during the check.
+
+## Post-merge WDI series follow-up
+
+After PR #75 merged, `worldbank_series/1` was added for one explicitly selected
+World Development Indicators series. A live Canada `SP.POP.TOTL` query for
+2024–2025 completed as task `390eeac8-2ed6-40cc-84e5-b2ea5900c488`: two rows,
+latest period 2025, age 301 days, `FRESH`. The raw response and request manifest
+remain in ignored local `data/`; they were not committed. The 903-test full
+suite, Ruff, and `git diff --check` passed for this follow-up. This single query
+does not verify other WDI indicators, their meanings, or dataset terms.
