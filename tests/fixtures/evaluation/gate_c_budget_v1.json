@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "budget_id": "offline-search-candidate-c-v1",
+  "scope": "fixed-catalog local search only; no source API, external model, task database, raw write, or export",
+  "timing_repetitions": 10,
+  "minimum_samples_per_case_type": 20,
+  "maximum_candidate_p95_ms_per_query": 100.0,
+  "maximum_candidate_to_baseline_p95_ratio": 1.5,
+  "maximum_external_calls": 0,
+  "maximum_external_cost_usd": 0.0,
+  "target_case_types": [
+    "rankable",
+    "near_match",
+    "unrelated"
+  ],
+  "target_improvement_rule": "per_split_any; all_target_types_across_development_and_validation",
+  "non_target_case_types": [
+    "insufficient_evidence"
+  ]
+}

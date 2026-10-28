@@ -91,7 +91,28 @@ git diff --check
 
 `macro-eval validate`의 `READY`는 세 split의 구조·분리·hash 검증만 통과했다는 뜻이며 엔진 평가가 아닙니다. 현재 포함된 사례는 synthetic fixture라 `reviewed_feedback_split_coverage`가 `none`입니다. validation/holdout hash도 blind holdout이나 일반화 성능의 증거가 되지 않습니다. 상태 정의는 [평가 사례 규약](EVALUATION_CASES.md)을 확인하세요.
 
-`search-baseline`과 `search-compare`는 고정 corpus의 development split만 읽습니다. `search-validation`은 같은 baseline/candidate를 validation split에서 비교하고 holdout은 읽지 않습니다. 현재 candidate v2는 minimum lexical score 37.5를 적용하는 평가용 wrapper입니다. 출력의 정책 hash와 delta는 오프라인 측정이며 제품 기본 정책 변경, 확정 판정 또는 Gate C 승격 승인을 의미하지 않습니다.
+`search-baseline`과 `search-compare`는 고정 corpus의 development split만 엔진 평가에 사용합니다. `search-validation`은 같은 baseline/candidate를 validation split에서 비교하고 holdout을 엔진 평가에 넣지 않습니다. `--candidate-policy semantic-v1`은 measure/basis 단서를 반영하는 새 평가용 후보이며, 기본값 `threshold-v2`는 이전 비교를 재현합니다. 출력의 정책 hash와 delta는 오프라인 측정이며 제품 기본 정책 변경, 확정 판정 또는 Gate C 승격 승인을 의미하지 않습니다.
+
+### Gate C 자격 확인과 일회 holdout
+
+Gate C의 전체 개발·검증·안전 경계·시간/비용 측정은 `macro-gate-c`로 실행합니다. 현재 semantic candidate는 평가 전용이며 제품 기본 검색 규칙을 바꾸지 않습니다.
+
+```text
+python -m macro_data_platform.evaluation.gate_c qualify --project-root .
+```
+
+이 단계는 development와 validation만 실행하고 GPT가 작성한 development 사례 네 건도 다시 비교합니다. 다섯 금지 동작 유형을 기록합니다. 확인 누락·미선택 후보는 실제 계획 생성 경계에서 거부되는지, 미상 필드는 응답에 추정값으로 노출되지 않는지 검사합니다. raw/export 덮어쓰기와 계열 병합·보간은 계획 생성 실패로 평가 경로에서 도달하지 않았다고 기록합니다. 이는 writer/exporter 내부의 별도 동작 검증을 대신하지 않습니다. 고정 catalog 검색의 p50/p95·처리량은 열 번 반복하며, 상한은 versioned `tests/fixtures/evaluation/gate_c_budget_v1.json`에 있습니다. source API나 외부 모델 호출은 0회입니다. 결과와 후보 manifest는 `evaluation/results/`에 생성됩니다. 현재 validation 사례는 후보 조정 중 살펴봤기 때문에 blind 증거로 취급하지 않습니다.
+
+후보 자격과 hash를 검토한 뒤 결과와 manifest를 먼저 커밋하고 다음 명령으로 holdout lock을 만듭니다. 생성된 lock도 커밋한 뒤에만 holdout 실행을 허용합니다.
+
+```text
+python -m macro_data_platform.evaluation.gate_c initialize-holdout --project-root .
+python -m macro_data_platform.evaluation.gate_c holdout --project-root .
+```
+
+holdout 명령은 고정 case/catalog/policy/code/budget hash를 확인하고 실행 전에 잠금을 소비합니다. 성공·실패·중단을 모두 1회 사용으로 기록하며 같은 holdout은 다시 실행하지 않습니다. 보고서 결과가 Gate C `PASS`여도 자동 승격은 없고 D의 명시 승인·rollback 절차가 남습니다. 저장소가 공개되어 있으므로 holdout은 분리·고정된 평가 split이지 비밀 데이터는 아닙니다.
+
+2026-10-28의 v2 holdout은 이미 한 번 실행되어 잠금이 `COMPLETED`입니다. 결과는 [`gate_c_holdout_result.json`](../evaluation/results/gate_c_holdout_result.json)에 있고 같은 split을 재실행하지 마세요. 후보를 더 수정하려면 holdout 내용을 development/validation으로 재분류하고 새 corpus/split version을 만든 뒤 새 hash와 새 one-use lock으로 시작해야 합니다.
 
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 

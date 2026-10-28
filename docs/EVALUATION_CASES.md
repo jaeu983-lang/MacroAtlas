@@ -29,19 +29,42 @@ human review or human-observed usage.
 The v2 validator verifies structure, hashes, case-to-review links, evidence
 references, and split leakage. READY means the case corpus is complete and
 internally verified; it does not run a search engine or promote a search rule.
-`macro-eval search-baseline` and `search-compare` run the existing lexical
-ranker offline against development cases. `search-validation` compares the same
-baseline and candidate policies on validation cases; no command evaluates
-holdout. Reports include ranking, expected state, missing relevant candidates,
+`macro-eval search-baseline` and `search-compare` run development cases offline;
+`search-validation` compares the same baseline and candidate on validation.
+Those ranker commands do not evaluate holdout. `macro-gate-c qualify` runs development and
+validation, sends every proposal without confirmation to the real collection
+plan builder, and records whether the type boundary blocks it before task
+creation. The prohibition trace covers confirmation/selection, unknown-field
+disclosure, and whether raw/export or merge/fill actions remain unreachable before
+plan creation. A caveated official label that explicitly says its full definition
+is missing is recorded as a disclosure, not an inferred full definition. This
+trace does not exercise a raw writer or exporter internally. It measures the local
+search stage repeatedly by case type and records p50/p95, throughput, equal sample
+counts, and zero external calls/cost. It does not run a source API, external model,
+task, raw write, or export.
+
+Only after the qualification report and candidate manifest are committed may
+`macro-gate-c initialize-holdout` create a one-use lock. The lock must also be
+committed before `macro-gate-c holdout` is run. That command checks the frozen
+case, catalog, policy, code, and timing-budget hashes; it consumes the lock
+before evaluation so a failure or interruption cannot silently be rerun. The
+holdout is a separate public-repository split, not secret data. Validation
+cases used during candidate refinement are not blind evidence. A passing search
+Gate still does not promote the candidate or prove general statistical
+equivalence; those claims require separate review and Gate D.
+
+The fixed v2 run completed with Gate C `PASS` on 2026-10-28. Its one-use lock
+is consumed; the aggregate result is in
+[`gate_c_holdout_result.json`](../evaluation/results/gate_c_holdout_result.json).
+Do not rerun this split. The candidate remains evaluation-only and has not been
+promoted. A future tuning cycle needs a new versioned corpus/holdout split.
+
+Reports include ranking, expected state, missing relevant candidates,
 unrelated abstention, forbidden candidate returns, false-exact candidates, and
-structural field/status checks. They also execute the real CandidateSearchEngine
-proposal stage with the fixed catalog and verify confirmation is required and
-no selection/collection payload is emitted. Downstream collection, raw-write,
-and export actions are not executed or traced. Policy and input hashes identify
-each run; reports do not establish semantic equivalence or promotion eligibility.
-The CLI does not send queries to an AI model: it runs the local deterministic
-ranker on stored case questions. GPT-6 was used earlier to review this fixed
-corpus, not as an automated judge for each evaluation run.
+structural field/status checks. The CLI does not send queries to an AI model: it
+runs the local deterministic ranker on stored case questions. GPT-6 was used
+earlier to review this fixed corpus, not as an automated judge for each
+evaluation run.
 ## Legacy scaffold record
 
 `macro-eval feedback-draft` is the opt-in bridge for an accepted current
@@ -142,9 +165,9 @@ development-only and does not independently detect semantic split leakage; revie
 
 ## Not implemented by this step
 
-The validator does not authenticate source evidence, calculate semantic
-equivalence or false-confirmation rates, or approve a rule. Development ranking
-scores on the v2 set are offline fixture measurements, not evidence of
-production accuracy or analyst usability. Holdout is not run by these commands.
-Rule promotion and rollback remain explicit decisions with no automatic
-feedback-to-code path.
+The validator does not authenticate source evidence or approve a rule. Development
+ranking scores on the v2 set are offline fixture measurements, not evidence of
+production accuracy or analyst usability. The one-time holdout command measures
+the fixed ranker candidate only; it does not prove statistical equivalence or
+exercise source API, raw-write, export, or human workflow. Rule promotion and
+rollback remain explicit decisions with no automatic feedback-to-code path.

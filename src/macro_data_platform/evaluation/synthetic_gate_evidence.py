@@ -56,8 +56,16 @@ def compare(corpus, cases, expectations):
         expected[row["case_id"]] = row
     if set(by_id) != set(expected):
         raise ValueError("synthetic case and expectation key sets differ")
-    policies = {"baseline": SearchPolicy(version="lexical-baseline-v1"),
-                "candidate": SearchPolicy(version="lexical-min-score-candidate-v2", minimum_score=37.5)}
+    policies = {
+        "baseline": SearchPolicy(version="lexical-baseline-v1"),
+        "prior_candidate_v2": SearchPolicy(
+            version="lexical-min-score-candidate-v2", minimum_score=37.5,
+        ),
+        "candidate": SearchPolicy(
+            version="semantic-disambiguation-v1", minimum_score=37.5,
+            semantic_disambiguation=True,
+        ),
+    }
     measurements = {}
     for name, policy in policies.items():
         rows = []

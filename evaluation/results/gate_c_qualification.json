@@ -1,0 +1,1695 @@
+{
+  "schema_version": 1,
+  "status": "READY_FOR_ONE_TIME_HOLDOUT",
+  "created_at": "2026-10-28T13:27:45.595260+00:00",
+  "corpus_version": "reviewed-v2-2026-10-28",
+  "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+  "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+  "budget_sha256": "64fc2b4171b04e82dfb1e9e783bc69385ffceb44d38e80fe591954867a19c3df",
+  "baseline_policy_sha256": "e1519fd3167f8d0a0f533edb1777c81ebb8ecdaeb377d0f757b96003df40dcd5",
+  "candidate_policy_sha256": "e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67",
+  "development": {
+    "comparison": {
+      "status": "SPLIT_COMPARISON_ONLY",
+      "split": "development",
+      "input_sha256": "13c34a9ba706ca65a7e84186b6807bebed428d63fb89057e7b633116d28649f1",
+      "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+      "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+      "baseline": {
+        "status": "POLICY_MEASUREMENT_ONLY",
+        "split": "development",
+        "input_sha256": "13c34a9ba706ca65a7e84186b6807bebed428d63fb89057e7b633116d28649f1",
+        "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+        "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+        "policy": {
+          "version": "lexical-baseline-v1",
+          "limit": 50,
+          "minimum_score": 0,
+          "semantic_disambiguation": false
+        },
+        "policy_sha256": "e1519fd3167f8d0a0f533edb1777c81ebb8ecdaeb377d0f757b96003df40dcd5",
+        "groups": {
+          "insufficient_evidence": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 8,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 18,
+            "fields_returned": 18,
+            "fields_matches": 18,
+            "fields_unmeasured": 0,
+            "mrr": null
+          },
+          "near_match": {
+            "cases": 3,
+            "queries": 10,
+            "rankable_queries": 10,
+            "top1_hits": 7,
+            "reciprocal_rank_sum": 7.375,
+            "queries_with_candidates": 10,
+            "empty_result_queries": 0,
+            "expected_state_matches": 10,
+            "expected_state_queries": 10,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 10,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 20,
+            "status_returned": 20,
+            "status_matches": 20,
+            "fields_expected": 82,
+            "fields_returned": 82,
+            "fields_matches": 82,
+            "fields_unmeasured": 0,
+            "mrr": 0.7375
+          },
+          "rankable": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 8,
+            "top1_hits": 6,
+            "reciprocal_rank_sum": 7.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 74,
+            "fields_returned": 74,
+            "fields_matches": 74,
+            "fields_unmeasured": 0,
+            "mrr": 0.875
+          },
+          "unrelated": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 0,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 8,
+            "unrelated_with_candidates": 8,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 0,
+            "status_returned": 0,
+            "status_matches": 0,
+            "fields_expected": 0,
+            "fields_returned": 0,
+            "fields_matches": 0,
+            "fields_unmeasured": 0,
+            "mrr": null
+          }
+        },
+        "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
+        "execution_boundary": "fixed_catalog_candidate_search_stage_no_task_db_collection_or_export",
+        "search_stage_safety": {
+          "status": "PASS",
+          "search_queries": 34,
+          "explicit_confirmation_required": 34,
+          "confirmation_bypasses": 0,
+          "selection_or_collection_payloads": 0,
+          "unconfirmed_collection_plan_attempts": 34,
+          "unconfirmed_collection_plans_created": 0,
+          "blocked_before_task_creation": 34,
+          "prohibited_actions": {
+            "auto_select_or_collect_without_explicit_confirmation": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "collect_a_candidate_that_was_not_explicitly_selected": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "infer_unknown_unit_frequency_definition_or_availability": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 0,
+              "unreached_queries": 0,
+              "violations": 0,
+              "unknown_fields_expected": 78,
+              "unknown_fields_observed": 78,
+              "unknown_fields_disclosed": 4,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "overwrite_raw_data_or_existing_exports": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "merge_incompatible_series_or_fill_missing_values": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            }
+          },
+          "scope": "Each proposal was submitted to the real collection-plan builder without confirmation; blocked proposals created no TaskPlan. This evaluator does not start an executor."
+        },
+        "prohibited_action_measurement": {
+          "status": "PASS",
+          "method": "proposal-to-plan boundary probe; collection plan rejection is the guard before task creation, network, raw write, and export",
+          "case_count": 12,
+          "trace": {
+            "search_queries": 34,
+            "explicit_confirmation_required": 34,
+            "confirmation_bypasses": 0,
+            "selection_or_collection_payloads": 0,
+            "unconfirmed_collection_plan_attempts": 34,
+            "unconfirmed_collection_plans_created": 0,
+            "blocked_before_task_creation": 34,
+            "prohibited_actions": {
+              "auto_select_or_collect_without_explicit_confirmation": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "unconfirmed proposal is sent to the real collection-plan builder"
+              },
+              "collect_a_candidate_that_was_not_explicitly_selected": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "proposal without a selected candidate is sent to the real collection-plan builder"
+              },
+              "infer_unknown_unit_frequency_definition_or_availability": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 0,
+                "unreached_queries": 0,
+                "violations": 0,
+                "unknown_fields_expected": 78,
+                "unknown_fields_observed": 78,
+                "unknown_fields_disclosed": 4,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "returned candidate fields are checked against unknown expectations"
+              },
+              "overwrite_raw_data_or_existing_exports": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "plan creation must fail before any collection/raw/export stage is reachable"
+              },
+              "merge_incompatible_series_or_fill_missing_values": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "no task/export plan is created by the local search evaluation path"
+              }
+            }
+          }
+        },
+        "not_measured": [
+          "semantic_equivalence",
+          "timing_cost_budget",
+          "holdout",
+          "validation"
+        ]
+      },
+      "candidate": {
+        "status": "POLICY_MEASUREMENT_ONLY",
+        "split": "development",
+        "input_sha256": "13c34a9ba706ca65a7e84186b6807bebed428d63fb89057e7b633116d28649f1",
+        "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+        "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+        "policy": {
+          "version": "semantic-disambiguation-v1",
+          "limit": 50,
+          "minimum_score": 37.5,
+          "semantic_disambiguation": true
+        },
+        "policy_sha256": "e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67",
+        "groups": {
+          "insufficient_evidence": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 8,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 18,
+            "fields_returned": 18,
+            "fields_matches": 18,
+            "fields_unmeasured": 0,
+            "mrr": null
+          },
+          "near_match": {
+            "cases": 3,
+            "queries": 10,
+            "rankable_queries": 10,
+            "top1_hits": 9,
+            "reciprocal_rank_sum": 9.5,
+            "queries_with_candidates": 10,
+            "empty_result_queries": 0,
+            "expected_state_matches": 10,
+            "expected_state_queries": 10,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 10,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 20,
+            "status_returned": 20,
+            "status_matches": 20,
+            "fields_expected": 82,
+            "fields_returned": 82,
+            "fields_matches": 82,
+            "fields_unmeasured": 0,
+            "mrr": 0.95
+          },
+          "rankable": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 8,
+            "top1_hits": 8,
+            "reciprocal_rank_sum": 8.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 74,
+            "fields_returned": 74,
+            "fields_matches": 74,
+            "fields_unmeasured": 0,
+            "mrr": 1.0
+          },
+          "unrelated": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 0,
+            "empty_result_queries": 8,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 8,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 8,
+            "false_exact_candidates": 0,
+            "status_expected": 0,
+            "status_returned": 0,
+            "status_matches": 0,
+            "fields_expected": 0,
+            "fields_returned": 0,
+            "fields_matches": 0,
+            "fields_unmeasured": 0,
+            "mrr": null
+          }
+        },
+        "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
+        "execution_boundary": "fixed_catalog_candidate_search_stage_no_task_db_collection_or_export",
+        "search_stage_safety": {
+          "status": "PASS",
+          "search_queries": 34,
+          "explicit_confirmation_required": 34,
+          "confirmation_bypasses": 0,
+          "selection_or_collection_payloads": 0,
+          "unconfirmed_collection_plan_attempts": 34,
+          "unconfirmed_collection_plans_created": 0,
+          "blocked_before_task_creation": 34,
+          "prohibited_actions": {
+            "auto_select_or_collect_without_explicit_confirmation": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "collect_a_candidate_that_was_not_explicitly_selected": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "infer_unknown_unit_frequency_definition_or_availability": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 0,
+              "unreached_queries": 0,
+              "violations": 0,
+              "unknown_fields_expected": 78,
+              "unknown_fields_observed": 78,
+              "unknown_fields_disclosed": 4,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "overwrite_raw_data_or_existing_exports": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "merge_incompatible_series_or_fill_missing_values": {
+              "case_queries": 34,
+              "guarded_before_task_creation": 34,
+              "unreached_queries": 34,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            }
+          },
+          "scope": "Each proposal was submitted to the real collection-plan builder without confirmation; blocked proposals created no TaskPlan. This evaluator does not start an executor."
+        },
+        "prohibited_action_measurement": {
+          "status": "PASS",
+          "method": "proposal-to-plan boundary probe; collection plan rejection is the guard before task creation, network, raw write, and export",
+          "case_count": 12,
+          "trace": {
+            "search_queries": 34,
+            "explicit_confirmation_required": 34,
+            "confirmation_bypasses": 0,
+            "selection_or_collection_payloads": 0,
+            "unconfirmed_collection_plan_attempts": 34,
+            "unconfirmed_collection_plans_created": 0,
+            "blocked_before_task_creation": 34,
+            "prohibited_actions": {
+              "auto_select_or_collect_without_explicit_confirmation": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "unconfirmed proposal is sent to the real collection-plan builder"
+              },
+              "collect_a_candidate_that_was_not_explicitly_selected": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "proposal without a selected candidate is sent to the real collection-plan builder"
+              },
+              "infer_unknown_unit_frequency_definition_or_availability": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 0,
+                "unreached_queries": 0,
+                "violations": 0,
+                "unknown_fields_expected": 78,
+                "unknown_fields_observed": 78,
+                "unknown_fields_disclosed": 4,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "returned candidate fields are checked against unknown expectations"
+              },
+              "overwrite_raw_data_or_existing_exports": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "plan creation must fail before any collection/raw/export stage is reachable"
+              },
+              "merge_incompatible_series_or_fill_missing_values": {
+                "case_queries": 34,
+                "guarded_before_task_creation": 34,
+                "unreached_queries": 34,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "no task/export plan is created by the local search evaluation path"
+              }
+            }
+          }
+        },
+        "not_measured": [
+          "semantic_equivalence",
+          "timing_cost_budget",
+          "holdout",
+          "validation"
+        ]
+      },
+      "deltas": {
+        "insufficient_evidence": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        },
+        "near_match": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.2125
+        },
+        "rankable": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.125
+        },
+        "unrelated": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 8,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": -8,
+          "unrelated_abstentions": 8,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        }
+      },
+      "timing": {
+        "scope": "offline fixed-catalog CandidateSearchEngine.run; no task, network, raw write, or export",
+        "repetitions": 10,
+        "alternating_policy_order": true,
+        "samples_per_policy_equal": true,
+        "external_calls": 0,
+        "estimated_external_cost_usd": 0,
+        "by_policy": {
+          "baseline": {
+            "sample_count": 340,
+            "query_count_per_repetition": 34,
+            "p50_ms": 0.978886,
+            "p95_ms": 1.211657,
+            "throughput_queries_per_second": 992.661,
+            "by_case_type": {
+              "insufficient_evidence": {
+                "sample_count": 80,
+                "p50_ms": 0.980198,
+                "p95_ms": 1.221863,
+                "throughput_queries_per_second": 951.58
+              },
+              "near_match": {
+                "sample_count": 100,
+                "p50_ms": 1.031045,
+                "p95_ms": 1.217646,
+                "throughput_queries_per_second": 946.187
+              },
+              "rankable": {
+                "sample_count": 80,
+                "p50_ms": 0.977134,
+                "p95_ms": 1.161783,
+                "throughput_queries_per_second": 1025.758
+              },
+              "unrelated": {
+                "sample_count": 80,
+                "p50_ms": 0.910683,
+                "p95_ms": 1.129063,
+                "throughput_queries_per_second": 1070.024
+              }
+            }
+          },
+          "candidate": {
+            "sample_count": 340,
+            "query_count_per_repetition": 34,
+            "p50_ms": 1.110435,
+            "p95_ms": 1.439682,
+            "throughput_queries_per_second": 903.889,
+            "by_case_type": {
+              "insufficient_evidence": {
+                "sample_count": 80,
+                "p50_ms": 1.14694,
+                "p95_ms": 1.472861,
+                "throughput_queries_per_second": 846.088
+              },
+              "near_match": {
+                "sample_count": 100,
+                "p50_ms": 1.216725,
+                "p95_ms": 1.577149,
+                "throughput_queries_per_second": 792.49
+              },
+              "rankable": {
+                "sample_count": 80,
+                "p50_ms": 1.090785,
+                "p95_ms": 1.369206,
+                "throughput_queries_per_second": 920.949
+              },
+              "unrelated": {
+                "sample_count": 80,
+                "p50_ms": 0.806537,
+                "p95_ms": 1.052217,
+                "throughput_queries_per_second": 1167.066
+              }
+            }
+          }
+        }
+      },
+      "not_measured": [
+        "semantic_equivalence",
+        "promotion_eligibility",
+        "holdout",
+        "validation"
+      ]
+    },
+    "qualification": {
+      "checks": {
+        "search_confirmation": true,
+        "unconfirmed_downstream_blocked": true,
+        "no_false_exact_or_forbidden_exact": true,
+        "no_case_type_regression": true,
+        "target_type_improved": true,
+        "timing_and_cost_budget": true
+      },
+      "target_improvements": {
+        "rankable": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.125
+        },
+        "near_match": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.2125
+        },
+        "unrelated": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 8,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": -8,
+          "unrelated_abstentions": 8,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        }
+      },
+      "status": "PASS"
+    }
+  },
+  "validation": {
+    "comparison": {
+      "status": "SPLIT_COMPARISON_ONLY",
+      "split": "validation",
+      "input_sha256": "114b9630c0b64ef9769f6e4a83845d87c510be0ebda07a29675c93ac1c726e40",
+      "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+      "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+      "baseline": {
+        "status": "POLICY_MEASUREMENT_ONLY",
+        "split": "validation",
+        "input_sha256": "114b9630c0b64ef9769f6e4a83845d87c510be0ebda07a29675c93ac1c726e40",
+        "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+        "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+        "policy": {
+          "version": "lexical-baseline-v1",
+          "limit": 50,
+          "minimum_score": 0,
+          "semantic_disambiguation": false
+        },
+        "policy_sha256": "e1519fd3167f8d0a0f533edb1777c81ebb8ecdaeb377d0f757b96003df40dcd5",
+        "groups": {
+          "insufficient_evidence": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 8,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 18,
+            "fields_returned": 18,
+            "fields_matches": 18,
+            "fields_unmeasured": 0,
+            "mrr": null
+          },
+          "near_match": {
+            "cases": 3,
+            "queries": 12,
+            "rankable_queries": 12,
+            "top1_hits": 12,
+            "reciprocal_rank_sum": 12.0,
+            "queries_with_candidates": 12,
+            "empty_result_queries": 0,
+            "expected_state_matches": 12,
+            "expected_state_queries": 12,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 12,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 24,
+            "status_returned": 24,
+            "status_matches": 24,
+            "fields_expected": 120,
+            "fields_returned": 120,
+            "fields_matches": 120,
+            "fields_unmeasured": 0,
+            "mrr": 1.0
+          },
+          "rankable": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 8,
+            "top1_hits": 6,
+            "reciprocal_rank_sum": 7.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 74,
+            "fields_returned": 74,
+            "fields_matches": 74,
+            "fields_unmeasured": 0,
+            "mrr": 0.875
+          },
+          "unrelated": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 0,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 8,
+            "unrelated_with_candidates": 8,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 0,
+            "status_returned": 0,
+            "status_matches": 0,
+            "fields_expected": 0,
+            "fields_returned": 0,
+            "fields_matches": 0,
+            "fields_unmeasured": 0,
+            "mrr": null
+          }
+        },
+        "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
+        "execution_boundary": "fixed_catalog_candidate_search_stage_no_task_db_collection_or_export",
+        "search_stage_safety": {
+          "status": "PASS",
+          "search_queries": 36,
+          "explicit_confirmation_required": 36,
+          "confirmation_bypasses": 0,
+          "selection_or_collection_payloads": 0,
+          "unconfirmed_collection_plan_attempts": 36,
+          "unconfirmed_collection_plans_created": 0,
+          "blocked_before_task_creation": 36,
+          "prohibited_actions": {
+            "auto_select_or_collect_without_explicit_confirmation": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "collect_a_candidate_that_was_not_explicitly_selected": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "infer_unknown_unit_frequency_definition_or_availability": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 0,
+              "unreached_queries": 0,
+              "violations": 0,
+              "unknown_fields_expected": 86,
+              "unknown_fields_observed": 86,
+              "unknown_fields_disclosed": 4,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "overwrite_raw_data_or_existing_exports": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "merge_incompatible_series_or_fill_missing_values": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            }
+          },
+          "scope": "Each proposal was submitted to the real collection-plan builder without confirmation; blocked proposals created no TaskPlan. This evaluator does not start an executor."
+        },
+        "prohibited_action_measurement": {
+          "status": "PASS",
+          "method": "proposal-to-plan boundary probe; collection plan rejection is the guard before task creation, network, raw write, and export",
+          "case_count": 12,
+          "trace": {
+            "search_queries": 36,
+            "explicit_confirmation_required": 36,
+            "confirmation_bypasses": 0,
+            "selection_or_collection_payloads": 0,
+            "unconfirmed_collection_plan_attempts": 36,
+            "unconfirmed_collection_plans_created": 0,
+            "blocked_before_task_creation": 36,
+            "prohibited_actions": {
+              "auto_select_or_collect_without_explicit_confirmation": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "unconfirmed proposal is sent to the real collection-plan builder"
+              },
+              "collect_a_candidate_that_was_not_explicitly_selected": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "proposal without a selected candidate is sent to the real collection-plan builder"
+              },
+              "infer_unknown_unit_frequency_definition_or_availability": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 0,
+                "unreached_queries": 0,
+                "violations": 0,
+                "unknown_fields_expected": 86,
+                "unknown_fields_observed": 86,
+                "unknown_fields_disclosed": 4,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "returned candidate fields are checked against unknown expectations"
+              },
+              "overwrite_raw_data_or_existing_exports": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "plan creation must fail before any collection/raw/export stage is reachable"
+              },
+              "merge_incompatible_series_or_fill_missing_values": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "no task/export plan is created by the local search evaluation path"
+              }
+            }
+          }
+        },
+        "not_measured": [
+          "semantic_equivalence",
+          "timing_cost_budget",
+          "holdout"
+        ]
+      },
+      "candidate": {
+        "status": "POLICY_MEASUREMENT_ONLY",
+        "split": "validation",
+        "input_sha256": "114b9630c0b64ef9769f6e4a83845d87c510be0ebda07a29675c93ac1c726e40",
+        "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+        "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+        "policy": {
+          "version": "semantic-disambiguation-v1",
+          "limit": 50,
+          "minimum_score": 37.5,
+          "semantic_disambiguation": true
+        },
+        "policy_sha256": "e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67",
+        "groups": {
+          "insufficient_evidence": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 8,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 18,
+            "fields_returned": 18,
+            "fields_matches": 18,
+            "fields_unmeasured": 0,
+            "mrr": null
+          },
+          "near_match": {
+            "cases": 3,
+            "queries": 12,
+            "rankable_queries": 12,
+            "top1_hits": 12,
+            "reciprocal_rank_sum": 12.0,
+            "queries_with_candidates": 12,
+            "empty_result_queries": 0,
+            "expected_state_matches": 12,
+            "expected_state_queries": 12,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 12,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 24,
+            "status_returned": 24,
+            "status_matches": 24,
+            "fields_expected": 120,
+            "fields_returned": 120,
+            "fields_matches": 120,
+            "fields_unmeasured": 0,
+            "mrr": 1.0
+          },
+          "rankable": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 8,
+            "top1_hits": 8,
+            "reciprocal_rank_sum": 8.0,
+            "queries_with_candidates": 8,
+            "empty_result_queries": 0,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 0,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 0,
+            "false_exact_candidates": 0,
+            "status_expected": 8,
+            "status_returned": 8,
+            "status_matches": 8,
+            "fields_expected": 74,
+            "fields_returned": 74,
+            "fields_matches": 74,
+            "fields_unmeasured": 0,
+            "mrr": 1.0
+          },
+          "unrelated": {
+            "cases": 3,
+            "queries": 8,
+            "rankable_queries": 0,
+            "top1_hits": 0,
+            "reciprocal_rank_sum": 0.0,
+            "queries_with_candidates": 0,
+            "empty_result_queries": 8,
+            "expected_state_matches": 8,
+            "expected_state_queries": 8,
+            "relevant_missing_queries": 0,
+            "forbidden_candidate_returns": 0,
+            "forbidden_exact_candidates": 0,
+            "unrelated_queries": 8,
+            "unrelated_with_candidates": 0,
+            "unrelated_abstentions": 8,
+            "false_exact_candidates": 0,
+            "status_expected": 0,
+            "status_returned": 0,
+            "status_matches": 0,
+            "fields_expected": 0,
+            "fields_returned": 0,
+            "fields_matches": 0,
+            "fields_unmeasured": 0,
+            "mrr": null
+          }
+        },
+        "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
+        "execution_boundary": "fixed_catalog_candidate_search_stage_no_task_db_collection_or_export",
+        "search_stage_safety": {
+          "status": "PASS",
+          "search_queries": 36,
+          "explicit_confirmation_required": 36,
+          "confirmation_bypasses": 0,
+          "selection_or_collection_payloads": 0,
+          "unconfirmed_collection_plan_attempts": 36,
+          "unconfirmed_collection_plans_created": 0,
+          "blocked_before_task_creation": 36,
+          "prohibited_actions": {
+            "auto_select_or_collect_without_explicit_confirmation": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "collect_a_candidate_that_was_not_explicitly_selected": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "infer_unknown_unit_frequency_definition_or_availability": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 0,
+              "unreached_queries": 0,
+              "violations": 0,
+              "unknown_fields_expected": 86,
+              "unknown_fields_observed": 86,
+              "unknown_fields_disclosed": 4,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "overwrite_raw_data_or_existing_exports": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            },
+            "merge_incompatible_series_or_fill_missing_values": {
+              "case_queries": 36,
+              "guarded_before_task_creation": 36,
+              "unreached_queries": 36,
+              "violations": 0,
+              "unknown_fields_expected": 0,
+              "unknown_fields_observed": 0,
+              "unknown_fields_disclosed": 0,
+              "unknown_fields_inferred": 0,
+              "unknown_fields_unmeasured": 0
+            }
+          },
+          "scope": "Each proposal was submitted to the real collection-plan builder without confirmation; blocked proposals created no TaskPlan. This evaluator does not start an executor."
+        },
+        "prohibited_action_measurement": {
+          "status": "PASS",
+          "method": "proposal-to-plan boundary probe; collection plan rejection is the guard before task creation, network, raw write, and export",
+          "case_count": 12,
+          "trace": {
+            "search_queries": 36,
+            "explicit_confirmation_required": 36,
+            "confirmation_bypasses": 0,
+            "selection_or_collection_payloads": 0,
+            "unconfirmed_collection_plan_attempts": 36,
+            "unconfirmed_collection_plans_created": 0,
+            "blocked_before_task_creation": 36,
+            "prohibited_actions": {
+              "auto_select_or_collect_without_explicit_confirmation": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "unconfirmed proposal is sent to the real collection-plan builder"
+              },
+              "collect_a_candidate_that_was_not_explicitly_selected": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "proposal without a selected candidate is sent to the real collection-plan builder"
+              },
+              "infer_unknown_unit_frequency_definition_or_availability": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 0,
+                "unreached_queries": 0,
+                "violations": 0,
+                "unknown_fields_expected": 86,
+                "unknown_fields_observed": 86,
+                "unknown_fields_disclosed": 4,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "returned candidate fields are checked against unknown expectations"
+              },
+              "overwrite_raw_data_or_existing_exports": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "plan creation must fail before any collection/raw/export stage is reachable"
+              },
+              "merge_incompatible_series_or_fill_missing_values": {
+                "case_queries": 36,
+                "guarded_before_task_creation": 36,
+                "unreached_queries": 36,
+                "violations": 0,
+                "unknown_fields_expected": 0,
+                "unknown_fields_observed": 0,
+                "unknown_fields_disclosed": 0,
+                "unknown_fields_inferred": 0,
+                "unknown_fields_unmeasured": 0,
+                "status": "PASS",
+                "method": "no task/export plan is created by the local search evaluation path"
+              }
+            }
+          }
+        },
+        "not_measured": [
+          "semantic_equivalence",
+          "timing_cost_budget",
+          "holdout"
+        ]
+      },
+      "deltas": {
+        "insufficient_evidence": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        },
+        "near_match": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.0
+        },
+        "rankable": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.125
+        },
+        "unrelated": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 8,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": -8,
+          "unrelated_abstentions": 8,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        }
+      },
+      "timing": {
+        "scope": "offline fixed-catalog CandidateSearchEngine.run; no task, network, raw write, or export",
+        "repetitions": 10,
+        "alternating_policy_order": true,
+        "samples_per_policy_equal": true,
+        "external_calls": 0,
+        "estimated_external_cost_usd": 0,
+        "by_policy": {
+          "baseline": {
+            "sample_count": 360,
+            "query_count_per_repetition": 36,
+            "p50_ms": 1.051897,
+            "p95_ms": 1.448705,
+            "throughput_queries_per_second": 947.507,
+            "by_case_type": {
+              "insufficient_evidence": {
+                "sample_count": 80,
+                "p50_ms": 1.030925,
+                "p95_ms": 1.214892,
+                "throughput_queries_per_second": 964.144
+              },
+              "near_match": {
+                "sample_count": 120,
+                "p50_ms": 1.168692,
+                "p95_ms": 1.534304,
+                "throughput_queries_per_second": 815.317
+              },
+              "rankable": {
+                "sample_count": 80,
+                "p50_ms": 0.979066,
+                "p95_ms": 1.118327,
+                "throughput_queries_per_second": 1028.113
+              },
+              "unrelated": {
+                "sample_count": 80,
+                "p50_ms": 0.822962,
+                "p95_ms": 1.207812,
+                "throughput_queries_per_second": 1111.499
+              }
+            }
+          },
+          "candidate": {
+            "sample_count": 360,
+            "query_count_per_repetition": 36,
+            "p50_ms": 1.129844,
+            "p95_ms": 1.504219,
+            "throughput_queries_per_second": 887.453,
+            "by_case_type": {
+              "insufficient_evidence": {
+                "sample_count": 80,
+                "p50_ms": 1.161271,
+                "p95_ms": 1.37212,
+                "throughput_queries_per_second": 856.004
+              },
+              "near_match": {
+                "sample_count": 120,
+                "p50_ms": 1.31966,
+                "p95_ms": 1.527574,
+                "throughput_queries_per_second": 745.604
+              },
+              "rankable": {
+                "sample_count": 80,
+                "p50_ms": 0.962802,
+                "p95_ms": 1.132949,
+                "throughput_queries_per_second": 1007.362
+              },
+              "unrelated": {
+                "sample_count": 80,
+                "p50_ms": 0.804103,
+                "p95_ms": 1.15994,
+                "throughput_queries_per_second": 1113.605
+              }
+            }
+          }
+        }
+      },
+      "not_measured": [
+        "semantic_equivalence",
+        "promotion_eligibility",
+        "holdout"
+      ]
+    },
+    "qualification": {
+      "checks": {
+        "search_confirmation": true,
+        "unconfirmed_downstream_blocked": true,
+        "no_false_exact_or_forbidden_exact": true,
+        "no_case_type_regression": true,
+        "target_type_improved": true,
+        "timing_and_cost_budget": true
+      },
+      "target_improvements": {
+        "rankable": {
+          "top1_hits": 2,
+          "rankable_queries": 0,
+          "expected_state_matches": 0,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": 0,
+          "unrelated_abstentions": 0,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": 0.125
+        },
+        "unrelated": {
+          "top1_hits": 0,
+          "rankable_queries": 0,
+          "expected_state_matches": 8,
+          "expected_state_queries": 0,
+          "relevant_missing_queries": 0,
+          "forbidden_candidate_returns": 0,
+          "forbidden_exact_candidates": 0,
+          "unrelated_with_candidates": -8,
+          "unrelated_abstentions": 8,
+          "false_exact_candidates": 0,
+          "status_matches": 0,
+          "fields_matches": 0,
+          "mrr": null
+        }
+      },
+      "status": "PASS"
+    }
+  },
+  "target_improvement_coverage": {
+    "required_types": [
+      "rankable",
+      "near_match",
+      "unrelated"
+    ],
+    "improved_types": [
+      "near_match",
+      "rankable",
+      "unrelated"
+    ],
+    "status": "PASS",
+    "rule": "per_split_any; all_target_types_across_development_and_validation"
+  },
+  "ai_simulated_development": {
+    "status": "AI_SIMULATED_DEVELOPMENT_EVIDENCE",
+    "origin": "ai_simulated",
+    "human_observed": false,
+    "reviewer_type": "ai_assistant",
+    "reviewer_model": "GPT-6",
+    "reviewer_id": "codex-gpt6",
+    "reviewed_at": "2026-10-28T12:44:16+00:00",
+    "review_independence": "same_assistant",
+    "split": "development",
+    "gate_evidence": true,
+    "gate_passed": false,
+    "case_sha256": "be8ddb699ac0880678b89075641e6d314de3b69593abbefccad94e37140dc506",
+    "expectations_sha256": "e3265c173fca9f201b9adc6c81309a5d513870b7f1f82654df4da77ba17cfc05",
+    "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+    "measurements": {
+      "baseline": {
+        "policy_sha256": "e1519fd3167f8d0a0f533edb1777c81ebb8ecdaeb377d0f757b96003df40dcd5",
+        "case_count": 4,
+        "matches": 0,
+        "rows": [
+          {
+            "case_id": "chatgpt-engine-smoke-boj-policy-rate-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": "worldbank:2:USA:NY.GDP.DEFL.KD.ZG",
+            "candidate_count": 3,
+            "matches_expectation": false,
+            "elapsed_ns": 1397027
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-cpi-rate-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+            "candidate_count": 3,
+            "matches_expectation": false,
+            "elapsed_ns": 874509
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-gdp-total-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:NY.GDP.MKTP.KD",
+            "candidate_count": 3,
+            "matches_expectation": false,
+            "elapsed_ns": 826025
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-japan-gdp-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": "worldbank:2:USA:EN.POP.DNST",
+            "candidate_count": 3,
+            "matches_expectation": false,
+            "elapsed_ns": 980670
+          }
+        ]
+      },
+      "prior_candidate_v2": {
+        "policy_sha256": "fe2321e0312188820b71dc28bf3b4c9b2aefc9d26e0064cd1c486507858d2aa9",
+        "case_count": 4,
+        "matches": 2,
+        "rows": [
+          {
+            "case_id": "chatgpt-engine-smoke-boj-policy-rate-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": null,
+            "candidate_count": 0,
+            "matches_expectation": true,
+            "elapsed_ns": 1109564
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-cpi-rate-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+            "candidate_count": 2,
+            "matches_expectation": false,
+            "elapsed_ns": 903874
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-gdp-total-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:NY.GDP.MKTP.KD",
+            "candidate_count": 3,
+            "matches_expectation": false,
+            "elapsed_ns": 779255
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-japan-gdp-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": null,
+            "candidate_count": 0,
+            "matches_expectation": true,
+            "elapsed_ns": 957124
+          }
+        ]
+      },
+      "candidate": {
+        "policy_sha256": "e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67",
+        "case_count": 4,
+        "matches": 4,
+        "rows": [
+          {
+            "case_id": "chatgpt-engine-smoke-boj-policy-rate-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": null,
+            "candidate_count": 0,
+            "matches_expectation": true,
+            "elapsed_ns": 1089934
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-cpi-rate-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:FP.CPI.TOTL.ZG",
+            "candidate_count": 2,
+            "matches_expectation": true,
+            "elapsed_ns": 928461
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-gdp-total-001",
+            "expected_state": "candidate_found",
+            "top_candidate_id": "worldbank:2:USA:NY.GDP.MKTP.CD",
+            "candidate_count": 3,
+            "matches_expectation": true,
+            "elapsed_ns": 881360
+          },
+          {
+            "case_id": "chatgpt-engine-smoke-japan-gdp-001",
+            "expected_state": "unmatched",
+            "top_candidate_id": null,
+            "candidate_count": 0,
+            "matches_expectation": true,
+            "elapsed_ns": 1149874
+          }
+        ]
+      }
+    },
+    "delta_matches": 4,
+    "not_measured": [
+      "actual_user_observation",
+      "downstream_actions",
+      "false_exact",
+      "split_leakage",
+      "non_target_regression",
+      "timing_cost_budget",
+      "validation",
+      "holdout",
+      "promotion_eligibility"
+    ]
+  },
+  "ai_simulated_development_pass": true,
+  "validation_integrity_note": "The v2 validation cases were inspected while refining this candidate and are not a blind test. The separately frozen holdout remains the one-time generalization check.",
+  "holdout_independence_note": "Holdout cases are hash-locked and are not sent to the ranker during qualification. The public repository makes their contents visible, so split separation is recorded but secrecy is not claimed.",
+  "gate_c_passed": false,
+  "promotion_status": "NOT_PROMOTED",
+  "not_measured": [
+    "frozen_holdout",
+    "blind_validation_independence",
+    "promotion_eligibility",
+    "human_observation"
+  ]
+}

@@ -32,9 +32,11 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 - 비API 대용량 qualification과 BIS production 실행은 worker 시작 직전에 예상 시간·범위·신뢰도·실측 수를 표시합니다.
   `large-estimate` preview는 task를 만들거나 실행하지 않고 예측만 확인합니다.
 
-검색 ranker의 오프라인 development/validation 비교가 일부 통과했지만 제품 Gate C는 미통과이며 정책 승격도
-되지 않았습니다. 전체 Gate와 증거는 [구현 현황](docs/IMPLEMENTATION_PLAN.md)을, 제품 Gate와 남은 순서는
-[통합 제품 기획](PROJECT_PLAN.md)을 확인하세요. Gate 상태는 기관 서버의 현재 가용성을 뜻하지 않습니다.
+고정 v2 catalog 검색 범위의 제품 Gate C는 development/validation, 확인 경계 trace, 성능 예산과
+일회 holdout 판정을 통과했습니다. 후보 정책은 평가 전용으로 남아 있고 자동 승격되지 않습니다.
+이 Gate는 provider API, raw writer, exporter 내부 동작을 실행하지 않습니다. 결과는
+[holdout 보고서](evaluation/results/gate_c_holdout_result.json), [구현 현황](docs/IMPLEMENTATION_PLAN.md),
+[통합 제품 기획](PROJECT_PLAN.md)에서 확인하세요. Gate 상태는 기관 서버의 현재 가용성을 뜻하지 않습니다.
 
 ## 설치와 첫 명령
 

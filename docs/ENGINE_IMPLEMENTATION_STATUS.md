@@ -1,6 +1,6 @@
 # 엔진 구현 현황과 데이터 접근 한계
 
-> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `1843145` (PR #70 merge; 2026-10-28). 이후 엔진 실행 검증은
+> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `072d3d3` (PR #71 merge; 2026-10-28). 이후 엔진 실행 검증은
 > [2026-10-28 smoke 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 보존한다. 이 문서는 런타임 코드와 현재 제품 현황을
 > 처음부터 끝까지 연결해 설명한다. **지원되지 않는 일**은 기관 API/데이터 계약 또는 접근 권한 때문에 현재
 > 인터페이스로 할 수 없는 일, **미구현**은 기술적으로 확장 가능하지만 코드에 아직 연결하지 않은 일로 나눈다.
@@ -26,7 +26,7 @@ MacroAtlas는 자유 질문에 바로 답을 생성하는 완성형 대화형 �
 | 6. 원본/메타데이터 | `storage/raw_downloads.py`, `statistical_downloads.py`, `metadata_archives.py` | 다운로드 원본과 credential-free manifest를 저장하고 해시·출처·수집 시점을 연결한다. 메타데이터 원본과 제한 정규화본도 별도 보존한다. | 범용 관측치 카탈로그와 모든 원본의 장기 보존·버전 마이그레이션은 완성되지 않았다. 저장 성공은 경제적 의미 검증을 뜻하지 않는다. |
 | 7. 구조·품질·최신성 | `connectors/*` parser, `ingestion/statistical_quality.py`, `freshness.py` | 구조/식별자, 수치·결측, 중복/범위, 원본 변경 여부, 최신성 평가를 시행한다. freshness anchor는 non-null 값이 있는 최신 period를 사용하며 결측 원본행은 보존한다. | 공통 typed TimeSeries/Observation, 신뢰할 release calendar, 모든 파일·시계열의 의미/단위 검증은 없다. 주파수별 기본 허용 일수는 정책이지 기관의 실제 발표 일정 증명은 아니다. |
 | 8. 사용자 출력 | `ingestion/csv_export.py`, `cli.py` | 완료된 검증 World Bank GDP와 BOJ FXER task를 read-only 검증 후 CSV 및 provenance sidecar로 출력한다. | BLS/Census export, 원자료 XLSX 출력, 다중 series 정렬/비교 XLSX는 미구현. 값·단위·빈도 호환성을 추측해 합치지 않는다. |
-| 9. 평가/피드백 | `evaluation/*`, `storage/feedback.py`, `feedback_cli.py` | 버전·해시·split을 가진 사례 검증, baseline/candidate 검색 비교, append-only 피드백 revision, 명시 리뷰와 불완전 case draft 생성을 지원한다. AI 분류기는 구현되지 않았다. | 사용자 피드백은 자동 채택되지 않는다. AI 지시문도 자동 변경하지 않는다. 운영자가 명시 지시하면 사람이 수동 편집하고 고정 사례에서 답변 품질·지시 준수·시간·비용을 전후 비교한다. 승격/rollback 전체 Gate C/D는 미완료다. |
+| 9. 평가/피드백 | `evaluation/*`, `storage/feedback.py`, `feedback_cli.py` | split/hash 검색 비교, confirmation boundary trace, 고정 로컬 성능 budget, manifest와 one-time holdout runner, append-only feedback revision을 지원한다. 제품 Gate C는 fixed v2 search scope에서 PASS다. | 후보는 평가 전용이며 승격되지 않았다. trace는 계획 생성 경계까지이며 provider/API/raw-write/export 내부 동작, 통계적 동등성, 사람 관찰은 측정하지 않는다. 승격/rollback은 D의 별도 승인이다. |
 | 10. 운영 성능 | `performance/*`, `large_file_*` | stage와 지원되는 phase를 monotonic clock으로 계측하고 비민감 집계(p50/p95·처리량·표본 수)를 출력한다. Linux 대용량 별도 qualification/production worker가 있다. | live 성능 표본은 승인된 자연 요청만 가능하며 아직 충분한 운영 표본이 아니다. 대용량은 BIS GLI 단일 flat ZIP profile뿐이고 경제 의미 해석은 안 한다. |
 
 ### 검색·피드백의 안전한 반자동 루프
@@ -56,7 +56,7 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 | Metadata engines | BLS 1 series metadata, Census ACS 1 variable metadata, 입력 SDMX 구조 및 제한 normalization/archive | provider 전체 메타데이터 수집·주기적 동기화·차원 간 자동 맵핑은 없음. 메타데이터 API 호출도 데이터 검색 전체를 대신하지 않음. |
 | Non-API intake / deferral | 로컬 CSV/TSV/TXT, XLS/XLSX, HTML table, ZIP 내부 표를 제한 파싱·보존. Iteration 29에서 transport/parser/preflight가 typed `CapacityFinding`을 쓰고 구조화 deferral log를 남긴다. | 일반 파일의 열 이름·행은 보존해도 통계 의미·단위·날짜를 자동 확정하지 않는다. 고정폭 텍스트·미선언 구분자·대형 파일은 지원 범위 밖/검토 대기. |
 | BIS GLI large-file | 보존된 BIS GLI flat ZIP의 Linux 전용 qualification 후 명시 승인 production, 문자열 JSONL chunk, checkpoint/resume | 단일 source/profile·artifact만 지원. 값의 의미 정규화/보편 CSV/XLSX·다른 ZIP/API의 대용량 처리로 확장되지 않음. |
-| Feedback / Evaluation | [`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py), [`storage/feedback.py`](../src/macro_data_platform/storage/feedback.py), [`evaluation/`](../src/macro_data_platform/evaluation/): append-only feedback, explicit review, 불완전 draft bridge, split/hash 검증, baseline-vs-candidate ranker 평가 | AI 분류·실제 자연 사용자 표본·전체 downstream 금지행동 trace·승격 승인/rollback은 미완료. 사례 하나는 엔진 신뢰성이나 유형 일반화를 검증하기에 부족하다. |
+| Feedback / Evaluation | [`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py), [`storage/feedback.py`](../src/macro_data_platform/storage/feedback.py), [`evaluation/`](../src/macro_data_platform/evaluation/): append-only feedback, explicit review, 불완전 draft bridge, split/hash 검증, confirmation-boundary trace, 로컬 성능 예산, one-time holdout. Fixed v2 search scope의 제품 Gate C는 PASS | 실제 자연 사용자 표본과 D의 사람 승격/rollback 기록은 미완료. confirmation trace는 proposal-to-plan 경계까지이며 provider·raw-write·export 내부 호출을 검증하지 않는다. 통계적 동등성이나 analyst usability를 주장하지 않는다. |
 | Performance | Orchestrator 전체 stage 시간 및 선택 network/raw/parse/quality/SQLite/export phase, privacy-safe 집계 | 세부 phase는 일부 겹친다. Discovery/general tabular/validator leaf timing은 제한적이며 표본이 적으면 p95를 주장하지 않는다. |
 
 ## 기관별 데이터 접근: API와 비API
