@@ -19,7 +19,7 @@ def main(argv=None):
     )
     corpus.add_argument(
         "--corpus-dir", type=Path,
-        default=Path.cwd() / "tests" / "fixtures" / "evaluation" / "v1",
+        default=Path.cwd() / "tests" / "fixtures" / "evaluation" / "v2",
     )
     corpus.add_argument("--repo-root", type=Path, default=None)
     args = parser.parse_args(argv)
@@ -39,6 +39,7 @@ def main(argv=None):
                 "ready": complete,
                 "corpus_version": loaded.manifest["corpus_version"],
                 "case_count": len(loaded.cases),
+                "reviewed_draft_count": loaded.manifest.get("reviewed_draft_count", 0),
                 "gate_status": loaded.manifest["gate_status"],
                 "counts_by_split": dict(loaded.manifest["counts_by_split"]),
                 "counts_by_type": dict(loaded.manifest["counts_by_type"]),

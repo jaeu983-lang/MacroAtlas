@@ -64,7 +64,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
 | 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용 | 자동 사례 생성·코드 수정·공통 규칙 승격 없음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
-| 평가 사례 | 기존 JSON split scaffold 6건과 별도 evidence-backed v1 계약·9건 고정 corpus·27건 초안 pool | 사용자는 27건의 독립 검토 완료를 확인했다. 사례별 판정 기록은 저장소에 아직 없고 모두 미승격이므로 고정 corpus는 9/36, gate는 BLOCKED. evaluator와 rule promotion은 미구현 |
+| 평가 사례 | legacy JSON split scaffold 6건, 초기 evidence-backed v1 corpus 9건, GPT 검토 ledger와 evidence를 연결한 v2 corpus 36건 | v1은 9/36 BLOCKED 이력으로 보존한다. v2는 27개 초안을 사례별 GPT 검토하고 1건을 정의 문자열 수정 후 36/36 READY로 고정했다. 이는 AI 검토이며 사용자 관찰이나 엔진 평가가 아니다. evaluator와 rule promotion은 미구현 |
 
 기존 source gate A와 D는 해당 범위에서 통과했고 B/C/E는 제한 범위 판정이다. 이는 아래 제품 평가 A–G와 다른 구분이며, 현재 구현 상태는 구현 현황표를 따른다.
 
@@ -120,7 +120,7 @@ flowchart LR
 | Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | monotonic stage/선택 phase 계측, 별도 privacy-safe 표본 DB, knowledge latency와 읽기 전용 보고기를 구현한다. 자연 API 기준선과 일부 leaf timing은 미수집이며 fixture 반복 자료로 p95가 20개를 넘기기 전 확정하지 않는다. |
 | Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | 주기 정책과 connector 연결은 구현됐으나 초기 기본 일수이며 모든 generic tabular 경로·공표 달력까지 검증된 것은 아님. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
-| Evaluation·rule review | 같은 버전 사례로 검색 결과를 비교하고 사람 승인과 rollback을 기록한다. | legacy scaffold 6건, v1 고정 corpus 9/36, 별도 초안 27건. 실제 evaluator와 promotion record는 미구현이며, 검토 완료의 사례별 결과도 저장소에 기록되지 않았다. |
+| Evaluation·rule review | 같은 버전 사례로 검색 결과를 비교하고 검토 provenance와 적용·rollback을 기록한다. | legacy scaffold 6건, 역사적 v1 9/36 BLOCKED, GPT-reviewed v2 36/36 READY. 검색 evaluator와 promotion record는 미구현이며 사용자 관찰형 사례도 없다. |
 | Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
 | Developer maintenance workflow | 저장소 개선 후보를 격리 branch/worktree에서 수정·검증해 사람이 검토할 PR로 만든다. | 제품 데이터 Orchestrator와 별도 control plane. 일부 QA/updater 흐름은 있으나 자동 merge·배포는 없음. |
 
@@ -157,13 +157,13 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 **task 연결 피드백 로그 → 사람 검토·분류 → 비식별화한 versioned 사례 → development/validation/holdout 회귀 비교 → 심사 기록 → 별도 branch의 명시 변경·QA·PR**
 
 - 피드백은 task, stage, scope, category, knowledge kind, evidence와 append-only revision으로 저장한다. 사용자가 남긴 피드백은 자동으로 엔진 코드나 전역 지식으로 반영하지 않는다.
-- 사례는 원 질문과 변형, 기대 state와 기관/dataset/series/field, 필수 근거, 금지 동작, Excel 기대 정책, 생성 provenance를 가진다. 사람 검토자, 판정, privacy clearance는 원본 초안 hash를 참조하는 별도 review ledger에 둔다.
+- 사례는 원 질문과 변형, 기대 state와 기관/dataset/series/field, 필수 근거, 금지 동작, Excel 기대 정책, 생성 provenance를 가진다. 검토자 유형·정체성(AI 또는 사람), 판정, privacy clearance는 원본 초안 hash를 참조하는 별도 review ledger에 둔다. AI 검토는 실제 사용자 관찰이나 규칙의 사람 승인을 대체하지 않는다.
 - 비슷하지만 기대 답이 다른 질문은 같은 contrast group에 둔다. development, validation, holdout은 별도 파일로 관리한다. validation/holdout 변경은 의도적 리뷰와 version/hash 변경을 같은 PR에 남긴다.
 - baseline과 candidate는 동일한 case version에서 실행한다. 유형별 state/target accuracy, candidate ranking, false confirmation, 금지 동작을 비교한다. promotion gate는 목표 유형 개선, 다른 유형 퇴행 없음, false confirmation 0건, 금지 동작 0건이다.
 - 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.
 - raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
 
-FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator는 synthetic scaffold 6건을 검사하며 READY는 그 구조 검증만 뜻한다. 별도의 v1 loader는 evidence-backed 고정 9건과 초안 27건의 schema, hash, split leakage를 검증하지만 engine을 실행하지 않는다. 사용자가 27건의 독립 검토 완료를 확인했으나 사례별 판정 ledger가 아직 없어 초안은 미승격이고 fixed corpus는 9/36 BLOCKED다. 후보 engine 비교기와 규칙 승격·rollback record는 미구현이다. 자세한 schema는 사례 계약 문서를 따른다.
+FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. FeedbackStore-to-case bridge, 후보 engine 비교기, 규칙 승격·rollback record는 미구현이다. 자세한 schema는 사례 계약 문서를 따른다.
 
 ## 8. 지식 검색과 제한적 재사용
 
@@ -199,8 +199,8 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator
 
 | 순서 | 남은 작업 | 다음 단계로 넘어갈 조건 |
 |---:|---|---|
-| 0 | 기준선·상태 기록 | 최신 기본 브랜치에서 테스트 기준선을 기록한다. 사용자가 독립 검토 완료를 확인한 27개 사례의 판정·근거를 사례별로 남긴다. 검토 완료만으로 승인이나 승격을 뜻하지 않는다. |
-| 1 | 사례·feedback bridge | 승인된 사례만 고정 corpus에 반영하고 privacy, evidence hash, split/family 누수와 36건 quota를 검증한다. FeedbackStore는 읽기 전용 원천으로 유지하며 명시 승인된 사례 초안만 전달한다. |
+| 0 완료 | 기준선·사례 검토 기록 | base `825f2aa`에서 전체 pytest와 Ruff를 통과했다. 별도 ledger에 27개 draft의 원본 hash, GPT-6 판정·시각, 근거, privacy 결정, 채택 case hash를 기록했다. 1건은 definition 기대값을 수정해 새 case version으로 만들었다. AI 검토임을 명시하고 human review로 간주하지 않는다. |
+| 1 | 사례 corpus·feedback bridge | v2 corpus 36/36의 schema, quota, evidence hash, split leakage와 review ledger는 통과했다. 남은 일은 FeedbackStore에서 사용자가 명시 선택·승인하고 privacy-cleared한 feedback만 case draft로 전달하는 bridge다. legacy split scaffold와 v1 corpus는 유지한다. |
 | 2 | 검색 평가기 | 같은 case/catalog snapshot으로 현행 ranker와 후보 policy를 offline 비교한다. 정확도, 순위, 미확정, false-exact, 금지 동작을 유형별로 재현 가능하게 보고한다. |
 | 3 | 규칙 승격 기록 | validation 통과 후 고정 후보를 holdout에서 한 번 확인한다. reviewer, case/policy hash, 지표, 적용 commit과 rollback을 연결하고 자동 승격은 하지 않는다. |
 | 4 | typed series와 freshness | 기존 freshness 정책·판정 함수를 확장해 공통 series/observation 계약에 연결한다. World Bank, BOJ, BLS, Census, 구조 보존 파일 순으로 검증한다. |
@@ -208,7 +208,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator
 | 6 | 비교 XLSX | 호환 시계열만 정렬하고 정책과 변환식을 기록한다. 결측은 빈칸이며 자동 보간·forward-fill은 금지한다. |
 | 7 | 분석가 관찰 | 순서 1–6의 gate를 통과한 뒤 분석가 1–2명을 관찰한다. 이는 최종 제품 검증이다. |
 
-평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 현재 fixed 9건과 draft 27건을 단순 합산하지 않는다. 각 draft는 검토 기록, 수정사항, 공식 근거와 hash를 확인한 뒤 적합한 것만 승격한다. near-match의 기대 정답과 unrelated 판정은 고정 catalog 범위로 한정한다.
+평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다.
 
 작업은 의존성 기준 네 PR로 묶는다. 첫 묶음은 사례·review ledger·feedback bridge, 둘째는 평가기·policy·promotion, 셋째는 typed series·freshness·provider 연결, 넷째는 원자료·비교 XLSX다. PR 내부의 순서는 위 gate와 같고 실패한 단계 뒤 코드는 완료 처리하지 않는다. 회차 번호 28–39는 검증 checkpoint일 뿐 PR 개수가 아니다. 기존 23회차 분석가 관찰은 마지막 40회차이며 별도 구현 PR을 만들지 않는다.
 

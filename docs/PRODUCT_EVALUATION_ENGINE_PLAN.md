@@ -4,15 +4,17 @@
 
 이미 구현된 공통 실행 제어, provider registry, 피드백 저장소, 검색 ranker, freshness 정책/판정 함수, CSV export를 다시 만들지 않는다. 기관별 transport·응답 parser는 유지한다. 남은 코드는 아래 의존 순서대로 네 개의 PR 묶음으로 제출한다.
 
-## 0. 기준선과 사례 판정 기록 — PR 묶음 1 진입 조건
+2026-10-28 상태: base `825f2aa` 전체 pytest와 Ruff 기준선이 통과했다. 27개 draft에 대해 GPT-6가 case-by-case 검토를 완료해 v2 corpus 36/36을 만들었고 ledger validator와 split/evidence 검사가 통과했다. 이 기록은 AI 검토이며 human review나 engine 평가로 간주하지 않는다.
 
-최신 기본 브랜치에서 전체 테스트와 Ruff를 실행해 base SHA와 결과를 남긴다. 현 checkout이 과거 PR head면 사용하지 않는다.
+## 0. 기준선과 사례 판정 기록 — 완료
 
-사용자가 독립 검토를 완료했다고 확인한 27개 draft는 원본 해시를 보존하고, assistant authorship provenance와 분리된 review ledger에 case ID, 원본 파일 hash, reviewer 식별값, 검토 시각, 승인/수정/제외 판정, 공식 근거와 보완 hash, privacy 판정을 기록한다. 기존 검토 기록에서 확인되는 정보만 옮기고, reviewer·시각·판정을 추측해 채우지 않는다. 근거가 없는 사례는 승인으로 처리하지 않는다. agent review metadata를 사람 검토 증거로 재사용하지 않는다. 검토 완료를 승인으로 간주하지 않는다. 원본 draft는 생성 provenance로 보존하며, 승인·수정된 결과만 새 버전 사례로 만든다. 현재 코드에 이 ledger와 사람 review record가 없으므로 그때까지 사례는 미승격이다.
+기준선은 base `825f2aa`에서 전체 `pytest` 및 `ruff check .` 통과로 기록했다. `src/`·`tests/`는 당시 base와 동일했다.
+
+27개 draft 원본은 수정하지 않고 source file/case hash와 함께 [v2 review ledger](../tests/fixtures/evaluation/v2/review_ledger.jsonl)에 기록했다. 26건은 그대로 승인했고 1건은 candidate definition 기대값 두 곳을 고친 뒤 version 2로 승인했다. reviewer는 `GPT-6` / `ai_assistant`이며 검토 시각, 근거 ID·hash, privacy 판정, correction, limitation을 각 row에 남겼다. 생성 provenance의 `independent_review_pending`은 작성 당시 상태로 보존한다. AI 검토를 사람 검토나 실제 사용자 관찰로 바꾸어 표기하지 않는다.
 
 ## 1. 사례 corpus와 feedback bridge — PR 묶음 1
 
-기존 EvaluationCase v1 contract와 split audit을 확장한다. legacy JSON split scaffold와 v1 JSONL corpus를 합치지 않는다. FeedbackStore 원본은 유지하고 사용자가 명시적으로 선택·승인하고 비식별화된 feedback만 case draft로 전달한다.
+초기 v1 JSONL corpus 9/36은 그대로 보존했다. 새 catalog snapshot과 review ledger를 포함하는 v2 corpus에 27개 승인 사례를 연결해 36/36을 채웠고 manifest validator는 original draft hash, adopted case hash, evidence hash, review record와 split leakage를 검증한다. corpus는 quota와 구조 기준 READY다. FeedbackStore 원본은 유지하며 사용자가 명시적으로 선택·승인하고 비식별화한 feedback만 case draft로 전달하는 bridge는 아직 미구현이다.
 
 통과 조건:
 - fixed corpus 36건, development/validation/holdout 각각 12건, 각 case type은 split마다 3건

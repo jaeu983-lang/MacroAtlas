@@ -920,3 +920,9 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 ## D-105 — 병합 후 기준 상태와 남은 작업 순서
 
 2026-10-28. PR #50을 기본 브랜치 commit 825f2aa로 병합했다. 사용자는 27개 draft의 독립 검토 완료를 확인했다. 다만 저장소에는 사례별 판정·근거 ledger가 없고 draft 원본/manifest는 생성 당시 검토 대기 상태이므로 사례를 승격하지 않는다. 고정 v1 corpus 9/36과 BLOCKED gate를 유지한다. 현재 코드의 실제 기반부터 사례 기록, evaluator, explicit promotion, typed series/freshness, 원자료와 비교 workbook, 마지막 분석가 관찰 순으로 계획을 다시 정리한다. 공통 provider composition은 완료 상태로 유지하고 기관 adapter를 다시 합치지 않는다. 회차 보고서는 당시 증거로 보존하고 현행 상태는 PROJECT_PLAN 및 IMPLEMENTATION_PLAN에서만 갱신한다.
+
+## D-106 — 요청에 따른 GPT case review와 v2 corpus
+
+2026-10-28. 사용자가 이전에 생성된 27개 사례의 결과 기록을 GPT가 직접 만들도록 요청했다. GPT-6는 27개 draft 각각의 질문·기대 상태·candidate/field·금지 동작·Excel 정책을 공식 evidence snapshot과 hash, fixed catalog 범위, privacy, split/family audit에 대조했다. 26건을 원문대로 승인했고, GDP total-versus-per-capita near-match 한 건은 두 definition 기대값을 해당 candidate metadata 문자열과 맞추고 case version 2로 승인했다. draft 파일과 generation-time `independent_review_pending` metadata는 덮어쓰지 않고 별도 ledger에 original draft hash, source/adopted case hash, reviewer type/model, UTC 시각, evidence ID/hash, decision, correction, privacy basis와 limitations를 남겼다. AI 검토는 사람 검토나 실제 사용자 관찰이 아니다.
+
+기존 v1 corpus와 `catalog-v1` snapshot은 보존한다. v2는 v1의 9건과 검토된 27건, 13개 frozen candidate로 구성했고 split/type quota 36/36, evidence hash, source-draft-to-review link, family/split leakage를 검증한다. `validate-corpus` READY는 사례 corpus 무결성만 뜻하며 ranking evaluator 결과는 아니다. Review ledger validator가 실제 원본 draft manifest·hash와 채택 case hash를 매번 검사한다. FeedbackStore bridge, search evaluator, rule promotion은 후속 단계로 둔다.

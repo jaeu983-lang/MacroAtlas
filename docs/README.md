@@ -15,7 +15,7 @@
 
 ## 현재 평가 상태
 
-PR #50은 2026-10-28 기본 브랜치에 병합됐다. 고정 v1 corpus는 9/36이고 BLOCKED다. 사용자는 별도 27 draft의 독립 검토 완료를 확인했지만, 사례별 결과와 근거는 아직 저장소에 없다. draft 원본과 과거 보고서에 적힌 당시 상태는 생성·작성 시점의 이력이다. 사례 승격이나 evaluator 통과를 뜻하지 않는다.
+PR #50은 2026-10-28 기본 브랜치에 병합됐다. 초기 v1 corpus의 9/36 BLOCKED 상태는 이력으로 보존한다. 새 v2는 27개 GPT 검토 기록과 evidence hash를 연결해 36/36 READY다. 이는 사례 데이터 gate이며 engine evaluator·ranking 성능 검증 통과를 뜻하지 않는다. 원본 draft의 pending metadata는 생성 시점 기록이다.
 
 ## 기록 구분
 

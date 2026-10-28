@@ -1,8 +1,9 @@
 # Evaluation scaffolds and evidence-backed cases
 
-This documentation covers two separate inputs: the original JSON-per-split
-scaffold in `evaluation/sets/` and the evidence-backed JSONL v1 corpus in
-`tests/fixtures/evaluation/v1/`. Neither is an automatic learner.
+This documentation covers three separate inputs: the original JSON-per-split
+scaffold in `evaluation/sets/`, the initial evidence-backed JSONL v1 corpus in
+`tests/fixtures/evaluation/v1/`, and the GPT-reviewed v2 corpus in
+`tests/fixtures/evaluation/v2/`. None is an automatic learner.
 `macro-feedback` keeps the append-only runtime feedback log; accepted feedback
 does not enter an evaluation corpus unless a reviewer creates, verifies, and
 privacy-clears a case explicitly.
@@ -10,23 +11,24 @@ Product requirements are in [PROJECT_PLAN.md](../PROJECT_PLAN.md); the current i
 
 ## Current state
 
-The original split-set scaffold and evidence-backed JSONL v1 corpus are separate
-contracts. The legacy scaffold has six synthetic cases. The v1 fixed corpus
-has 9 of 36 intended cases and remains BLOCKED.
+The original split-set scaffold and v1/v2 JSONL corpora are separate contracts.
+The legacy scaffold has six synthetic cases. The initial v1 corpus remains at
+9/36 and BLOCKED as a historical version. The v2 corpus has 36/36 cases, 12
+per split and three per case type per split, and validates READY.
 
-The repository contains 27 assistant-simulated draft files. The user has
-confirmed that independent review is complete, but no per-case decision,
-reviewer record, correction, or evidence ledger has been committed. The draft
-files and their manifest preserve their generation-time
-independent_review_pending state; that historical metadata does not record the
-later review. Keep these cases unpromoted until a review ledger links each
-decision to the exact draft hash and the accepted case version. Review
-completion alone does not establish that every draft passed.
+The original 27 assistant-simulated draft files remain unchanged with their
+generation-time `independent_review_pending` metadata. A separate v2 review
+ledger records GPT-6's case-by-case result against the exact draft hash,
+accepted case version, evidence hashes, privacy basis, and corrections. Twenty
+six were approved as written; one GDP total/per-capita case was corrected and
+approved as version 2. The ledger identifies an AI reviewer and does not claim
+human review or human-observed usage.
 
-The fixed-corpus validator verifies structure, hashes, evidence references, and
-split leakage. It does not authenticate the human review, run an engine,
-calculate ranking accuracy, or promote cases. The current ranking evaluator
-and rule-promotion workflow are not implemented.
+The v2 validator verifies structure, hashes, case-to-review links, evidence
+references, and split leakage. READY means the case corpus is complete and
+internally verified; it does not run a search engine, calculate ranking
+accuracy, or promote a search rule. The ranking evaluator and rule-promotion
+workflow are not implemented.
 ## Legacy scaffold record
 
 Each case has a stable `case_id`, integer `case_version`, assigned split,
@@ -100,12 +102,14 @@ field states, evidence references, prohibited actions, and Excel policy.
 Evidence paths are repository-relative and hash checked; official references
 must be clean HTTPS URIs without credential-bearing query data. Unknown or
 conflicting expected fields require supporting evidence and a review-required
-candidate status. Assistant authorship remains simulated provenance and cannot be marked human-observed. Human review decisions belong in the separate review ledger; they do not rewrite authorship.
+candidate status. Assistant authorship remains simulated provenance and cannot be marked human-observed. Review decisions live in the separate ledger and do not rewrite draft authorship. The current v2 ledger explicitly marks GPT-6 as an AI reviewer.
 
 ## Not implemented by this step
 
 The validator does not authenticate source evidence, run an engine, calculate
 answer/ranking accuracy, compare baseline and candidate rules, calculate
-false-confirmation rates, or approve a rule. The legacy synthetic cases exercise structure only; the fixed evidence-backed v1 cases have not been scored by an engine. A representative evaluation needs recorded per-case human review decisions, verified feedback/source references, and a shared, versioned outcome record from the product engines. Rule promotion and
-rollback remain explicit human decisions with no automatic feedback-to-code
-path.
+false-confirmation rates, or approve a rule. The legacy synthetic cases exercise
+structure only; neither the v1 nor v2 cases have been scored by an engine. The
+v2 set is an AI-reviewed, source-backed regression fixture, not evidence of
+production ranking accuracy or analyst usability. Rule promotion and rollback
+remain explicit decisions with no automatic feedback-to-code path.

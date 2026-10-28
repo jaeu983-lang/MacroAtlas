@@ -10,17 +10,20 @@ from typing import Any
 
 from macro_data_platform.evaluation.case_contracts import EvaluationCase
 from macro_data_platform.evaluation.case_sets import validate_case_sets
+from macro_data_platform.evaluation.review_ledger import validate_review_ledger
 from macro_data_platform.evaluation.split_audit import SplitLeakageIssue, audit_split_leakage
 from macro_data_platform.workflow_contracts import Candidate
 
 _MAX_CORPUS_BYTES = 8 * 1024 * 1024
 _MAX_CASE_BYTES = 256 * 1024
-_MANIFEST_FIELDS = {
+_MANIFEST_FIELDS_V1 = {
     "manifest_version", "corpus_version", "gate_status", "intended_case_count",
     "intended_cases_per_split", "intended_cases_per_type_per_split", "case_count",
     "counts_by_split", "counts_by_type", "missing_case_types", "gate_blockers", "files",
 }
-_REQUIRED_FILES = {"cases.jsonl", "schema.json", "catalog_snapshot.json"}
+_MANIFEST_FIELDS_V2 = _MANIFEST_FIELDS_V1 | {"reviewed_draft_count"}
+_REQUIRED_FILES_V1 = {"cases.jsonl", "schema.json", "catalog_snapshot.json"}
+_REQUIRED_FILES_V2 = _REQUIRED_FILES_V1 | {"review_ledger.jsonl"}
 __all__ = ["EvaluationCorpus", "load_corpus", "read_cases", "validate_case_sets"]
 
 
@@ -96,8 +99,8 @@ class EvaluationCorpus:
 
 
 
-def _safe_corpus_file(root: Path, filename: Any) -> Path:
-    if not isinstance(filename, str) or filename not in _REQUIRED_FILES:
+def _safe_corpus_file(root: Path, filename: Any, allowed_files: set[str]) -> Path:
+    if not isinstance(filename, str) or filename not in allowed_files:
         raise ValueError("Manifest references an unsupported corpus file")
     path = (root / filename).resolve()
     if path.parent != root.resolve():
@@ -105,14 +108,14 @@ def _safe_corpus_file(root: Path, filename: Any) -> Path:
     return path
 
 
-def _load_candidates(path: Path) -> tuple[Candidate, ...]:
+def _load_candidates(path: Path, *, snapshot_version: str) -> tuple[Candidate, ...]:
     try:
         value = json.loads(_read_bounded(path, _MAX_CORPUS_BYTES).decode("utf-8"),
                            object_pairs_hook=_unique_object,
                            parse_constant=_reject_json_constant)
         if not isinstance(value, dict) or set(value) != {"snapshot_version", "candidates"}:
             raise ValueError
-        if value["snapshot_version"] != "catalog-v1":
+        if value["snapshot_version"] != snapshot_version:
             raise ValueError
         raw_candidates = value["candidates"]
         if not isinstance(raw_candidates, list) or not raw_candidates or len(raw_candidates) > 500:
@@ -139,7 +142,7 @@ def _verify_evidence_files(cases: tuple[EvaluationCase, ...], repo_root: Path) -
 
 def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
                 ) -> EvaluationCorpus:
-    """Verify the immutable initial manifest, evidence files, and candidate references."""
+    """Verify a versioned manifest, evidence, candidate refs, and review records."""
     root = Path(corpus_dir).resolve()
     try:
         manifest_bytes = _read_bounded(root / "manifest.json", 64 * 1024)
@@ -148,10 +151,13 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
                               parse_constant=_reject_json_constant)
     except (OSError, UnicodeDecodeError, ValueError):
         raise ValueError("Invalid evaluation corpus manifest") from None
-    if not isinstance(manifest, dict) or set(manifest) != _MANIFEST_FIELDS:
+    version = manifest.get("manifest_version") if isinstance(manifest, dict) else None
+    manifest_fields = {1: _MANIFEST_FIELDS_V1, 2: _MANIFEST_FIELDS_V2}.get(version)
+    required_files = {1: _REQUIRED_FILES_V1, 2: _REQUIRED_FILES_V2}.get(version)
+    if (not isinstance(manifest, dict) or type(version) is not int
+            or manifest_fields is None or set(manifest) != manifest_fields):
         raise ValueError("Invalid evaluation corpus manifest fields")
-    if (type(manifest["manifest_version"]) is not int or manifest["manifest_version"] != 1
-            or not isinstance(manifest["corpus_version"], str)
+    if (not isinstance(manifest["corpus_version"], str)
             or not manifest["corpus_version"]
             or not isinstance(manifest["gate_status"], str)
             or manifest["gate_status"] not in {"complete", "blocked"}
@@ -169,10 +175,12 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
             or not isinstance(manifest["counts_by_split"], dict)
             or not isinstance(manifest["counts_by_type"], dict)
             or not isinstance(manifest["files"], dict)
-            or set(manifest["files"]) != _REQUIRED_FILES):
+            or set(manifest["files"]) != required_files
+            or (version == 2 and (type(manifest["reviewed_draft_count"]) is not int
+                                  or manifest["reviewed_draft_count"] <= 0))):
         raise ValueError("Invalid evaluation corpus manifest values")
 
-    paths = {name: _safe_corpus_file(root, name) for name in _REQUIRED_FILES}
+    paths = {name: _safe_corpus_file(root, name, required_files) for name in required_files}
     file_bytes = {name: _read_bounded(path, _MAX_CORPUS_BYTES)
                   for name, path in paths.items()}
     for name, content in file_bytes.items():
@@ -232,7 +240,10 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
         raise ValueError("Blocked evaluation corpus needs an explicit blocker")
     if complete and manifest["gate_blockers"]:
         raise ValueError("Complete evaluation corpus cannot retain unresolved gate blockers")
-    candidates = _load_candidates(paths["catalog_snapshot.json"])
+    candidates = _load_candidates(
+        paths["catalog_snapshot.json"],
+        snapshot_version="catalog-v1" if version == 1 else "catalog-v2",
+    )
     candidate_ids = {candidate.candidate_id for candidate in candidates}
     for case in cases:
         references = (set(case.relevant_candidate_ids) | set(case.forbidden_candidate_ids)
@@ -246,7 +257,15 @@ def load_corpus(corpus_dir: str | Path, *, repo_root: str | Path | None = None
         if not repo_roots:
             raise ValueError("Repository root is required to verify evidence references")
         repo_root = repo_roots[0]
-    _verify_evidence_files(cases, Path(repo_root))
+    repo_root = Path(repo_root).resolve()
+    _verify_evidence_files(cases, repo_root)
+    if version == 2:
+        reviews = validate_review_ledger(
+            paths["review_ledger.jsonl"], cases, repo_root,
+            expected_count=manifest["reviewed_draft_count"],
+        )
+        if len(reviews) != manifest["reviewed_draft_count"]:
+            raise ValueError("Evaluation corpus review count mismatch")
     return EvaluationCorpus(MappingProxyType(manifest), cases, candidates,
                             manifest["files"]["cases.jsonl"],
                             manifest["files"]["catalog_snapshot.json"], leakage_issues)
