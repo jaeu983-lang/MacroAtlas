@@ -35,6 +35,9 @@ unrelated abstention, forbidden candidate returns, false-exact candidates, and
 structural field/status checks. Policy and input hashes identify each run. The
 evaluator has no action trace, so prohibited product actions remain unmeasured;
 these reports do not establish semantic equivalence or promotion eligibility.
+The CLI does not send queries to an AI model: it runs the local deterministic
+ranker on stored case questions. GPT-6 was used earlier to review this fixed
+corpus, not as an automated judge for each evaluation run.
 ## Legacy scaffold record
 
 `macro-eval feedback-draft` is the opt-in bridge for an accepted current

@@ -2,6 +2,8 @@ from dataclasses import replace
 
 from macro_data_platform.evaluation.cases import load_corpus
 from macro_data_platform.evaluation.search_baseline import (
+    DEFAULT_CANDIDATE_MINIMUM_SCORE,
+    DEFAULT_CANDIDATE_POLICY_VERSION,
     SearchPolicy,
     compare_development_policies,
     compare_validation_policies,
@@ -141,6 +143,57 @@ def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):
     assert group["forbidden_candidate_returns"] == len(case.query_variants)
     assert group["forbidden_exact_candidates"] == len(case.query_variants)
     assert group["expected_state_matches"] == 0
+
+
+def test_candidate_policy_improves_unrelated_without_regressing_development_metrics():
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    baseline = evaluate_development(corpus, SearchPolicy(version="baseline"))
+    candidate = evaluate_development(
+        corpus,
+        SearchPolicy(
+            version=DEFAULT_CANDIDATE_POLICY_VERSION,
+            minimum_score=DEFAULT_CANDIDATE_MINIMUM_SCORE,
+        ),
+    )
+
+    assert baseline["groups"]["unrelated"]["unrelated_with_candidates"] == 8
+    assert candidate["groups"]["unrelated"]["unrelated_with_candidates"] == 0
+    for case_type in ("rankable", "near_match", "insufficient_evidence"):
+        before, after = baseline["groups"][case_type], candidate["groups"][case_type]
+        assert after["top1_hits"] >= before["top1_hits"]
+        assert after["expected_state_matches"] >= before["expected_state_matches"]
+        assert after["status_matches"] >= before["status_matches"]
+        assert after["fields_matches"] >= before["fields_matches"]
+        if before["mrr"] is not None:
+            assert after["mrr"] >= before["mrr"]
+        assert after["false_exact_candidates"] == 0
+        assert after["forbidden_exact_candidates"] == 0
+
+
+def test_frozen_candidate_keeps_validation_non_target_metrics_and_improves_unrelated():
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    report = compare_validation_policies(
+        corpus,
+        SearchPolicy(version="baseline"),
+        SearchPolicy(
+            version=DEFAULT_CANDIDATE_POLICY_VERSION,
+            minimum_score=DEFAULT_CANDIDATE_MINIMUM_SCORE,
+        ),
+    )
+    baseline, candidate = report["baseline"]["groups"], report["candidate"]["groups"]
+
+    assert baseline["unrelated"]["unrelated_with_candidates"] == 8
+    assert candidate["unrelated"]["unrelated_with_candidates"] == 0
+    assert candidate["unrelated"]["expected_state_matches"] == 8
+    for case_type in ("rankable", "near_match", "insufficient_evidence"):
+        before, after = baseline[case_type], candidate[case_type]
+        assert after["top1_hits"] >= before["top1_hits"]
+        assert after["expected_state_matches"] >= before["expected_state_matches"]
+        assert after["fields_matches"] >= before["fields_matches"]
+        assert after["status_matches"] >= before["status_matches"]
+        if before["mrr"] is not None:
+            assert after["mrr"] >= before["mrr"]
+    assert "holdout" in report["not_measured"]
 
 
 def test_validation_comparison_never_runs_holdout_and_marks_it_unmeasured(monkeypatch):

@@ -83,13 +83,14 @@ python -m pytest
 python -m ruff check src tests
 macro-eval validate
 macro-eval search-baseline
-macro-eval search-compare --candidate-min-score 70
+macro-eval search-compare --candidate-min-score 37.5
+macro-eval search-validation --candidate-min-score 37.5
 git diff --check
 ```
 
 `macro-eval validate`의 `READY`는 세 split의 구조·분리·hash 검증만 통과했다는 뜻이며 엔진 평가가 아닙니다. 현재 포함된 사례는 synthetic fixture라 `reviewed_feedback_split_coverage`가 `none`입니다. validation/holdout hash도 blind holdout이나 일반화 성능의 증거가 되지 않습니다. 상태 정의는 [평가 사례 규약](EVALUATION_CASES.md)을 확인하세요.
 
-`search-baseline`과 `search-compare`는 고정 corpus의 development split만 읽습니다. 현재 비교 후보는 ranker의 최소 lexical score를 적용하는 평가용 정책 wrapper입니다. 출력의 정책 hash와 delta는 오프라인 측정이며 제품 정책 변경, 확정 판정, Gate C 통과 또는 승격 승인을 의미하지 않습니다.
+`search-baseline`과 `search-compare`는 고정 corpus의 development split만 읽습니다. `search-validation`은 같은 baseline/candidate를 validation split에서 비교하고 holdout은 읽지 않습니다. 현재 candidate v2는 minimum lexical score 37.5를 적용하는 평가용 wrapper입니다. 출력의 정책 hash와 delta는 오프라인 측정이며 제품 기본 정책 변경, 확정 판정 또는 Gate C 승격 승인을 의미하지 않습니다.
 
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
