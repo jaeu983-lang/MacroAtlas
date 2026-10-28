@@ -1,11 +1,13 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-27**, 20회차 World Bank/BOJ CSV 전달 및 TIC/BIS 감시 범위 변경 반영. 제품의 현재 지원 범위 안내서.
+기준일: **2026-10-28**. 현재 사용자 명령은 [`cli.py`](../src/macro_data_platform/cli.py), feedback 명령은
+[`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py), 대용량 용량 판정은
+[`capacity.py`](../src/macro_data_platform/capacity.py) 및 [구현 현황](IMPLEMENTATION_PLAN.md)과 대조했습니다.
 
-제품 범위·현재 우선순위는 [통합 제품 기획](../PROJECT_PLAN.md), 짧은 순서 요약은
-[제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는 [제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를
-참조합니다. 개발 절차는 별도
-[개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 날짜가 붙은 회차 보고서는 당시 결과를 보존한 증거입니다.
+제품 범위·정책·작업 순서는 [통합 제품 기획](../PROJECT_PLAN.md), 실제 Gate 및 구현 상태는
+[구현 현황](IMPLEMENTATION_PLAN.md), 실행 경계는 [엔진 연결표](ENGINE_CONNECTIONS.md)와
+[엔진별 구현·접근 한계](ENGINE_IMPLEMENTATION_STATUS.md)를 기준으로 합니다. 개발 절차는
+[개발자 안내서](DEVELOPER_GUIDE.md)에 있습니다. 축약된 옛 계획 문서는 색인이고, 회차 보고서는 작성 당시 증거입니다.
 
 MacroAtlas는 Python 기반 국제통계 자료 탐색·수집 도구입니다. 고정된 World Bank 경로, BOJ의 단일
 시계열, TIC/BIS 지정 파일 intake를 위한 구조화 CLI를 제공합니다. 일반 자연어 해석, 대화형 UI,
@@ -76,8 +78,9 @@ BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지
 각 실행은 JSON 요약에 task ID, 상태, stage, 품질 상태, 저장 경로를 표시합니다. `status`는 네트워크를
 사용하지 않고 task를 조회합니다. transient 실패가 생기면 프로세스를 다시 연 뒤 같은 task ID로
 `resume`하세요. 서버가 `Retry-After`를 제공하면 Orchestrator가 대기시간 이전 resume을 차단합니다.
-`NEEDS_REVIEW`는 결과를 검토하고 승인한 뒤 `--approve-review`를 붙여야 재개됩니다. 자동 재시도는
-없습니다.
+`NEEDS_REVIEW`는 원인을 확인하고 사람이 재개를 승인할 때만 `--approve-review`를 추가합니다. 이 flag는
+승인 기록이며 원인 해결이나 데이터 검증을 대신하지 않습니다. `--live`는 저장된 외부 요청을 다시 허용합니다.
+자동 재시도는 없습니다. 전체 옵션은 [CLI parser](../src/macro_data_platform/cli.py)를 확인하세요.
 
 ## 검증된 task를 CSV로 저장하기
 
@@ -156,7 +159,7 @@ task ID는 외부 수집 전 저장됩니다. 같은 ID로 재개해야 이전 �
 새 task로 시작합니다. `watch`는 수동 실행이며 정기 스케줄을 만들지 않습니다. 자연 원본 변경이나
 provider 장애가 발생하지 않으면 해당 live 증거는 미확인으로 남습니다.
 
-## 피드백과 개선 제안
+## 피드백과 수동 개선 제안
 
 먼저 task가 있어야 task에 연결된 피드백을 기록할 수 있습니다. 모듈 명령은 `python -m`으로 실행할 수
 있습니다.
@@ -171,7 +174,10 @@ python -m macro_data_platform.feedback_cli --project-root . add --task-id <TASK_
 python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK_ID>
 ```
 
-새 피드백은 자동 승인되지 않고 평가 사례나 엔진 규칙에도 자동 반영되지 않습니다. 출력된 feedback ID를 검토한 뒤
+새 피드백은 자동 승인되지 않고 평가 사례나 엔진 규칙에도 자동 반영되지 않습니다. AI 일괄 분류 기능도 아직 없습니다.
+지시문(prompt) 수정은 자동화하지 않습니다. 운영자가 별도로 지시한 경우에만 사람이 직접 수정하고 버전을 고정합니다.
+그 뒤 같은 고정 사례로 답변 품질, 지시 준수, 실행 시간 및 모델 비용을 변경 전후 비교하고 운영자가 적용 여부를 정합니다.
+출력된 feedback ID를 검토한 뒤
 필요할 때 revision을 지정해 승인·거부·철회합니다. 승인된 feedback도 코드 규칙 변경 승인과 같지 않습니다.
 
 ```text
@@ -187,7 +193,9 @@ development seed를 `data/feedback_case_drafts/`에 새 파일로 씁니다. 이
 python -m macro_data_platform.evaluation.cli feedback-draft --project-root . --feedback-id <FEEDBACK_ID> --expected-revision 2 --sanitized-question "Show annual GDP values for the requested period." --reviewer-id reviewer-01 --privacy-cleared
 ```
 
-반복 패턴 분석은 읽기 전용입니다.
+반복 패턴 분석은 읽기 전용입니다. 패턴 분석은 [pattern_cli.py](../src/macro_data_platform/pattern_cli.py),
+feedback 저장·revision은 [storage/feedback.py](../src/macro_data_platform/storage/feedback.py), 평가 초안 bridge는
+[evaluation/feedback_bridge.py](../src/macro_data_platform/evaluation/feedback_bridge.py)에 있습니다.
 
 ```text
 python -m macro_data_platform.pattern_cli --project-root .
@@ -208,6 +216,8 @@ Codex 데스크톱에서 이 저장소 작업을 요청할 수 있지만, MacroA
 파일 크기·행·셀·압축 한도에 도달하면 NEEDS_REVIEW로 중단하고 SQLite 인계 목록에 남깁니다.
 `macroatlas deferred`로 최대 100건, `macroatlas deferred ID`로 해당 대상의 최근 판정 이력을 조회합니다.
 API 수집은 이 분류 대상이 아닙니다. 인계 목록 등록 후 별도 대용량 엔진은 자동 실행되지 않습니다.
+판정의 공통 자료형은 [`CapacityFinding`](../src/macro_data_platform/capacity.py)이며, 인계 흐름은
+[`non_api_capacity.py`](../src/macro_data_platform/ingestion/non_api_capacity.py)에 있습니다.
 
 ## 대용량 후보의 격리 시험
 

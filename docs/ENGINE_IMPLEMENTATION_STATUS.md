@@ -1,6 +1,6 @@
 # 엔진 구현 현황과 데이터 접근 한계
 
-> 코드 기준: `codex/feedback-log-classification-contract`의 현재 HEAD. 이 문서는 런타임 코드와 현재 제품 현황을
+> 코드 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `acc972b` (2026-10-28). 이 문서는 런타임 코드와 현재 제품 현황을
 > 처음부터 끝까지 연결해 설명한다. **지원되지 않는 일**은 기관 API/데이터 계약 또는 접근 권한 때문에 현재
 > 인터페이스로 할 수 없는 일, **미구현**은 기술적으로 확장 가능하지만 코드에 아직 연결하지 않은 일로 나눈다.
 > provider 제한은 현재 어댑터의 검증 범위와 공식 API 형태를 뜻하며 기관 전체 데이터의 한계를 뜻하지 않는다.
@@ -45,9 +45,9 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 
 | 엔진/경계 | 구현 | 현재 한계 |
 |---|---|---|
-| Engine contract / Registry | `StageInput → StageResult`, engine/version 고정 등록, composition root, 저장 plan에 따른 resume | registry는 호출 가능한 engine 인스턴스를 조립한다. 자격증명 발급, provider 접근권한, 자동 선택은 담당하지 않는다. |
-| Orchestrator / History | 순차 실행, idempotency key, task/stage attempt, 오류 상태, 수동 retry/resume, 취소 경계, 성공 prefix 재사용 | 분산 동시성·lease·worker 강제 종료·자동 retry/backoff 없음. 외부 side effect exactly-once 보장 안 됨. |
-| Candidate Search | 로컬 catalog ranking, 근거/상태/불확실성 보존, 제한·abstention 및 평가 비교 | 실시간 전체 catalog 수집·다국어 의미 검색·LLM 질문 해석 없음. 검색 순위 자체는 채택 근거가 아님. |
+| Engine contract / Registry | [`contracts.py`](../src/macro_data_platform/contracts.py), [`registry.py`](../src/macro_data_platform/orchestration/registry.py), [`composition.py`](../src/macro_data_platform/orchestration/composition.py): `StageInput → StageResult`, engine/version 고정 등록, 공통 조립 및 saved plan resume | registry는 호출 가능한 engine 인스턴스를 조립한다. 자격증명 발급, provider 접근권한, 자동 선택은 담당하지 않는다. |
+| Orchestrator / History | [`runner.py`](../src/macro_data_platform/orchestration/runner.py), [`history.py`](../src/macro_data_platform/storage/history.py): 순차 실행, idempotency key, task/stage attempt, 오류 상태, 수동 retry/resume, 성공 prefix 재사용 | 분산 동시성·lease·worker 강제 종료·자동 retry/backoff 없음. 외부 side effect exactly-once 보장 안 됨. |
+| Candidate Search | [`series_search.py`](../src/macro_data_platform/discovery/series_search.py), [`evaluation/cli.py`](../src/macro_data_platform/evaluation/cli.py): 로컬 catalog ranking, 근거/상태/불확실성 보존, 제한·abstention 및 오프라인 평가 비교 | 실시간 전체 catalog 수집·다국어 의미 검색·LLM 질문 해석 없음. 검색 순위 자체는 채택 근거가 아님. |
 | World Bank WDI collector | 미국 WDI GDP 현재달러 단일 indicator, 명시 기간, raw/manifest, 구조 파싱, 품질/freshness, 확인된 workflow | WDI 전체가 아님. API scope에서 국가/지표/query shape가 고정되고 한 요청 1–10 연속 연도/1 page/1 MiB 제한. |
 | BOJ FX collector | FM08/FXERD01, metadata와 관측값 단계 분리, 월별 수집, 변경 감지, 재개 | 다른 DB/series·범위 수집·getDataLayer·탐색은 미지원. 직접 확인된 건 2026-09 한 달. |
 | BLS collector | Public Data API v2, 1–20 series ID, 1–20년 구간, optional `BLS_API_KEY`, raw/manifest·parse·품질/freshness | catalog 탐색으로 의미/단위가 확인된 series만 안전하게 쓸 수 있다. 응답에 frequency/unit은 unknown. 장기·다수 series는 여러 요청 설계와 예산 검증이 필요. |
@@ -55,7 +55,7 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 | Metadata engines | BLS 1 series metadata, Census ACS 1 variable metadata, 입력 SDMX 구조 및 제한 normalization/archive | provider 전체 메타데이터 수집·주기적 동기화·차원 간 자동 맵핑은 없음. 메타데이터 API 호출도 데이터 검색 전체를 대신하지 않음. |
 | Non-API intake / deferral | 로컬 CSV/TSV/TXT, XLS/XLSX, HTML table, ZIP 내부 표를 제한 파싱·보존. Iteration 29에서 transport/parser/preflight가 typed `CapacityFinding`을 쓰고 구조화 deferral log를 남긴다. | 일반 파일의 열 이름·행은 보존해도 통계 의미·단위·날짜를 자동 확정하지 않는다. 고정폭 텍스트·미선언 구분자·대형 파일은 지원 범위 밖/검토 대기. |
 | BIS GLI large-file | 보존된 BIS GLI flat ZIP의 Linux 전용 qualification 후 명시 승인 production, 문자열 JSONL chunk, checkpoint/resume | 단일 source/profile·artifact만 지원. 값의 의미 정규화/보편 CSV/XLSX·다른 ZIP/API의 대용량 처리로 확장되지 않음. |
-| Feedback / Evaluation | append-only feedback, explicit review, draft bridge, split/hash 검증, baseline-vs-candidate ranker 평가 | AI 분류·실제 자연 사용자 표본·전체 downstream 금지행동 trace·승격 승인/rollback은 미완료. 사례 하나는 엔진 신뢰성이나 유형 일반화를 검증하기에 부족하다. |
+| Feedback / Evaluation | [`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py), [`storage/feedback.py`](../src/macro_data_platform/storage/feedback.py), [`evaluation/`](../src/macro_data_platform/evaluation/): append-only feedback, explicit review, 불완전 draft bridge, split/hash 검증, baseline-vs-candidate ranker 평가 | AI 분류·실제 자연 사용자 표본·전체 downstream 금지행동 trace·승격 승인/rollback은 미완료. 사례 하나는 엔진 신뢰성이나 유형 일반화를 검증하기에 부족하다. |
 | Performance | Orchestrator 전체 stage 시간 및 선택 network/raw/parse/quality/SQLite/export phase, privacy-safe 집계 | 세부 phase는 일부 겹친다. Discovery/general tabular/validator leaf timing은 제한적이며 표본이 적으면 p95를 주장하지 않는다. |
 
 ## 기관별 데이터 접근: API와 비API

@@ -12,6 +12,7 @@
 | 평가 사례 schema | [`EVALUATION_CASES.md`](EVALUATION_CASES.md) |
 | 최신성·출력 세부 계약 | [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md), [`OUTPUT_AND_VARIANT_POLICY.md`](OUTPUT_AND_VARIANT_POLICY.md) |
 | 명령과 개발 절차 | [`USER_GUIDE.md`](USER_GUIDE.md), [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) |
+| 사용자 명령과 코드 구현의 대응 | 사용자 안내서의 각 절에 CLI, feedback, 평가, capacity 소스 링크가 포함됨 |
 | 결정 이유·불변 이력 | [`DECISION_LOG.md`](DECISION_LOG.md), 회차 보고서와 감사 기록 |
 
 계획·아키텍처 이름의 기존 파일은 이전 링크를 위한 축약 인덱스이며 새 backlog가 아니다. 회차·live 보고서는

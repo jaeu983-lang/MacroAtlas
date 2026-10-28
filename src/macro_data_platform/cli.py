@@ -1,4 +1,4 @@
-"""Structured, opt-in command line for the currently supported local workflows."""
+"""Structured CLI for supported workflows; see docs/USER_GUIDE.md for usage and limits."""
 import argparse
 import json
 import os

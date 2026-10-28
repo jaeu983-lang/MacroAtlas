@@ -14,10 +14,10 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 
 - 사용자는 [사용자 안내서](docs/USER_GUIDE.md)를 확인하세요.
 - 개발자는 [개발자 안내서](docs/DEVELOPER_GUIDE.md)와 [개발 환경 설치](docs/INSTALLATION.md)를 따르세요.
-- 통합 제품 범위와 우선순위는 [제품 기획](PROJECT_PLAN.md), 요약 순서는 [로드맵](docs/ROADMAP_2026_10_26.md), 목표 구조는
-  [제품 및 시스템 아키텍처](docs/PRODUCT_ARCHITECTURE.md)를 보세요.
-- 현재 Gate와 실제 검증 상태는 [구현 상태](docs/IMPLEMENTATION_PLAN.md), 미해결 원인 분류는
-  [미해결 항목](docs/UNRESOLVED_ITEMS.md)를 기준으로 합니다.
+- 통합 제품 범위·정책·남은 순서는 [제품 기획](PROJECT_PLAN.md), 현재 Gate와 검증 증거는
+  [구현 현황](docs/IMPLEMENTATION_PLAN.md)을 기준으로 합니다.
+- 실제 호출 경계와 기관별 접근 제한은 [엔진 연결표](docs/ENGINE_CONNECTIONS.md),
+  [엔진 구현·데이터 접근 한계](docs/ENGINE_IMPLEMENTATION_STATUS.md)에 정리했습니다.
 - 전체 문서의 역할과 과거 보고서 읽는 법은 [문서 안내](docs/README.md)에 있습니다.
 
 ## 현재 지원 경로
@@ -32,10 +32,10 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 - 비API 대용량 qualification과 BIS production 실행은 worker 시작 직전에 예상 시간·범위·신뢰도·실측 수를 표시합니다.
   `large-estimate` preview는 task를 만들거나 실행하지 않고 예측만 확인합니다.
 
-Gate A/D는 해당 범위에서 통과, Gate B/C와 E는 제한 범위 판정입니다. World Bank API에서는 자연 transient
-실패를 저장한 뒤 같은 task/stage를 재개해 성공한 증거가 있습니다. TIC/BIS file watch의 자연 retryable 실패와
-원자료 개정 쌍은 별도 미관측 상태이며 현재 반복 확인 대상이 아닙니다. 이 문구는 다른 기관의 서버 상태를
-진단하지 않습니다.
+검색 ranker의 오프라인 development/validation 비교가 일부 통과했지만 제품 Gate C는 미통과이며 정책 승격도
+되지 않았습니다. Feedback 기록은 가능하지만 분류·사례 자동 채택·규칙 또는 AI 지시문 자동 수정은 없습니다.
+전체 Gate와 증거는 [구현 현황](docs/IMPLEMENTATION_PLAN.md)을, 제품 Gate와 남은 순서는
+[통합 제품 기획](PROJECT_PLAN.md)을 확인하세요. Gate 상태는 기관 서버의 현재 가용성을 뜻하지 않습니다.
 
 ## 설치와 첫 명령
 
