@@ -237,6 +237,12 @@ def test_engine_validates_explicit_file_series_mapping_without_guessing_metadata
     assert result.payload["quality"]["freshness"]["status"] == "FRESH"
     assert result.payload["quality"]["freshness"]["frequency_basis"] == "request_contract"
     assert result.payload["quality"]["freshness"]["latest_period"] == "2025"
+    from macro_data_platform.storage.typed_series import load_typed_series_artifact
+
+    artifact = result.payload["typed_series_artifact"]
+    saved_series = load_typed_series_artifact(settings, artifact)["series"][0]["contract"]
+    assert [row["raw_value"] for row in saved_series["observations"]] == ["0", ""]
+    assert artifact["typed_series_path"] in result.evidence_refs
 
 
 def test_stale_explicit_file_series_is_archived_but_requires_review(tmp_path):
@@ -261,6 +267,7 @@ def test_stale_explicit_file_series_is_archived_but_requires_review(tmp_path):
     assert result.payload["quality"]["freshness"]["latest_period"] == "2020"
     assert result.payload["withheld_observation_count"] == 1
     assert "observations" not in result.payload
+    assert "typed_series_artifact" not in result.payload
     assert result.payload["raw_path"]
     assert (tmp_path / result.payload["raw_path"]).read_text() == "year,value\n2020,42\n"
 

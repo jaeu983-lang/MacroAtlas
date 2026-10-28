@@ -112,6 +112,7 @@ def test_worldbank_latest_null_period_does_not_make_actual_value_look_future(tmp
     assert len(result.payload["observations"]) == 2
     assert next(row for row in result.payload["observations"]
                 if row["date"] == "2026")["value"] is None
+    assert Path(tmp_path, result.payload["typed_series_artifact"]["typed_series_path"]).is_file()
 
 
 def test_boj_daily_old_observations_are_withheld_after_raw_capture(tmp_path):
@@ -167,6 +168,7 @@ def test_boj_future_null_calendar_rows_do_not_hide_latest_available_observation(
     assert payload["quality"]["freshness"]["age_days"] == 1
     assert payload["quality"]["missing_value_count"] == 4
     assert [row["value"] for row in payload["observations"][-4:]] == [None] * 4
+    assert Path(tmp_path, payload["typed_series_artifact"]["typed_series_path"]).is_file()
 
 
 def test_bls_old_monthly_observation_is_not_returned_from_quality_failure(tmp_path):

@@ -18,6 +18,7 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.ingestion.typed_series import persist_typed_series_result
 from macro_data_platform.metadata.series import normalize_worldbank_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.performance.metrics import measure_current
@@ -76,7 +77,7 @@ class WorldBankSeriesEngine:
 
         payload = {**parsed, **paths, "mode": download.kind.value}
         try:
-            normalize_worldbank_series(payload)
+            typed_series = normalize_worldbank_series(payload)
         except (TypeError, ValueError):
             return StageResult(
                 StageStatus.NEEDS_REVIEW, payload, refs,
@@ -102,4 +103,7 @@ class WorldBankSeriesEngine:
             payload["observations"] = []
             return StageResult(StageStatus.NEEDS_REVIEW, payload, refs,
                                (issue, freshness["status"]), ErrorCode.QUALITY_FAILURE)
-        return StageResult(StageStatus.SUCCEEDED, payload, refs)
+        return persist_typed_series_result(
+            self.settings, payload=payload, series=(typed_series,), engine_id="worldbank_series/1",
+            refs=refs,
+        )

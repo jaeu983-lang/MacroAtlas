@@ -179,6 +179,9 @@ class BOJRangeQueryTests(unittest.TestCase):
             payload = result["stages"][-1]["result"]["payload"]
             self.assertEqual(len(payload["observations"]), 3)
             self.assertEqual(transport.observation_calls, 1)
+            self.assertTrue(Path(
+                directory, payload["typed_series_artifact"]["typed_series_path"],
+            ).is_file())
             manifest = json.loads(Path(directory, payload["manifest_path"]).read_text())
             self.assertEqual(manifest["request"]["start_month"], "202609")
             self.assertEqual(manifest["request"]["end_month"], "202610")

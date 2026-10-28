@@ -22,6 +22,7 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.ingestion.typed_series import persist_typed_series_result
 from macro_data_platform.metadata.series import normalize_boj_series
 from macro_data_platform.orchestration import Orchestrator, StageInput, StageSpec, TaskPlan
 from macro_data_platform.performance.metrics import measure_current
@@ -146,7 +147,7 @@ class BOJObservationEngine:
                                ("BOJ observation raw preservation failed.",), ErrorCode.INTERNAL_BUG)
         parsed.update({**saved, "mode": download.kind.value})
         try:
-            normalize_boj_series(parsed)
+            typed_series = normalize_boj_series(parsed)
         except (TypeError, ValueError):
             return StageResult(
                 StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
@@ -177,7 +178,10 @@ class BOJObservationEngine:
                 StageStatus.NEEDS_REVIEW, parsed, refs,
                 (freshness_issue, freshness["status"]), ErrorCode.QUALITY_FAILURE,
             )
-        return StageResult(StageStatus.SUCCEEDED, parsed, refs)
+        return persist_typed_series_result(
+            self.settings, payload=parsed, series=(typed_series,), engine_id="boj_observations/2",
+            refs=refs,
+        )
 
 
 class BOJRangeObservationEngine:
@@ -245,7 +249,7 @@ class BOJRangeObservationEngine:
 
         parsed.update({**saved, "mode": download.kind.value})
         try:
-            normalize_boj_series(parsed)
+            typed_series = normalize_boj_series(parsed)
         except (TypeError, ValueError):
             return StageResult(
                 StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
@@ -273,7 +277,10 @@ class BOJRangeObservationEngine:
             parsed["observations"] = []
             return StageResult(StageStatus.NEEDS_REVIEW, parsed, refs,
                                (issue, freshness["status"]), ErrorCode.QUALITY_FAILURE)
-        return StageResult(StageStatus.SUCCEEDED, parsed, refs)
+        return persist_typed_series_result(
+            self.settings, payload=parsed, series=(typed_series,),
+            engine_id="boj_observations_range/1", refs=refs,
+        )
 
 
 def build_boj_plan(query: BOJQuery) -> TaskPlan:
