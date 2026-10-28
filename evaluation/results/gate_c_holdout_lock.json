@@ -1,10 +1,14 @@
 {
   "schema_version": 1,
-  "state": "AVAILABLE",
+  "state": "COMPLETED",
   "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
   "holdout_input_sha256": "ae67e8d9cc2ccc3f0eb806318c8e0e032627edb74832ae583487e8446d9549fe",
   "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
   "candidate_manifest_sha256": "726a94a9a60f3cb792421f1e6d13de22324c75f19988bd3b4371b1784d97fb5b",
   "created_at": "2026-10-28T13:28:03.381820+00:00",
-  "lock_sha256": "fbc9db9dd628b10ccfe60000f92654575f0b19bb048c4c4e4aacd95141d36514"
+  "started_at": "2026-10-28T13:28:11.160151+00:00",
+  "completed_at": "2026-10-28T13:28:12.282737+00:00",
+  "result_sha256": "cb949a385cc559e85806c2e360cad82d5ccc6f6155654f3732b3a769c7ffac57",
+  "gate_c_status": "PASS",
+  "lock_sha256": "eb15f89b29de093c8cc02a3051d139523fc8414178899c9dc8fa75babe45ce8f"
 }
