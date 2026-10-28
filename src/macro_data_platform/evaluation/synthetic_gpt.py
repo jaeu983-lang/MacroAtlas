@@ -64,9 +64,9 @@ def generate(settings, *, model, count, api_key, call=_call_gpt):
         raise ValueError("count must be 1 to 5")
     if not isinstance(api_key, str) or not api_key:
         raise ValueError("OPENAI_API_KEY is required for an explicit live GPT run")
+    start = perf_counter_ns()
     corpus = load_corpus(settings.project_root / "tests/fixtures/evaluation/v2",
                          repo_root=settings.project_root)
-    start = perf_counter_ns()
     model_start = perf_counter_ns()
     questions, usage1 = call(api_key, model, QUESTION_INSTRUCTION, {"count": count})
     model_ns = perf_counter_ns() - model_start
