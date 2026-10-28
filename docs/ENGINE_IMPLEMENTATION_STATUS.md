@@ -11,7 +11,7 @@
 MacroAtlas는 자유 질문에 바로 답을 생성하는 완성형 대화형 데이터 제품이 아니다. 구조화 요청을 받아 후보를
 근거와 함께 찾고, 운영자가 출처·범위를 확인한 다음, 공통 실행기가 고정된 provider adapter를 실행한다.
 수집한 원본은 보존하고 구조·품질·최신성을 검사하며, 현재 연결된 두 provider의 검증 결과만 CSV로 내보낸다.
-사례 평가와 피드백은 이 검색·수집 흐름과 분리된 검토 도구다. 피드백은 코드나 AI 지시문을 자동 변경하지 않는다.
+사례 평가와 피드백은 이 검색·수집 흐름과 분리된 검토 도구다. AI는 코드나 지시문을 자동 변경하지 않는다. 운영자가 별도로 지시하면 지시문은 수동으로 편집·버전 고정하고 동일 사례로 전후 결과와 시간을 비교한다.
 
 ## 시작부터 끝까지의 동작
 
@@ -25,7 +25,7 @@ MacroAtlas는 자유 질문에 바로 답을 생성하는 완성형 대화형 �
 | 6. 원본/메타데이터 | `storage/raw_downloads.py`, `statistical_downloads.py`, `metadata_archives.py` | 다운로드 원본과 credential-free manifest를 저장하고 해시·출처·수집 시점을 연결한다. 메타데이터 원본과 제한 정규화본도 별도 보존한다. | 범용 관측치 카탈로그와 모든 원본의 장기 보존·버전 마이그레이션은 완성되지 않았다. 저장 성공은 경제적 의미 검증을 뜻하지 않는다. |
 | 7. 구조·품질·최신성 | `connectors/*` parser, `ingestion/statistical_quality.py`, `freshness.py` | 구조/식별자, 수치·결측, 중복/범위, 원본 변경 여부, 최신성 평가를 시행한다. 위험한 관측은 NEEDS_REVIEW로 차단하고 freshness 미확인·stale 값은 일부 API 경로에서 비운다. | 공통 typed TimeSeries/Observation, 신뢰할 release calendar, 모든 파일·시계열의 의미/단위 검증은 없다. 주파수별 기본 허용 일수는 정책이지 기관의 실제 발표 일정 증명은 아니다. |
 | 8. 사용자 출력 | `ingestion/csv_export.py`, `cli.py` | 완료된 검증 World Bank GDP와 BOJ FXER task를 read-only 검증 후 CSV 및 provenance sidecar로 출력한다. | BLS/Census export, 원자료 XLSX 출력, 다중 series 정렬/비교 XLSX는 미구현. 값·단위·빈도 호환성을 추측해 합치지 않는다. |
-| 9. 평가/피드백 | `evaluation/*`, `storage/feedback.py`, `feedback_cli.py` | 버전·해시·split을 가진 사례 검증, baseline/candidate 검색 비교, append-only 피드백 revision, 명시 리뷰와 불완전 case draft 생성을 지원한다. AI가 분류/수정한 prompt는 없다. | 사용자 피드백에서 평가 사례로 자동 채택하지 않는다. AI 지시문 자동 변경은 제품 요구상 하지 않는다. 승격/rollback 전체 Gate C/D는 미완료다. |
+| 9. 평가/피드백 | `evaluation/*`, `storage/feedback.py`, `feedback_cli.py` | 버전·해시·split을 가진 사례 검증, baseline/candidate 검색 비교, append-only 피드백 revision, 명시 리뷰와 불완전 case draft 생성을 지원한다. AI 분류기는 구현되지 않았다. | 사용자 피드백은 자동 채택되지 않는다. AI 지시문도 자동 변경하지 않는다. 운영자가 명시 지시하면 사람이 수동 편집하고 고정 사례에서 답변 품질·지시 준수·시간·비용을 전후 비교한다. 승격/rollback 전체 Gate C/D는 미완료다. |
 | 10. 운영 성능 | `performance/*`, `large_file_*` | stage와 지원되는 phase를 monotonic clock으로 계측하고 비민감 집계(p50/p95·처리량·표본 수)를 출력한다. Linux 대용량 별도 qualification/production worker가 있다. | live 성능 표본은 승인된 자연 요청만 가능하며 아직 충분한 운영 표본이 아니다. 대용량은 BIS GLI 단일 flat ZIP profile뿐이고 경제 의미 해석은 안 한다. |
 
 ### 검색·피드백의 안전한 반자동 루프
