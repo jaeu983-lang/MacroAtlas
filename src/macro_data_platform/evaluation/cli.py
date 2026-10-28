@@ -12,7 +12,11 @@ from macro_data_platform.evaluation.feedback_bridge import (
     build_feedback_case_draft,
     write_feedback_case_draft,
 )
-from macro_data_platform.evaluation.search_baseline import evaluate_development
+from macro_data_platform.evaluation.search_baseline import (
+    SearchPolicy,
+    compare_development_policies,
+    evaluate_development,
+)
 from macro_data_platform.storage.feedback import FeedbackStore
 from macro_data_platform.storage.history import HistoryStore
 
@@ -26,14 +30,24 @@ def main(argv=None):
         "validate-corpus", help="validate the evidence-backed immutable case corpus"
     )
     corpus.add_argument(
-        "--corpus-dir", type=Path,
+        "--corpus-dir",
+        type=Path,
         default=Path.cwd() / "tests" / "fixtures" / "evaluation" / "v2",
     )
     corpus.add_argument("--repo-root", type=Path, default=None)
     baseline = commands.add_parser("search-baseline", help="measure development ranking offline")
-    baseline.add_argument("--corpus-dir", type=Path,
-                          default=Path.cwd() / "tests/fixtures/evaluation/v2")
+    baseline.add_argument(
+        "--corpus-dir", type=Path, default=Path.cwd() / "tests/fixtures/evaluation/v2"
+    )
     baseline.add_argument("--repo-root", type=Path, default=None)
+    compare = commands.add_parser(
+        "search-compare", help="compare two ranker policies on development cases only"
+    )
+    compare.add_argument(
+        "--corpus-dir", type=Path, default=Path.cwd() / "tests/fixtures/evaluation/v2"
+    )
+    compare.add_argument("--repo-root", type=Path, default=None)
+    compare.add_argument("--candidate-min-score", type=float, default=70)
     feedback_draft = commands.add_parser(
         "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
     )
@@ -81,25 +95,44 @@ def main(argv=None):
             ready = False
         else:
             complete = loaded.manifest["gate_status"] == "complete"
-            report = evaluate_development(loaded) if args.command == "search-baseline" else {
-                "status": "READY" if complete else "BLOCKED",
-                "ready": complete,
-                "corpus_version": loaded.manifest["corpus_version"],
-                "case_count": len(loaded.cases),
-                "reviewed_draft_count": loaded.manifest.get("reviewed_draft_count", 0),
-                "gate_status": loaded.manifest["gate_status"],
-                "counts_by_split": dict(loaded.manifest["counts_by_split"]),
-                "counts_by_type": dict(loaded.manifest["counts_by_type"]),
-                "gate_blockers": list(loaded.manifest["gate_blockers"]),
-                "case_sha256": loaded.case_sha256,
-                "catalog_sha256": loaded.catalog_sha256,
-                "split_leakage_issues": [
-                    asdict(issue) for issue in loaded.split_leakage_issues
-                ],
-                "evidence_files_verified": True,
-                "errors": [],
-            }
-            ready = complete
+            if args.command == "search-baseline":
+                report = evaluate_development(loaded)
+                ready = True
+            elif args.command == "search-compare":
+                try:
+                    report = compare_development_policies(
+                        loaded,
+                        SearchPolicy(version="lexical-baseline-v1"),
+                        SearchPolicy(
+                            version="lexical-min-score-candidate-v1",
+                            minimum_score=args.candidate_min_score,
+                        ),
+                    )
+                except ValueError as exc:
+                    report = {"status": "INVALID_POLICY", "errors": [str(exc)]}
+                    ready = False
+                else:
+                    ready = True
+            else:
+                report = {
+                    "status": "READY" if complete else "BLOCKED",
+                    "ready": complete,
+                    "corpus_version": loaded.manifest["corpus_version"],
+                    "case_count": len(loaded.cases),
+                    "reviewed_draft_count": loaded.manifest.get("reviewed_draft_count", 0),
+                    "gate_status": loaded.manifest["gate_status"],
+                    "counts_by_split": dict(loaded.manifest["counts_by_split"]),
+                    "counts_by_type": dict(loaded.manifest["counts_by_type"]),
+                    "gate_blockers": list(loaded.manifest["gate_blockers"]),
+                    "case_sha256": loaded.case_sha256,
+                    "catalog_sha256": loaded.catalog_sha256,
+                    "split_leakage_issues": [
+                        asdict(issue) for issue in loaded.split_leakage_issues
+                    ],
+                    "evidence_files_verified": True,
+                    "errors": [],
+                }
+                ready = complete
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if ready else 2
 

@@ -38,7 +38,7 @@ Gate가 실패하면 36건으로 간주하지 않고 evaluator 단계로 넘어�
 
 ## 2. 검색 평가기와 정책 비교 — PR 묶음 2, C
 
-`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행해 유형별 Top-1 분자·분모, MRR, unrelated 후보 반환과 false-exact 후보를 보고한다. 반환된 후보의 기대 match status와 지원 필드의 구조적 일치도 함께 세며 후보 미반환과 미지원·conflict 필드를 별도로 기록한다. 구조적 일치는 통계 의미의 동등성 검증이 아니다. 후보 반환은 확정이 아니다. 이 명령은 validation/holdout, 실제 확정·금지 동작과 정책 비교를 측정하지 않으므로 C gate 통과나 rule promotion을 뜻하지 않는다. 이 항목은 계속 구현해야 한다.
+`macro-eval search-baseline`은 v2 development 사례의 모든 질문 변형에 기존 ranker를 offline 실행해 유형별 Top-1 분자·분모, MRR, unrelated 후보 반환과 false-exact 후보를 보고한다. `macro-eval search-compare`는 같은 사례·catalog hash로 baseline과 versioned `SearchPolicy`를 비교한다. 현재 candidate 정책은 결과 수 제한과 minimum lexical score를 고정 입력으로 받는 평가용 wrapper이며, 새 순위 규칙이나 제품 기본값을 바꾸지 않는다. 두 명령은 기대 match status와 지원 필드의 구조적 일치도를 함께 세며 후보 미반환과 미지원·conflict 필드를 별도로 기록한다. 구조적 일치는 통계 의미의 동등성 검증이 아니다. 후보 반환은 확정이 아니다. 이 단계는 validation/holdout, 실제 확정·금지 동작과 제품 승격 적격성을 측정하지 않으므로 C gate 통과나 rule promotion을 뜻하지 않는다. 검색 평가기와 초기 정책 비교 구현은 완료했으며 C gate 완료에는 미측정 항목과 자연 사용자 사례 검토가 남아 있다.
 
 새 ranker를 만들지 않는다. 기존 discovery/series_search.py의 rank_candidates를 baseline으로 사용하고, candidate 변경은 SearchPolicy 버전 주입으로 분리한다. 평가 입력은 case, catalog, policy의 고정 snapshot이며 네트워크·자격증명·task/raw DB 쓰기·제품 export가 없어야 한다.
 

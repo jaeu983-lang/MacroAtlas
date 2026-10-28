@@ -15,9 +15,9 @@
 | 영역 | 현재 코드 | 남은 조건 |
 |---|---|---|
 | 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
-| 검색 | CandidateSearchEngine과 rank_candidates가 고정 catalog를 검색한다. | 같은 결과를 평가하는 evaluator와 versioned SearchPolicy 비교가 없다. |
+| 검색 | CandidateSearchEngine과 rank_candidates가 고정 catalog를 검색한다. `macro-eval search-baseline`과 `search-compare`는 v2 development split에서 Top-1/MRR, unrelated 반환, false-exact, status/field 구조 일치와 정책 hash/delta를 측정한다. | candidate 정책은 평가 전용 minimum-score wrapper다. 실제 사용자 사례와 정책별 비교 검토, 금지 동작·확정 의미 검증, validation/holdout 평가 및 명시 승격/rollback은 미완료다. |
 | 피드백 | SQLite append-only FeedbackStore, 명시 review CLI와 `macro-eval feedback-draft`가 있다. 현재 accepted/current revision의 `user_instruction`만 explicit privacy attestation과 sanitized question으로 local seed를 만들 수 있다. | 실제 사용자 feedback을 seed하지 않았다. seed는 incomplete이며 full case authoring/review 뒤에도 별도 편입이 필요하다. |
-| 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | engine evaluator는 없다. v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
+| 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
 | 최신성 | FreshnessPolicy와 assess_freshness가 있고 World Bank·BOJ·BLS·Census 경로와 CSV 재검증에 연결된다. | source release calendar로 검증된 series policy와 공통 typed TimeSeries/Observation은 없다. 일반 tabular input도 freshness gate 범위 밖이다. |
 | 출력 | 품질 통과 World Bank GDP·BOJ FXERD01 task의 CSV와 provenance sidecar를 내보낸다. XLSX parser는 입력 전용이다. | 원자료 XLSX와 다중 시계열 정렬 workbook이 없다. |
 | 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본은 161개다. | live latency 표본은 승인된 자연 요청에서만 모은다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |

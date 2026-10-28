@@ -1,23 +1,33 @@
 from dataclasses import replace
 
 from macro_data_platform.evaluation.cases import load_corpus
-from macro_data_platform.evaluation.search_baseline import evaluate_development
+from macro_data_platform.evaluation.search_baseline import (
+    SearchPolicy,
+    compare_development_policies,
+    evaluate_development,
+)
 
 
 def test_development_baseline_runs_all_variants_without_validation_or_holdout(monkeypatch):
     corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
     seen = []
 
-    def no_results(request, candidates):
+    def no_results(request, candidates, *, limit):
         seen.append(request.text)
         return []
 
-    monkeypatch.setattr("macro_data_platform.evaluation.search_baseline.rank_candidates", no_results)
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.rank_candidates", no_results
+    )
     report = evaluate_development(corpus)
-    expected = [variant for case in corpus.cases if case.split == "development"
-                for variant in case.query_variants]
+    expected = [
+        variant
+        for case in corpus.cases
+        if case.split == "development"
+        for variant in case.query_variants
+    ]
     assert seen == expected
-    assert report["status"] == "BASELINE_ONLY"
+    assert report["status"] == "POLICY_MEASUREMENT_ONLY"
     assert report["groups"]["rankable"]["top1_hits"] == 0
     assert report["groups"]["rankable"]["mrr"] == 0
     assert report["groups"]["unrelated"]["unrelated_with_candidates"] == 0
@@ -44,7 +54,9 @@ def test_field_and_status_measurement_detects_changed_returned_candidate(monkeyp
         changed = replace(candidate, unit=unit)
         monkeypatch.setattr(
             "macro_data_platform.evaluation.search_baseline.rank_candidates",
-            lambda request, candidates: [{"candidate": changed, "match_status": status}],
+            lambda request, candidates, *, limit: [
+                {"candidate": changed, "match_status": status, "score": 100}
+            ],
         )
         return evaluate_development(corpus)["groups"]["rankable"]
 
@@ -54,3 +66,37 @@ def test_field_and_status_measurement_detects_changed_returned_candidate(monkeyp
     assert altered["fields_returned"] == expected["fields_returned"]
     assert altered["fields_matches"] < expected["fields_matches"]
     assert altered["status_matches"] < expected["status_matches"]
+
+
+def test_policy_comparison_uses_same_development_queries_and_reports_policy_hashes(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    seen = []
+
+    def ranked(request, candidates, *, limit):
+        seen.append(request.text)
+        return [{"candidate": candidates[0], "score": 60, "match_status": "review_required"}]
+
+    monkeypatch.setattr("macro_data_platform.evaluation.search_baseline.rank_candidates", ranked)
+    baseline = SearchPolicy(version="baseline")
+    candidate = SearchPolicy(version="candidate", minimum_score=70)
+    report = compare_development_policies(corpus, baseline, candidate)
+    expected = [
+        variant
+        for case in corpus.cases
+        if case.split == "development"
+        for variant in case.query_variants
+    ]
+    assert seen == expected + expected
+    assert report["status"] == "DEVELOPMENT_COMPARISON_ONLY"
+    assert report["baseline"]["case_sha256"] == report["candidate"]["case_sha256"]
+    assert report["baseline"]["catalog_sha256"] == report["candidate"]["catalog_sha256"]
+    assert report["baseline"]["policy_sha256"] != report["candidate"]["policy_sha256"]
+    assert report["deltas"]["rankable"]["top1_hits"] <= 0
+    assert "promotion_eligibility" in report["not_measured"]
+
+
+def test_search_policy_rejects_out_of_range_thresholds():
+    import pytest
+
+    with pytest.raises(ValueError):
+        SearchPolicy(minimum_score=100.1)
