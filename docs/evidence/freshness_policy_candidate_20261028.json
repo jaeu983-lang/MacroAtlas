@@ -20,6 +20,15 @@
       "override_key": "series_id:CUUR0000SA0",
       "proposed_max_age_days": 60,
       "reason": "The official CPI schedule shows about ten days from a reference month end to release for the cited months; 60 days is a proposed 50-day additional delay buffer, not a limit stated by BLS.",
+      "ai_review": {
+        "reviewer_type": "AI",
+        "reviewer_id": "GPT-6",
+        "reviewed_at": "2026-10-28T23:50:34+00:00",
+        "decision": "retain_pending",
+        "reason_code": "calendar_does_not_measure_actual_release_availability",
+        "note": "The captured schedule supports the two cited planned dates but does not establish that a 60-day threshold is a guaranteed or repeatedly observed availability limit. Keep disabled pending additional release/availability evidence.",
+        "activation_effect": "none"
+      },
       "series_scope": {
         "description": "CPI-U, U.S. city average, all items, not seasonally adjusted",
         "series_id": "CUUR0000SA0",
@@ -30,7 +39,7 @@
       "evidence": {
         "archive_member": "census_acs_release_dates.html",
         "captured_at": "2026-10-28T23:16:40.441125+00:00",
-        "citation": "2025 American Community Survey 1-year estimates release is listed for October 14, 2026.",
+        "citation": "The page lists a 2025 ACS 1-year Estimates press-kit item dated October 14, 2026; its banner says the data will be released October 29, 2026.",
         "evidence_id": "census-acs-1-year-release-20261028",
         "evidence_type": "official_release_calendar",
         "review_status": "pending_review",
@@ -42,7 +51,23 @@
       "frequency": "annual_reference_period",
       "override_key": "series_key:{\"dataset\":\"acs/acs1\",\"geography\":\"state:06\",\"variable\":\"B01001_001E\"}",
       "proposed_max_age_days": 400,
-      "reason": "The official release page lists 2025 ACS 1-year estimates on 2026-10-14 (287 days after reference year end); 400 days is a proposed 113-day buffer, not a published freshness guarantee.",
+      "reason": "This 400-day proposal is rejected by AI review. The archive's October 14 date is the press-kit list item's date; the page banner gives October 29, 2026 as the scheduled data release date. A 2024 reference-year observation ending 2024-12-31 would be 667 days old on that scheduled date. A 400-day limit would mark it stale beginning 2026-02-05, 266 days before the next annual data release. Keep the existing 730-day annual fallback; do not activate an exact override.",
+      "ai_review": {
+        "reviewer_type": "AI",
+        "reviewer_id": "GPT-6",
+        "reviewed_at": "2026-10-28T23:50:34+00:00",
+        "decision": "reject_candidate",
+        "reason_code": "release_date_misidentified_and_tolerance_too_short",
+        "source_sha256_verified": "abfda5e20c0f135423cdd39229c20614575ca4490e88c8272bc1982dc7fec1b5",
+        "scheduled_data_release_date": "2026-10-29",
+        "press_kit_list_date": "2026-10-14",
+        "prior_period_end": "2024-12-31",
+        "prior_period_age_at_release_days": 667,
+        "proposed_limit_days": 400,
+        "stale_since": "2026-02-05",
+        "stale_before_next_release_days": 266,
+        "activation_effect": "none"
+      },
       "series_scope": {
         "dataset": "acs/acs1",
         "geography": "state:06",

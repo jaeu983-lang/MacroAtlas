@@ -1028,3 +1028,7 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 ## D-126 — V1 source registry 전체 회귀 범위 고정
 
 2026-10-28. V1은 기관마다 독립 runner를 쓰지 않고 공통 `EngineRegistry`/composition root로 저장 plan을 조립한다. 기존 registry test는 등록 키의 부분집합만 확인해 일반 World Bank series와 BOJ range adapter가 빠져도 통과할 수 있었다. 테스트를 전체 V1 `(engine, version)` 목록과 각 구현 class에 대한 equality assertion으로 바꾸고, Gate A audit engines는 `gate_a=True`에서만 등록되는 조건도 고정했다. 현재 누락된 등록 동작을 고친 것은 아니며 향후 composition root 퇴행을 막는 회귀 보완이다. 출처별 parser/transport는 adapter로 유지하고 Kimi/LSEG routing이나 V2 폴더는 V1에 추가하지 않았다. 제품 흐름·현재 범위는 바뀌지 않는다. 현행 계획·엔진 문서의 기준선을 PR #87 merge `64fe051`로 맞췄다.
+
+## D-127 — Census ACS1 최신성 후보의 공개일 근거 정정
+
+2026-10-28. 보존된 공식 Census 캡처와 archive hash를 다시 확인했다. 목록의 2026-10-14는 `2025 ACS 1-year Estimates` press-kit 항목 날짜이며, 같은 캡처의 배너는 예정 데이터 공개일을 2026-10-29로 안내한다. 기존 후보는 목록 날짜를 공개일로 잘못 해석했다. 연간 2024 값의 period end `2024-12-31`은 예정 공개일에 667일이 되고, 제안 400일 한도는 2026-02-05부터 `STALE`로 만들어 예정 공개보다 266일 앞서 정상 보유 데이터를 차단한다. GPT-6의 AI 검토는 Census 400일 후보를 `reject_candidate`로 권고했다. BLS 60일 후보는 일정상 두 날짜만으로 실제 availability 한도를 보증하지 못하므로 `retain_pending`이다. `reviewer_type=AI`로 남기며 이는 독립 사람 검토나 runtime 승인이 아니다. 기존 annual fallback 730일 유지, 두 override 모두 비활성이다. 회귀 테스트는 잘못된 날짜 해석과 조기 stale 경계를 고정한다.

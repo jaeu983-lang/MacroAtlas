@@ -96,9 +96,15 @@ contains the BLS CPI and Census ACS 1-year release-calendar captures in
 It proposes a 60-day limit for BLS `CUUR0000SA0` and 400 days for Census
 `acs/acs1`, variable `B01001_001E`, California (`state:06`). Those margins are
 design proposals; the agencies do not publish these numbers as freshness limits.
-Both candidates remain `pending_review`, and `enabled` is false. Runtime policy
-does not load them. A separate reviewer must inspect the archived documents and
-accept or reject the proposed margins before any override is applied.
+An AI review of the archived Census page found that October 14, 2026 is the
+press-kit list date; the page banner schedules the 2025 ACS 1-year data for
+October 29. The 400-day candidate would mark the 2024 annual value stale from
+February 5, 2026, 266 days before that scheduled release, so the AI review
+rejects this candidate. The BLS 60-day proposal remains pending because two
+scheduled dates do not establish a guaranteed or repeatedly observed
+availability limit. Both remain disabled; runtime policy does not load either
+override. The review record is explicitly AI-authored and does not count as an
+independent source-policy approval.
 
 The current defaults therefore remain active: daily 7 days, monthly 120 days,
 and annual 730 days. BOJ `FM08/FXERD01` has official DAILY frequency metadata,
