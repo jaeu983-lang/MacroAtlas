@@ -53,6 +53,12 @@ cases used during candidate refinement are not blind evidence. A passing search
 Gate still does not promote the candidate or prove general statistical
 equivalence; those claims require separate review and Gate D.
 
+The fixed v2 run completed with Gate C `PASS` on 2026-10-28. Its one-use lock
+is consumed; the aggregate result is in
+[`gate_c_holdout_result.json`](../evaluation/results/gate_c_holdout_result.json).
+Do not rerun this split. The candidate remains evaluation-only and has not been
+promoted. A future tuning cycle needs a new versioned corpus/holdout split.
+
 Reports include ranking, expected state, missing relevant candidates,
 unrelated abstention, forbidden candidate returns, false-exact candidates, and
 structural field/status checks. The CLI does not send queries to an AI model: it

@@ -16,7 +16,7 @@
 |---|---|---|
 | 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
 | 파일 용량 판정 | Iteration 29에서 transport·table parser·preflight가 공유 `CapacityFinding`과 고정 reason/observed/threshold/inspection point/disposition을 사용한다. Parser 용량 예외는 메시지 부분 문자열로 분류하지 않는다. | 새 용량 threshold와 scheduler는 추가하지 않았다. PR #64의 Linux/Windows × Python 3.11/3.12 CI 네 작업이 통과했다. |
-| 검색 | CandidateSearchEngine은 versioned lexical baseline과 semantic evaluation candidate를 고정 catalog에서 비교한다. `macro-gate-c qualify`는 development/validation의 split·case·catalog·policy hash, ranking/state/abstention/false-exact/forbidden/field 지표, 실제 collection-plan builder의 confirmation-boundary 거부 trace, 반복 local p50/p95·처리량·표본 수를 기록한다. | 후보는 평가 전용이다. validation은 후보 조정에 사용돼 blind test가 아니다. 전체 C는 frozen holdout 단회 판정 전까지 미통과다. trace는 proposal-to-plan 경계까지이며 provider/API/raw-write/export를 실행하지 않는다. 정책 승격/rollback은 D에서 별도 수행한다. |
+| 검색 | CandidateSearchEngine은 versioned lexical baseline과 semantic evaluation candidate를 고정 catalog에서 비교한다. `macro-gate-c`는 split/hash, ranking/state/abstention/false-exact/forbidden/field 지표, confirmation-boundary trace, 반복 local p50/p95·처리량·표본 수를 기록한다. | 제품 Gate C는 fixed v2 search scope에서 2026-10-28 PASS다. holdout target 개선은 rankable/unrelated, near-match는 baseline과 동률이며 유형 퇴행은 없다. candidate p95 1.508ms, budget 100ms 및 baseline 대비 1.5배 안에 들었다. validation은 후보 조정에 사용돼 blind가 아니다. provider/API/raw-write/export 경로는 실행하지 않았고 정책은 승격되지 않았다. |
 | GPT 합성 사례 | 이 대화의 GPT가 만든 질문과 엔진 결과·피드백을 실제 사용자 원장과 분리해 기록한다. 별도 OpenAI API는 필요하지 않다. 새 AI 개발 사례 4건은 fixture에 보존하고 synthetic DB에 import했다. | 합성 기록은 AI 사례이며 실제 사용자 관찰이 아니다. 개발용으로만 비교하며 v2 quota, validation 또는 holdout 사례 수에 더하지 않는다. |
 | 피드백 | SQLite FeedbackStore의 revision 원장, 명시 review와 incomplete case seed에 더해 전체 revision의 고정 snapshot과 수동 분류 batch import/list/show를 구현했다. 입력/출력 count·key·hash 및 원본 revision hash가 다르면 저장을 거부한다. | AI 호출과 비식별화는 운영자가 수동으로 수행한다. 실제 사용자 feedback의 AI 분류 batch와 자연 사용자 사례는 아직 검증되지 않았다. 지시문과 코드는 자동 수정되지 않는다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
@@ -32,7 +32,7 @@
 |---|---|---|
 | 사례 corpus A | 통과 (v2) | 36건 quota, 27 review ledger rows, original/case/evidence hash, privacy, split/family 검사를 통과 |
 | feedback bridge B | snapshot·수동 batch 구현, fixture 검증; 실제 사용자 검증 미완료. 합성 질문/피드백 6건은 별도 ignored DB에 있고 4건은 tracked fixture로 재생 가능 | feedback revision 원장을 계속 보존. 선택 seed는 privacy attestation을 거쳐 development draft만 출력한다. 실제 사용자 sample은 아직 없고 OpenAI API는 요구되지 않음 |
-| 평가 C | 확인 경계 trace, fixed timing/cost budget, 후보 manifest와 one-time holdout 절차 추가. semantic candidate는 evaluation-only | qualification 산출물과 manifest를 먼저 commit하고, 고정 lock을 commit한 뒤 holdout을 1회 측정한다. false-exact·금지 동작 0, split별 대상 개선, 두 split을 합친 모든 target type 개선, 어떤 유형도 퇴행하지 않음, 시간·비용 예산 충족이 필요 |
+| 평가 C | PASS — fixed v2 search scope, 2026-10-28. holdout lock은 `COMPLETED` | dev/validation/holdout 전체 false-exact·forbidden-exact 0. 금지 동작 위반 0; holdout 36 query에서 확인 없는 계획은 전부 차단. Holdout rankable Top-1 +2, unrelated abstention +8, near-match 유지, 유형 퇴행 없음. candidate p95 1.508ms/100ms, baseline 대비 1.184배/1.5배, 외부 호출·비용 0. 후보 자동 승격은 없으며 provider/raw/export 내부 동작·통계적 동등성·사람 관찰은 미측정 |
 | 승격 D | 미구현 | Gate C 판정 뒤 사람이 독립 reviewer와 함께 case/policy hash·지표·결정·적용 commit·rollback commit을 append-only ledger에 남긴다. 자동 promotion 없음 |
 | Series·freshness E | 부분 구현 | typed Series/Observation을 정의하고 공식 release evidence와 series별 정책을 연결한다. 미상 policy는 `FRESHNESS_UNVERIFIED`, 초과는 `STALE`; 두 상태는 latest result/export에서 차단 |
 | 원자료 XLSX F | 미구현 | validated typed series만 입력. 원값·period·missing/zero·unit/frequency·source/raw hash/provenance를 보존하고 no-overwrite/path/formula safety를 검증 |
@@ -47,6 +47,6 @@
 
 ## 다음 Gate
 
-Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. Gate C의 confirmation-boundary trace와 timing/cost gate는 측정 가능하다. qualification/manifest/lock commit 후 holdout을 한 번 실행해야 C 판정이 확정되며, 현재는 미통과다. D 승격 ledger는 C 판정 뒤에 구현한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
+Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. 후보 규칙은 자동 승격하지 않았다. 다음 순서는 D의 독립 검토·승격/rollback 기록이며, provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
 
 기본 브랜치의 대조 기준 commit은 [`072d3d3`](https://github.com/jaeu983-lang/MacroAtlas/commit/072d3d38e470ce2f9c979970b556aab05fb0a34c)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

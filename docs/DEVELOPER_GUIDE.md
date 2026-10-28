@@ -112,6 +112,8 @@ python -m macro_data_platform.evaluation.gate_c holdout --project-root .
 
 holdout 명령은 고정 case/catalog/policy/code/budget hash를 확인하고 실행 전에 잠금을 소비합니다. 성공·실패·중단을 모두 1회 사용으로 기록하며 같은 holdout은 다시 실행하지 않습니다. 보고서 결과가 Gate C `PASS`여도 자동 승격은 없고 D의 명시 승인·rollback 절차가 남습니다. 저장소가 공개되어 있으므로 holdout은 분리·고정된 평가 split이지 비밀 데이터는 아닙니다.
 
+2026-10-28의 v2 holdout은 이미 한 번 실행되어 잠금이 `COMPLETED`입니다. 결과는 [`gate_c_holdout_result.json`](../evaluation/results/gate_c_holdout_result.json)에 있고 같은 split을 재실행하지 마세요. 후보를 더 수정하려면 holdout 내용을 development/validation으로 재분류하고 새 corpus/split version을 만든 뒤 새 hash와 새 one-use lock으로 시작해야 합니다.
+
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
 개별 테스트는 해당 테스트 모듈/이름으로 좁힌 뒤 마지막에 전체 suite를 실행합니다. 새 테스트는 사용자에게
