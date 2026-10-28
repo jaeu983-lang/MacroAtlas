@@ -160,6 +160,14 @@ def _period_end(period: str, frequency: str) -> date:
     raise ValueError("observation period does not match its frequency")
 
 
+def period_end(period: str, frequency: str) -> date:
+    """Validate one canonical observation period and return its calendar end date."""
+    normalized = normalize_frequency(frequency)
+    if normalized is None:
+        raise ValueError("frequency is unknown")
+    return _period_end(period, normalized)
+
+
 def assess_freshness(
     periods,
     *,

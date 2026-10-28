@@ -7,6 +7,7 @@ from macro_data_platform.contracts import Observation, ObservationStatus, TimeSe
 from macro_data_platform.ingestion.freshness import (
     frequency_from_period_format,
     normalize_frequency,
+    period_end,
 )
 
 
@@ -53,9 +54,9 @@ def _bls_period(row: Mapping) -> tuple[str, str | None, str]:
     if _BLS_MONTH.fullmatch(period):
         return f"{year}-{period[1:]}", "monthly", source_period
     if _BLS_QUARTER.fullmatch(period):
-        return f"{year}-Q{period[1:]}", "quarterly", source_period
+        return f"{year}-Q{int(period[1:])}", "quarterly", source_period
     if _BLS_SEMIANNUAL.fullmatch(period):
-        return f"{year}-H{period[1:]}", "semiannual", source_period
+        return f"{year}-H{int(period[1:])}", "semiannual", source_period
     if period in {"A01", "M13"}:
         return year, "annual", source_period
     return source_period, None, source_period
@@ -222,3 +223,109 @@ def normalize_census_series(payload: Mapping) -> tuple[TimeSeries, ...]:
             source_revision=payload.get("source_version"),
         ))
     return tuple(results)
+
+
+def normalize_tabular_series(*, headers: tuple[str, ...], rows: tuple[tuple, ...],
+                             mapping: Mapping, source_agency: str,
+                             source_url: str | None, retrieved_at: datetime,
+                             raw_ref: str, manifest_ref: str) -> TimeSeries:
+    """Normalize one local file series using only an explicit column and metadata mapping."""
+    allowed = {
+        "series_id", "dataset_id", "period_column", "value_column", "dimension_columns",
+        "unit", "currency", "frequency", "frequency_basis", "calendar", "source_revision",
+    }
+    required_fields = {"series_id", "period_column", "value_column"}
+    if not isinstance(mapping, Mapping) or not required_fields.issubset(mapping):
+        raise ValueError("file series mapping requires series_id and period/value columns")
+    if set(mapping) - allowed:
+        raise ValueError("file series mapping contains unsupported fields")
+    if not isinstance(headers, tuple) or not all(isinstance(header, str) for header in headers):
+        raise TypeError("file table headers must be a tuple of strings")
+    if not isinstance(rows, tuple) or not rows:
+        raise ValueError("file table must contain data rows")
+
+    period_column = mapping["period_column"]
+    value_column = mapping["value_column"]
+    dimension_columns = mapping.get("dimension_columns", {})
+    if (not isinstance(period_column, str) or not isinstance(value_column, str)
+            or period_column not in headers or value_column not in headers):
+        raise ValueError("file series mapping refers to an unknown period or value column")
+    if not isinstance(dimension_columns, Mapping):
+        raise TypeError("dimension_columns must map names to table headers")
+    if any(not isinstance(name, str) or not name.strip()
+           or not isinstance(column, str) or column not in headers
+           for name, column in dimension_columns.items()):
+        raise ValueError("file series mapping contains an invalid dimension column")
+    for name in ("series_id", "dataset_id", "unit", "currency", "source_revision"):
+        value = mapping.get(name)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"file series mapping {name} must be nonempty")
+
+    frequency = mapping.get("frequency")
+    frequency_basis = mapping.get("frequency_basis")
+    if frequency is None:
+        if frequency_basis not in (None, "unknown"):
+            raise ValueError("unknown file frequency cannot claim a frequency basis")
+        frequency_basis = "unknown"
+    else:
+        if frequency_basis is None:
+            frequency_basis = "request_contract"
+        if frequency_basis not in {"request_contract", "period_format"}:
+            raise ValueError("file frequency basis must be explicit and verifiable")
+
+    period_index, value_index = headers.index(period_column), headers.index(value_column)
+    dimension_indexes = {name: headers.index(column)
+                         for name, column in dimension_columns.items()}
+    observations = []
+    for row in rows:
+        if not isinstance(row, tuple) or len(row) != len(headers):
+            raise ValueError("file row does not match its headers")
+        raw_period = row[period_index]
+        if (raw_period is None or isinstance(raw_period, bool)
+                or not isinstance(raw_period, (str, int, float)) or not str(raw_period).strip()):
+            raise ValueError("file row has a missing or invalid period")
+        period = str(raw_period)
+        raw_value = row[value_index]
+        status = (ObservationStatus.MISSING if raw_value in {None, ""}
+                  else ObservationStatus.OBSERVED)
+        observations.append(Observation(period, raw_value, status, period))
+
+    periods = [item.period for item in observations]
+    if len(set(periods)) != len(periods):
+        raise ValueError("file series contains duplicate periods")
+    if frequency is not None:
+        try:
+            for period in periods:
+                period_end(period, frequency)
+        except ValueError:
+            raise ValueError("file periods do not match the declared frequency") from None
+    dimensions = {}
+    if dimension_indexes:
+        first_row = rows[0]
+        for name, index in dimension_indexes.items():
+            value = first_row[index]
+            if value is None or isinstance(value, bool) or not isinstance(value, (str, int, float)):
+                raise ValueError("file dimension value is missing or invalid")
+            dimensions[name] = str(value)
+        for row in rows[1:]:
+            if any(str(row[index]) != dimensions[name]
+                   for name, index in dimension_indexes.items()):
+                raise ValueError("file series dimensions change within the mapped series")
+
+    return TimeSeries(
+        source_agency=source_agency,
+        dataset_id=mapping.get("dataset_id"),
+        series_id=mapping["series_id"],
+        dimensions=dimensions,
+        calendar=mapping.get("calendar", "gregorian"),
+        observations=tuple(observations),
+        retrieved_at=retrieved_at,
+        source_url=source_url,
+        raw_ref=raw_ref,
+        manifest_ref=manifest_ref,
+        unit=mapping.get("unit"),
+        currency=mapping.get("currency"),
+        frequency=frequency,
+        frequency_basis=frequency_basis,
+        source_revision=mapping.get("source_revision"),
+    )

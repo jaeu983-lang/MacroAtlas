@@ -178,7 +178,7 @@ class TimeSeries:
     calendar: str
     observations: tuple[Observation, ...]
     retrieved_at: datetime
-    source_url: str
+    source_url: str | None
     raw_ref: str
     manifest_ref: str
     unit: str | None = None
@@ -210,17 +210,18 @@ class TimeSeries:
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"{name} must be nonempty when supplied")
         utc(self.retrieved_at)
-        try:
-            parsed = urlsplit(self.source_url)
-            valid_url = (parsed.scheme in {"http", "https"} and parsed.hostname
-                         and parsed.username is None and parsed.password is None)
-            names = [name for name, _ in parse_qsl(
-                parsed.query, keep_blank_values=True, max_num_fields=256,
-            )]
-        except ValueError:
-            raise ValueError("source_url must be a credential-free HTTP(S) URL") from None
-        if not valid_url or any(_credential_name(name) for name in names):
-            raise ValueError("source_url must be a credential-free HTTP(S) URL")
+        if self.source_url is not None:
+            try:
+                parsed = urlsplit(self.source_url)
+                valid_url = (parsed.scheme in {"http", "https"} and parsed.hostname
+                             and parsed.username is None and parsed.password is None)
+                names = [name for name, _ in parse_qsl(
+                    parsed.query, keep_blank_values=True, max_num_fields=256,
+                )]
+            except ValueError:
+                raise ValueError("source_url must be a credential-free HTTP(S) URL") from None
+            if not valid_url or any(_credential_name(name) for name in names):
+                raise ValueError("source_url must be a credential-free HTTP(S) URL")
         if not isinstance(self.observations, tuple) or not self.observations:
             raise ValueError("observations must be a nonempty tuple")
         if any(not isinstance(item, Observation) for item in self.observations):

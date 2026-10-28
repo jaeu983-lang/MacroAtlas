@@ -1,6 +1,6 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-28, PR #80이 병합된 기본 브랜치 `c5c7886` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+기준: 2026-10-28, PR #81이 병합된 기본 브랜치 `30f910f` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
 transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
 별도이므로 전용 runner를 유지한다.
@@ -59,7 +59,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | `collect census` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `census/1` | acs/acs1·acs/acs5, 지정 variable·geography, credential-free raw/manifest; 전체 variable catalog/search는 없음 |
 | `search QUERY` | CLI 구조화 필터 → saved `TaskPlan` → 공통 EngineRegistry → `series_search/1` | 네트워크 없이 고정 WDI seed와 로컬 BLS/Census metadata archive를 ranking. 요청/후보 evidence를 task history에 저장; 선택·수집은 별도 |
 | `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
-| 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
+| 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 선택적으로 명시 `series_mapping`을 검증하나 자동 의미 추론·freshness·typed export는 없다. 범용 파일 CLI는 없음 |
 | BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; exact query CLI와 Python API가 같은 plan 경로 사용 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 전체 카탈로그 검색과 결과 export는 없음 |
 | `status` / `resume` | task 조회 / 저장 plan의 `(engine, version)`을 공통 EngineRegistry가 해석 | 새 source 범위를 만들지 않고 같은 task 재개. Workflow confirmation은 WorldBank dispatcher가 재검증하고, 대용량 시험·production은 중단 worker 확인과 checkpoint 검증을 위해 전용 recovery runner를 유지 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
@@ -82,9 +82,9 @@ API chunk 계획만 반환하며 실행 queue가 아니다.
   runner가 직전 성공 결과의 payload와 evidence_refs를 전달한다. 현재 runner는 순차 실행이며 일반 DAG·분산 queue가 아니다.
 - 반환: `StageResult(status, payload, evidence_refs, warnings, error_code, retry_hint, retry_after_seconds)`.
   runner가 실행 전 RUNNING과 실행 후 결과·attempt/event를 SQLite에 저장한다.
-- typed 시계열 경계: World Bank GDP/WDI, BOJ FXERD01, BLS, Census collection은 공통
-  `TimeSeries`/`Observation` 계약으로 payload 구조를 확인한다. 기존 task payload 저장 형식은 호환성을 위해
-  유지하며 파일 input과 workbook 경로는 아직 연결하지 않았다.
+- typed 시계열 경계: World Bank GDP/WDI, BOJ FXERD01, BLS, Census collection과 명시 mapping을 지정한
+  local tabular input은 공통 `TimeSeries`/`Observation` 계약으로 구조를 확인한다. 기존 task payload 저장 형식은
+  호환성을 위해 유지하며 typed observations의 영속화/export와 workbook은 연결하지 않았다.
 - 성공이면 다음 stage로 간다. retryable이면 원래 task를 멈추고 Retry-After/시도 예산 후 같은 task를 resume한다.
   성공 prefix 재사용은 fingerprint·TTL·검증기를 모두 통과해야 한다.
 - 대용량 qualification은 task claim 전부터 workspace lock을 잡고 child worker에 상속한다. process가 강제 종료되면
@@ -158,3 +158,5 @@ observed/threshold, inspection point, disposition을 deferral record에 직렬�
 [capacity/목록](../src/macro_data_platform/ingestion/non_api_capacity.py).
 
 17회차 시험과 19회차 제한 production handoff 경로·예산·미실행 응답은 [대용량 엔진 설정](LARGE_FILE_ENGINE.md)을 따른다.
+
+`series_mapping`은 `series_id`, optional `dataset_id`, `period_column`, `value_column`, optional `dimension_columns`, `unit`, `currency`, `frequency`, `frequency_basis`, `calendar`, `source_revision`만 받는다. period/value와 unit/frequency의 의미는 운영자가 제공하며 자동으로 추론되지 않는다. 입력 mapping은 task plan에 남고 결과에는 typed-series 요약 및 보존 파일 참조만 기록된다.

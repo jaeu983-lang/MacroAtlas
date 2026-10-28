@@ -1,5 +1,5 @@
 """Orchestrator engine for safe local tabular file intake and archival."""
-from datetime import datetime
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from macro_data_platform.capacity import (
@@ -16,6 +16,7 @@ from macro_data_platform.connectors.tabular_files import (
 )
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore, inspect_file
+from macro_data_platform.metadata.series import normalize_tabular_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.performance.metrics import current_metrics
 from macro_data_platform.storage.tabular_archives import (
@@ -27,6 +28,7 @@ _INPUT_KEYS = {
     "relative_path", "source_url", "format", "delimiter", "sheet_name", "table_index",
     "zip_member", "header_row", "source_agency", "source_captured_at",
     "source_content_type", "source_http_status", "source_last_modified", "source_table_name",
+    "series_mapping",
 }
 _PROVENANCE_LIMITS = {
     "source_agency": 128,
@@ -89,6 +91,11 @@ class TabularFileEngine:
                 or not isinstance(data.get("relative_path"), str)
                 or data.get("format") not in SUPPORTED_FORMATS
                 or not _safe_source_url(data.get("source_url"))
+                or ("series_mapping" in data and (
+                    not isinstance(data.get("series_mapping"), dict)
+                    or not isinstance(data.get("source_agency"), str)
+                    or not data["source_agency"].strip()
+                ))
                 or not _safe_provenance(data)):
             return _invalid("Expected a repository-local inbox path and an explicit supported format.")
         try:
@@ -182,14 +189,42 @@ class TabularFileEngine:
                 ("Original file was preserved, but normalized table storage failed.",),
                 ErrorCode.INTERNAL_BUG,
             )
-        return StageResult(StageStatus.SUCCEEDED, {
+        payload = {
             **saved, "mode": "local_file", "source_url": data.get("source_url"),
             "table": {"format": table.format, "headers": list(table.headers),
                       "row_count": len(table.rows),
                       "duplicate_data_rows": list(table.duplicate_data_rows),
                       "blank_data_rows": list(table.blank_data_rows),
                       "warnings": list(table.warnings)},
-        }, (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]))
+        }
+        if "series_mapping" in data:
+            try:
+                typed = normalize_tabular_series(
+                    headers=table.headers, rows=table.rows, mapping=data["series_mapping"],
+                    source_agency=data["source_agency"], source_url=data.get("source_url"),
+                    retrieved_at=datetime.now(UTC), raw_ref=saved["raw_path"],
+                    manifest_ref=saved["manifest_path"],
+                )
+            except (TypeError, ValueError):
+                return StageResult(
+                    StageStatus.NEEDS_REVIEW, payload,
+                    (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
+                    ("File was archived, but its explicit series mapping needs review.",),
+                    ErrorCode.SCHEMA_CHANGED,
+                )
+            payload["series_contract"] = {
+                "schema_version": "time-series-v1", "series_id": typed.series_id,
+                "dataset_id": typed.dataset_id, "observation_count": len(typed.observations),
+                "unit": typed.unit, "currency": typed.currency,
+                "frequency": typed.frequency, "frequency_basis": typed.frequency_basis,
+                "dimensions": dict(typed.dimensions), "retrieved_at": typed.retrieved_at.isoformat(),
+                "source_url": typed.source_url, "raw_ref": typed.raw_ref,
+                "manifest_ref": typed.manifest_ref,
+            }
+        return StageResult(
+            StageStatus.SUCCEEDED, payload,
+            (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
+        )
 
 
 def _invalid(message: str) -> StageResult:

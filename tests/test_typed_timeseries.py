@@ -162,6 +162,35 @@ def test_bls_adapter_marks_mixed_annual_average_and_month_periods_unknown():
     assert [row.source_period for row in series.observations] == ["2024:M01", "2024:M13"]
 
 
+def test_bls_adapter_normalizes_quarter_and_half_year_codes():
+    quarterly, = normalize_bls_series({
+        "source_agency": "U.S. Bureau of Labor Statistics", "dataset_id": None,
+        "series_ids": ["CUUR0000SA0"], "unit": None, "frequency": None,
+        "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "raw_path": "data/raw/bls.json", "manifest_path": "data/raw/bls.manifest.json",
+        "observations": [{"seriesID": "CUUR0000SA0", "data": [
+            {"year": "2024", "period": "Q01", "value": "1"},
+            {"year": "2024", "period": "Q02", "value": "2"},
+        ]}],
+    })
+    semiannual, = normalize_bls_series({
+        "source_agency": "U.S. Bureau of Labor Statistics", "dataset_id": None,
+        "series_ids": ["CUUR0000SA0"], "unit": None, "frequency": None,
+        "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "raw_path": "data/raw/bls.json", "manifest_path": "data/raw/bls.manifest.json",
+        "observations": [{"seriesID": "CUUR0000SA0", "data": [
+            {"year": "2024", "period": "S01", "value": "1"},
+        ]}],
+    })
+
+    assert [row.period for row in quarterly.observations] == ["2024-Q1", "2024-Q2"]
+    assert quarterly.frequency == "quarterly"
+    assert semiannual.observations[0].period == "2024-H1"
+    assert semiannual.frequency == "semiannual"
+
+
 def test_census_adapter_keeps_each_estimate_variable_and_geography_separate():
     series, = normalize_census_series({
         "source_agency": "U.S. Census Bureau", "dataset_id": "acs/acs1", "year": 2024,
