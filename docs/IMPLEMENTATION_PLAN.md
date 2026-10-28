@@ -1,6 +1,6 @@
 # MacroAtlas 구현 현황
 
-> 기준: 2026-10-28. 제품 범위와 완료 조건은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 남은 코드 순서는 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)가 기준이다. 이 문서는 관측된 구현과 증거만 기록한다.
+> 기준: 2026-10-28. 이 문서의 구현·Gate 판정은 [엔진 구현 현황과 데이터 접근 한계](ENGINE_IMPLEMENTATION_STATUS.md)와 함께 읽는다. 제품 범위와 완료 조건은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 남은 코드 순서는 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)가 기준이다. 이 문서는 관측된 구현과 증거만 기록한다.
 
 ## 기준선
 
