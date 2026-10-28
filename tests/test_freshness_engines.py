@@ -34,6 +34,21 @@ class WorldBankFixture:
                         "application/json", EvidenceKind.FIXTURE)
 
 
+class WorldBankLatestNullFixture:
+    def fetch(self, query):
+        body = [{"page": 1, "pages": 1, "per_page": 100, "total": 2,
+                 "sourceid": "2", "lastupdated": "2026-10-28"}, [
+            {"indicator": {"id": "NY.GDP.MKTP.CD", "value": "GDP (current US$)"},
+             "country": {"id": "US", "value": "United States"}, "countryiso3code": "USA",
+             "date": "2026", "value": None, "unit": "", "obs_status": "", "decimal": 0},
+            {"indicator": {"id": "NY.GDP.MKTP.CD", "value": "GDP (current US$)"},
+             "country": {"id": "US", "value": "United States"}, "countryiso3code": "USA",
+             "date": "2025", "value": 123.5, "unit": "", "obs_status": "", "decimal": 0},
+        ]]
+        return Download(query.url, json.dumps(body).encode(), 200, AS_OF,
+                        "application/json", EvidenceKind.FIXTURE)
+
+
 class BOJFixture:
     def fetch_metadata(self, query):
         return _download(METADATA_ENDPOINT, {
@@ -81,6 +96,24 @@ def test_worldbank_old_observation_is_blocked_despite_recent_retrieval_and_lastu
     assert Path(tmp_path, result.payload["raw_path"]).is_file()
 
 
+def test_worldbank_latest_null_period_does_not_make_actual_value_look_future(tmp_path):
+    policy = FreshnessPolicy(frequency_max_age_days={"annual": 400})
+    result = WorldBankGDPEngine(
+        Settings(tmp_path, network_enabled=True), WorldBankLatestNullFixture(),
+        clock=lambda: datetime(2026, 10, 28, tzinfo=UTC), freshness_policy=policy,
+    ).run(OrchestrationInput(
+        "freshness-wb-null-latest", "GDP", "collect",
+        {"start_year": 2025, "end_year": 2026}, None, (),
+    ))
+
+    assert result.status == StageStatus.SUCCEEDED
+    assert result.payload["quality"]["freshness"]["latest_period"] == "2025"
+    assert result.payload["quality"]["freshness"]["status"] == "FRESH"
+    assert len(result.payload["observations"]) == 2
+    assert next(row for row in result.payload["observations"]
+                if row["date"] == "2026")["value"] is None
+
+
 def test_boj_daily_old_observations_are_withheld_after_raw_capture(tmp_path):
     settings = Settings(tmp_path, network_enabled=True)
     store = HistoryStore(settings)
@@ -96,6 +129,44 @@ def test_boj_daily_old_observations_are_withheld_after_raw_capture(tmp_path):
     assert payload["observations"] == []
     assert payload["withheld_observation_count"] == 2
     assert Path(tmp_path, payload["raw_path"]).is_file()
+
+
+def test_boj_future_null_calendar_rows_do_not_hide_latest_available_observation(tmp_path):
+    settings = Settings(tmp_path, network_enabled=True)
+    as_of = datetime(2026, 10, 28, tzinfo=UTC)
+
+    class CurrentMonthBOJFixture(BOJFixture):
+        def fetch_observations(self, query):
+            return _download(DATA_ENDPOINT, {
+                "STATUS": 200, "DATE": "20261028", "NEXTPOSITION": None,
+                "RESULTSET": [{
+                    "SERIES_CODE": query.series_code,
+                    "NAME_OF_TIME_SERIES": "US.Dollar/Yen Spot Rate at 9:00 in JST, Tokyo Market",
+                    "UNIT": "Yen per U.S. Dollar", "FREQUENCY": "DAILY",
+                    "LAST_UPDATE": 20261028,
+                    "VALUES": {
+                        "SURVEY_DATES": [20261026, 20261027, 20261028, 20261029,
+                                         20261030, 20261031],
+                        "VALUES": [152.1, 152.2, None, None, None, None],
+                    },
+                }],
+            }, at=as_of)
+
+    store = HistoryStore(settings)
+    runner = make_boj_orchestrator(
+        store, settings, CurrentMonthBOJFixture(), clock=lambda: as_of,
+    )
+    task = runner.create("BOJ current-month null calendar rows fixture")
+    runner.plan(task.task_id, build_boj_plan(BOJQuery("202610")))
+    result = runner.run(task.task_id)
+    payload = result["stages"][-1]["result"]["payload"]
+
+    assert result["status"] == "COMPLETED"
+    assert payload["quality"]["freshness"]["status"] == "FRESH"
+    assert payload["quality"]["freshness"]["latest_period"] == "2026-10-27"
+    assert payload["quality"]["freshness"]["age_days"] == 1
+    assert payload["quality"]["missing_value_count"] == 4
+    assert [row["value"] for row in payload["observations"][-4:]] == [None] * 4
 
 
 def test_bls_old_monthly_observation_is_not_returned_from_quality_failure(tmp_path):
@@ -119,6 +190,28 @@ def test_bls_old_monthly_observation_is_not_returned_from_quality_failure(tmp_pa
     assert result.payload["withheld_observation_count"] == 1
 
 
+def test_bls_empty_latest_month_does_not_make_older_value_look_fresh(tmp_path):
+    url = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
+    result = BLSEngine(Settings(tmp_path, network_enabled=True), ApiFixture(url, {
+        "status": "REQUEST_SUCCEEDED", "Results": {"series": [{
+            "seriesID": "CUUR0000SA0", "data": [
+                {"year": "2026", "period": "M01", "periodName": "January",
+                 "value": "100.0", "footnotes": []},
+                {"year": "2026", "period": "M10", "periodName": "October",
+                 "value": "", "footnotes": []},
+            ],
+        }]},
+    }), clock=lambda: datetime(2026, 10, 28, tzinfo=UTC)).run(OrchestrationInput(
+        "freshness-bls-empty-latest", "CPI", "bls",
+        {"series_ids": ["CUUR0000SA0"], "start_year": 2026, "end_year": 2026}, None, (),
+    ))
+
+    freshness = result.payload["quality"]["freshness"][0]
+    assert result.status == StageStatus.NEEDS_REVIEW
+    assert freshness["latest_period"] == "2026-01"
+    assert freshness["status"] == "STALE"
+
+
 def test_census_old_annual_observation_is_withheld(tmp_path):
     settings = Settings(tmp_path, network_enabled=True)
     url = "https://api.census.gov/data/2022/acs/acs1"
@@ -134,6 +227,22 @@ def test_census_old_annual_observation_is_withheld(tmp_path):
     assert result.payload["quality"]["freshness"][0]["status"] == "STALE"
     assert result.payload["observations"] == []
     assert result.payload["withheld_observation_count"] == 1
+
+
+def test_census_all_missing_values_have_no_freshness_anchor(tmp_path):
+    url = "https://api.census.gov/data/2025/acs/acs1"
+    result = CensusEngine(Settings(tmp_path, network_enabled=True), ApiFixture(url, [
+        ["NAME", "B01001_001E", "us"], ["United States", "", "1"],
+    ]), clock=lambda: datetime(2026, 10, 28, tzinfo=UTC)).run(OrchestrationInput(
+        "freshness-census-missing", "population", "census", {
+            "year": 2025, "dataset": "acs/acs1", "variables": ["NAME", "B01001_001E"],
+            "geography": "us:1",
+        }, None, (),
+    ))
+
+    assert result.status == StageStatus.NEEDS_REVIEW
+    assert result.payload["quality"]["freshness"][0]["status"] == "FRESHNESS_UNVERIFIED"
+    assert result.payload["observations"] == []
 
 
 def test_empty_bls_observations_are_freshness_unverified_not_fresh(tmp_path):

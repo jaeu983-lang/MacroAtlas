@@ -77,7 +77,8 @@ class WorldBankGDPEngine:
             )
         with measure_current("quality"):
             freshness = assess_freshness(
-                [row["date"] for row in parsed["observations"]],
+                [row["date"] for row in parsed["observations"]
+                 if row.get("value") is not None],
                 frequency=parsed.get("frequency"), period_format=parsed.get("period_format"),
                 series_id=parsed.get("series_id"), series_key=parsed.get("series_key"),
                 as_of=self.clock(), policy=self.freshness_policy,

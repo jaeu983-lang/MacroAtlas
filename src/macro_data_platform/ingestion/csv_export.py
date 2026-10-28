@@ -622,7 +622,7 @@ def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
     parsed = parse_boj_observations(data_download, query, metadata)
     with measure_current("quality"):
         freshness = assess_freshness(
-            [row["date"] for row in parsed["observations"]],
+            [row["date"] for row in parsed["observations"] if row["value"] is not None],
             frequency=metadata.get("frequency"), series_id=query.series_code,
             series_key={"database": query.database, "series_code": query.series_code},
             as_of=as_of, policy=freshness_policy,

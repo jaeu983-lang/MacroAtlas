@@ -109,7 +109,8 @@ def normalize_worldbank(
     expected = {str(year) for year in range(query.start_year, query.end_year + 1)}
     issues, warnings = [], []
     freshness = assess_freshness(
-        [row.get("date") for row in rows], frequency=parsed.get("frequency"),
+        [row.get("date") for row in rows if row.get("value") is not None],
+        frequency=parsed.get("frequency"),
         period_format=parsed.get("period_format"), series_id=parsed.get("series_id"),
         series_key=parsed.get("series_key"), as_of=as_of, policy=freshness_policy,
     )

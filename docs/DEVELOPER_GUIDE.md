@@ -104,36 +104,25 @@ git diff --check
 
 ## 피드백 검토와 사례 초안
 
-### GPT가 작성한 합성 질문·피드백
+### 대화형 GPT가 작성하는 합성 질문·피드백
 
-실제 사용자 피드백 원장과 분리된 `data/synthetic_feedback.sqlite`에만 저장합니다. 입력의
-`answer_origin`으로 실제 엔진의 결과와 가상 답변을 구분하고, 답변이 해당 시험 범위에서 충분한
-`answered` 사례는 `feedback: null`로 남깁니다. 실패 시에만 구체적 교정을 적습니다. 합성 기록은
-실제 사용자 기록이나 평가 corpus로 자동 전환되지 않습니다. 명시된 AI 출처와 기대 결과를 검토하고
-개발용 비교를 실행하면 Gate 사례 증거로 사용할 수 있습니다. 이는 전체 Gate 통과와는 별개입니다.
+별도 OpenAI API나 `OPENAI_API_KEY` 없이 이 대화의 GPT가 시험 질문을 만들고, 고정된 로컬 엔진의 실제 결과를 읽어
+가상 사용자의 피드백을 작성할 수 있습니다. 충분한 결과에는 피드백을 강제로 붙이지 않습니다. 기록은 실제 사용자
+피드백 원장과 분리된 `data/synthetic_feedback.sqlite`에 저장하며, `answer_origin`과 AI 출처를 명시합니다.
+합성 기록은 실제 사용자 기록이나 평가 corpus로 자동 전환되지 않습니다.
+
+검토한 대화 사례를 개발용 fixture로 저장한 뒤 아래 명령으로 import하고 비교합니다. 사례는 Gate 개발 증거로 쓸 수
+있지만 실제 사용자 관찰을 대신하거나 전체 Gate를 통과시키지는 않습니다.
 
 ```text
-python -m macro_data_platform.evaluation.synthetic_feedback --project-root . import --file tests/fixtures/evaluation/synthetic_gpt_examples.json
+python -m macro_data_platform.evaluation.synthetic_feedback --project-root . import --file tests/fixtures/evaluation/chatgpt_engine_smoke_examples_2026_10_28.json
 python -m macro_data_platform.evaluation.synthetic_feedback --project-root . list
-python -m macro_data_platform.evaluation.synthetic_feedback --project-root . runs
-python -m macro_data_platform.evaluation.synthetic_gate_evidence --project-root .
+python -m macro_data_platform.evaluation.synthetic_gate_evidence --project-root . --cases tests/fixtures/evaluation/chatgpt_engine_smoke_examples_2026_10_28.json --expectations tests/fixtures/evaluation/chatgpt_engine_smoke_expectations_2026_10_28.json
 ```
 
-예제 두 건은 이 대화의 GPT가 작성한 질문과 로컬 후보 검색 결과입니다. 후보 검색만 측정하며 숫자 수집이나
-완전한 답변 검증은 아닙니다. 이 범위의 `answered`는 적절한 검색 후보를 찾았다는 판정일 뿐 수치 수집 완료가 아닙니다.
-추가 JSON은 수동 import하거나 아래 명령으로 GPT 시험을 명시적으로 실행할 수 있습니다.
-사용 가능한 모델명과 `OPENAI_API_KEY` 환경변수가 필요하며, GPT API 요청 2회에 따른 비용이 발생할 수 있습니다.
-키는 코드·문서·로그에 기록하지 않습니다.
-
-```text
-python -m macro_data_platform.evaluation.synthetic_gpt --project-root . --model <MODEL> --count 2 --live
-```
-
-첫 호출은 합성 질문을 만들고, 로컬 고정 catalog에서 실제 후보 검색을 실행한 뒤 두 번째 호출이 결과를 검토합니다.
-충분한 결과는 feedback 없이 저장하고, 불확실한 결과도 억지 교정을 만들지 않습니다. 질문과 결과는 별도 합성 DB에만
-남습니다. 모델 호출 시간과 로컬 처리 시간·토큰 수를 기록하며 비용을 확인하지 못하면 `null`입니다. 모델 지시문은
-코드에 버전 고정되어 자동 수정되지 않습니다. 로컬 시간은 catalog 로드·검색·결과 검증까지이며 DB 쓰기 시간은
-포함하지 않습니다. 현재 환경에서는 API 키가 없어 실 GPT 호출을 검증하지 않았습니다.
+현재 고정 catalog 검색 사례는 후보 검색만 측정하며 실제 수치 수집이나 완전한 답변 검증이 아닙니다. 사례·관측 결과·기대
+판정을 사람이 함께 검토한 뒤 development에만 둘 수 있습니다. 더 엄밀한 검색·실행 안전 평가와 holdout은 별도 Gate C
+조건을 따라야 합니다.
 
 ### 수동 분류 batch (30회차)
 
