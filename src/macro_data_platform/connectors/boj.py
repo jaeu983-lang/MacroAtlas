@@ -25,7 +25,7 @@ SERIES_NAME = "US.Dollar/Yen Spot Rate at 9:00 in JST, Tokyo Market"
 UNIT = "Yen per U.S. Dollar"
 FREQUENCY = "DAILY"
 _MONTH = re.compile(r"^[0-9]{6}$")
-MAX_RANGE_MONTHS = 12
+MAX_RANGE_MONTHS = 120
 
 
 def _month_date(value: str) -> date:
@@ -65,7 +65,7 @@ class BOJQuery:
 
 @dataclass(frozen=True)
 class BOJRangeQuery:
-    """One to twelve consecutive months for the same verified daily FX series."""
+    """One to 120 consecutive months for the same verified daily FX series."""
 
     start_month: str
     end_month: str
@@ -79,7 +79,7 @@ class BOJRangeQuery:
         end = _month_date(self.end_month)
         month_count = (end.year - start.year) * 12 + end.month - start.month + 1
         if month_count < 1 or month_count > MAX_RANGE_MONTHS:
-            raise ValueError("BOJ range must contain 1 to 12 consecutive months")
+            raise ValueError("BOJ range must contain 1 to 120 consecutive months")
 
     @property
     def metadata_query(self) -> BOJQuery:

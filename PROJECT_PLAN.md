@@ -54,8 +54,8 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 
 | 경로 | 현재 지원 | 한계·판정 |
 |---|---|---|
-| World Bank WDI | 미국 GDP 고정 workflow와 country·indicator를 지정하는 raw-only 1-series 경로(source 2), 각 1–10개 연도 | 일반 경로는 단위·의미 추론, metadata 탐색, CSV/XLSX 전달을 하지 않음. stale/unverified observations는 보류 |
-| BOJ | FM08/FXERD01 한 달 수집과 같은 daily series의 1–12개월 범위 query | 다른 series/database 및 12개월 초과는 미지원. CSV export는 freshness 통과 task에 연결 |
+| World Bank WDI | 미국 GDP 고정 workflow와 country·indicator를 지정하는 raw-only 1-series 경로(source 2), 최대 100개 연도·단일 page | 일반 경로는 단위·의미 추론, metadata 탐색, CSV/XLSX 전달을 하지 않음. stale/unverified observations는 보류 |
+| BOJ | FM08/FXERD01 한 달 수집과 같은 daily series의 1–120개월 범위 query | 다른 series/database 및 120개월 초과는 미지원. CSV export는 freshness 통과 task에 연결 |
 | Offline candidate search | WDI 고정 후보 + 이미 보존된 BLS/Census metadata archive의 lexical CLI 검색 | network/catalog refresh 없음, 후보 자동 선택 없음, 전체 provider catalog가 아님 |
 | BLS | 반복 지정한 series ID와 제한 연도를 받는 Public Data API v2 CLI/Python 경로 | 한 요청 최대 20개 ID, 1~20년 구간. Catalogue 의미·단위·주기는 자동 확인하지 않음 |
 | Census ACS | 지정 변수·연도·지리범위의 acs/acs1·acs/acs5 CLI/Python 경로 | 최대 50개 variable, `NAME` 필수, geography는 `us:1`·`state:NN`; API key 필수. 전 기관 변수 검색은 미지원 |
@@ -199,7 +199,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #76이 병합된 기본 브랜치 `8b619d4`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI와 로컬 candidate search는 제품 Gate D–G를 통과시키지 않는다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #77이 병합된 기본 브랜치 `d412303`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI와 로컬 candidate search는 제품 Gate D–G를 통과시키지 않는다.
 
 선행 순서는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 공통 시계열·최신성(E) → 원자료 XLSX(F) → 비교 XLSX(G) → 분석가 관찰`이다. 한 Gate의 완료 조건을 충족하지 못하면 그 Gate의 상태를 제한/미완료로 남기고 후속 제품 Gate를 완료 처리하지 않는다. 구현 checkpoint나 테스트 통과만으로 Gate 승격을 주장하지 않는다.
 

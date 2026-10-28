@@ -77,11 +77,11 @@ git diff --check
 Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. `worldbank-gdp`는
 미국 GDP(current US$), WDI source 2, `NY.GDP.MKTP.CD`만 지원하며 1~10개 연도 범위로 제한됩니다.
 `worldbank-series`는 사용자가 uppercase ISO3 국가와 indicator ID를 명시하는 별도 raw-only 경로입니다.
-source ID는 WDI의 `2`로 고정하고, 요청당 한 series·1~10개 연도·1 page·1 MiB 제한을 둡니다. URL, 국가/지표
+source ID는 WDI의 `2`로 고정하고, 요청당 한 series·최대 100개 연도·1 page·1 MiB 제한을 둡니다. URL, 국가/지표
 탐색, source 선택, 단위·의미 추론은 하지 않습니다. 원본 응답과 request manifest를 보존하고, 파싱한
 행은 freshness 통과 전에는 task에서 보류합니다. 이 경로는 CSV/XLSX export 대상이 아닙니다.
 fixture 범위와 한 건의 live 검증 근거는 [World Bank series 연결 설명](connectors/WORLDBANK_SERIES.md)에 있습니다.
-BOJ의 boj-fxer는 한 달, boj-fxer-range는 같은 FM08/FXERD01 일간 시리즈의 연속 1–12개월을
+BOJ의 boj-fxer는 한 달, boj-fxer-range는 같은 FM08/FXERD01 일간 시리즈의 연속 1–120개월을
 지원합니다. 두 경로는 metadata와 관측을 분리 실행하고 freshness를 적용합니다. range 결과도 품질 통과 후 CSV
 export를 지원합니다. 다른 BOJ DB·series나 자동 탐색은 지원하지 않습니다. TIC/BIS `watch`는 지정된 공식 파일 URL과 기존 parser
 범위만 확인합니다. 자동 예약 실행은 없고 현재 반복 감시도 중지된 상태입니다. 명령은 URL이나 임의 기관을

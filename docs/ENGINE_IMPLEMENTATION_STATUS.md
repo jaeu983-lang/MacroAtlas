@@ -1,6 +1,6 @@
 # 엔진 구현 현황과 데이터 접근 한계
 
-> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `8b619d4` (PR #76 merge; 2026-10-28). 이후 엔진 실행 검증은
+> 대조 기준: 기본 브랜치 `codex/iteration-04-gate-a`의 HEAD `d412303` (PR #77 merge; 2026-10-28). 이후 엔진 실행 검증은
 > [2026-10-28 smoke 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 보존한다. 이 문서는 런타임 코드와 현재 제품 현황을
 > 처음부터 끝까지 연결해 설명한다. **지원되지 않는 일**은 기관 API/데이터 계약 또는 접근 권한 때문에 현재
 > 인터페이스로 할 수 없는 일, **미구현**은 기술적으로 확장 가능하지만 코드에 아직 연결하지 않은 일로 나눈다.
@@ -49,8 +49,8 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 | Engine contract / Registry | [`contracts.py`](../src/macro_data_platform/contracts.py), [`registry.py`](../src/macro_data_platform/orchestration/registry.py), [`composition.py`](../src/macro_data_platform/orchestration/composition.py): `StageInput → StageResult`, engine/version 고정 등록, 공통 조립 및 saved plan resume | registry는 호출 가능한 engine 인스턴스를 조립한다. 자격증명 발급, provider 접근권한, 자동 선택은 담당하지 않는다. |
 | Orchestrator / History | [`runner.py`](../src/macro_data_platform/orchestration/runner.py), [`history.py`](../src/macro_data_platform/storage/history.py): 순차 실행, idempotency key, task/stage attempt, 오류 상태, 수동 retry/resume, 성공 prefix 재사용 | 분산 동시성·lease·worker 강제 종료·자동 retry/backoff 없음. 외부 side effect exactly-once 보장 안 됨. |
 | Candidate Search | [`series_search.py`](../src/macro_data_platform/discovery/series_search.py), [`cli.py`](../src/macro_data_platform/cli.py), [`evaluation/cli.py`](../src/macro_data_platform/evaluation/cli.py): 로컬 catalog ranking CLI, 근거/상태/불확실성 보존, 제한·abstention 및 오프라인 평가 비교 | 실시간 전체 catalog 수집·다국어 의미 검색·LLM 질문 해석 없음. 검색 순위 자체는 채택 근거가 아니며 별도 수집 확인이 필요. |
-| World Bank WDI collector | 확인된 미국 GDP current-dollar workflow와 `worldbank_series/1` exact country/source/indicator annual raw-only query. 둘 다 공통 EngineRegistry/Orchestrator, raw/manifest, 구조 검사 및 freshness를 사용한다. | General path는 1 series·1–10 연속 연도·1 page·1 MiB다. metadata 검색, 단위·의미 검증 및 CSV/XLSX export는 없다. GDP 전용 품질 규칙은 일반 지표에 적용하지 않는다. |
-| BOJ FX collector | FM08/FXERD01 one-month path와 boj_observations_range/1의 연속 1–12개월 path. metadata와 observations를 분리하고 변경 감지·freshness·재개 및 동일 series CSV 재검증을 지원한다. | 다른 DB/series, 12개월 초과, getDataLayer·탐색은 미지원. natural provider failure/revision은 여전히 미검증이다. |
+| World Bank WDI collector | 확인된 미국 GDP current-dollar workflow와 `worldbank_series/1` exact country/source/indicator annual raw-only query. 둘 다 공통 EngineRegistry/Orchestrator, raw/manifest, 구조 검사 및 freshness를 사용한다. | General path는 1 series·최대 100 연속 연도·1 page·1 MiB다. metadata 검색, 단위·의미 검증 및 CSV/XLSX export는 없다. GDP 전용 품질 규칙은 일반 지표에 적용하지 않는다. |
+| BOJ FX collector | FM08/FXERD01 one-month path와 boj_observations_range/1의 연속 1–120개월 path. metadata와 observations를 분리하고 변경 감지·freshness·재개 및 동일 series CSV 재검증을 지원한다. | 다른 DB/series, 120개월 초과, getDataLayer·탐색은 미지원. natural provider failure/revision은 여전히 미검증이다. |
 | BLS collector | Public Data API v2, exact ID 지정 CLI/Python query, 1–20 series ID, 1–20년 구간, optional `BLS_API_KEY`, raw/manifest·parse·품질/freshness | CLI는 series catalogue를 검색하지 않는다. ID 의미/단위가 확인된 series만 안전하게 쓸 수 있다. 응답에 frequency/unit은 unknown. 장기·다수 series는 여러 요청 설계와 예산 검증이 필요. |
 | Census collector | ACS1/ACS5 exact variable 지정 CLI/Python query, 한 해, 1–50 variable, 미국 전체 또는 단일 주 geography, 필수 Census key, raw/manifest·parse·품질/freshness | 임의 Census dataset·geography 조합·시간 범위·다중 지역 batching은 미지원. 변수 정의/단위 미확인 응답은 의미가 확정되지 않음. |
 | Metadata engines | BLS 1 series metadata, Census ACS 1 variable metadata, 입력 SDMX 구조 및 제한 normalization/archive | provider 전체 메타데이터 수집·주기적 동기화·차원 간 자동 맵핑은 없음. 메타데이터 API 호출도 데이터 검색 전체를 대신하지 않음. |
@@ -67,9 +67,9 @@ engine 및 기관 adapter가 플러그인처럼 연결된다.
 
 | 기관/방식 | 지금 가능한 범위 | 현재 경로에서 할 수 없는 것 | 가능한데 아직 미구현/미검증인 것 |
 |---|---|---|---|
-| World Bank API | 인증 없는 WDI Indicators API 고정 경로: USA, source 2, `NY.GDP.MKTP.CD`; `1960..2100` 내 연속 1–10년, JSON 1 page, 최대 1 MiB | 현 경로로 다른 국가·지표·source·다중 page·임의 빈도를 조회하지 못함. 공식 응답에 없는 월별 값을 만들 수 없음. | 더 많은 WDI series/country, pagination, metadata/indicator catalog, 검증된 단위·빈도 프로파일은 별도 어댑터 범위로 가능. 주기별 전수 지원은 아직 없음. |
+| World Bank API | 인증 없는 WDI Indicators API: 고정 미국 GDP와, 명시한 ISO3·indicator/source 2의 annual series; `1960..2100` 내 1–100년, JSON 1 page·최대 1 MiB | 현재 generic 경로는 여러 series·다중 page·비연간 series·자동 metadata 탐색을 처리하지 않음. 공식 응답에 없는 월별 값을 만들 수 없음. | pagination, metadata/indicator catalog, 검증된 단위·빈도 프로파일은 별도 어댑터 범위로 가능. 주기별 전수 지원은 아직 없음. |
 | World Bank 비API | 일반 로컬 파일 intake는 형식/크기 한도 안에서 표를 보존 | 현재 파일 입력으로 World Bank 출처를 검증하거나 API series와 자동 결합하지 못함 | 명시 URL/공식 파일 허용목록, 출처 증거, 해당 schema adapter를 추가하면 지원 가능. 자동 웹 크롤링은 미구현. |
-| BOJ API | 공식 통계 API의 FM08/FXERD01 metadata와 1–12개월 관측 query; 명시 실행, raw 보존, 범위별 변경 감지 | 다른 database/code, 12개월 초과, getDataLayer, 전체 series search는 현재 query contract로 불가 | API 문서는 최대 60,000 data points를 설명하나 현재 adapter는 12개월로 자체 제한한다. 다른 code·bulk metadata는 endpoint 계약과 의미 확인 후 별도 추가 가능. |
+| BOJ API | 공식 통계 API의 FM08/FXERD01 metadata와 1–120개월 관측 query; 명시 실행, raw 보존, 범위별 변경 감지 | 다른 database/code, 120개월 초과, getDataLayer, 전체 series search는 현재 query contract로 불가 | 공식 API 문서의 60,000-point cap보다 보수적인 120개월 제한을 둔다. 다른 code·bulk metadata는 endpoint 계약과 의미 확인 후 별도 추가 가능. |
 | BOJ 비API | 공통 local table parser로 지원 형식 내 파일을 제한 처리 | BOJ 파일임을 자동 식별·검증하거나 BOJ API와 동일 series로 간주하지 못함 | BOJ 공개 다운로드 파일별 schema/manifest adapter와 출처 검증을 추가하면 가능. |
 | BLS API | Public Data API v2에서 명시 series ID 1–20개, 1900–2100 사이 1–20년(현재 query 검사는 최대 20년 미만 차이), API key 선택; 현재 결과의 구조 검증·raw 보존 | 자연어로 series ID를 찾거나 코드만으로 unit/frequency/economic concept를 확정하지 못함. 응답 페이지 밖/지원 범위 이상의 기간을 한 호출에 넣지 못함 | Series ID catalog/검색, 주기·단위 정의 연결, 요청 chunking/쿼터 정책, 검증된 장기 이력 workflow는 가능하지만 제품 경로로 미구현. API 한도·등록키에 따른 차등은 실제 계정/공식 문서 확인 필요. |
 | BLS API 메타데이터 | 선택된 series의 API 응답과 metadata archive 연동 경로가 있음 | 전체 BLS catalog의 자동 동기화/semantic mapping은 안 됨 | 공식 전체 catalog/bulk metadata 다운로드와 증분 갱신을 별도 연결 가능. |

@@ -71,7 +71,7 @@ def deny_real_http(monkeypatch):
     {"country_iso3": "Can"}, {"country_iso3": "../../"},
     {"indicator_id": "SP.POP.TOTL?format=json"}, {"indicator_id": "../other"},
     {"source_id": "0"}, {"source_id": "3"}, {"source_id": "2/3"},
-    {"start_year": 2020, "end_year": 2030}, {"start_year": True},
+    {"start_year": 2020, "end_year": 2120}, {"start_year": True},
 ])
 def test_query_rejects_unbounded_or_url_shaping_inputs(kwargs):
     data = {"country_iso3": "CAN", "indicator_id": "SP.POP.TOTL", "source_id": "2",
@@ -86,6 +86,13 @@ def test_query_constructs_only_the_fixed_https_world_bank_endpoint():
         "https://api.worldbank.org/v2/country/CAN/indicator/SP.POP.TOTL"
         "?source=2&date=2024%3A2025&format=json&per_page=100&page=1"
     )
+
+
+def test_query_allows_one_full_page_of_annual_periods_and_rejects_overflow():
+    query = WorldBankSeriesQuery("CAN", "SP.POP.TOTL", "2", 1960, 2059)
+    assert query.end_year - query.start_year + 1 == 100
+    with pytest.raises(ValueError, match="1 to 100 years"):
+        WorldBankSeriesQuery("CAN", "SP.POP.TOTL", "2", 1960, 2060)
 
 
 def test_parser_preserves_rows_unknown_units_null_values_and_request_identity():

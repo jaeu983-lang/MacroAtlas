@@ -10,7 +10,7 @@ macroatlas collect worldbank-series --country CAN --source-id 2 --indicator SP.P
 
 The command requires an uppercase ISO3 country, the literal WDI source ID `2`,
 an explicit indicator ID, and an inclusive year range. It accepts one series,
-1–10 consecutive years within 1960–2100, one JSON page and at most 1 MiB. The
+1–100 consecutive years within 1960–2100, one JSON page and at most 1 MiB. The
 host is fixed at `api.worldbank.org`; arbitrary URLs, indicator discovery,
 other World Bank source IDs and bulk requests are rejected. `--live` is required
 to enable network access.
