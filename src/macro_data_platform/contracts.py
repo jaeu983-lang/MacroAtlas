@@ -141,6 +141,7 @@ class Observation:
     period: str
     raw_value: str | int | float | None
     status: ObservationStatus
+    source_period: str | None = None
 
     def __post_init__(self) -> None:
         required(self.period, "period")
@@ -154,8 +155,12 @@ class Observation:
             raise ValueError("raw_value must be finite")
         if self.status == ObservationStatus.OBSERVED and self.raw_value is None:
             raise ValueError("observed values cannot be null")
-        if self.status == ObservationStatus.MISSING and self.raw_value is not None:
-            raise ValueError("missing values must preserve a null source value")
+        if self.status == ObservationStatus.OBSERVED and self.raw_value == "":
+            raise ValueError("empty source strings cannot be marked observed")
+        if self.status == ObservationStatus.MISSING and self.raw_value not in {None, ""}:
+            raise ValueError("missing values must preserve a null or empty source value")
+        if self.source_period is not None:
+            required(self.source_period, "source_period")
 
 
 @dataclass(frozen=True)
@@ -167,7 +172,7 @@ class TimeSeries:
     """
 
     source_agency: str
-    dataset_id: str
+    dataset_id: str | None
     series_id: str
     dimensions: Mapping[str, str]
     calendar: str
@@ -183,9 +188,10 @@ class TimeSeries:
     source_revision: str | None = None
 
     def __post_init__(self) -> None:
-        for name in ("source_agency", "dataset_id", "series_id", "calendar", "raw_ref",
-                     "manifest_ref"):
+        for name in ("source_agency", "series_id", "calendar", "raw_ref", "manifest_ref"):
             required(getattr(self, name), name)
+        if self.dataset_id is not None:
+            required(self.dataset_id, "dataset_id")
         if not isinstance(self.dimensions, Mapping):
             raise TypeError("dimensions must be a mapping")
         if any(not isinstance(key, str) or not key.strip()
@@ -240,7 +246,7 @@ class TimeSeries:
             "manifest_ref": self.manifest_ref,
             "observations": [
                 {"period": item.period, "raw_value": item.raw_value,
-                 "status": item.status.value}
+                 "status": item.status.value, "source_period": item.source_period}
                 for item in self.observations
             ],
         }

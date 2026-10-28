@@ -119,7 +119,7 @@ flowchart LR
 | Large-file trial/production worker | 자원·시간·범위를 제한해 대용량 원본을 분리 처리하고 결과를 전달한다. | trial/production 경로가 분리됨. 보존한 BIS GLI flat ZIP 1건의 승인형 Linux 구조 보존 경로만 확인. |
 | Orchestrator·task history | 저장된 plan을 stage로 실행하고 상태, attempt, 실패, 명시적 resume 이력을 관리한다. | `EngineRegistry`가 World Bank·BOJ·BLS·Census·Gate C adapter를 등록하고 saved `(engine, version)`으로 조립·재개. 승인 조건은 dispatcher에서 재검증하고 large-file recovery는 전용 runner에 둠. |
 | Engine 성능 계측 | 각 engine/stage의 실행시간과 병목 단계를 비교해 변경 전 기준선을 만든다. | monotonic stage/선택 phase 계측, 별도 privacy-safe 표본 DB, knowledge latency와 읽기 전용 보고기를 구현한다. 자연 API 기준선과 일부 leaf timing은 미수집이며 fixture 반복 자료로 p95가 20개를 넘기기 전 확정하지 않는다. |
-| Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | World Bank·BOJ 입력은 공통 typed series 계약을 검증하고 freshness가 override/fallback 근거를 기록한다. BLS·Census·파일 경로와 official release calendar 근거는 미완료이며 초기 frequency 일수는 fallback이다. |
+| Quality·freshness | 구조·통계 품질과 최신 관측 period를 평가해 검증되지 않은 값을 차단한다. | World Bank·BOJ·BLS·Census 입력은 공통 typed series 계약을 검증하고 freshness가 override/fallback 근거를 기록한다. 파일 경로와 official release calendar 근거는 미완료이며 초기 frequency 일수는 fallback이다. |
 | Feedback·knowledge | task에 연결된 교정을 별도 기록하고 승인된 scope-bound 지식만 제한 재사용한다. | SQLite append-only log와 명시적 검토 흐름 구현. 자동 사례·규칙 생성 및 승격은 없음. |
 | Evaluation·rule review | 같은 버전 사례로 검색 결과와 확인 전 수집 계획 경계를 비교하고 별도 hash-chain 원장에 사람 결정·적용·rollback을 기록한다. | fixed v2 search scope의 Gate C는 2026-10-28 통과했다. `macro-promotion`이 C artifact hash와 metrics를 검증·기록할 수 있다. 실제 독립 사람 결정·적용 commit은 아직 없으므로 후보는 미승격이며 Gate D는 미완료다. 실제 provider/raw/export 경로도 실행하지 않았다. |
 | Export·alignment | 검증된 원자료와 서로 다른 시계열의 비교 출력을 분리한다. | World Bank/BOJ 한정 CSV만 지원. XLSX 원자료 및 multi-series alignment는 미구현. |
@@ -137,7 +137,7 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 - **출처와 재현성:** source URL, retrieval timestamp(UTC), raw path/hash, request manifest/hash, parser/engine version, freshness policy와 series override.
 - **검증:** 구조·의미·quality·freshness 상태와 근거, 검토 시점, 확인되지 않은 필드.
 
-원본 payload를 불변으로 보존하고 정규화·변환은 버전이 붙은 별도 산출물로 만든다. source metadata가 없으면 추측하지 말고 `unknown`으로 남긴다. `contracts.TimeSeries`/`Observation` 공통 모델을 World Bank GDP/WDI와 BOJ 월별/범위 adapter가 검증한다. 현행 task 저장 payload 형식은 이전 CLI/export 호환성을 위해 유지한다. BLS·Census·파일 입력, persisted typed artifact, workbook 연결은 후속 작업이다.
+원본 payload를 불변으로 보존하고 정규화·변환은 버전이 붙은 별도 산출물로 만든다. source metadata가 없으면 추측하지 말고 `unknown`으로 남긴다. `contracts.TimeSeries`/`Observation` 공통 모델을 World Bank GDP/WDI, BOJ 월별/범위, BLS, Census adapter가 검증한다. BLS source period code는 별도 보존하며 period type이 혼합되면 frequency를 unknown으로 둔다. Census는 variable과 geography별로 분리하되 의미·단위·주기를 추측하지 않는다. 현행 task 저장 payload 형식은 이전 CLI/export 호환성을 위해 유지한다. 파일 입력, persisted typed artifact, workbook 연결은 후속 작업이다.
 
 ## 6. 최신성·품질·복구 정책
 
@@ -199,7 +199,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #79이 병합된 기본 브랜치 `b6a25e1`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI와 로컬 candidate search는 제품 Gate D–G를 통과시키지 않는다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #80이 병합된 기본 브랜치 `c5c7886`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI와 로컬 candidate search는 제품 Gate D–G를 통과시키지 않는다.
 
 선행 순서는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 공통 시계열·최신성(E) → 원자료 XLSX(F) → 비교 XLSX(G) → 분석가 관찰`이다. 한 Gate의 완료 조건을 충족하지 못하면 그 Gate의 상태를 제한/미완료로 남기고 후속 제품 Gate를 완료 처리하지 않는다. 구현 checkpoint나 테스트 통과만으로 Gate 승격을 주장하지 않는다.
 

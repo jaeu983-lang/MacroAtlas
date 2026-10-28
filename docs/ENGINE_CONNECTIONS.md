@@ -1,6 +1,6 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-28, PR #79이 병합된 기본 브랜치 `b6a25e1` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+기준: 2026-10-28, PR #80이 병합된 기본 브랜치 `c5c7886` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
 transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
 별도이므로 전용 runner를 유지한다.
@@ -82,9 +82,9 @@ API chunk 계획만 반환하며 실행 queue가 아니다.
   runner가 직전 성공 결과의 payload와 evidence_refs를 전달한다. 현재 runner는 순차 실행이며 일반 DAG·분산 queue가 아니다.
 - 반환: `StageResult(status, payload, evidence_refs, warnings, error_code, retry_hint, retry_after_seconds)`.
   runner가 실행 전 RUNNING과 실행 후 결과·attempt/event를 SQLite에 저장한다.
-- typed 시계열 경계: World Bank GDP/WDI와 BOJ FXERD01 collection은 공통 `TimeSeries`/`Observation`
-  계약으로 payload 구조를 확인한다. 기존 task payload 저장 형식은 호환성을 위해 유지하며, BLS·Census·파일 및
-  workbook 경로는 아직 연결하지 않았다.
+- typed 시계열 경계: World Bank GDP/WDI, BOJ FXERD01, BLS, Census collection은 공통
+  `TimeSeries`/`Observation` 계약으로 payload 구조를 확인한다. 기존 task payload 저장 형식은 호환성을 위해
+  유지하며 파일 input과 workbook 경로는 아직 연결하지 않았다.
 - 성공이면 다음 stage로 간다. retryable이면 원래 task를 멈추고 Retry-After/시도 예산 후 같은 task를 resume한다.
   성공 prefix 재사용은 fingerprint·TTL·검증기를 모두 통과해야 한다.
 - 대용량 qualification은 task claim 전부터 workspace lock을 잡고 child worker에 상속한다. process가 강제 종료되면
