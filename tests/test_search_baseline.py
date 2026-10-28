@@ -4,7 +4,9 @@ from macro_data_platform.evaluation.cases import load_corpus
 from macro_data_platform.evaluation.search_baseline import (
     SearchPolicy,
     compare_development_policies,
+    compare_validation_policies,
     evaluate_development,
+    evaluate_split,
 )
 
 
@@ -87,7 +89,7 @@ def test_policy_comparison_uses_same_development_queries_and_reports_policy_hash
         for variant in case.query_variants
     ]
     assert seen == expected + expected
-    assert report["status"] == "DEVELOPMENT_COMPARISON_ONLY"
+    assert report["status"] == "SPLIT_COMPARISON_ONLY"
     assert report["baseline"]["case_sha256"] == report["candidate"]["case_sha256"]
     assert report["baseline"]["catalog_sha256"] == report["candidate"]["catalog_sha256"]
     assert report["baseline"]["policy_sha256"] != report["candidate"]["policy_sha256"]
@@ -100,3 +102,71 @@ def test_search_policy_rejects_out_of_range_thresholds():
 
     with pytest.raises(ValueError):
         SearchPolicy(minimum_score=100.1)
+
+
+def test_abstention_and_unmatched_behavior_are_reported_separately(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.rank_candidates",
+        lambda request, candidates, *, limit: [],
+    )
+
+    report = evaluate_development(corpus)
+    unrelated = report["groups"]["unrelated"]
+    rankable = report["groups"]["rankable"]
+    assert unrelated["unrelated_abstentions"] == unrelated["unrelated_queries"]
+    assert unrelated["unrelated_with_candidates"] == 0
+    assert rankable["relevant_missing_queries"] == rankable["rankable_queries"]
+    assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
+    assert report["execution_boundary"].startswith("offline_ranker_only")
+
+
+def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    case = next(
+        item
+        for item in corpus.cases
+        if item.split == "development" and item.case_type == "insufficient_evidence"
+    )
+    candidate_id = case.forbidden_candidate_ids[0]
+    candidate = next(item for item in corpus.candidates if item.candidate_id == candidate_id)
+
+    def rank(request, candidates, *, limit):
+        if request.request_id == case.case_id:
+            return [{"candidate": candidate, "score": 100, "match_status": "exact"}]
+        return []
+
+    monkeypatch.setattr("macro_data_platform.evaluation.search_baseline.rank_candidates", rank)
+    group = evaluate_development(corpus)["groups"]["insufficient_evidence"]
+    assert group["forbidden_candidate_returns"] == len(case.query_variants)
+    assert group["forbidden_exact_candidates"] == len(case.query_variants)
+    assert group["expected_state_matches"] == 0
+
+
+def test_validation_comparison_never_runs_holdout_and_marks_it_unmeasured(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    seen = []
+
+    def no_results(request, candidates, *, limit):
+        seen.append(request.request_id)
+        return []
+
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.rank_candidates", no_results
+    )
+    report = compare_validation_policies(
+        corpus,
+        SearchPolicy(version="baseline"),
+        SearchPolicy(version="candidate", minimum_score=70),
+    )
+    expected_cases = [case for case in corpus.cases if case.split == "validation"]
+    expected = [case.case_id for case in expected_cases for _ in case.query_variants]
+    assert seen == expected + expected
+    assert report["split"] == "validation"
+    assert "holdout" in report["not_measured"]
+    assert "validation" not in report["not_measured"]
+    assert report["baseline"]["input_sha256"] == report["candidate"]["input_sha256"]
+    import pytest
+
+    with pytest.raises(ValueError, match="Only development and validation"):
+        evaluate_split(corpus, split="holdout")

@@ -26,9 +26,15 @@ human review or human-observed usage.
 
 The v2 validator verifies structure, hashes, case-to-review links, evidence
 references, and split leakage. READY means the case corpus is complete and
-internally verified; it does not run a search engine, calculate ranking
-accuracy, or promote a search rule. The ranking evaluator and rule-promotion
-workflow are not implemented.
+internally verified; it does not run a search engine or promote a search rule.
+`macro-eval search-baseline` and `search-compare` run the existing lexical
+ranker offline against development cases. `search-validation` compares the same
+baseline and candidate policies on validation cases; no command evaluates
+holdout. Reports include ranking, expected state, missing relevant candidates,
+unrelated abstention, forbidden candidate returns, false-exact candidates, and
+structural field/status checks. Policy and input hashes identify each run. The
+evaluator has no action trace, so prohibited product actions remain unmeasured;
+these reports do not establish semantic equivalence or promotion eligibility.
 ## Legacy scaffold record
 
 `macro-eval feedback-draft` is the opt-in bridge for an accepted current
@@ -116,10 +122,9 @@ candidate status. Assistant authorship remains simulated provenance and cannot b
 
 ## Not implemented by this step
 
-The validator does not authenticate source evidence, run an engine, calculate
-answer/ranking accuracy, compare baseline and candidate rules, calculate
-false-confirmation rates, or approve a rule. The legacy synthetic cases exercise
-structure only; neither the v1 nor v2 cases have been scored by an engine. The
-v2 set is an AI-reviewed, source-backed regression fixture, not evidence of
-production ranking accuracy or analyst usability. Rule promotion and rollback
-remain explicit decisions with no automatic feedback-to-code path.
+The validator does not authenticate source evidence, calculate semantic
+equivalence or false-confirmation rates, or approve a rule. Development ranking
+scores on the v2 set are offline fixture measurements, not evidence of
+production accuracy or analyst usability. Holdout is not run by these commands.
+Rule promotion and rollback remain explicit decisions with no automatic
+feedback-to-code path.
