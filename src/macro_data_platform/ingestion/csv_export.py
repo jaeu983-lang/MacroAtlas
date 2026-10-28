@@ -22,8 +22,10 @@ from macro_data_platform.connectors.boj import (
     DATA_ENDPOINT,
     METADATA_ENDPOINT,
     BOJQuery,
+    BOJRangeQuery,
     parse_boj_metadata,
     parse_boj_observations,
+    parse_boj_range_observations,
 )
 from macro_data_platform.connectors.statistical_http import MAX_BYTES, ApiDownload
 from macro_data_platform.connectors.worldbank import Download, GDPQuery, parse_gdp
@@ -161,12 +163,14 @@ def _plan_by_engine(document, engines):
         "worldbank_validate": "validate",
         "boj_metadata": "metadata",
         "boj_observations": "collect",
+        "boj_observations_range": "collect",
     }
     if [row.get("stage_id") for row in plan] != [expected_stage_ids[engine] for engine in engines]:
         raise ValueError("unsupported_task_plan")
     expected_engine_versions = {
         "worldbank_collect_audit": "1", "worldbank_validate": "2",
         "boj_metadata": "1", "boj_observations": "2",
+        "boj_observations_range": "1",
     }
     if any(row.get("engine_version") != expected_engine_versions.get(row.get("engine"))
            for row in plan):
@@ -525,19 +529,38 @@ def _verified_download(
 
 
 def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
-    plans, stages = _plan_by_engine(document, ("boj_metadata", "boj_observations"))
+    plan = document.get("plan")
+    engines = [row.get("engine") for row in plan] if isinstance(plan, list) else []
+    if engines == ["boj_metadata", "boj_observations"]:
+        observation_engine = "boj_observations"
+    elif engines == ["boj_metadata", "boj_observations_range"]:
+        observation_engine = "boj_observations_range"
+    else:
+        raise ValueError("unsupported_task_plan")
+    plans, stages = _plan_by_engine(document, ("boj_metadata", observation_engine))
     metadata_request = plans[0].get("input_data")
     observation_request = plans[1].get("input_data")
-    if (
-        metadata_request != {"database": "FM08", "series_code": "FXERD01"}
-        or not isinstance(observation_request, dict)
-        or set(observation_request) != {"database", "series_code", "month"}
-        or observation_request.get("database") != "FM08"
-        or observation_request.get("series_code") != "FXERD01"
-    ):
+    if (metadata_request != {"database": "FM08", "series_code": "FXERD01"}
+            or not isinstance(observation_request, dict)
+            or observation_request.get("database") != "FM08"
+            or observation_request.get("series_code") != "FXERD01"):
         raise ValueError("unsupported_boj_query")
     try:
-        query = BOJQuery(observation_request["month"])
+        if observation_engine == "boj_observations":
+            if set(observation_request) != {"database", "series_code", "month"}:
+                raise ValueError
+            query = BOJQuery(observation_request["month"])
+            metadata_query = query
+        else:
+            if set(observation_request) != {
+                "database", "series_code", "start_month", "end_month",
+            }:
+                raise ValueError
+            query = BOJRangeQuery(
+                observation_request["start_month"], observation_request["end_month"],
+                observation_request["database"], observation_request["series_code"],
+            )
+            metadata_query = query.metadata_query
     except (TypeError, ValueError):
         raise ValueError("unsupported_boj_query") from None
     metadata_payload, data_payload = _payload(stages["metadata"]), _payload(stages["collect"])
@@ -582,7 +605,7 @@ def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
         metadata_manifest["content_type"],
         EvidenceKind(metadata_manifest["mode"]),
     )
-    metadata = parse_boj_metadata(metadata_download, query)
+    metadata = parse_boj_metadata(metadata_download, metadata_query)
     if any(
         metadata_payload.get(key) != metadata.get(key)
         for key in (
@@ -619,7 +642,9 @@ def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
         manifest["content_type"],
         EvidenceKind(manifest["mode"]),
     )
-    parsed = parse_boj_observations(data_download, query, metadata)
+    parsed = (parse_boj_observations(data_download, query, metadata)
+              if isinstance(query, BOJQuery)
+              else parse_boj_range_observations(data_download, query, metadata))
     with measure_current("quality"):
         freshness = assess_freshness(
             [row["date"] for row in parsed["observations"] if row["value"] is not None],
@@ -659,17 +684,16 @@ def _boj(connection, settings, task_id, document, *, freshness_policy, as_of):
         )
     ):
         raise ValueError("boj_stored_result_mismatch")
+    series_key = {"database": query.database, "series_code": query.series_code}
+    if isinstance(query, BOJQuery):
+        series_key["month"] = query.month
     source = {
         "source_agency": "Bank of Japan",
         "dataset_id": query.database,
         "series_id": query.series_code,
         "series_name": metadata["series_name"],
         "indicator_id": None,
-        "series_key": {
-            "database": query.database,
-            "series_code": query.series_code,
-            "month": query.month,
-        },
+        "series_key": series_key,
         "unit": metadata["unit"],
         "frequency": metadata["frequency"],
         "source_version": None,
@@ -923,7 +947,8 @@ def _export_task(settings: Settings, task_id: str, output, *, format="csv",
         if engines == ["worldbank_collect_audit", "worldbank_validate"]:
             dataset = _worldbank(connection, settings, task_id, document,
                                  freshness_policy=freshness_policy, as_of=evaluation_time)
-        elif engines == ["boj_metadata", "boj_observations"]:
+        elif engines in (["boj_metadata", "boj_observations"],
+                          ["boj_metadata", "boj_observations_range"]):
             dataset = _boj(connection, settings, task_id, document,
                             freshness_policy=freshness_policy, as_of=evaluation_time)
         else:

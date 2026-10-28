@@ -122,6 +122,24 @@ class StructuredCLITests(unittest.TestCase):
             self.assertEqual(result["observation_count"], 1)
             self.assertEqual(len(result["stages"]), 2)
 
+    def test_boj_fxer_range_cli_runs_one_bounded_series_range(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "pyproject.toml").write_text("[project]\nname='fixture'\n")
+            args = build_parser().parse_args([
+                "--project-root", directory, "collect", "boj-fxer-range",
+                "--start-month", "202609", "--end-month", "202610", "--live",
+            ])
+            status, result = dispatch(
+                args, boj_transport=BOJFixture(), clock=lambda: NOW,
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
+            self.assertEqual(status, 0)
+            self.assertEqual(result["status"], "COMPLETED")
+            self.assertEqual(result["source"], "boj")
+            self.assertEqual(result["series_code"], "FXERD01")
+            self.assertEqual(result["month_range"], ["202609", "202610"])
+            self.assertEqual(result["observation_count"], 1)
+
     def test_worldbank_task_is_an_explicit_confirmed_fixed_profile(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

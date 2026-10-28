@@ -2,9 +2,10 @@
 
 ## Supported scope
 
-The current adapter supports only BOJ database `FM08`, series `FXERD01`, and one calendar month per
-request. The verified example is September 2026. It does not support other databases, series, date
-ranges, `getDataLayer`, or automatic series discovery.
+The adapter supports only BOJ database FM08, series FXERD01. collect boj-fxer queries one
+calendar month; collect boj-fxer-range queries one to twelve consecutive months. Both paths use
+the same verified series identity and metadata contract. They do not support other databases,
+series, ranges longer than twelve months, getDataLayer, or automatic series discovery.
 
 The series metadata is retrieved from `/api/v1/getMetadata`; observations come from
 `/api/v1/getDataCode`. The adapter performs one HTTPS GET per Orchestrator stage. Metadata and data
@@ -37,6 +38,7 @@ From the repository root after installing the package:
 
 ```powershell
 .\.venv\Scripts\macroatlas.exe collect boj-fxer --month 202609 --live
+.\.venv\Scripts\macroatlas.exe collect boj-fxer-range --start-month 202609 --end-month 202610 --live
 .\.venv\Scripts\macroatlas.exe status <TASK_ID>
 .\.venv\Scripts\macroatlas.exe resume <TASK_ID> --live
 ```
@@ -48,7 +50,9 @@ are ignored by Git.
 
 ## Current limits
 
-The 2026-10-26 collector run completed with 30 daily rows and 11 preserved nulls. This confirms the
-fixed path only. Other BOJ series, long-range limits, license interpretation, a live changed revision,
-and natural provider failure/resume remain unverified. This adapter does not expand Gate C's accepted
-scope.
+The 2026-10-26 single-month collector run completed with 30 daily rows and 11 preserved nulls. The
+multi-month route is capped at twelve calendar months, well below the API manual's 60,000-point
+response limit; the live follow-up and fixture results are recorded in the decision log and runtime
+smoke report. Other BOJ series, ranges longer than twelve months, license interpretation, a live
+changed revision, and natural provider failure/resume remain unverified. Freshness-passed range tasks
+are revalidated by the existing CSV exporter; they do not expand Gate C's accepted scope.

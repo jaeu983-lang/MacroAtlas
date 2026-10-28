@@ -35,6 +35,7 @@ def build_engine_registry(
     from macro_data_platform.ingestion.boj import (
         BOJMetadataEngine,
         BOJObservationEngine,
+        BOJRangeObservationEngine,
         metadata_reusable,
     )
     from macro_data_platform.ingestion.census import CensusEngine
@@ -64,6 +65,8 @@ def build_engine_registry(
     registry.register("boj_metadata", "1", lambda: BOJMetadataEngine(settings, boj_transport),
                       reuse_validator=lambda spec, stage: metadata_reusable(spec, stage, settings))
     registry.register("boj_observations", "2", lambda: BOJObservationEngine(
+        settings, boj_transport, clock=clock, freshness_policy=policy))
+    registry.register("boj_observations_range", "1", lambda: BOJRangeObservationEngine(
         settings, boj_transport, clock=clock, freshness_policy=policy))
     registry.register("bls", "1", lambda: BLSEngine(
         settings, bls_transport, clock=clock, freshness_policy=policy))

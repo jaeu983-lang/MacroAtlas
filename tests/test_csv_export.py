@@ -116,6 +116,17 @@ class CSVExportTests(unittest.TestCase):
                 args, worldbank_transport=_WorldBankTransport(),
                 freshness_policy=HISTORICAL_FIXTURE_POLICY,
             )
+        elif provider == "boj_range":
+            args = build_parser().parse_args(
+                [
+                    "--project-root", str(self.root), "collect", "boj-fxer-range",
+                    "--start-month", "202609", "--end-month", "202610", "--live",
+                ]
+            )
+            status, summary = dispatch(
+                args, boj_transport=_BOJTransport(),
+                freshness_policy=HISTORICAL_FIXTURE_POLICY,
+            )
         else:
             args = build_parser().parse_args(
                 [
@@ -191,6 +202,21 @@ class CSVExportTests(unittest.TestCase):
         )
         self.assertEqual(manifest["export"]["sha256"], hashlib.sha256(raw).hexdigest())
         self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before)
+
+    def test_boj_range_csv_revalidates_manifest_and_preserves_daily_rows(self):
+        task_id = self._collect("boj_range")
+        status, result = self._export(task_id, "boj-range.csv")
+        self.assertEqual(status, 0)
+        rows = list(csv.DictReader(
+            io.StringIO((self.root / result["csv_path"]).read_text(encoding="utf-8-sig"))
+        ))
+        self.assertEqual([row["date"] for row in rows], ["2026-09-01", "2026-09-02"])
+        self.assertEqual([row["value"] for row in rows], ["159.77", ""])
+        self.assertEqual(rows[0]["freshness_frequency"], "daily")
+        manifest = json.loads((self.root / result["provenance_path"]).read_text())
+        self.assertEqual(manifest["source"]["series_key"], {
+            "database": "FM08", "series_code": "FXERD01",
+        })
 
     def test_fixture_stage_and_export_record_safe_performance_without_touching_task_db(self):
         task_id = self._collect("worldbank")
