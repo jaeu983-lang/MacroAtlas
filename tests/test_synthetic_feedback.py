@@ -5,7 +5,7 @@ import pytest
 from macro_data_platform.config import Settings
 from macro_data_platform.evaluation.cases import load_corpus
 from macro_data_platform.evaluation.synthetic_feedback import SyntheticFeedbackStore
-from macro_data_platform.evaluation.synthetic_gpt import _call_gpt, generate
+from macro_data_platform.evaluation.synthetic_gpt import _call_gpt, _response_text, generate
 from macro_data_platform.evaluation.synthetic_gpt import main as gpt_main
 
 
@@ -134,3 +134,9 @@ def test_missing_api_key_does_not_create_database_or_call_gpt(tmp_path, monkeypa
     assert gpt_main(["--project-root", str(tmp_path), "--model", "test-model", "--live"]) == 1
     assert "OPENAI_API_KEY" in capsys.readouterr().out
     assert not (tmp_path / "data" / "synthetic_feedback.sqlite").exists()
+
+
+@pytest.mark.parametrize("payload", [[], {"output": [None]}, {"output": [{"type": "message", "content": [None]}]}])
+def test_malformed_gpt_response_is_rejected(payload):
+    with pytest.raises((ValueError, TypeError), match="invalid structured response"):
+        _response_text(payload)

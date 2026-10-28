@@ -32,9 +32,13 @@ REVIEW_INSTRUCTION = (
 
 
 def _response_text(payload):
+    if not isinstance(payload, dict) or not isinstance(payload.get("output"), list):
+        raise TypeError("GPT returned an invalid structured response")
     pieces = [part.get("text") for item in payload.get("output", [])
-              if item.get("type") == "message" for part in item.get("content", [])
-              if part.get("type") == "output_text" and isinstance(part.get("text"), str)]
+              if isinstance(item, dict) and item.get("type") == "message"
+              and isinstance(item.get("content"), list) for part in item["content"]
+              if isinstance(part, dict) and part.get("type") == "output_text"
+              and isinstance(part.get("text"), str)]
     if len(pieces) != 1 or len(pieces[0]) > 100_000:
         raise ValueError("GPT returned an invalid structured response")
     try:
@@ -68,7 +72,8 @@ def _call_gpt(key, model, instruction, data):
         payload = json.loads(body)
     except (ValueError, UnicodeDecodeError) as exc:
         raise ValueError("GPT returned invalid JSON") from exc
-    return _response_text(payload), payload.get("usage", {})
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    return _response_text(payload), usage if isinstance(usage, dict) else {}
 
 
 def generate(settings, *, model, count, api_key, call=_call_gpt):
