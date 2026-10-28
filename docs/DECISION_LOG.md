@@ -1016,3 +1016,7 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 ## D-123 — 명시 매핑 파일 시계열에 freshness 적용
 
 2026-10-28. 기존 `TabularFileEngine`은 `series_mapping`이 주어진 파일을 `TimeSeries`로 구조 검증했지만 최신 관측기간 평가는 하지 않았다. 명시된 cadence와 `ObservationStatus.OBSERVED` 값의 최신 period만 공통 freshness evaluator에 전달한다. series identity는 source agency/dataset/series/dimensions를 포함한 canonical key를 만들어 exact override 결합에 사용한다. `FRESH`는 quality evidence를 결과에 포함하고, `STALE` 또는 `FRESHNESS_UNVERIFIED`는 archive/raw/manifest 참조를 보존하면서 `NEEDS_REVIEW`로 막는다. freshness가 없거나 cadence가 미상인 일반 unmapped 파일은 기존 수집 동작을 유지한다. 검증은 고정 clock/fixture 테스트이며 실제 기관 release calendar를 검증하지 않았다. Typed observations 자체의 영속화/export, source-specific approved evidence와 Gate E 완료 판정은 남아 있다.
+
+## D-124 — freshness 통과 시 typed series artifact 영속화
+
+2026-10-28. 공통 `TimeSeries`/`Observation`을 adapter가 검사하더라도 task history payload만으로는 재사용 가능한 artifact 계약이 부족했다. 성공한 World Bank GDP/WDI, BOJ observation/range, BLS, Census, 명시 매핑 file series를 `data/processed/typed_series/`에 schema-versioned JSON으로 보존한다. 각 artifact는 freshness/quality 상태, source raw/manifest path를 포함하고 sidecar manifest에는 artifact와 source raw/manifest byte hashes 및 counts를 기록한다. reader는 artifact, sidecar, source files의 hash와 typed contract/freshness를 재검증한다. Stale/unverified 또는 품질 실패 결과는 artifact로 저장하지 않고 raw 증거만 유지한다. 값은 원본 표기·`0`·결측 상태를 보존하며 자동 변환하지 않는다. 검증은 fixtures 기반 offline 테스트이며 기관별 release calendar evidence, artifact를 이용한 XLSX export, Gate E 완료는 이 변경 범위가 아니다.

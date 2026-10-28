@@ -22,6 +22,7 @@ from macro_data_platform.ingestion.freshness import (
     assess_freshness,
 )
 from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore, inspect_file
+from macro_data_platform.ingestion.typed_series import persist_typed_series_result
 from macro_data_platform.metadata.series import normalize_tabular_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.performance.metrics import current_metrics
@@ -264,6 +265,10 @@ class TabularFileEngine:
                     (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
                     (issue, freshness["status"]), ErrorCode.QUALITY_FAILURE,
                 )
+            return persist_typed_series_result(
+                self.settings, payload=payload, series=(typed,), engine_id="tabular_file/1",
+                refs=(saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),
+            )
         return StageResult(
             StageStatus.SUCCEEDED, payload,
             (saved["raw_path"], saved["normalized_path"], saved["manifest_path"]),

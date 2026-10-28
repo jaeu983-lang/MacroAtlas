@@ -119,7 +119,10 @@ def test_complete_request_to_mock_download_preserves_raw_and_metadata(setup, mod
         assert delivered["collection"] == parsed
         assert delivered["links"][0]["url"] == GDPQuery().url
         assert result["stages"][1]["result"]["evidence_refs"] == [
-            parsed["raw_path"], parsed["manifest_path"]]
+            parsed["raw_path"], parsed["manifest_path"],
+            parsed["typed_series_artifact"]["typed_series_path"],
+            parsed["typed_series_artifact"]["typed_series_manifest_path"],
+        ]
     assert handler.run(task["task_id"]) == result
     assert len(transport.calls) == 1
     assert HistoryStore(settings).get(task["task_id"]) == result

@@ -8,6 +8,7 @@ from macro_data_platform.connectors.statistical_http import ApiDownload, SourceF
 from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.statistical_quality import validate_census_result
+from macro_data_platform.ingestion.typed_series import persist_typed_series_result
 from macro_data_platform.metadata.series import normalize_census_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
@@ -74,7 +75,7 @@ class CensusEngine:
                                warnings=("Census raw response preservation failed.",))
         parsed.update({**saved, "mode": download.kind.value})
         try:
-            normalize_census_series(parsed)
+            typed_series = normalize_census_series(parsed)
         except (TypeError, ValueError):
             return StageResult(
                 StageStatus.NEEDS_REVIEW, parsed, (saved["raw_path"], saved["manifest_path"]),
@@ -96,6 +97,8 @@ class CensusEngine:
                 (saved["raw_path"], saved["manifest_path"]),
                 tuple(quality["warnings"] + quality["issues"]), ErrorCode.QUALITY_FAILURE,
             )
-        return StageResult(StageStatus.SUCCEEDED, parsed,
-                           (saved["raw_path"], saved["manifest_path"]),
-                           tuple(quality["warnings"]))
+        return persist_typed_series_result(
+            self.settings, payload=parsed, series=typed_series, engine_id="census/1",
+            refs=(saved["raw_path"], saved["manifest_path"]),
+            warnings=tuple(quality["warnings"]),
+        )

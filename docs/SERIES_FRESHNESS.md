@@ -75,8 +75,13 @@ The shared evaluator is connected to the current World Bank, BLS, Census, BOJ,
 and explicitly mapped local tabular-file paths. A file mapping must declare its
 period/value columns and cadence; the runtime does not infer these fields. A
 stale or unverified mapped file is preserved for review and does not complete
-successfully. CSV revalidation/export currently supports the World Bank and BOJ
-task formats. These are local deterministic tests and code-path
+successfully. Successful API series and mapped-file series are saved under
+`data/processed/typed_series/` as JSON artifacts. Their contract records link
+the raw response and source manifest, and a separate manifest records hashes of
+the typed artifact and both source files. Artifact loading rechecks all of those
+hashes and freshness states. CSV revalidation/export currently supports the
+World Bank and BOJ task formats; no typed-artifact XLSX exporter is connected.
+These are local deterministic tests and code-path
 coverage; they do not establish live API freshness behavior or validate each
 source's publication calendar. Unmapped generic tabular data has no normalized
 series-frequency contract and is not covered by this gate. Bloomberg is not an

@@ -137,6 +137,7 @@ def test_engine_persists_raw_before_returning_validated_series(tmp_path):
     assert [row["value"] for row in result.payload["observations"]] == [41288599, None]
     assert (tmp_path / result.payload["raw_path"]).read_bytes() == transport.result.body
     assert json.loads((tmp_path / result.payload["manifest_path"]).read_text())["source_url"] == QUERY.url
+    assert (tmp_path / result.payload["typed_series_artifact"]["typed_series_path"]).is_file()
 
 
 def test_engine_withholds_stale_observations_but_retains_source_bytes(tmp_path):

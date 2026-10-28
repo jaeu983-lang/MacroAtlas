@@ -85,6 +85,9 @@ class BLSTests(unittest.TestCase):
             manifest = Path(directory, result.payload["manifest_path"]).read_text()
             self.assertNotIn("registrationkey", manifest.lower())
             self.assertTrue(Path(directory, result.payload["raw_path"]).exists())
+            self.assertTrue(Path(
+                directory, result.payload["typed_series_artifact"]["typed_series_path"],
+            ).is_file())
 
     def test_network_disabled_before_transport(self):
         transport = FixtureTransport(download(BLS_URL, self.body))
@@ -139,6 +142,9 @@ class CensusTests(unittest.TestCase):
             self.assertNotIn('"key"', serialized)
             self.assertNotIn("registrationkey", serialized)
             self.assertNotIn("api.census.gov/data/2022/acs/acs1?", manifest["source_url"])
+            self.assertTrue(Path(
+                directory, result.payload["typed_series_artifact"]["typed_series_path"],
+            ).is_file())
 
     def test_orchestrator_runs_both_sources(self):
         with tempfile.TemporaryDirectory() as directory:
