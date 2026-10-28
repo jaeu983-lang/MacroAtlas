@@ -2,6 +2,7 @@
 
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -68,7 +69,15 @@ def _rollback_event(event_id, acceptance_event_id, *, rollback_commit="b" * 40):
 
 
 def test_current_gate_c_evidence_is_hash_bound_and_privacy_minimal():
-    evidence = promotion.load_gate_c_evidence(REPO_ROOT)
+    manifest = json.loads((REPO_ROOT / ARTIFACTS["manifest"]).read_text(encoding="utf-8"))
+    candidate_revision = manifest["repository_revision"]
+    revision_available = subprocess.run(
+        ["git", "cat-file", "-e", f"{candidate_revision}^{{commit}}"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+    ).returncode == 0
+    evidence = promotion.load_gate_c_evidence(REPO_ROOT, verify_git=revision_available)
     assert evidence["gate_c_status"] == "PASS"
     assert evidence["gate_c_passed"] is True
     assert evidence["metrics"]["confirmation_trace"]["candidate"][
@@ -76,11 +85,11 @@ def test_current_gate_c_evidence_is_hash_bound_and_privacy_minimal():
     ] == 0
     assert evidence["metrics"]["timing"]["candidate"]["sample_count"] == 360
     assert "question" not in json.dumps(evidence).lower()
-    promotion._historical_git_verify(REPO_ROOT, {"body": {"evidence": evidence}})
-
-    altered = evidence | {"gate_c_passed": False}
-    with pytest.raises(ValueError, match="snapshot does not match"):
-        promotion._historical_git_verify(REPO_ROOT, {"body": {"evidence": altered}})
+    if revision_available:
+        promotion._historical_git_verify(REPO_ROOT, {"body": {"evidence": evidence}})
+        altered = evidence | {"gate_c_passed": False}
+        with pytest.raises(ValueError, match="snapshot does not match"):
+            promotion._historical_git_verify(REPO_ROOT, {"body": {"evidence": altered}})
 
 
 def test_changed_gate_c_artifact_fails_hash_binding(tmp_path):
