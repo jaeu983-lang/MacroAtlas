@@ -1,0 +1,14 @@
+{
+  "fixture_notice": "SYNTHETIC records. No live series or endpoint verification.",
+  "mappings": {"frequency": {"A": "annual", "Q": "quarterly", "M": "monthly"}, "unit": {"USD": "current USD"}},
+  "datasets": [
+    {"id": "2", "series": [
+      {"label": {"en": "GDP (current US$)", "ko": "국내총생산"},
+       "definition": {"en": "Synthetic fixture of GDP at current prices in US dollars."},
+       "concept_id": "gdp", "price_basis":"nominal", "measure":"level",
+       "series_key": {"source":"2","country":"USA","indicator":"NY.GDP.MKTP.CD"},
+       "countries": ["USA"], "dimensions": {}, "available_start":"2020","available_end":"2022",
+       "availability_status":"available", "auth_requirement":"none", "scope":"total_economy"}
+    ]}
+  ]
+}

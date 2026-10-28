@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "fred.gdp",
+    "institution_id": "US-02",
+    "dataset_id": "GDP",
+    "title": "FRED GDP observation page",
+    "access_method": "api",
+    "adapter_id": "fred_observations",
+    "validator_id": "fred_page",
+    "source_url": "https://api.stlouisfed.org/fred/series/observations",
+    "documentation_urls": [
+      "https://fred.stlouisfed.org/docs/api/fred/series_observations.html"
+    ],
+    "fixed_parameters": [
+      [
+        "series_id",
+        "GDP"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      "."
+    ],
+    "notes": [
+      "An explicit page, not full history; unit/frequency and original agency require metadata."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "d20a7dd4037ca68d952194f3e95ace5b53ee9ca8dbf6784a6045d1ab41f80dc6",
+  "raw": {
+    "institution_id": "US-02",
+    "raw_path": "data/raw/api/US-02/37d0e8a60d4a41c6a643000f8086559e/response.json",
+    "manifest_path": "data/raw/api/US-02/37d0e8a60d4a41c6a643000f8086559e/request.json",
+    "raw_sha256": "5dd18e7cd7158a1a7e362d0eb208824636e1fc77633394b435c7b1553af8f849",
+    "manifest_sha256": "446051b6ed4885391ecb985a18e999364fc740069b86ffd31e63fa84fe705943"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 7,
+    "scope": "explicit_page_only",
+    "source_count": 7,
+    "offset": 0,
+    "limit": 8,
+    "complete_dataset_assessed": false
+  },
+  "run_evidence": "source_request_not_live_verified",
+  "request_parameters": [
+    {
+      "name": "series_id",
+      "value": "GDP"
+    },
+    {
+      "name": "observation_start",
+      "value": "2024-01-01"
+    },
+    {
+      "name": "observation_end",
+      "value": "2025-12-31"
+    },
+    {
+      "name": "limit",
+      "value": "8"
+    },
+    {
+      "name": "offset",
+      "value": "0"
+    },
+    {
+      "name": "realtime_start",
+      "value": "2025-12-31"
+    },
+    {
+      "name": "realtime_end",
+      "value": "2025-12-31"
+    },
+    {
+      "name": "file_type",
+      "value": "json"
+    }
+  ]
+}

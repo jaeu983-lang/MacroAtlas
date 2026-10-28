@@ -1,0 +1,33 @@
+{
+  "evidence": "recorded_live_metadata_http_entity_bytes",
+  "source": "insee-nature",
+  "file": "recorded_insee_nature.xml",
+  "original_report": "reports/iteration_33_api_metadata_3aa7f72656bd4d6c82eca3908d4a8608.json",
+  "sha256": "5df95d6e01eb84877c474b9d8e56fb4165cb72de32738183f40c485c5b8fcbc1",
+  "source_url": "https://bdm.insee.fr/series/sdmx/codelist/FR1/CL_NATURE/1.0",
+  "retrieved_at": "2026-10-25T11:56:00.635390+00:00",
+  "content_type": "application/xml;charset=UTF-8",
+  "representation": "http_entity_bytes_after_requests_content_decoding",
+  "validation": {
+    "status": "metadata_contract_validated",
+    "scope": "metadata_only",
+    "observations_accepted": false,
+    "complete_dataset_assessed": false,
+    "reason": "selected_metadata_present",
+    "entry_count": 1,
+    "selected": {
+      "kind": "Codelist",
+      "agency": "FR1",
+      "id": "CL_NATURE",
+      "version": "1.0"
+    },
+    "structure_counts": {
+      "dataflows": 0,
+      "datastructures": 0,
+      "codelists": 1
+    },
+    "warnings": []
+  },
+  "credential_scan": "pass",
+  "pii_review": "Public codelist metadata; no personal data selected."
+}

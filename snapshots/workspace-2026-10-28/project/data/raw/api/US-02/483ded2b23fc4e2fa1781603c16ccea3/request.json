@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "institution_id": "US-02",
+  "source_agency": "FRED",
+  "api_provider": "Federal Reserve Bank of St. Louis (FRED)",
+  "source_url": "https://api.stlouisfed.org/fred/series/observations",
+  "operation": "observations_page",
+  "http_method": "GET",
+  "dataset_id": "GDP",
+  "series_id": "GDP",
+  "retrieved_at": "2026-10-25T07:53:16.116196+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/json",
+  "mode": "api_response",
+  "representation": "Sanitized JSON payload serialized as canonical UTF-8; not original HTTP bytes.",
+  "representation_code": "sanitized_json_payload_canonical_utf8",
+  "request_parameters": [
+    {
+      "name": "series_id",
+      "value": "GDP"
+    },
+    {
+      "name": "observation_start",
+      "value": "2023-01-01"
+    },
+    {
+      "name": "observation_end",
+      "value": "2023-12-31"
+    },
+    {
+      "name": "limit",
+      "value": "1000"
+    },
+    {
+      "name": "offset",
+      "value": "0"
+    },
+    {
+      "name": "realtime_start",
+      "value": "2024-01-01"
+    },
+    {
+      "name": "realtime_end",
+      "value": "2024-01-01"
+    },
+    {
+      "name": "file_type",
+      "value": "json"
+    }
+  ],
+  "byte_count": 390,
+  "raw_sha256": "f485404daec5b5a858f8267c67de86c3ddcc5c4088d2e0895fc091d2fe6a8bd8",
+  "raw_filename": "response.json",
+  "access_method": "api",
+  "original_source_agency": null,
+  "source_role": "API provider; original agency requires release/source metadata.",
+  "raw_path": "data/raw/api/US-02/483ded2b23fc4e2fa1781603c16ccea3/response.json"
+}

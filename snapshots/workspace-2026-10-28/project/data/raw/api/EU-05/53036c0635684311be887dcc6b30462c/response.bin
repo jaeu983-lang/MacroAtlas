@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC Iteration 33 fixture; no live response or code semantics claim. -->
+<m:Structure xmlns:m="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:s="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure" xmlns:c="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common">
+<m:Header><m:ID>synthetic-insee-nature</m:ID></m:Header>
+<m:Structures><s:Codelists><s:Codelist agencyID="FR1" id="CL_NATURE" version="1.0"><c:Name xml:lang="en">Synthetic nature</c:Name><s:Code id="SYNTHETIC"><c:Name xml:lang="en">Test only</c:Name></s:Code></s:Codelist></s:Codelists></m:Structures>
+</m:Structure>

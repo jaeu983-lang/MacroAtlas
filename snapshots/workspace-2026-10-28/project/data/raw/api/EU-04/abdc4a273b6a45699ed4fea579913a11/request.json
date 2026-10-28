@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "institution_id": "EU-04",
+  "source_agency": "Bank of England",
+  "api_provider": null,
+  "source_url": "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=01%2FJan%2F2024&Dateto=10%2FJan%2F2024&SeriesCodes=IUDBEDR&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N",
+  "operation": "official_csv_download",
+  "http_method": "GET",
+  "dataset_id": "IUDBEDR",
+  "series_id": "IUDBEDR",
+  "retrieved_at": "2026-10-25T08:30:57.669846+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/csv",
+  "mode": "live_ingestion",
+  "representation": "HTTP entity bytes after requests content decoding; not wire bytes.",
+  "representation_code": "http_entity_bytes_after_requests_content_decoding",
+  "request_parameters": [
+    {
+      "name": "csv.x",
+      "value": "yes"
+    },
+    {
+      "name": "Datefrom",
+      "value": "01/Jan/2024"
+    },
+    {
+      "name": "Dateto",
+      "value": "10/Jan/2024"
+    },
+    {
+      "name": "SeriesCodes",
+      "value": "IUDBEDR"
+    },
+    {
+      "name": "CSVF",
+      "value": "TN"
+    },
+    {
+      "name": "UsingCodes",
+      "value": "Y"
+    },
+    {
+      "name": "VPD",
+      "value": "Y"
+    },
+    {
+      "name": "VFD",
+      "value": "N"
+    }
+  ],
+  "byte_count": 140,
+  "raw_sha256": "3c89f149a060f9a2de361fd3d04a27e3d9af4ef955b66e51ad83d68a1acf9bcd",
+  "raw_filename": "response.csv",
+  "access_method": "official_file",
+  "file_provider": "Bank of England",
+  "source_format": "csv",
+  "etag": null,
+  "last_modified": null,
+  "raw_path": "data/raw/api/EU-04/abdc4a273b6a45699ed4fea579913a11/response.csv"
+}

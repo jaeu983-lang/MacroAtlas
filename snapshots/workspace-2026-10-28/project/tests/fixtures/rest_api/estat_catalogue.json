@@ -1,0 +1,7 @@
+{
+  "GET_STATS_LIST": {
+    "RESULT": {"STATUS": 0, "ERROR_MSG": "Synthetic fixture"},
+    "PARAMETER": {"appId": "fixture-estat-credential", "LANG": "E", "LIMIT": 1},
+    "DATALIST_INF": {"NUMBER": 100, "RESULT_INF": {"FROM_NUMBER": 1, "TO_NUMBER": 1, "NEXT_KEY": 2}, "TABLE_INF": {"@id": "0000000001", "TITLE": {"$": "Synthetic English catalogue fixture"}}}
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "evidence": "recorded_live_metadata_http_entity_bytes",
+  "original_report": "reports/iteration_32_api_metadata_d958c5fd6a3147feb447934205031f52.json",
+  "sources": [
+    {
+      "source": "bis",
+      "file": "recorded_bis.xml",
+      "source_url": "https://stats.bis.org/api/v2/structure/dataflow/BIS/WS_TC/2.0",
+      "retrieved_at": "2026-10-25T11:37:14.141989+00:00",
+      "sha256": "451319d21ed316ef7740807c4401c73b4ff03078b0a1da9e4e1010309b4771e1",
+      "content_type": "application/xml;charset=UTF-8",
+      "representation": "http_entity_bytes_after_requests_content_decoding",
+      "initial_validation_status": "live_metadata_validated",
+      "pii_review": "Public structural metadata; no personal records selected; no credentials sent; configured credential scan passed."
+    },
+    {
+      "source": "oecd",
+      "file": "recorded_oecd.xml",
+      "source_url": "https://sdmx.oecd.org/public/rest/v1/dataflow/OECD.SDD.NAD/DSD_NAMAIN1@DF_QNA/1.1",
+      "retrieved_at": "2026-10-25T11:37:15.209885+00:00",
+      "sha256": "253156e518e44b328605534081f29d98a5a471c73466588baea5ff4db6d398bc",
+      "content_type": "application/vnd.sdmx.structure+xml; version=2.1; charset=utf-8",
+      "representation": "http_entity_bytes_after_requests_content_decoding",
+      "initial_validation_status": "live_metadata_validated",
+      "pii_review": "Public structural metadata; no personal records selected; no credentials sent; configured credential scan passed."
+    },
+    {
+      "source": "ecb",
+      "file": "recorded_ecb.xml",
+      "source_url": "https://data-api.ecb.europa.eu/service/datastructure/ECB/ECB_EXR1/1.0",
+      "retrieved_at": "2026-10-25T11:37:16.779728+00:00",
+      "sha256": "6ccf83db9654b581b051c85c41c44e9b9884755c90819f084c5c52d001e93539",
+      "content_type": "application/vnd.sdmx.structure+xml;version=2.1",
+      "representation": "http_entity_bytes_after_requests_content_decoding",
+      "initial_validation_status": "source_metadata_needs_review",
+      "pii_review": "Public structural metadata; no personal records selected; no credentials sent; configured credential scan passed."
+    },
+    {
+      "source": "eurostat",
+      "file": "recorded_eurostat.xml",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/dataflow/ESTAT/NAMA_10_GDP/1.0",
+      "retrieved_at": "2026-10-25T11:37:18.067894+00:00",
+      "sha256": "34d55dbfdb4853f02bfb9e72418212dc6e58a457a04ed71ab85ee60c18c83a86",
+      "content_type": "application/vnd.sdmx.structure+xml;version=2.1",
+      "representation": "http_entity_bytes_after_requests_content_decoding",
+      "initial_validation_status": "live_metadata_validated",
+      "pii_review": "Public structural metadata; no personal records selected; no credentials sent; configured credential scan passed."
+    },
+    {
+      "source": "bundesbank",
+      "file": "recorded_bundesbank.xml",
+      "source_url": "https://api.statistiken.bundesbank.de/rest/metadata/dataflow/BBK/BBEX3",
+      "retrieved_at": "2026-10-25T11:37:19.251381+00:00",
+      "sha256": "bed7d676637cf41d9cbd404d16139da2c382d627099bc45235ebd4e805483b47",
+      "content_type": "application/vnd.sdmx.structure+xml;version=2.1",
+      "representation": "http_entity_bytes_after_requests_content_decoding",
+      "initial_validation_status": "live_metadata_validated",
+      "pii_review": "Public structural metadata; no personal records selected; no credentials sent; configured credential scan passed."
+    }
+  ]
+}

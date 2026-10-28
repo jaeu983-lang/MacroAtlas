@@ -1,0 +1,258 @@
+{
+  "evidence": "synthetic_fixture",
+  "started_at": "2026-10-25T11:36:29.140122+00:00",
+  "status": "completed",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "bis",
+    "oecd",
+    "ecb",
+    "eurostat",
+    "bundesbank",
+    "insee"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 0,
+    "automatic_retries": 0,
+    "concurrency": 1,
+    "per_source_maximum": 1
+  },
+  "results": [
+    {
+      "source": "bis",
+      "institution_id": "INT-02",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "INT-02",
+        "raw_path": "data/raw/api/INT-02/f1cbd79ad7c44740b09aa8ece183f96d/response.bin",
+        "manifest_path": "data/raw/api/INT-02/f1cbd79ad7c44740b09aa8ece183f96d/request.json",
+        "raw_sha256": "92f445d1f030f21895209d2a81cc283aa825f6845cfe1e991e443bee74cc5cae",
+        "manifest_sha256": "036c0a5afd6308286cf6857040e1be4489f17a607c6164c0353fb7fda6d067ca"
+      },
+      "http_status": 200,
+      "stored_bytes": 783,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "BIS",
+          "id": "WS_TC",
+          "version": "2.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:WS_TC"
+        ]
+      }
+    },
+    {
+      "source": "oecd",
+      "institution_id": "INT-03",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "INT-03",
+        "raw_path": "data/raw/api/INT-03/cf26cb359bd34a31964dd8dda16602ab/response.bin",
+        "manifest_path": "data/raw/api/INT-03/cf26cb359bd34a31964dd8dda16602ab/request.json",
+        "raw_sha256": "7c78df14d54b09ccd0ca9c2257d0e90ffbde803bbefa0bebcc6afae8d7740d2c",
+        "manifest_sha256": "f58a1ccc5dcd3c8b0b40e2f10b5f6661c24849d13193e7b16df1aca9d1b07ad6"
+      },
+      "http_status": 200,
+      "stored_bytes": 825,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "OECD.SDD.NAD",
+          "id": "DSD_NAMAIN1@DF_QNA",
+          "version": "1.1"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:DSD_NAMAIN1@DF_QNA"
+        ]
+      }
+    },
+    {
+      "source": "ecb",
+      "institution_id": "EU-01",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-01",
+        "raw_path": "data/raw/api/EU-01/48f4992d7a574eb99f7b1655b7f02d33/response.bin",
+        "manifest_path": "data/raw/api/EU-01/48f4992d7a574eb99f7b1655b7f02d33/request.json",
+        "raw_sha256": "a9c46760e3b9e0be6a43aea91197d75186d10a4e010a165c5a9f8174cde76f3b",
+        "manifest_sha256": "7fc2ceeb2d94e3003ea8feab1bfa42fae0a50c2f926a74e4ad358eaea862ce9e"
+      },
+      "http_status": 200,
+      "stored_bytes": 879,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "DataStructure",
+          "agency": "ECB",
+          "id": "ECB_EXR1",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 0,
+          "datastructures": 1,
+          "codelists": 0
+        },
+        "warnings": []
+      }
+    },
+    {
+      "source": "eurostat",
+      "institution_id": "EU-02",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-02",
+        "raw_path": "data/raw/api/EU-02/b1a76d63a5e543e29dd4aa6b80f2e90b/response.bin",
+        "manifest_path": "data/raw/api/EU-02/b1a76d63a5e543e29dd4aa6b80f2e90b/request.json",
+        "raw_sha256": "3d28785810df9ee1d006995a09a3e0de0f2273a0e991c56bdf45f7db88128a8b",
+        "manifest_sha256": "ca08edb768cb8fe2fa05500ec7897127faf29c157752b1971a9c6c75a2df6a2a"
+      },
+      "http_status": 200,
+      "stored_bytes": 805,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "ESTAT",
+          "id": "NAMA_10_GDP",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:NAMA_10_GDP"
+        ]
+      }
+    },
+    {
+      "source": "bundesbank",
+      "institution_id": "EU-03",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-03",
+        "raw_path": "data/raw/api/EU-03/6a8bc358e8894cae9e048df1151cbb96/response.bin",
+        "manifest_path": "data/raw/api/EU-03/6a8bc358e8894cae9e048df1151cbb96/request.json",
+        "raw_sha256": "35cbe664e1ffe1a32b92c73caf3d0b94a8f113cf338463b8d7a61a8717e55261",
+        "manifest_sha256": "c0a90138a47bd136f4505b849024c6ffd053585374cd912a0abc9e454b62357d"
+      },
+      "http_status": 200,
+      "stored_bytes": 797,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "Dataflow",
+          "agency": "BBK",
+          "id": "BBEX3",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 1,
+          "datastructures": 0,
+          "codelists": 0
+        },
+        "warnings": [
+          "unresolved_dsd:BBEX3"
+        ]
+      }
+    },
+    {
+      "source": "insee",
+      "institution_id": "EU-05",
+      "request_count": 0,
+      "mock_requests": 1,
+      "status": "fixture_metadata_validated",
+      "artifact": {
+        "institution_id": "EU-05",
+        "raw_path": "data/raw/api/EU-05/e14064e3711945daa082ef668e06eb7d/response.bin",
+        "manifest_path": "data/raw/api/EU-05/e14064e3711945daa082ef668e06eb7d/request.json",
+        "raw_sha256": "b216c53e5a44baddf4505a19a02fe8a3e1e3fce644ee76ffb0636d8d96dc9f54",
+        "manifest_sha256": "50df4a81146ff0b378eb899c943eda4d107290e2de9f95ebf5c99ccf912e0665"
+      },
+      "http_status": 200,
+      "stored_bytes": 890,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "reason": "selected_metadata_present",
+        "entry_count": 1,
+        "selected": {
+          "kind": "DataStructure",
+          "agency": "FR1",
+          "id": "IPC-2015-COICOP",
+          "version": "1.0"
+        },
+        "structure_counts": {
+          "dataflows": 0,
+          "datastructures": 1,
+          "codelists": 0
+        },
+        "warnings": []
+      }
+    }
+  ],
+  "finished_at": "2026-10-25T11:36:29.346803+00:00"
+}

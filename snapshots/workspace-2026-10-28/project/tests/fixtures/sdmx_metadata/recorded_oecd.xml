@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--NSI Web Service v10.11.8.0-->
+<message:Structure xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:structure="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure" xmlns:common="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common">
+  <message:Header>
+    <message:ID>IDREF1418</message:ID>
+    <message:Test>false</message:Test>
+    <message:Prepared>2026-10-25T12:37:14.5135401+01:00</message:Prepared>
+    <message:Sender id="Unknown" />
+    <message:Receiver id="Unknown" />
+  </message:Header>
+  <message:Structures>
+    <structure:Dataflows>
+      <structure:Dataflow id="DSD_NAMAIN1@DF_QNA" agencyID="OECD.SDD.NAD" version="1.1" isFinal="true">
+        <common:Annotations>
+          <common:Annotation>
+            <common:AnnotationType>NonProductionDataflow</common:AnnotationType>
+            <common:AnnotationText xml:lang="en">true</common:AnnotationText>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>TRANSACTION,SECTOR,COMBINED_UNIT_MEASURE</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_ROW</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>TIME_PERIOD</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_COLUMN</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>REF_AREA,ADJUSTMENT,UNIT_MEASURE,PRICE_BASE,TRANSFORMATION</common:AnnotationTitle>
+            <common:AnnotationType>LAYOUT_ROW_SECTION</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>TRANSFORMATION=N,ACTIVITY=(_T+_Z),EXPENDITURE=(_T+_Z),COUNTERPART_SECTOR,OBS_STATUS=A,CONF_STATUS=F,ADJUSTMENT=N</common:AnnotationTitle>
+            <common:AnnotationType>NOT_DISPLAYED</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>FREQ=Q,REF_AREA=AUT,LASTNPERIODS=5,INSTR_ASSET=_Z,TABLE_IDENTIFIER=T0102</common:AnnotationTitle>
+            <common:AnnotationType>DEFAULT</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation>
+            <common:AnnotationTitle>COMBINED_TRANSACTION:TRANSACTION,SECTOR;COMBINED_UNIT_MEASURE:REF_YEAR_PRICE,UNIT_MULT,CURRENCY</common:AnnotationTitle>
+            <common:AnnotationType>COMBINED_CONCEPTS</common:AnnotationType>
+            <common:AnnotationText xml:lang="en">COMBINED_TRANSACTION:Combined transaction;COMBINED_UNIT_MEASURE:Combined unit of measure</common:AnnotationText>
+            <common:AnnotationText xml:lang="fr">COMBINED_TRANSACTION:Transaction combinée;COMBINED_UNIT_MEASURE:Unité de mesure combinée</common:AnnotationText>
+          </common:Annotation>
+          <common:Annotation id="@SDMX">
+            <common:AnnotationTitle>SECTOR:OECD.SDD.NAD:HCL_SECTOR_QNA(1.0).H</common:AnnotationTitle>
+            <common:AnnotationType>HIER_CONTEXT</common:AnnotationType>
+          </common:Annotation>
+          <common:Annotation>
+            <common:AnnotationTitle>14000</common:AnnotationTitle>
+            <common:AnnotationType>MAX_TABLE_DATA</common:AnnotationType>
+          </common:Annotation>
+        </common:Annotations>
+        <common:Name xml:lang="en">Quarterly National Accounts (for 'Developer API')</common:Name>
+        <common:Name xml:lang="fr">Comptes nationaux trimestriels ('API pour développeur')</common:Name>
+        <common:Description xml:lang="en">This dataset provides the whole set of OECD Quarterly National Accounts data and is recommended for users who wish to query a large amount of data. It is not designed for visualising results using the Table and Chart buttons. To access the ‘Developer API query builder’, click on the ‘Developer API’ button above.
+&lt;br&gt;&lt;br&gt;The application programming interface (API), based on the SDMX standard, allows a developer to access the data using simple RESTful URL and HTTP header options for various choices of response formats including JSON. The query filter is generated according to the current data selection. To change the data selection, use the filters on the left.
+&lt;br&gt;&lt;br&gt;To get started check the &lt;a href="https://gitlab.algobank.oecd.org/public-documentation/dotstat-migration/-/raw/main/OECD_Data_API_documentation.pdf"&gt;API documentation&lt;/a&gt;. For any question &lt;a href="https://www.oecd.org/contact/"&gt;contact us&lt;/a&gt;&lt;br&gt;&lt;br&gt;The mapping table between old OECD.Stat and new OECD Data Explorer codes is available &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_codes_mapping.xlsx"&gt;here&lt;/a&gt;.
+&lt;br&gt;&lt;br&gt;These indicators were presented in the previous dissemination system in the QNA dataset. 
+&lt;br&gt;See User Guide on Quarterly National Accounts (QNA) in OECD Data Explorer: &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA%20User%20Guide_OECD_Data_Explorer.pdf"&gt;QNA User guide&lt;/a&gt;
+&lt;br&gt;See QNA Calendar for information on advance release dates:  &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_CALENDAR.xlsx"&gt;QNA Calendar&lt;/a&gt; 
+&lt;br&gt;See QNA Changes for information on changes in methodology:  &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_Changes.xls"&gt;QNA Changes&lt;/a&gt; 
+&lt;br&gt;See QNA TIPS for a better use of QNA data:  &lt;a href="https://www.oecd.org/sdd/na/tipsforabetteruseoftheoecdquarterlynationalaccountsstatistics.htm"&gt;QNA TIPS&lt;/a&gt;
+&lt;br&gt;Explore also the GDP and non-financial accounts webpage: &lt;a href="https://www.oecd.org/en/data/datasets/gdp-and-non-financial-accounts.html"&gt;GDP and non-financial accounts webpage&lt;/a&gt;
+&lt;br&gt;OECD statistics contact: &lt;a href="mailto:STAT.Contact@oecd.org"&gt;STAT.Contact@oecd.org&lt;/a&gt;</common:Description>
+        <common:Description xml:lang="fr">Cet ensemble de données fournit la totalité des données des comptes nationaux trimestriels de l'OCDE et est recommandé aux utilisateurs qui souhaitent effectuer des requêtes sur un grand nombre de données. Il n'est pas conçu pour visualiser les résultats à l'aide des boutons Tableau et Graphique. Pour accéder au générateur de requêtes API, cliquez sur le bouton "API pour développeur" ci-dessus. 
+&lt;br&gt;&lt;br&gt;L'interface de programmation applicative (API), basée sur la norme SDMX, permet à un développeur d'accéder aux données en utilisant de simples fonctions d'URL RESTful et d'en-tête HTTP pour différents choix de formats de réponse, y compris le format JSON. Le filtre de la requête est généré en fonction de la sélection actuelle des données. Pour modifier la sélection de données, utilisez les filtres sur la gauche.
+&lt;br&gt;&lt;br&gt;Veuillez consulter la &lt;a href="https://gitlab.algobank.oecd.org/public-documentation/dotstat-migration/-/raw/main/OECD_Data_API_documentation.pdf"&gt;documentation API (en anglais seulement)&lt;/a&gt;. Pour toute question &lt;a href="https://www.oecd.org/fr/contact/"&gt;contactez-nous&lt;/a&gt;.&lt;br&gt;&lt;br&gt;Le tableau de correspondance entre les anciens codes de OECD.Stat et les nouveaux codes de OECD Data Explorer est disponible &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_codes_mapping.xlsx"&gt;ici&lt;/a&gt;.
+&lt;br&gt;&lt;br&gt;Ces indicateurs étaient présentés dans le système de diffusion précédent dans l'ensemble de données QNA.
+&lt;br&gt;Voir le guide utilisateur des Comptes Nationaux Trimestriels (QNA) dans l'explorateur des données de l'OCDE (en anglais seulement): &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA%20User%20Guide_OECD_Data_Explorer.pdf"&gt;QNA User guide&lt;/a&gt; 
+&lt;br&gt;Voir le calendrier "QNA Calendar" pour des informations sur les prochaines dates de publication (en anglais uniquement):  &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_CALENDAR.xlsx"&gt;QNA Calendar&lt;/a&gt;
+&lt;br&gt;Voir le document "QNA Changes" pour des informations sur les changement de méthodologie:  &lt;a href="https://webfs-sdd.oecd.org/files/.Stat/NAMAIN1/QNA_Changes.xls"&gt;QNA Changes&lt;/a&gt; 
+&lt;br&gt;Explorez aussi la page Web du PIB et comptes non financiers :  &lt;a href="https://www.oecd.org/fr/donnees/datasets/gdp-and-non-financial-accounts.html"&gt;page Web du PIB et comptes non financiers&lt;/a&gt;
+&lt;br&gt;Contact statistique OCDE: &lt;a href="mailto:STAT.Contact@oecd.org"&gt;STAT.Contact@oecd.org&lt;/a&gt;</common:Description>
+        <structure:Structure>
+          <Ref id="DSD_NAMAIN1" version="1.1" agencyID="OECD.SDD.NAD" package="datastructure" class="DataStructure" />
+        </structure:Structure>
+      </structure:Dataflow>
+    </structure:Dataflows>
+  </message:Structures>
+</message:Structure>

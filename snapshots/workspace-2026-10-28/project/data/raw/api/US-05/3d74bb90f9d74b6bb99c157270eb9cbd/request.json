@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "institution_id": "US-05",
+  "source_agency": "BLS",
+  "api_provider": "BLS",
+  "source_url": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+  "operation": "timeseries_v1",
+  "http_method": "POST",
+  "dataset_id": "BLS Public Data API v1",
+  "series_id": null,
+  "retrieved_at": "2026-10-25T07:23:19.538070+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/json",
+  "mode": "api_response",
+  "representation": "Sanitized JSON payload serialized as canonical UTF-8; not original HTTP bytes.",
+  "representation_code": "sanitized_json_payload_canonical_utf8",
+  "request_parameters": [
+    {
+      "name": "seriesid",
+      "value": "[\"LNS14000000\",\"CUUR0000SA0\"]"
+    },
+    {
+      "name": "startyear",
+      "value": "2023"
+    },
+    {
+      "name": "endyear",
+      "value": "2023"
+    }
+  ],
+  "byte_count": 454,
+  "raw_sha256": "5d39e0fcff8403a55c8316b0463d95c3e3ce8eb27702ac3c3956d77e72bfef21",
+  "raw_filename": "response.json",
+  "raw_path": "data/raw/api/US-05/3d74bb90f9d74b6bb99c157270eb9cbd/response.json"
+}

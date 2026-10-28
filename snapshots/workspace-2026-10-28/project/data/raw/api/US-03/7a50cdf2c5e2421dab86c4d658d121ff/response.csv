@@ -1,0 +1,179 @@
+""
+""
+""
+""
+"TABLE 3D:  U.S. Treasury Securities H","eld by Foreign","Residents 1/ in","January 2023"
+"Millio","ns of dollars"
+""
+""
+"","Total U.S.","Long-term","Short-term"
+"","Treasury","U.S. Treasury","U.S. Treasury"
+"","Securities","Securities","Securities"
+""
+"","----------","----------","----------"
+""
+"Europe"
+"Austria",5367,4175,1192
+"Belgium",331059,280233,50826
+"Croatia","n.a.",1218,"n.a."
+"Cyprus",323,123,200
+"Denmark",12987,11583,1404
+"Finland",6460,6108,352
+"France",183873,169553,14320
+"Germany",91337,81379,9958
+"Gibraltar","n.a.",43,"n.a."
+"Greece","n.a.",2460,"n.a."
+"Guernsey","n.a.",7214,"n.a."
+"Holy See (Vatican City)","n.a.",12,"n.a."
+"Hungary","n.a.",589,"n.a."
+"Ireland",253410,195955,57455
+"Isle of Man","n.a.",1063,"n.a."
+"Italy",40230,38582,1649
+"Jersey","n.a.",3226,"n.a."
+"Kazakhstan",13061,2688,10373
+"Latvia","n.a.",221,"n.a."
+"Luxembourg",318175,254675,63500
+"Malta","n.a.",441,"n.a."
+"Netherlands",73670,72172,1499
+"Norway",104440,104342,98
+"Poland","n.a.",36689,"n.a."
+"Portugal",5633,5433,200
+"Romania","n.a.",7077,"n.a."
+"Russia",67,54,13
+"Serbia","n.a.",1484,"n.a."
+"Spain",40313,38801,1513
+"Sweden",39450,38773,677
+"Switzerland",290459,236108,54351
+"Turkey",2154,1400,754
+"Ukraine","n.a.",14727,"n.a."
+"United Kingdom",668298,565124,103174
+"Total Europe",2615225,2230151,385074
+"Memo: Euro Area",1358744,1154457,204287
+"Memo: European Union",1487685,1276344,211341
+""
+"Canada",254092,228535,25557
+""
+"Latin America"
+"Argentina",6854,1763,5091
+"Belize","n.a.",318,"n.a."
+"Bolivia",475,258,217
+"Brazil",213976,212138,1838
+"Chile",34178,31626,2552
+"Colombia",39530,37632,1898
+"Costa Rica",2770,2204,566
+"Ecuador",291,174,117
+"El Salvador","n.a.",273,"n.a."
+"Guatemala",8806,8326,480
+"Guyana","n.a.",51,"n.a."
+"Honduras",3359,3327,32
+"Mexico",58164,46563,11601
+"Nicaragua","n.a.",2,"n.a."
+"Panama",7977,2862,5115
+"Paraguay",6234,6170,64
+"Peru",31810,31519,291
+"Suriname","n.a.",131,"n.a."
+"Uruguay",15836,5099,10737
+"Venezuela",560,256,304
+"Total Latin America",432534,390692,41842
+""
+"Caribbean"
+"Anguilla","n.a.",100,"n.a."
+"Aruba","n.a.",257,"n.a."
+"Bahamas",38142,4691,33451
+"Barbados",2605,1397,1208
+"Bermuda",77397,42167,35230
+"British Virgin Islands",44444,29853,14591
+"Cayman Islands",285314,159363,125951
+"Curacao","n.a.",734,"n.a."
+"Dominican Republic",3469,3226,243
+"Haiti",450,230,220
+"Jamaica",963,723,240
+"St. Kitts and Nevis","n.a.",545,"n.a."
+"Saint Lucia","n.a.",248,"n.a."
+"Trinidad & Tobago",3293,1996,1297
+"Turks and Caicos Islands","n.a.",286,"n.a."
+"Total Caribbean",461571,246651,214920
+""
+"Asia"
+"Afghanistan","n.a.",994,"n.a."
+"Bahrain",1478,242,1236
+"Brunei","n.a.",115,"n.a."
+"China, Mainland",859352,855041,4311
+"Hong Kong",226848,188562,38286
+"India",232039,228811,3228
+"Indonesia",12913,11491,1422
+"Iraq",41177,27784,13393
+"Israel",46134,42225,3909
+"Japan",1104387,1031430,72957
+"Korea, South",105791,94769,11022
+"Kuwait",43282,36154,7128
+"Lebanon","n.a.",8,"n.a."
+"Macau","n.a.",1070,"n.a."
+"Malaysia",8762,8600,162
+"Oman",7061,6567,494
+"Philippines",48752,46462,2290
+"Qatar","n.a.",12648,"n.a."
+"Saudi Arabia",111016,102050,8966
+"Singapore",187640,174813,12827
+"Sri Lanka","n.a.",27,"n.a."
+"Syria","n.a.",0,"n.a."
+"Taiwan",234643,226907,7736
+"Thailand",52753,28886,23867
+"United Arab Emirates",64875,43314,21561
+"Vietnam","n.a.",36277,"n.a."
+"Total Asia",3470151,3227525,242626
+""
+"Africa"
+"Algeria",680,0,680
+"Egypt","n.a.",1127,"n.a."
+"Kenya","n.a.",4275,"n.a."
+"Liberia",73,24,49
+"Mauritius","n.a.",833,"n.a."
+"Morocco",3931,3864,67
+"Nigeria","n.a.",5850,"n.a."
+"Seychelles","n.a.",145,"n.a."
+"South Africa",15127,11585,3542
+"Tanzania","n.a.",1711,"n.a."
+"Total Africa",47940,37191,10749
+""
+"Other Countries"
+"Australia",62190,50052,12138
+"Fiji","n.a.",0,"n.a."
+"French Polynesia","n.a.",1,"n.a."
+"Marshall Islands","n.a.",25,"n.a."
+"New Zealand",4530,4158,372
+"Samoa","n.a.",9,"n.a."
+"Total Other",68063,55100,12963
+""
+"All Countries",7349576,6415845,933731
+""
+"International Orgs."
+"International",37890,33200,4690
+"Total Regional Orgs.",15073,13253,1820
+"Total IROs",52963,46453,6510
+""
+"Country Unknown","n.a.",0,"n.a."
+""
+"Grand Total",7402539,6462298,940241
+""
+"Of which: Foreign official",3713886,3464289,249597
+""
+"Notes:"
+"1/ Estimated foreign holdings of U.S.","Treasury marke","table and non-m","arketable bills",", bonds, and no","tes are reporte","d monthly under","the"
+"Treasury International Capital (TI","C) reporting sy","stem. Holdings","of Treasury bon","ds and notes ar","e reported on T","IC Form SLT,"Ag","gregate"
+"Holdings of Long-Term Securities b","y U.S. and Fore","ign Residents."","Holdings of sh","ort-term Treasu","ry securities a","re reported on","TIC form BL-2,"
+""Report of Customers' U.S. Dollar","Liabilities to","Foreign Residen","ts.""
+""
+"The data in this table are collected","primarily from","U.S.-based cust","odians. Since U",".S. securities","held in oversea","s custody accou","nts may not be"
+"attributed to the actual owners, the","data may not pr","ovide a precise","accounting of","individual coun","try ownership o","f Treasury secu","rities (see"
+"TIC FAQ #7 at: http://www.treasury.go","v/resource-cent","er/data-chart-c","enter/tic/Pages","/ticfaq1.aspx)."
+""
+"Definitions:"
+"Euro area:  As of January 2023, inclu","des Austria, Be","lgium, Croatia,","Cyprus, Estoni","a, Finland, Fra","nce, Germany, G","reece, Ireland,","Italy,"
+"Latvia, Lithuania, Luxembourg, Malt","a, the Netherla","nds, Portugal,","Slovakia, Slove","nia, and Spain."
+""
+"European Union includes Austria, Belg","ium, Bulgaria,","Croatia, Cyprus",", the Czech Rep","ublic, Denmark,","Estonia, Finla","nd, France, Ger","many, Greece,"
+"Hungary, Ireland, Italy, Latvia, Li","thuania, Luxemb","ourg, Malta, th","e Netherlands,","Poland, Portuga","l, Romania, Slo","vakia, Slovenia",", and Sweden."
+""
+""
+""

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic engineering fixture; not a recorded provider response. -->
+<m:Structure xmlns:m="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message" xmlns:s="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure" xmlns:c="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common">
+<m:Header><m:ID>synthetic-bis</m:ID><m:Test>true</m:Test><m:Prepared>2026-10-25T00:00:00Z</m:Prepared><m:Sender id="BIS"/></m:Header>
+<m:Structures><s:Dataflows><s:Dataflow agencyID="BIS" id="WS_TC" version="2.0"><c:Name xml:lang="en">Synthetic bis metadata</c:Name><s:Structure><Ref agencyID="BIS" id="SYNTHETIC_DSD" version="1.0" class="DataStructure" package="datastructure"/></s:Structure></s:Dataflow></s:Dataflows></m:Structures>
+</m:Structure>

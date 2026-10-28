@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "institution_id": "US-04",
+  "source_agency": "BEA",
+  "api_provider": "BEA",
+  "source_url": "https://apps.bea.gov/api/data",
+  "operation": "GetDataSetList",
+  "http_method": "GET",
+  "dataset_id": "metadata_catalogue",
+  "series_id": null,
+  "retrieved_at": "2026-10-25T10:50:14.343691+00:00",
+  "http_status": 200,
+  "response_accepted": true,
+  "content_type": "application/json",
+  "mode": "api_response",
+  "representation": "Sanitized JSON payload serialized as canonical UTF-8; not original HTTP bytes.",
+  "representation_code": "sanitized_json_payload_canonical_utf8",
+  "request_parameters": [
+    {
+      "name": "method",
+      "value": "GetDataSetList"
+    },
+    {
+      "name": "ResultFormat",
+      "value": "JSON"
+    }
+  ],
+  "byte_count": 224,
+  "raw_sha256": "ee00f8316d70703a3a7697911a1ecb78e93f183873b82090c9b6d033f1d52a6c",
+  "raw_filename": "response.json",
+  "access_method": "api",
+  "raw_path": "data/raw/api/US-04/bcdf24bf14af48788b8271c82e9ebce0/response.json"
+}

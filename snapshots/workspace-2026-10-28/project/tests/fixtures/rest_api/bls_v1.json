@@ -1,0 +1,14 @@
+{
+  "status": "REQUEST_SUCCEEDED",
+  "responseTime": 1,
+  "message": [],
+  "Results": {"series": [
+    {"seriesID": "LNS14000000", "data": [
+      {"year": "2023", "period": "M01", "periodName": "January", "value": "0", "footnotes": [{}]},
+      {"year": "2023", "period": "M02", "periodName": "February", "value": "-", "footnotes": [{"code": "P", "text": "Synthetic preliminary note"}]}
+    ]},
+    {"seriesID": "CUUR0000SA0", "data": [
+      {"year": "2023", "period": "M13", "periodName": "Annual", "value": "123.5", "footnotes": [{}]}
+    ]}
+  ]}
+}

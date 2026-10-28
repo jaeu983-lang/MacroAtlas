@@ -1,0 +1,78 @@
+{
+  "evidence": "synthetic_fixture",
+  "started_at": "2026-10-25T10:50:14.341689+00:00",
+  "status": "completed",
+  "scope": "metadata_envelope_and_archive_only",
+  "observations_accepted": false,
+  "source_scope": [
+    "bea",
+    "estat"
+  ],
+  "excluded_institution_ids": [
+    "US-05",
+    "US-06"
+  ],
+  "request_budget": {
+    "maximum_http_requests": 0,
+    "automatic_retries": 0
+  },
+  "results": [
+    {
+      "source": "bea",
+      "institution_id": "US-04",
+      "request_count": 0,
+      "mock_requests": 1,
+      "http_status": 200,
+      "artifact": {
+        "institution_id": "US-04",
+        "raw_path": "data/raw/api/US-04/bcdf24bf14af48788b8271c82e9ebce0/response.json",
+        "manifest_path": "data/raw/api/US-04/bcdf24bf14af48788b8271c82e9ebce0/request.json",
+        "raw_sha256": "ee00f8316d70703a3a7697911a1ecb78e93f183873b82090c9b6d033f1d52a6c",
+        "manifest_sha256": "d8d5af4778e0cf507bcfc935403f7e2eb162e6d8a8e819b00996b3f17c0d2745"
+      },
+      "stored_bytes": 224,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "reason": "selected_metadata_present",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "entry_count": 1,
+        "identifiers": [
+          "SyntheticNIPA"
+        ]
+      },
+      "status": "fixture_metadata_validated"
+    },
+    {
+      "source": "estat",
+      "institution_id": "JP-03",
+      "request_count": 0,
+      "mock_requests": 1,
+      "http_status": 200,
+      "artifact": {
+        "institution_id": "JP-03",
+        "raw_path": "data/raw/api/JP-03/65f3bc729a4648e68617ee393736d7ec/response.json",
+        "manifest_path": "data/raw/api/JP-03/65f3bc729a4648e68617ee393736d7ec/request.json",
+        "raw_sha256": "385173ad591edbf21869ccddb7e2d41458158866ae88c5430429290beff64993",
+        "manifest_sha256": "d6a20ee13de5426057e49cdceb92a46cb5075bc651893c898359342e9fbe1697"
+      },
+      "stored_bytes": 303,
+      "read_back_verified": true,
+      "validation": {
+        "status": "metadata_contract_validated",
+        "reason": "selected_metadata_present",
+        "scope": "metadata_only",
+        "observations_accepted": false,
+        "complete_dataset_assessed": false,
+        "entry_count": 1,
+        "identifiers": [
+          "0000000001"
+        ]
+      },
+      "status": "fixture_metadata_validated"
+    }
+  ],
+  "finished_at": "2026-10-25T10:50:14.439590+00:00"
+}

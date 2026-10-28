@@ -1,0 +1,27 @@
+{
+  "evidence": "recorded_live_metadata_sanitized",
+  "representation": "sanitized_json_payload_canonical_utf8",
+  "not_observation_data": true,
+  "sources": [
+    {
+      "source": "bea",
+      "institution_id": "US-04",
+      "file": "recorded_bea_catalogue.json",
+      "source_url": "https://apps.bea.gov/api/data",
+      "retrieved_at": "2026-10-25T10:50:24.265106+00:00",
+      "sha256": "56da2d2691d5d69da1f1c86864298b0922cd1838290fdaca91335be0a9db4204",
+      "entry_count": 13,
+      "redaction": "configured credential values and credential parameter names removed/redacted before serialization"
+    },
+    {
+      "source": "estat",
+      "institution_id": "JP-03",
+      "file": "recorded_estat_catalogue.json",
+      "source_url": "https://api.e-stat.go.jp/rest/3.0/app/json/getStatsList",
+      "retrieved_at": "2026-10-25T10:50:27.823188+00:00",
+      "sha256": "cc9dad50cde5cd746837181efe6de158bdd773dcfd541835fd0c9ce2283de209",
+      "entry_count": 1,
+      "redaction": "configured credential values and credential parameter names removed/redacted before serialization"
+    }
+  ]
+}

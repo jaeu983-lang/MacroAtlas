@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "profile_id": "census.acs2023.population",
+    "institution_id": "US-06",
+    "dataset_id": "2023/acs/acs5",
+    "title": "ACS 2023 five-year population table",
+    "access_method": "api",
+    "adapter_id": "census_table",
+    "validator_id": "census_table",
+    "source_url": "https://api.census.gov/data/2023/acs/acs5",
+    "documentation_urls": [
+      "https://www.census.gov/data/developers/guidance/api-user-guide.Example_API_Queries.html"
+    ],
+    "fixed_parameters": [
+      [
+        "variables",
+        "NAME,B01001_001E"
+      ]
+    ],
+    "unit": null,
+    "frequency": null,
+    "missing_tokens": [
+      ""
+    ],
+    "notes": [
+      "Reference-year dataset path is not an immutable release vintage; no sentinel conversion."
+    ],
+    "version": 1,
+    "evidence_scope": "documented_route_and_synthetic_contract; not live ingestion"
+  },
+  "profile_sha256": "cca9dabd88e300c6745e9c6db884386e66598b61cdd105e2f07185950172f661",
+  "raw": {
+    "institution_id": "US-06",
+    "raw_path": "data/raw/api/US-06/7d9ba97ccb484c5e80f205e5e57c9d10/response.json",
+    "manifest_path": "data/raw/api/US-06/7d9ba97ccb484c5e80f205e5e57c9d10/request.json",
+    "raw_sha256": "21338f736b3131c83b0edfebd733612abcc82b464fdd804674d2e2be0a4bd799",
+    "manifest_sha256": "f719fa53bd3d7ded7d562f48e6e66f115aa1cba412d1603856b8bad636586c9d"
+  },
+  "validation": {
+    "status": "contract_validated",
+    "observations_accepted": false,
+    "validation_scope": "source_contract_only; no normalized observations published",
+    "data_row_count": 3,
+    "columns": [
+      "NAME",
+      "B01001_001E",
+      "state"
+    ],
+    "scope": "selected_table_query",
+    "complete_dataset_assessed": false
+  },
+  "run_evidence": "synthetic_fixture",
+  "request_parameters": [
+    {
+      "name": "get",
+      "value": "NAME,B01001_001E"
+    },
+    {
+      "name": "for",
+      "value": "state:*"
+    }
+  ]
+}

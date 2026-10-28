@@ -1,0 +1,1 @@
+{"BEAAPI":{"Request":{"RequestParam":[{"ParameterName":"USERID","ParameterValue":"[REDACTED]"}]},"Results":{"Dataset":[{"DatasetDescription":"Synthetic catalogue fixture, not live BEA data","DatasetName":"SyntheticNIPA"}]}}}
