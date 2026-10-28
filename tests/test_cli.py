@@ -6,6 +6,7 @@ import unittest
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from freshness_support import HISTORICAL_FIXTURE_POLICY
 
@@ -175,6 +176,35 @@ class StructuredCLITests(unittest.TestCase):
             self.assertEqual(result["geography"], "state:06")
             self.assertEqual(result["observation_count"], 1)
 
+    def test_local_search_cli_uses_verified_catalog_without_network_and_preserves_task(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pyproject.toml").write_text("[project]\nname='fixture'\n")
+            args = build_parser().parse_args([
+                "--project-root", directory, "search", "GDP USA",
+                "--institution", "worldbank", "--country", "USA",
+                "--period-start", "2020", "--period-end", "2022",
+            ])
+            with (patch("macro_data_platform.connectors.bls.request_json") as bls_request,
+                  patch("macro_data_platform.connectors.census.request_json") as census_request):
+                status, result = dispatch(args, clock=lambda: NOW)
+            bls_request.assert_not_called()
+            census_request.assert_not_called()
+            self.assertEqual(status, 0)
+            self.assertEqual(result["search_status"], "candidates_found")
+            self.assertTrue(result["selection_requires_explicit_confirmation"])
+            self.assertEqual(result["candidates"][0]["candidate"]["candidate_id"],
+                             "worldbank:2:USA:NY.GDP.MKTP.CD")
+            self.assertEqual(result["candidates"][0]["match_status"], "review_required")
+
+            status_args = build_parser().parse_args([
+                "--project-root", directory, "status", result["task_id"],
+            ])
+            status_code, saved = dispatch(status_args)
+            self.assertEqual(status_code, 0)
+            self.assertEqual(saved["search_status"], "candidates_found")
+            self.assertEqual(saved["candidates"], result["candidates"])
+
     def test_bls_and_census_collect_require_explicit_live_flag(self):
         commands = [
             ["collect", "bls", "--series-id", "CUUR0000SA0",
@@ -183,6 +213,12 @@ class StructuredCLITests(unittest.TestCase):
              "--variable", "NAME", "--geography", "us:1"],
         ]
         for command in commands:
+            with self.subTest(command=command), self.assertRaises(SystemExit) as caught:
+                build_parser().parse_args(command)
+            self.assertEqual(caught.exception.code, 2)
+
+    def test_search_cli_rejects_oversized_query_and_result_limit(self):
+        for command in (["search", "x" * 501], ["search", "GDP", "--limit", "51"]):
             with self.subTest(command=command), self.assertRaises(SystemExit) as caught:
                 build_parser().parse_args(command)
             self.assertEqual(caught.exception.code, 2)

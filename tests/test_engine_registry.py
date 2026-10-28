@@ -58,6 +58,7 @@ class EngineRegistryTests(unittest.TestCase):
                 registry.orchestrator_for(engine_keys={("fixture", "2")})
 
     def test_composition_root_registers_source_adapters_by_version(self):
+        from macro_data_platform.discovery.series_search import CandidateSearchEngine
         from macro_data_platform.ingestion.bls import BLSEngine
         from macro_data_platform.ingestion.boj import BOJMetadataEngine, BOJObservationEngine
         from macro_data_platform.ingestion.census import CensusEngine
@@ -75,6 +76,7 @@ class EngineRegistryTests(unittest.TestCase):
                 ("bls", "1"),
                 ("census", "1"),
                 ("gate_c_file_watch", "1"),
+                ("series_search", "1"),
             }.issubset(registry.keys))
             expected = {
                 ("worldbank_gdp", "2"): WorldBankGDPEngine,
@@ -82,6 +84,7 @@ class EngineRegistryTests(unittest.TestCase):
                 ("boj_observations", "2"): BOJObservationEngine,
                 ("bls", "1"): BLSEngine,
                 ("census", "1"): CensusEngine,
+                ("series_search", "1"): CandidateSearchEngine,
             }
             for key, engine_type in expected.items():
                 with self.subTest(engine=key):

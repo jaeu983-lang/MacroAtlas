@@ -55,6 +55,7 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
 | `collect bls` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `bls/1` | exact series IDs·연도 범위, credential-free raw/manifest, 제한 quality/freshness result; catalogue semantics는 unknown으로 유지 |
 | `collect census` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `census/1` | acs/acs1·acs/acs5, 지정 variable·geography, credential-free raw/manifest; 전체 variable catalog/search는 없음 |
+| `search QUERY` | CLI 구조화 필터 → saved `TaskPlan` → 공통 EngineRegistry → `series_search/1` | 네트워크 없이 고정 WDI seed와 로컬 BLS/Census metadata archive를 ranking. 요청/후보 evidence를 task history에 저장; 선택·수집은 별도 |
 | `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
 | 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 범용 파일 CLI는 없음 |
 | BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; exact query CLI와 Python API가 같은 plan 경로 사용 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 전체 카탈로그 검색과 결과 export는 없음 |
@@ -67,8 +68,9 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | `large-run ID --event-seq N --approve-production` | 성공한 동일 event/hash qualification 확인 → 보존 raw/request manifest binding 및 duration forecast를 child에 저장 → worker 직전 예상 표시 → resource-limited worker | BIS GLI flat ZIP 1개만 Linux에서 처리. JSONL string chunks/checkpoint/output manifest, 완료 시 `resolved` event. 새 네트워크 요청 없음 |
 | `large-resume CHILD_TASK_ID` | 같은 child plan과 artifact checkpoint 재검증 → 남은 작업 예상 표시 → 같은 task 재개 | 원본·manifest 변경 시 중단. Worker 중단 시 lock 해제 후 같은 child를 재개. 임의 source/engine 변경 불가 |
 
-검색은 `discovery/series_search.py`의 근거 후보 생성과 명시 선택으로 분리돼 있다. 현재 고정 CLI는
-범용 검색 전체를 호출하지 않는다. `acquisition_planning.py`는 API chunk 계획만 반환하며 실행 queue가 아니다.
+검색은 `discovery/series_search.py`의 로컬 근거 후보 생성과 명시 선택으로 분리돼 있다. CLI는 고정 WDI seed와
+이미 보존된 metadata만 비교하며 전체 catalog를 network에서 가져오지 않는다. `acquisition_planning.py`는
+API chunk 계획만 반환하며 실행 queue가 아니다.
 지식 재사용은 `plan_with_knowledge`에서 명시 선택·범위 검사를 거쳐 허용 stage만 생략한다. raw 데이터를 바꾸지 않는다.
 
 ## 엔진 간 공통 계약과 상태

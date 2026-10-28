@@ -56,9 +56,11 @@ git diff --check
 ## 구조화 CLI로 지원 경로 실행하기
 
 `macroatlas`는 각 요청을 SQLite에 먼저 저장하고, `--live`가 있을 때만 외부 요청을 보냅니다.
-현재 지원 범위와 문서화된 예시는 다음과 같습니다.
+`search`는 네트워크 없는 로컬 검색으로 task를 기록합니다. 현재 지원 범위와 문서화된 예시는 다음과 같습니다.
 
 ```powershell
+.\.venv\Scripts\macroatlas.exe search "GDP USA" --institution worldbank --country USA --period-start 2020 --period-end 2022
+.\.venv\Scripts\macroatlas.exe search "CPI" --institution bls
 .\.venv\Scripts\macroatlas.exe collect worldbank-gdp --start-year 2020 --end-year 2022 --live
 .\.venv\Scripts\macroatlas.exe collect boj-fxer --month 202609 --live
 .\.venv\Scripts\macroatlas.exe collect bls --series-id CUUR0000SA0 --start-year 2024 --end-year 2024 --live
@@ -76,13 +78,22 @@ BOJ 명령은 FM08/FXERD01의 한 달만 지원합니다. TIC/BIS `watch`는 지
 범위만 확인합니다. 자동 예약 실행은 없고 현재 반복 감시도 중지된 상태입니다. 명령은 URL이나 임의 기관을
 입력받지 않습니다.
 
+`search`는 고정 WDI 후보와 `data/raw/metadata/`에 이미 보존된 hash-검증 BLS/Census metadata만 읽습니다.
+새 metadata를 API에서 가져오지 않고, 로컬 catalog가 비어 있으면 그 범위에서는 `unmatched`가 나올 수
+있습니다. 현재 순위기는 영어 단어와 식별자 토큰을 비교하는 lexical search입니다. 결과에는 후보의
+정의·근거·unknown 필드와 순위만 표시하며, 점수나 `exact` 라벨도 의미 동등성 증명이 아닙니다.
+검색은 자동 선택·수집하지 않습니다. 검색 요청과 결과는 `data/catalog.sqlite`에 task로 남고, `status`
+명령으로 다시 볼 수 있습니다. BLS/Census 수집에는 여전히 exact series/variable ID와 별도 `--live`
+명령이 필요합니다.
+
 BLS와 Census 명령은 이미 등록된 Python API 엔진을 공통 CLI/task 경로에서 실행합니다. BLS에는
 `--series-id`를 한 개 이상 반복해 지정하고, 한 요청에 최대 20개 ID·1~20년 구간을 사용할 수 있습니다.
 요청한 ID의 정의·단위·주기는 catalogue로 검증하지 않으므로 응답에도 미확인으로 남을 수 있습니다.
 `BLS_API_KEY`는 series-data 요청에서 선택 사항입니다. Census ACS는 `acs/acs1` 또는 `acs/acs5`, 한 해,
 최대 50개 variable ID와 `us:1` 또는 `state:NN` geography만 받으며 `NAME`을 포함해야 합니다.
-`CENSUS_API_KEY`를 프로세스 환경변수로 설정해야 합니다. 두 API 모두 자동 series 검색, 임의 dataset,
-지리 수준 전체, 공식 catalogue 해석 또는 XLSX export를 제공하지 않습니다. 예시의 2022 Census 연도는
+`CENSUS_API_KEY`를 프로세스 환경변수로 설정해야 합니다. 두 연결 경로는 API에서 전체 metadata catalog를
+수집하거나 임의 dataset·지리 수준을 다루지 않으며, catalogue 의미 확인 또는 XLSX export도 하지 않습니다.
+예시의 2022 Census 연도는
 사용자가 요청 범위와 API 공개 가능성을 확인한 뒤 바꿔야 합니다. endpoint, transport cap, 오류 처리와
 응답 검사 상세는 [BLS/Census 연결 설명](connectors/US_STATISTICS_APIS.md)을 보세요.
 

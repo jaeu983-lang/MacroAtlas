@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.5 | 기준일: 2026-10-28
+> 문서 ID: MDP-PLAN-002 | 버전: 2.6 | 기준일: 2026-10-28
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -56,6 +56,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 |---|---|---|
 | World Bank WDI | 미국 GDP `NY.GDP.MKTP.CD`, source 2, 1–10개 연도 수집 | 고정된 annual 경로. 일반 지표·국가 탐색으로 확대하지 않음 |
 | BOJ | FM08/FXERD01 한 달 수집 | 단일 시리즈·월 범위. 다른 series·기간은 미지원/미검증 |
+| Offline candidate search | WDI 고정 후보 + 이미 보존된 BLS/Census metadata archive의 lexical CLI 검색 | network/catalog refresh 없음, 후보 자동 선택 없음, 전체 provider catalog가 아님 |
 | BLS | 반복 지정한 series ID와 제한 연도를 받는 Public Data API v2 CLI/Python 경로 | 한 요청 최대 20개 ID, 1~20년 구간. Catalogue 의미·단위·주기는 자동 확인하지 않음 |
 | Census ACS | 지정 변수·연도·지리범위의 acs/acs1·acs/acs5 CLI/Python 경로 | 최대 50개 variable, `NAME` 필수, geography는 `us:1`·`state:NN`; API key 필수. 전 기관 변수 검색은 미지원 |
 | TIC/BIS 지정 파일 | 필요할 때 사용자가 요청하는 제한 파일 intake/watch 명령 | 자료 변경의 반복·예약 확인은 현재 필요 범위에서 제외했고 자동 감시는 중지함. 과거 `unchanged` 및 natural revision 미관측 상태는 기록으로 보존. Gate C는 승격하지 않음 |
@@ -107,7 +108,7 @@ flowchart LR
 - **공유 서비스:** transport 공통 처리, raw/artifact store, metadata projection, freshness evaluator, duration estimator 등 반복되는 정책을 typed service로 둔다. 독립 권한·수명이 없는 부품을 또 다른 “엔진”으로 부르지 않는다.
 - **대용량 worker:** 작은 tabular parser와 다른 memory/time/checkpoint 경계를 가진다. qualification 통과는 production 승인이 아니다.
 - **개발자 maintenance:** 분석 proposal → 격리 수정 → candidate SHA QA → branch/PR까지만 지원할 수 있다. 제품 task·원본·credential과 분리하며 자동 merge·배포하지 않는다.
-- **현재 통합 공백:** BLS·Census의 고정 query CLI는 각 source contract와 공통 EngineRegistry/task/resume 경로를 사용한다. 기관 전체 catalog 검색, 새 provider, 범용 series 의미 mapping은 범위 밖이다. 새 provider는 connector/engine adapter와 registry 등록·회귀 사례를 함께 추가한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
+- **현재 통합 공백:** `search`는 고정 WDI 후보와 hash-검증된 로컬 BLS/Census metadata만 비교한다. API metadata 전체 수집·갱신이나 기관 전체 catalog 검색은 없다. BLS·Census의 고정 query CLI는 각 source contract와 공통 EngineRegistry/task/resume 경로를 사용한다. 새 provider는 connector/engine adapter와 registry 등록·회귀 사례를 함께 추가한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
 - **Iteration 29 엔진 정비:** 파일 용량 판정의 transport·parser·preflight 경로를 공유 `CapacityFinding`으로 연결했다. 구조화 reason/observed/threshold/inspection point/disposition을 기록하고 parser 오류 문구로 용량을 추측하지 않는다. 바뀐 용량 상한은 없다. PR #64가 2026-10-28 기본 branch `codex/iteration-04-gate-a`에 병합됐다. 제품 Gate 통과와는 별개다.
 
 | 엔진/계층 | 맡는 일 | 현재 상태 |
@@ -198,7 +199,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #73이 병합된 기본 브랜치 `9ace7f7`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 이후 사용자가 요청해 기존 BLS/Census 엔진에 제한 query CLI를 연결한 작업은 source-access usability 확장으로, 제품 Gate D–G를 통과시키지 않는다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-28 PR #74가 병합된 기본 브랜치 `59ed95d`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. BLS/Census 제한 query CLI와 로컬 candidate search는 제품 Gate D–G를 통과시키지 않는다.
 
 선행 순서는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 공통 시계열·최신성(E) → 원자료 XLSX(F) → 비교 XLSX(G) → 분석가 관찰`이다. 한 Gate의 완료 조건을 충족하지 못하면 그 Gate의 상태를 제한/미완료로 남기고 후속 제품 Gate를 완료 처리하지 않는다. 구현 checkpoint나 테스트 통과만으로 Gate 승격을 주장하지 않는다.
 

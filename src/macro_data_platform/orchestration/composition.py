@@ -30,6 +30,7 @@ def build_engine_registry(
 
     # Local imports keep storage contracts independent from connector implementations and
     # avoid a provider module importing itself while exposing its compatibility factory.
+    from macro_data_platform.discovery.series_search import CandidateSearchEngine
     from macro_data_platform.ingestion.bls import BLSEngine
     from macro_data_platform.ingestion.boj import (
         BOJMetadataEngine,
@@ -66,6 +67,7 @@ def build_engine_registry(
     registry.register("census", "1", lambda: CensusEngine(
         settings, census_transport, clock=clock, freshness_policy=policy))
     registry.register("gate_c_file_watch", "1", lambda: GateCFileEngine(settings, file_transport))
+    registry.register("series_search", "1", lambda: CandidateSearchEngine(settings, clock=clock))
 
     if gate_a:
         validator = lambda spec, stage: worldbank_reusable(
