@@ -60,33 +60,60 @@ class EngineRegistryTests(unittest.TestCase):
     def test_composition_root_registers_source_adapters_by_version(self):
         from macro_data_platform.discovery.series_search import CandidateSearchEngine
         from macro_data_platform.ingestion.bls import BLSEngine
-        from macro_data_platform.ingestion.boj import BOJMetadataEngine, BOJObservationEngine
+        from macro_data_platform.ingestion.boj import (
+            BOJMetadataEngine,
+            BOJObservationEngine,
+            BOJRangeObservationEngine,
+        )
         from macro_data_platform.ingestion.census import CensusEngine
+        from macro_data_platform.ingestion.gate_c_watch import GateCFileEngine
         from macro_data_platform.ingestion.worldbank import WorldBankGDPEngine
+        from macro_data_platform.ingestion.worldbank_quality import (
+            WorldBankAuditedCollection,
+            WorldBankValidation,
+        )
+        from macro_data_platform.ingestion.worldbank_series import WorldBankSeriesEngine
 
         with tempfile.TemporaryDirectory() as directory:
             settings = Settings(Path(directory), network_enabled=False)
             registry = build_engine_registry(settings, HistoryStore(settings), gate_a=True)
-            self.assertTrue({
+            expected_keys = {
                 ("worldbank_gdp", "2"),
+                ("worldbank_series", "1"),
                 ("worldbank_collect_audit", "1"),
                 ("worldbank_validate", "2"),
                 ("boj_metadata", "1"),
                 ("boj_observations", "2"),
+                ("boj_observations_range", "1"),
                 ("bls", "1"),
                 ("census", "1"),
                 ("gate_c_file_watch", "1"),
                 ("series_search", "1"),
-            }.issubset(registry.keys))
+            }
+            self.assertEqual(registry.keys, expected_keys)
             expected = {
                 ("worldbank_gdp", "2"): WorldBankGDPEngine,
+                ("worldbank_series", "1"): WorldBankSeriesEngine,
+                ("worldbank_collect_audit", "1"): WorldBankAuditedCollection,
+                ("worldbank_validate", "2"): WorldBankValidation,
                 ("boj_metadata", "1"): BOJMetadataEngine,
                 ("boj_observations", "2"): BOJObservationEngine,
+                ("boj_observations_range", "1"): BOJRangeObservationEngine,
                 ("bls", "1"): BLSEngine,
                 ("census", "1"): CensusEngine,
+                ("gate_c_file_watch", "1"): GateCFileEngine,
                 ("series_search", "1"): CandidateSearchEngine,
             }
             for key, engine_type in expected.items():
                 with self.subTest(engine=key):
                     runner = registry.orchestrator_for(engine_keys={key})
                     self.assertIsInstance(runner.engines[key], engine_type)
+
+    def test_gate_a_engines_are_excluded_when_the_workflow_is_disabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            settings = Settings(Path(directory), network_enabled=False)
+            registry = build_engine_registry(settings, HistoryStore(settings), gate_a=False)
+            self.assertNotIn(("worldbank_collect_audit", "1"), registry.keys)
+            self.assertNotIn(("worldbank_validate", "2"), registry.keys)
+            self.assertIn(("worldbank_series", "1"), registry.keys)
+            self.assertIn(("boj_observations_range", "1"), registry.keys)
