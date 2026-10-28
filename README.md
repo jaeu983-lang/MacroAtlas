@@ -33,8 +33,7 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
   `large-estimate` preview는 task를 만들거나 실행하지 않고 예측만 확인합니다.
 
 검색 ranker의 오프라인 development/validation 비교가 일부 통과했지만 제품 Gate C는 미통과이며 정책 승격도
-되지 않았습니다. Feedback 기록은 가능하지만 분류·사례 자동 채택·규칙 또는 AI 지시문 자동 수정은 없습니다.
-전체 Gate와 증거는 [구현 현황](docs/IMPLEMENTATION_PLAN.md)을, 제품 Gate와 남은 순서는
+되지 않았습니다. 전체 Gate와 증거는 [구현 현황](docs/IMPLEMENTATION_PLAN.md)을, 제품 Gate와 남은 순서는
 [통합 제품 기획](PROJECT_PLAN.md)을 확인하세요. Gate 상태는 기관 서버의 현재 가용성을 뜻하지 않습니다.
 
 ## 설치와 첫 명령
