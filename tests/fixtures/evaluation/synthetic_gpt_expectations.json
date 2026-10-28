@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "split": "development",
+  "origin": "ai_simulated",
+  "human_observed": false,
+  "reviewer_type": "ai_assistant",
+  "reviewer_model": "GPT-6",
+  "cases": [
+    {
+      "case_id": "gpt-synthetic-gdp-per-capita-001",
+      "expected_state": "candidate_found",
+      "expected_candidate_ids": ["worldbank:2:USA:NY.GDP.PCAP.CD"]
+    },
+    {
+      "case_id": "gpt-synthetic-gold-001",
+      "expected_state": "unmatched",
+      "expected_candidate_ids": []
+    }
+  ]
+}
