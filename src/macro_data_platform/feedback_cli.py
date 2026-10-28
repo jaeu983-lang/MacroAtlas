@@ -1,4 +1,4 @@
-"""Explicit task-linked feedback CLI; see docs/USER_GUIDE.md for the review workflow."""
+"""Explicit task-linked feedback CLI; see docs/DEVELOPER_GUIDE.md for the operator workflow."""
 import argparse
 import json
 from pathlib import Path

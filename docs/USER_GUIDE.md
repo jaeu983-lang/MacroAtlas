@@ -1,7 +1,6 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-28**. 현재 사용자 명령은 [`cli.py`](../src/macro_data_platform/cli.py), feedback 명령은
-[`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py), 대용량 용량 판정은
+기준일: **2026-10-28**. 현재 사용자 명령은 [`cli.py`](../src/macro_data_platform/cli.py), 대용량 용량 판정은
 [`capacity.py`](../src/macro_data_platform/capacity.py) 및 [구현 현황](IMPLEMENTATION_PLAN.md)과 대조했습니다.
 
 제품 범위·정책·작업 순서는 [통합 제품 기획](../PROJECT_PLAN.md), 실제 Gate 및 구현 상태는
@@ -158,51 +157,6 @@ World Bank/BOJ task CSV export 외의 범용 CSV/XLSX 변환기는 제공하지 
 task ID는 외부 수집 전 저장됩니다. 같은 ID로 재개해야 이전 시도와 이력이 이어집니다. 변경된 조건은
 새 task로 시작합니다. `watch`는 수동 실행이며 정기 스케줄을 만들지 않습니다. 자연 원본 변경이나
 provider 장애가 발생하지 않으면 해당 live 증거는 미확인으로 남습니다.
-
-## 피드백과 수동 개선 제안
-
-먼저 task가 있어야 task에 연결된 피드백을 기록할 수 있습니다. 모듈 명령은 `python -m`으로 실행할 수
-있습니다.
-
-피드백은 별도 `.txt`/`feedback_log` 파일이 아니라 프로젝트의 `data/catalog.sqlite`에 task/stage와 연결되어
-저장됩니다. `feedback_current`는 현재 revision을, `feedback_revisions`는 변경·검토 이력을 보존합니다. DB는
-task/feedback 저장 작업이 실제 실행될 때 생성됩니다. 이 대화에서 말한 내용이나 다른 저장소의 feedback이
-MacroAtlas로 자동 복사되지는 않습니다.
-
-```text
-python -m macro_data_platform.feedback_cli --project-root . add --task-id <TASK_ID> --text "이 범위에서는 확인한 World Bank source method를 사용" --category source_method --knowledge-kind user_instruction --scope-json '{"institution_id":"worldbank","dataset_id":"2"}'
-python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK_ID>
-```
-
-새 피드백은 자동 승인되지 않고 평가 사례나 엔진 규칙에도 자동 반영되지 않습니다. AI 일괄 분류 기능도 아직 없습니다.
-지시문(prompt) 수정은 자동화하지 않습니다. 운영자가 별도로 지시한 경우에만 사람이 직접 수정하고 버전을 고정합니다.
-그 뒤 같은 고정 사례로 답변 품질, 지시 준수, 실행 시간 및 모델 비용을 변경 전후 비교하고 운영자가 적용 여부를 정합니다.
-출력된 feedback ID를 검토한 뒤
-필요할 때 revision을 지정해 승인·거부·철회합니다. 승인된 feedback도 코드 규칙 변경 승인과 같지 않습니다.
-
-```text
-python -m macro_data_platform.feedback_cli --project-root . review --feedback-id <FEEDBACK_ID> --expected-revision 1 --status accepted --note "범위와 근거를 확인함"
-```
-
-평가 초안이 필요하면 원본 feedback을 확인하고 직접 비식별화한 질문만 전달합니다. bridge는 현재 revision이 승인된
-`user_instruction`인지 확인하고 privacy 확인과 reviewer ID가 명시된 경우에만, 원문·task ID·scope·evidence를 제외한
-development seed를 `data/feedback_case_drafts/`에 새 파일로 씁니다. 이 파일은 완성된 사례가 아니며 corpus에 자동 추가되지 않습니다.
-`--privacy-cleared`는 호출자의 검토 확인이고 시스템이 개인정보를 자동 판별하거나 reviewer 신원을 인증한다는 뜻은 아닙니다.
-
-```text
-python -m macro_data_platform.evaluation.cli feedback-draft --project-root . --feedback-id <FEEDBACK_ID> --expected-revision 2 --sanitized-question "Show annual GDP values for the requested period." --reviewer-id reviewer-01 --privacy-cleared
-```
-
-반복 패턴 분석은 읽기 전용입니다. 패턴 분석은 [pattern_cli.py](../src/macro_data_platform/pattern_cli.py),
-feedback 저장·revision은 [storage/feedback.py](../src/macro_data_platform/storage/feedback.py), 평가 초안 bridge는
-[evaluation/feedback_bridge.py](../src/macro_data_platform/evaluation/feedback_bridge.py)에 있습니다.
-
-```text
-python -m macro_data_platform.pattern_cli --project-root .
-```
-
-분석기는 범위가 일치하는 서로 다른 task가 3개 이상일 때만 반복 후보를 만들고, 제안은 항상 `draft`로
-남깁니다. task·피드백·원본을 고치거나 코드를 자동 수정하지 않습니다.
 
 ## Codex 사용
 
