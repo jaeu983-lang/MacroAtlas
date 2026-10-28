@@ -39,6 +39,13 @@ def test_development_baseline_runs_all_variants_without_validation_or_holdout(mo
     assert report["groups"]["rankable"]["fields_returned"] == 0
     assert report["groups"]["rankable"]["status_returned"] == 0
     assert "holdout" in report["not_measured"]
+    safety = report["search_stage_safety"]
+    assert safety["status"] == "PASS"
+    assert safety["search_queries"] == len(expected)
+    assert safety["explicit_confirmation_required"] == len(expected)
+    assert safety["confirmation_bypasses"] == 0
+    assert safety["selection_or_collection_payloads"] == 0
+    assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
 
 
 def test_baseline_is_repeatable_and_reports_unrelated_candidates():
@@ -120,7 +127,7 @@ def test_abstention_and_unmatched_behavior_are_reported_separately(monkeypatch):
     assert unrelated["unrelated_with_candidates"] == 0
     assert rankable["relevant_missing_queries"] == rankable["rankable_queries"]
     assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
-    assert report["execution_boundary"].startswith("offline_ranker_only")
+    assert report["execution_boundary"].startswith("fixed_catalog_candidate_search_stage")
 
 
 def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):

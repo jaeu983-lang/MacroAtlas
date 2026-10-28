@@ -32,9 +32,11 @@ ranker offline against development cases. `search-validation` compares the same
 baseline and candidate policies on validation cases; no command evaluates
 holdout. Reports include ranking, expected state, missing relevant candidates,
 unrelated abstention, forbidden candidate returns, false-exact candidates, and
-structural field/status checks. Policy and input hashes identify each run. The
-evaluator has no action trace, so prohibited product actions remain unmeasured;
-these reports do not establish semantic equivalence or promotion eligibility.
+structural field/status checks. They also execute the real CandidateSearchEngine
+proposal stage with the fixed catalog and verify confirmation is required and
+no selection/collection payload is emitted. Downstream collection, raw-write,
+and export actions are not executed or traced. Policy and input hashes identify
+each run; reports do not establish semantic equivalence or promotion eligibility.
 The CLI does not send queries to an AI model: it runs the local deterministic
 ranker on stored case questions. GPT-6 was used earlier to review this fixed
 corpus, not as an automated judge for each evaluation run.
