@@ -195,7 +195,9 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계한다고 가정한 작업 순서가 아니라, **2026-10-28 기본 브랜치의 실제 코드**에서 빠진 부분만 순서대로 완성하는 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 이 표가 유일한 활성 작업 순서다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-28 기본 브랜치 `5638363`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다.
+
+선행 순서는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 공통 시계열·최신성(E) → 원자료 XLSX(F) → 비교 XLSX(G) → 분석가 관찰`이다. 한 Gate의 완료 조건을 충족하지 못하면 그 Gate의 상태를 제한/미완료로 남기고 후속 제품 Gate를 완료 처리하지 않는다. 구현 checkpoint나 테스트 통과만으로 Gate 승격을 주장하지 않는다.
 
 ### 선행 엔진 정비 — Iteration 29, 제품 Gate와 독립 · 구현 완료
 
@@ -203,20 +205,28 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 완료 결과: 입력 byte/row/cell/parser·ZIP·official download limit이 같은 typed finding으로 변환되고, 비관련 parser error는 deferral로 분류되지 않는다. targeted regression, 전체 pytest, Ruff가 통과했다. 이 정비는 검색·규칙 Gate C/D의 통과 판정이나 제품 우선순위를 바꾸지 않는다.
 
-| 순서 | 남은 작업 | 다음 단계로 넘어갈 조건 |
-|---:|---|---|
-| 0 완료 | 기준선·사례 검토 기록 | base `825f2aa`에서 전체 pytest와 Ruff를 통과했다. 별도 ledger에 27개 draft의 원본 hash, GPT-6 판정·시각, 근거, privacy 결정, 채택 case hash를 기록했다. 1건은 definition 기대값을 수정해 새 case version으로 만들었다. AI 검토임을 명시하고 human review로 간주하지 않는다. |
-| 1 완료 (bridge 제한) | 사례 corpus·feedback bridge | v2 corpus 36/36 gate와 bridge의 accepted/current revision, explicit privacy attestation, raw-data exclusion, development-only seed 및 no-promotion 동작을 fixture로 검증했다. 실제 사용자 feedback을 seed하거나 완성 사례로 검토·승격한 것은 아니다. legacy split scaffold와 v1 corpus는 유지한다. |
-| 2 제한 구현 | 검색 평가기 (C) | development/validation 비교기는 존재한다. 동일 사례 snapshot에서 유형별 ranking·abstention·false-exact를 보고하고, 실제 downstream 금지행동 trace와 자연 사용자 사례를 보완한다. 전체 Gate C 통과 전 정책은 기본값으로 승격하지 않는다. |
-| 3 | 규칙 승격 기록 (D) | C 통과 후 frozen candidate를 holdout에서 한 번 확인하고 reviewer, case/policy hash, 지표, 적용 commit과 rollback을 연결한다. 자동 승격은 하지 않는다. |
-| 4 | typed series와 freshness | 기존 freshness 정책·판정 함수를 확장해 공통 series/observation 계약에 연결한다. World Bank, BOJ, BLS, Census, 구조 보존 파일 순으로 검증한다. |
-| 5 | 원자료 XLSX | 원본 값·결측·provenance·품질·freshness를 보존하고 충돌은 덮어쓰지 않는다. |
-| 6 | 비교 XLSX | 호환 시계열만 정렬하고 정책과 변환식을 기록한다. 결측은 빈칸이며 자동 보간·forward-fill은 금지한다. |
-| 7 | 분석가 관찰 | 순서 1–6의 gate를 통과한 뒤 분석가 1–2명을 관찰한다. 이는 최종 제품 검증이다. |
+| 순서 / checkpoint | 작업 및 코드 경계 | 다음으로 넘어가는 판정 기준 |
+|---|---|---|
+| A 완료 | 사례 corpus·검토 원장 (`evaluation/cases.py`, `review_ledger.py`) | v2 사례 36건, split별 quota, source/case/evidence hash와 review ledger 검증 완료. GPT 검토 provenance는 사람 검토와 구분한다. |
+| B / 30회차 | feedback 분류 batch 계약 (`storage/feedback.py`, `feedback_cli.py`, 신규 versioned batch 저장 adapter) | feedback 원장은 append-only로 계속 보존한다. 운영자가 고정 snapshot을 내보내 privacy를 확인하고, 고정 prompt/version을 사용해 AI 분류 결과를 별도 versioned batch로 가져온다. 모든 `(feedback_id, revision)`이 정확히 한 번 존재하고, 입력·출력 count/key set/hash가 일치하며 중복 revision도 각각 보존되고 분류 불가 행은 `unclassified`로 남아야 한다. 원문/category/instruction은 수정하지 않는다. CLI는 snapshot 내보내기·결과 검증·batch 조회를 제공하며 AI 호출은 기본 자동화·예약 실행하지 않는다. |
+| C / 31–33회차 | 검색·실행 금지행동 회귀 평가 (`evaluation/search_baseline.py`, `evaluation/cli.py`, workflow confirmation boundary) | 우선 development에서 후보를 조정하고 validation에서 유형별 정확도·Top-1/MRR·abstention·false-exact·금지 후보 반환·필드 구조·시간을 비교한다. 같은 질문·사례/카탈로그 snapshot을 사용하고 count/key/hash가 일치해야 한다. 실제 호출 경계에는 선택 확인 전 수집·raw write·export가 없다는 trace를 추가한다. 후보와 입력/case/catalog/policy hash를 고정한 뒤 holdout은 한 번만 실행한다. 목표 유형 개선, 비대상 유형 퇴행 없음, false-exact 0, 금지 동작 0, 시간/비용 예산 충족이 모두 필요하다. 시간·비용은 case type/workload별 p50/p95·처리량·표본 수를 기록하고 통과 한도는 실행 전에 candidate manifest에 고정한다. 실패 후 원 holdout을 튜닝에 재사용하지 않는다. 자연 사용자 사례가 부족하면 C는 미통과로 남기고 합성 사례를 실제 사용 증거로 대체하지 않는다. |
+| D / 34회차 | 명시 규칙 승격·rollback 원장 (신규 `evaluation/promotion.py` 및 저장 adapter) | 사람이 채택/보류/거부를 결정하고 case/split/policy hash, 비교 지표, 독립 reviewer, 적용 commit, rollback commit을 기록하는 검증 가능한 ledger와 CLI를 만든다. 검증만으로 기본 규칙을 바꾸지 않는다. 잘못된 hash·review 누락·Gate C 실패 상태는 승격을 거부하고 rollback은 새 명시 commit으로 기록한다. |
+| E / 35–36회차 | typed Series/Observation 및 source-aware freshness (`contracts.py`, `metadata/normalize.py`, `ingestion/freshness.py`, provider adapters) | 기관/dataset/series, dimension, period/calendar, 원값/상태, unit/currency/frequency, source revision, retrieval time, raw/manifest reference를 보존하는 공통 계약을 만든다. freshness는 관측 period와 평가 시각을 비교하며 다운로드 시각으로 최신성을 대체하지 않는다. 공식 release evidence가 있는 exact-series policy를 우선하고, 검증된 예외·업데이트 지연을 version/hash로 기록한다. 주기 기본값은 fallback임을 표시한다. 적용 policy가 없거나 관측 period/주기가 미상이면 latest 요청은 `FRESHNESS_UNVERIFIED`; 허용치를 넘으면 `STALE`; 두 상태 값은 성공 payload/export에서 차단한다. freshness 판정과 중간 period 누락 검사는 분리하고, 누락도 official calendar가 기대 period를 입증할 때만 보고한다. World Bank→BOJ→BLS→Census→파일 adapter 순으로 계약을 연결하고 일간 주말/휴일과 서로 다른 monthly release lag 사례를 fixture 검증한다. 각 source live 검증은 별도 증거로 표시한다. |
+| F / 37회차 | 원자료 XLSX exporter (신규 `ingestion/xlsx_export.py`, CLI 출력 연결) | Gate E 통과 typed series만 입력받아 신규 `.xlsx`와 provenance를 쓴다. 원본 period/value/missing status/단위/주기/source/retrieval/raw hash를 보존하고 no-overwrite·project path/symlink guard를 적용한다. 빈 값과 0, 텍스트 원값을 구분하고 formula-like source text는 수식으로 실행되지 않게 쓴다. 검증 실패·stale/unverified 입력은 workbook을 만들지 않는다. |
+| G / 38회차 | 정렬·비교 XLSX (신규 compatibility validator 및 `ingestion/xlsx_export.py`) | Gate F의 원자료 sheet를 변경하지 않고 별도 alignment sheet를 만든다. 개념·통화·단위·주기·calendar·dimension·revision 정책이 호환될 때만 한 비교 표에 둔다. 기간 정렬, 집계·주기/단위 변환은 사용자 확정 정책·식·시간대를 provenance에 쓴다. 호환성이 unknown이면 분리/검토; 날짜 충돌을 덮어쓰지 않으며 결측은 빈 셀, 자동 보간·forward-fill은 없다. |
+| 통합 / 39회차 | A–G contract·보안·성능 회귀 (`tests/`, `scripts/run_maintenance_qa.py`, 관련 docs) | 전체 offline suite, CLI help, 출력 workbook 재검증, no-overwrite/path/formula injection, API·비API 구분, privacy-safe 성능 측정과 이전 기능 회귀를 수행한다. fixture·synthetic·live evidence를 따로 보고한다. 사용자 문서·구현 현황·엔진 링크를 코드 상태와 맞춘다. |
+| 최종 / 40회차 | 실제 분석가 1–2명 관찰 (운영 검증 기록) | A–G와 39회차 검증 후 실제 사용 관찰을 한다. 동의 범위 내에서 비식별 질문, 선택/수정, 결과 채택·거부, 오류, task 소요시간과 관찰 한계를 기록한다. 합성 에이전트나 지어낸 피드백은 사용하지 않는다. 관찰로 발견한 변경은 새 사례/회귀 평가를 거쳐 별도 PR로 제안한다. |
 
-평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다.
+#### 작업별 운영 규칙
 
-작업은 의존성 기준 네 PR로 묶는다. 첫 묶음은 사례·review ledger·feedback bridge, 둘째는 평가기·policy·promotion, 셋째는 typed series·freshness·provider 연결, 넷째는 원자료·비교 XLSX다. PR 내부의 순서는 위 gate와 같고 실패한 단계 뒤 코드는 완료 처리하지 않는다. 회차 번호 28–39는 검증 checkpoint일 뿐 PR 개수가 아니다. 기존 23회차 분석가 관찰은 마지막 40회차이며 별도 구현 PR을 만들지 않는다.
+- **feedback 분류와 지시문 편집은 별개다.** 분류는 사람이 실행을 지시한 snapshot에만 수행하며 결과는 파생 label이다. AI 지시문 변경은 자동화하지 않는다. 운영자가 별도로 수정하라고 지시한 경우에만 사람이 prompt를 편집·버전 고정한 뒤 같은 고정 사례로 품질·지시 준수·실행 시간·모델 비용을 전후 비교한다. 적용 여부는 운영자가 정한다.
+- **분류 전후 데이터량을 맞춘다.** 입력 revision별 key 집합과 출력 key 집합이 정확히 같아야 한다. AI로 보낼 수 있도록 안전하게 비식별화할 수 없는 행도 버리지 않고 AI 전달에서 제외해 `unclassified/privacy_excluded` 결과 행으로 남긴다. run report는 입력/출력 수, 누락/중복 수, key hash, prompt/model version, 모델 호출 시간·비용(제공되는 경우), 로컬 검증 시간을 남긴다. 비밀·원문을 성능 로그에 복사하지 않는다.
+- **코드 후보 비교는 사용자 데이터에 무작위 적용하지 않는다.** baseline/candidate는 동일한 고정 사례와 환경에서 격리해 실행하고 기능 결과와 시간을 비교한다. 운영자 명시 승인과 D 기록 전 제품 기본 경로는 바꾸지 않는다. live traffic A/B는 개인정보·비용·실행 격리 설계와 별도 승인 전 하지 않는다.
+- **자연 증거가 부족하면 기다린다.** 외부 장애·원본 개정·실제 사용자 요청을 인위적으로 만들지 않는다. 필요한 증거 종류가 생기지 않으면 해당 Gate를 `미관측/미통과`로 기록하고 원인을 명시한다.
+
+평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다. AI가 반환한 새 분류는 case 승인이나 기존 사례 label 수정과 동일하지 않다.
+
+개발은 코드 review를 줄이고 순서를 분명히 하기 위해 네 구현 PR로 묶는다. PR 1은 B와 C(30–33회차), PR 2는 D(34회차), PR 3은 E(35–36회차), PR 4는 F/G와 통합 검증(37–39회차)이다. 각 PR은 해당 Gate exit check와 필요한 회귀 suite를 포함하며 선행 Gate 통과 기록 없이 후속 Gate를 완료로 표시하지 않는다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다. 분석가 1–2명 관찰은 마지막 40회차이며 별도 제품 구현 PR을 만들지 않는다.
 
 ### 별도 작업
 
