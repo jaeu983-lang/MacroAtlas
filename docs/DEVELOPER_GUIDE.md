@@ -104,6 +104,40 @@ git diff --check
 
 ## 피드백 검토와 사례 초안
 
+### 수동 분류 batch (30회차)
+
+`python -m macro_data_platform.feedback_cli --project-root . classification-snapshot`은 전체 피드백 revision의
+고정 snapshot을 SQLite에 기록하고 ID·revision·문서 hash만 출력합니다. 원문은 출력하지 않습니다. 운영자는 필요한
+revision을 `history --feedback-id <ID>`로 로컬에서 확인하고, 외부 AI에 제공할 내용은 직접 비식별화합니다.
+안전하게 제공할 수 없는 revision은 결과에 `unclassified` / `privacy_excluded`로 남깁니다.
+
+운영자가 만든 결과 JSON은 snapshot 출력의 `snapshot_id`, `key_hash`, `source_hash`와 함께 `prompt_version`,
+`model_version`, `reviewer_id`, `privacy_cleared: true`, `elapsed_ms`, `cost_usd`, `rows`를 담습니다.
+각 row는 `feedback_id`, `revision`, `label`, `reason` 네 필드이며, label은 기존 feedback category 또는
+`unclassified`입니다. 분류된 row의 reason은 `null`, 미분류 reason은 `privacy_excluded`, `ambiguous`,
+`unsupported`, `model_error` 중 하나입니다. 비용/시간을 모르면 `null`로 남깁니다. 원문은 결과 JSON에 넣지 않습니다.
+아래의 `rows`에는 snapshot의 **모든** revision을 각각 넣어야 합니다.
+
+```json
+{
+  "snapshot_id": "SNAPSHOT_ID", "key_hash": "SNAPSHOT_KEY_HASH", "source_hash": "SNAPSHOT_SOURCE_HASH",
+  "prompt_version": "manual-v1", "model_version": "model-v1", "reviewer_id": "reviewer-1",
+  "privacy_cleared": true, "elapsed_ms": null, "cost_usd": null,
+  "rows": [{"feedback_id": "FEEDBACK_ID", "revision": 1,
+            "label": "unclassified", "reason": "privacy_excluded"}]
+}
+```
+
+```text
+python -m macro_data_platform.feedback_cli --project-root . classification-import --results data/classification-result.json --privacy-cleared
+python -m macro_data_platform.feedback_cli --project-root . classification-list
+python -m macro_data_platform.feedback_cli --project-root . classification-show --batch-id <BATCH_ID>
+```
+
+`--privacy-cleared`와 JSON의 확인은 운영자의 수동 검토 확인이며 자동 개인정보 탐지나 reviewer 인증이 아닙니다.
+가져오기는 snapshot의 key/count/hash와 원본 revision hash를 검사하고 전부 일치할 때만 별도 batch를 저장합니다.
+AI 호출이나 prompt/코드 수정은 자동화하지 않습니다. 이후 추가된 revision은 다음 snapshot에서 다룹니다.
+
 이 절차는 운영자·개발자가 사용합니다. 먼저 저장된 task에 피드백을 연결합니다. 로그는 별도 텍스트 파일이 아니라
 `data/catalog.sqlite`의 append-only revision 원장과 current snapshot에 남습니다. 다른 저장소나 대화의 내용은 자동 수집되지 않습니다.
 

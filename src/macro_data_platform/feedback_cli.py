@@ -5,6 +5,7 @@ from pathlib import Path
 
 from macro_data_platform.config import Settings
 from macro_data_platform.storage.feedback import FeedbackStore
+from macro_data_platform.storage.feedback_classification import FeedbackClassificationStore
 from macro_data_platform.storage.history import HistoryStore
 
 
@@ -41,6 +42,8 @@ def _parser():
     listing.add_argument("--category", choices=sorted({"candidate_group", "question_order",
                          "output_preference", "source_method", "statistical_definition", "other"}))
     listing.add_argument("--limit", type=int, default=100)
+    history = commands.add_parser("history", help="inspect revisions for one feedback item")
+    history.add_argument("--feedback-id", required=True)
 
     edit = commands.add_parser("edit", help="append an edit revision")
     edit.add_argument("--feedback-id", required=True)
@@ -57,6 +60,14 @@ def _parser():
     withdraw.add_argument("--feedback-id", required=True)
     withdraw.add_argument("--expected-revision", required=True, type=int)
     withdraw.add_argument("--reason", required=True)
+    commands.add_parser("classification-snapshot", help="freeze feedback revision identities")
+    batch = commands.add_parser("classification-import", help="validate and store manual labels")
+    batch.add_argument("--results", required=True, type=Path)
+    batch.add_argument("--privacy-cleared", required=True, action="store_true",
+                       help="attest that external classification input was privacy reviewed")
+    commands.add_parser("classification-list", help="list stored classification batches")
+    show = commands.add_parser("classification-show", help="inspect labels in one batch")
+    show.add_argument("--batch-id", required=True)
     return parser
 
 
@@ -76,15 +87,26 @@ def main(argv=None):
     elif args.command == "list":
         result = store.for_task(args.task_id, institution_id=args.institution_id,
                                 category=args.category, limit=args.limit)
+    elif args.command == "history":
+        result = store.history_for(args.feedback_id)
     elif args.command == "edit":
         result = store.revise(args.feedback_id, expected_revision=args.expected_revision,
                               changes=args.changes_json)
     elif args.command == "review":
         result = store.review(args.feedback_id, expected_revision=args.expected_revision,
                               status=args.status, reviewer_note=args.note)
-    else:
+    elif args.command == "withdraw":
         result = store.withdraw(args.feedback_id, expected_revision=args.expected_revision,
                                 reason=args.reason)
+    elif args.command == "classification-snapshot":
+        result = FeedbackClassificationStore(store).snapshot()
+    elif args.command == "classification-import":
+        document = json.loads(args.results.read_text(encoding="utf-8"))
+        result = FeedbackClassificationStore(store).import_batch(document)
+    elif args.command == "classification-list":
+        result = FeedbackClassificationStore(store).batches()
+    else:
+        result = FeedbackClassificationStore(store).batch_rows(args.batch_id)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
