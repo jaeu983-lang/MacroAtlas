@@ -6,8 +6,9 @@
 
 - 기본 브랜치: codex/iteration-04-gate-a, merge commit 825f2aa.
 - PR #50은 병합됐고 현재 열린 PR은 없다. PR head 5574108의 Ubuntu/Windows × Python 3.11/3.12 Actions 검사는 통과했다.
+- 2026-10-28 로컬 기준선: `src/`와 `tests/`는 기본 브랜치와 동일하다. 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY, v1 validator는 9/36 BLOCKED이며 evidence hash와 split 누수 검사는 통과했다.
 - 사용자는 별도 27개 사례의 독립 검토 완료를 확인했다. 저장소에는 사례별 판정·수정·근거를 담은 review ledger가 없고, 원본 draft manifest와 테스트는 생성 당시의 pending 상태다. 따라서 사례는 아직 고정 corpus에 들어가지 않았고, v1 corpus는 9/36, validate-corpus는 BLOCKED다.
-- 독립 검토 완료는 사례 승인, corpus gate 통과, 검색 엔진 평가 통과를 뜻하지 않는다.
+- PR #50의 제출 리뷰·inline thread·토론 댓글도 비어 있다. 독립 검토 완료 확인은 반영했지만 사례별 판정은 복원할 수 없으므로, 검증 가능한 근거가 기록될 때까지 초안 승격을 보류한다. 독립 검토 완료는 사례 승인, corpus gate 통과, 검색 엔진 평가 통과를 뜻하지 않는다.
 
 ## 현재 코드와 남은 조건
 
