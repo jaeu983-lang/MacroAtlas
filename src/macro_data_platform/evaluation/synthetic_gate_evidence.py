@@ -75,7 +75,8 @@ def compare(corpus, cases, expectations):
             "case_sha256": digest(cases), "expectations_sha256": digest(expectations),
             "catalog_sha256": corpus.catalog_sha256, "measurements": measurements,
             "delta_matches": measurements["candidate"]["matches"] - measurements["baseline"]["matches"],
-            "not_measured": ["actual_user_observation", "downstream_actions", "validation",
+            "not_measured": ["actual_user_observation", "downstream_actions", "false_exact",
+                             "non_target_regression", "timing_cost_budget", "validation",
                              "holdout", "promotion_eligibility"]}
 
 
