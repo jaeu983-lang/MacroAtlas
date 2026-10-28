@@ -124,7 +124,7 @@ macro-promotion --project-root . decide --decision hold --decision-maker-id oper
 
 `accept`에는 Gate C PASS와 적용된 정책 commit의 전체 SHA가 필요합니다. 운영자와 독립 reviewer는 서로 다른 ID를 써야 하고 두 역할의 사람 attestation도 명시해야 합니다. 이 입력은 self-attestation일 뿐이며 도구가 계정·신원·검토 독립성을 인증하지 않습니다. `hold` 또는 `reject`는 정책을 적용하지 않습니다. 도구는 어떤 결정에서도 기본 검색 정책을 자동 변경하지 않습니다.
 
-활성 accept를 되돌릴 때는 해당 `acceptance-event-id`와 적용 commit 이후의 새 rollback commit을 `macro-promotion --project-root . rollback`에 전달합니다. 원장은 추적 파일 [`promotion_ledger.jsonl`](../evaluation/results/promotion_ledger.jsonl)에 저장됩니다. 파일 잠금과 append-only writer가 동시 추가와 덮어쓰기를 막고 hash chain은 편집·재정렬·중간 누락을 감지합니다. 결정 후에는 이 파일을 Git에 commit해야 기록이 팀에 공유되고 검토 가능한 상태가 됩니다. `verify`는 미커밋 ledger를 `UNCOMMITTED`로 표시합니다. 현재 이 원장에는 결정이 기록되어 있지 않으므로 후보는 계속 미승격이고 Gate D도 완료되지 않았습니다.
+활성 accept를 되돌릴 때는 해당 `acceptance-event-id`와 적용 commit 이후의 새 rollback commit을 `macro-promotion --project-root . rollback`에 전달합니다. 원장은 추적 파일 [`promotion_ledger.jsonl`](../evaluation/results/promotion_ledger.jsonl)에 저장됩니다. 파일 잠금과 append-only writer가 동시 추가와 덮어쓰기를 막고 hash chain은 편집·재정렬·중간 누락을 감지합니다. 결정 후에는 이 파일을 Git에 commit해야 기록이 팀에 공유되고 검토 가능한 상태가 됩니다. `verify`는 미커밋 ledger를 `UNCOMMITTED`로 표시합니다. 현재 공식 원장은 비어 있습니다. AI의 `hold` 권고는 [결정 로그 D-121](DECISION_LOG.md)에 따로 표시했으며 사람 결정으로 취급하지 않습니다. 후보는 계속 미승격이고 Gate D도 완료되지 않았습니다.
 
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
