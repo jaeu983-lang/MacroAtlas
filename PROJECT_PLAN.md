@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.3 | 기준일: 2026-10-28
+> 문서 ID: MDP-PLAN-002 | 버전: 2.4 | 기준일: 2026-10-28
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -11,8 +11,6 @@
 |---|---|
 | 이 문서 | 제품 목표, 지원 범위, 데이터 정책, 완료 기준의 유일한 기준 |
 | [구현 현황](docs/IMPLEMENTATION_PLAN.md) | 현재 코드와 gate 상태, 확인된 증거만 기록 |
-| [구현 순서](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md) | 현 코드에서 남은 작업의 의존 순서와 통과 조건. 새 제품 요구를 만들지 않음 |
-| [엔진 경계](docs/ENGINE_CONSOLIDATION_PLAN.md) | 공통 실행 계층과 source adapter의 책임 경계 |
 | [사례 계약](docs/EVALUATION_CASES.md), [출력 정책](docs/OUTPUT_AND_VARIANT_POLICY.md), [최신성 정책](docs/SERIES_FRESHNESS.md) | 세부 데이터 계약 |
 | [결정 이력](docs/DECISION_LOG.md) | 결정이 내려진 날짜와 이유 |
 | 회차 보고서, live 기록, 2026-10-27 엔진 감사 | 작성 당시의 역사 증거. 현재 상태나 새 작업 순서로 읽지 않음 |
@@ -64,7 +62,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
 | 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용, 승인 피드백의 비식별 case seed CLI | 자동 사례 생성·corpus 편입·코드 수정·공통 규칙 승격 없음. 실제 사용자 피드백 seed는 아직 생성되지 않음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
-| 평가 사례 | legacy JSON split scaffold 6건, 초기 evidence-backed v1 corpus 9건, GPT 검토 ledger와 evidence를 연결한 v2 corpus 36건 | v1은 9/36 BLOCKED 이력으로 보존한다. v2는 27개 초안을 사례별 GPT 검토하고 1건을 정의 문자열 수정 후 36/36 READY로 고정했다. 이는 AI 검토이며 사용자 관찰이나 엔진 평가가 아니다. evaluator와 rule promotion은 미구현 |
+| 평가·사례 | legacy scaffold 6건, v1 이력 9/36 BLOCKED, GPT 검토 v2 36/36, development/validation ranking 비교기 | 사례 gate READY는 AI 검토 기록과 구조 무결성이다. C 전체 gate는 downstream 금지 행동, 자연 사용자 사례, holdout 단회 확인이 빠져 미통과. D promotion/rollback 기록은 미구현 |
 
 기존 source gate A와 D는 해당 범위에서 통과했고 B/C/E는 제한 범위 판정이다. 이는 아래 제품 평가 A–G와 다른 구분이며, 현재 구현 상태는 구현 현황표를 따른다.
 
@@ -109,6 +107,7 @@ flowchart LR
 - **대용량 worker:** 작은 tabular parser와 다른 memory/time/checkpoint 경계를 가진다. qualification 통과는 production 승인이 아니다.
 - **개발자 maintenance:** 분석 proposal → 격리 수정 → candidate SHA QA → branch/PR까지만 지원할 수 있다. 제품 task·원본·credential과 분리하며 자동 merge·배포하지 않는다.
 - **현재 통합 공백:** 고정 CLI collect 명령은 World Bank/BOJ 범위이고 BLS/Census는 등록된 Python engine 경로만 있다. 새 provider는 connector/engine adapter와 registry 등록·회귀 사례를 함께 추가한다. 이 정리는 source-specific adapter를 없애는 작업이 아니다.
+- **Iteration 29 엔진 정비:** 파일 용량 판정의 transport·parser·preflight 경로를 공유 `CapacityFinding`으로 연결했다. 구조화 reason/observed/threshold/inspection point/disposition을 기록하고 parser 오류 문구로 용량을 추측하지 않는다. 바뀐 용량 상한은 없다. 이 작업은 현재 작업 branch의 구현이며 기본 branch 편입과 제품 Gate 통과는 별도다.
 
 | 엔진/계층 | 맡는 일 | 현재 상태 |
 |---|---|---|
@@ -162,8 +161,9 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 - baseline과 candidate는 동일한 case version에서 실행한다. 유형별 state/target accuracy, candidate ranking, false confirmation, 금지 동작을 비교한다. promotion gate는 목표 유형 개선, 다른 유형 퇴행 없음, false confirmation 0건, 금지 동작 0건이다.
 - 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.
 - raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
+- 추후 AI 분류는 운영자가 고정한 지시문을 사용하고 원장과 분리된 versioned 파생 결과만 쓴다. snapshot의 모든 `(feedback_id, revision)`을 정확히 한 번 포함하며 입력/출력 count·key set·canonical hash를 대조한다. 중복 질문 revision을 deduplicate하거나 누락 행을 버리지 않으며 분류 불가 행은 `unclassified`로 보존한다. 원문 revision/category와 지시문은 수정하지 않는다. 모델 호출 시간·비용과 로컬 snapshot/검증 시간은 분리 계측한다. 외부 모델 전송, 스케줄러, 모델 자격증명은 별도 승인 전 미구현이다.
 
-FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feedback-draft`는 ID와 revision을 지정한 현재 수락된 `user_instruction`만 받고, 사용자가 입력한 sanitized question과 명시 privacy attestation을 포함한 local development seed를 만든다. 원문 피드백, task ID, scope, evidence는 복사하지 않으며 초안은 전체 EvaluationCase가 아니고 corpus에 자동 추가되지 않는다. 테스트는 fixture DB만 사용했고 실제 사용자 피드백은 아직 seed하지 않았다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. 후보 engine 비교기와 규칙 승격·rollback record는 미구현이다. 자세한 schema는 사례 계약 문서를 따른다.
+FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feedback-draft`는 ID와 revision을 지정한 현재 수락된 `user_instruction`만 받고, 사용자가 입력한 sanitized question과 명시 privacy attestation을 포함한 local development seed를 만든다. 원문 피드백, task ID, scope, evidence는 복사하지 않으며 초안은 전체 EvaluationCase가 아니고 corpus에 자동 추가되지 않는다. 실제 사용자 피드백은 아직 seed하지 않았다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. Search baseline/candidate의 development·validation 비교기는 구현됐으나 전체 C Gate는 downstream 행동 trace·자연 사용자 사례·frozen holdout 확인이 빠져 미통과다. D 승격·rollback record는 미구현이다. 자세한 case schema는 사례 계약 문서를 따른다.
 
 ## 8. 지식 검색과 제한적 재사용
 
@@ -171,7 +171,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 명시적으로 검토된 사실과 사용자의 scope-bound instruction을 분리한다. 사용자 instruction reuse는 적용할 stage/category를 확인하고 현재 지시가 우선한다. unreviewed feedback과 inference는 기본 재사용에서 제외한다. index stale, pending update, scope mismatch는 선택한 stage skip이나 실행을 허용하지 않는다. 이 지식 계층은 source collection engine과 별도의 중앙 control plane이다.
 
-상세 query budget·index lifecycle 및 11–13회 구현 근거는 [`docs/KNOWLEDGE_ENGINE_PLAN.md`](docs/KNOWLEDGE_ENGINE_PLAN.md), [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)에 있다.
+구현 호출 경로와 lookup 제약은 [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md), 검증 사례는 [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md)에 있다. 과거 11–13회 지식 엔진 구현 근거는 해당 회차 보고서에 보존한다.
 
 ## 9. CSV·Excel·다중 시계열 출력 기준
 
@@ -195,14 +195,20 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계한다고 가정한 작업 순서가 아니라, **2026-10-28 기본 브랜치의 실제 코드**에서 빠진 부분만 순서대로 완성하는 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 상세 코드 위치와 검사 기준은 [구현 순서](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md)에 둔다.
+아래는 저장소를 새로 설계한다고 가정한 작업 순서가 아니라, **2026-10-28 기본 브랜치의 실제 코드**에서 빠진 부분만 순서대로 완성하는 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 이 표가 유일한 활성 작업 순서다.
+
+### 선행 엔진 정비 — Iteration 29, 제품 Gate와 독립 · 구현 완료
+
+`connectors/official_files.py`, `connectors/tabular_files.py`, `ingestion/non_api_capacity.py`, `ingestion/tabular_files.py`의 용량 판정은 Iteration 29에서 하나의 typed `CapacityFinding`으로 통합했다. 공통 필드는 고정 reason, 관측량, 한도, 검사 지점, 처분 상태다. parser는 예외 문구의 `limit`/`exceed` 부분 문자열로 용량을 추론하지 않는다. 숫자 제한, 다운로드 차단, 작은 파일 parsing, 기존 `NEEDS_REVIEW` 처분은 유지한다.
+
+완료 결과: 입력 byte/row/cell/parser·ZIP·official download limit이 같은 typed finding으로 변환되고, 비관련 parser error는 deferral로 분류되지 않는다. targeted regression, 전체 pytest, Ruff가 통과했다. 이 정비는 검색·규칙 Gate C/D의 통과 판정이나 제품 우선순위를 바꾸지 않는다.
 
 | 순서 | 남은 작업 | 다음 단계로 넘어갈 조건 |
 |---:|---|---|
 | 0 완료 | 기준선·사례 검토 기록 | base `825f2aa`에서 전체 pytest와 Ruff를 통과했다. 별도 ledger에 27개 draft의 원본 hash, GPT-6 판정·시각, 근거, privacy 결정, 채택 case hash를 기록했다. 1건은 definition 기대값을 수정해 새 case version으로 만들었다. AI 검토임을 명시하고 human review로 간주하지 않는다. |
 | 1 완료 (bridge 제한) | 사례 corpus·feedback bridge | v2 corpus 36/36 gate와 bridge의 accepted/current revision, explicit privacy attestation, raw-data exclusion, development-only seed 및 no-promotion 동작을 fixture로 검증했다. 실제 사용자 feedback을 seed하거나 완성 사례로 검토·승격한 것은 아니다. legacy split scaffold와 v1 corpus는 유지한다. |
-| 2 | 검색 평가기 | 같은 case/catalog snapshot으로 현행 ranker와 후보 policy를 offline 비교한다. 정확도, 순위, 미확정, false-exact, 금지 동작을 유형별로 재현 가능하게 보고한다. |
-| 3 | 규칙 승격 기록 | validation 통과 후 고정 후보를 holdout에서 한 번 확인한다. reviewer, case/policy hash, 지표, 적용 commit과 rollback을 연결하고 자동 승격은 하지 않는다. |
+| 2 제한 구현 | 검색 평가기 (C) | development/validation 비교기는 존재한다. 동일 사례 snapshot에서 유형별 ranking·abstention·false-exact를 보고하고, 실제 downstream 금지행동 trace와 자연 사용자 사례를 보완한다. 전체 Gate C 통과 전 정책은 기본값으로 승격하지 않는다. |
+| 3 | 규칙 승격 기록 (D) | C 통과 후 frozen candidate를 holdout에서 한 번 확인하고 reviewer, case/policy hash, 지표, 적용 commit과 rollback을 연결한다. 자동 승격은 하지 않는다. |
 | 4 | typed series와 freshness | 기존 freshness 정책·판정 함수를 확장해 공통 series/observation 계약에 연결한다. World Bank, BOJ, BLS, Census, 구조 보존 파일 순으로 검증한다. |
 | 5 | 원자료 XLSX | 원본 값·결측·provenance·품질·freshness를 보존하고 충돌은 덮어쓰지 않는다. |
 | 6 | 비교 XLSX | 호환 시계열만 정렬하고 정책과 변환식을 기록한다. 결측은 빈칸이며 자동 보간·forward-fill은 금지한다. |
@@ -228,8 +234,6 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 - 실행 가능 범위: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), [`README.md`](README.md)
 - 현재 상태: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). 이전 backlog snapshot은 현행 우선순위가 아닙니다.
-- 통합/유지보수 설계: [`docs/ENGINE_CONSOLIDATION_PLAN.md`](docs/ENGINE_CONSOLIDATION_PLAN.md), [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md)
-- 사용자 흐름·출력: [`docs/WORKFLOW_ALIGNMENT_PLAN.md`](docs/WORKFLOW_ALIGNMENT_PLAN.md), [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)
-- scenario/evaluation: [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
-- A–G 회차별 실행·검증: [`docs/PRODUCT_EVALUATION_ENGINE_PLAN.md`](docs/PRODUCT_EVALUATION_ENGINE_PLAN.md)
+- 엔진 구현과 한계: [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md), [`docs/ENGINE_IMPLEMENTATION_STATUS.md`](docs/ENGINE_IMPLEMENTATION_STATUS.md)
+- 세부 계약·사례: [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md), [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
 - 과거 실행 결과·변경 이유: `docs/ITERATION_*_REPORT.md`, [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md)

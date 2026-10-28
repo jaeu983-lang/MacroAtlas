@@ -9,7 +9,7 @@ does not enter an evaluation corpus unless a reviewer creates, verifies, and
 privacy-clears a case explicitly. Periodic AI categorization of prior revisions
 is not implemented. When added, classifications must be versioned derived data
 with exact one-to-one source revision coverage; the source log stays unchanged.
-Product requirements are in [PROJECT_PLAN.md](../PROJECT_PLAN.md); the current implementation order is in [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md).
+Product requirements and current implementation order are in [PROJECT_PLAN.md](../PROJECT_PLAN.md) §7 and §11. This file defines the case schema only.
 
 ## Current state
 

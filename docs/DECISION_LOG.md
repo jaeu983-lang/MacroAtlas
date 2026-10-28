@@ -930,3 +930,9 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 ## D-107 — 승인 피드백에서 비식별 development case seed 생성
 
 2026-10-28. D-106으로 만든 GPT 검토 corpus는 실제 user-feedback bridge를 포함하지 않았다. 기존 FeedbackStore의 원문은 유지하고, 별도 `macro-eval feedback-draft` 명령은 ID/revision을 명시한 현재 accepted `user_instruction`에 한해 실행한다. 호출자는 비식별 질문, reviewer ID, `--privacy-cleared` attestation을 제공해야 한다. bridge는 원문 feedback, task ID, scope, evidence refs를 복사하지 않고 `data/feedback_case_drafts/` 아래 no-overwrite ignored JSON seed를 만든다. seed는 development-only이고 expected state/candidate/evidence/prohibited action/Excel policy를 작성·검토해야 하는 불완전 초안이며 고정 split이나 v1/v2 corpus에 자동 추가되지 않는다. 검증은 SQLite fixture DB로만 수행했으며 실제 user feedback 사례를 seed하지 않았다. 따라서 구현 동작은 확인됐지만 user-evidence gate나 검색 evaluator는 통과하지 않았다.
+
+## D-108 — 활성 기획 단일화와 파일 용량 contract 정비
+
+2026-10-28. 사용자가 엔진 통합·수정을 이어가되 먼저 기획을 구체화하고 중복 기획을 단일화해 문서 수와 분량을 줄이도록 요청했다. `PROJECT_PLAN.md`를 유일한 요구·우선순위·완료 기준으로 유지하고, 현재 상태는 `IMPLEMENTATION_PLAN.md`, 코드 호출 경로/제한은 `ENGINE_CONNECTIONS.md`와 `ENGINE_IMPLEMENTATION_STATUS.md`에서 관리한다. 반복된 엔진/사용자 흐름/지식/출력/평가 계획은 이 기준으로 통합하고 기존 링크를 위한 짧은 인덱스로 축약한다. 회차 보고서·검토 감사는 역사 evidence라 보존한다.
+
+공통 `EngineRegistry` composition은 이미 연결돼 있으므로 기관 transport/parser를 다시 합치지 않는다. 다음 engine hardening은 Iteration 29로, file transport·table parser·preflight 사이의 용량 초과 정보를 typed reason, observed, threshold, inspection point, disposition으로 통일한다. 기존 byte/row/cell 제한과 사용자 승인 경계는 바꾸지 않는다. Parser의 error-message substring 분류는 제거하고, 완료는 경계값·비용량 오류·raw 보존·deferral 회귀 테스트로 판정한다. 이는 제품 Gate C/D 통과를 주장하지 않는다.

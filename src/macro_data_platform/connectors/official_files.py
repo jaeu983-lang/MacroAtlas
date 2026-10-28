@@ -6,6 +6,11 @@ from datetime import UTC, datetime
 
 import requests
 
+from macro_data_platform.capacity import (
+    CapacityDisposition,
+    CapacityFinding,
+    CapacityReason,
+)
 from macro_data_platform.connectors.statistical_http import SourceFailure, parse_retry_after
 from macro_data_platform.contracts import ErrorCode, StageStatus, utc
 
@@ -60,7 +65,10 @@ class FileCapacityFailure(SourceFailure):
     def __init__(self, observed: int, point: str):
         super().__init__(StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
                          "Official file reached the sixteen MiB limit.")
-        self.capacity = {"observed": observed, "point": point}
+        self.capacity = CapacityFinding(
+            CapacityReason.DOWNLOAD_BYTES, observed, MAX_FILE_BYTES, point,
+            CapacityDisposition.DEFERRED,
+        )
 
 
 class OfficialFileTransport:
