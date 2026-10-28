@@ -82,10 +82,14 @@ manifest 필드를 대조하고 해당 한계를 sidecar provenance에 기록합
 python -m pytest
 python -m ruff check src tests
 macro-eval validate
+macro-eval search-baseline
+macro-eval search-compare --candidate-min-score 70
 git diff --check
 ```
 
 `macro-eval validate`의 `READY`는 세 split의 구조·분리·hash 검증만 통과했다는 뜻이며 엔진 평가가 아닙니다. 현재 포함된 사례는 synthetic fixture라 `reviewed_feedback_split_coverage`가 `none`입니다. validation/holdout hash도 blind holdout이나 일반화 성능의 증거가 되지 않습니다. 상태 정의는 [평가 사례 규약](EVALUATION_CASES.md)을 확인하세요.
+
+`search-baseline`과 `search-compare`는 고정 corpus의 development split만 읽습니다. 현재 비교 후보는 ranker의 최소 lexical score를 적용하는 평가용 정책 wrapper입니다. 출력의 정책 hash와 delta는 오프라인 측정이며 제품 정책 변경, 확정 판정, Gate C 통과 또는 승격 승인을 의미하지 않습니다.
 
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
