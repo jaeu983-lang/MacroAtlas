@@ -35,7 +35,7 @@
 | Series·freshness E | 부분 구현 | typed Series/Observation을 정의하고 공식 release evidence와 series별 정책을 연결한다. 미상 policy는 `FRESHNESS_UNVERIFIED`, 초과는 `STALE`; 두 상태는 latest result/export에서 차단 |
 | 원자료 XLSX F | 미구현 | validated typed series만 입력. 원값·period·missing/zero·unit/frequency·source/raw hash/provenance를 보존하고 no-overwrite/path/formula safety를 검증 |
 | 비교 XLSX G | 미구현 | compatibility contract를 통과한 series만 정렬. 원자료 sheet는 보존, 별도 alignment sheet에 명시 변환·calendar·결측 정책을 남기며 자동 보간/forward-fill 없음 |
-| 최종 관찰 | 대기 | A–G 통과 뒤 실제 분석가 1–2명 관찰 및 익명 evidence |
+| 최종 관찰 | 대기 | A–G 통과 뒤 AI 가상 분석가 시나리오를 임시 Gate 증거로 사용할 수 있다. 실제 분석가 관찰 여부는 따로 기록 |
 
 ## 별도 workstream
 

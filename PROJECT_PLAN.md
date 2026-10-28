@@ -216,7 +216,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 | F / 37회차 | 원자료 XLSX exporter (신규 `ingestion/xlsx_export.py`, CLI 출력 연결) | Gate E 통과 typed series만 입력받아 신규 `.xlsx`와 provenance를 쓴다. 원본 period/value/missing status/단위/주기/source/retrieval/raw hash를 보존하고 no-overwrite·project path/symlink guard를 적용한다. 빈 값과 0, 텍스트 원값을 구분하고 formula-like source text는 수식으로 실행되지 않게 쓴다. 검증 실패·stale/unverified 입력은 workbook을 만들지 않는다. |
 | G / 38회차 | 정렬·비교 XLSX (신규 compatibility validator 및 `ingestion/xlsx_export.py`) | Gate F의 원자료 sheet를 변경하지 않고 별도 alignment sheet를 만든다. 개념·통화·단위·주기·calendar·dimension·revision 정책이 호환될 때만 한 비교 표에 둔다. 기간 정렬, 집계·주기/단위 변환은 사용자 확정 정책·식·시간대를 provenance에 쓴다. 호환성이 unknown이면 분리/검토; 날짜 충돌을 덮어쓰지 않으며 결측은 빈 셀, 자동 보간·forward-fill은 없다. |
 | 통합 / 39회차 | A–G contract·보안·성능 회귀 (`tests/`, `scripts/run_maintenance_qa.py`, 관련 docs) | 전체 offline suite, CLI help, 출력 workbook 재검증, no-overwrite/path/formula injection, API·비API 구분, privacy-safe 성능 측정과 이전 기능 회귀를 수행한다. fixture·synthetic·live evidence를 따로 보고한다. 사용자 문서·구현 현황·엔진 링크를 코드 상태와 맞춘다. |
-| 최종 / 40회차 | 실제 분석가 1–2명 관찰 (운영 검증 기록) | A–G와 39회차 검증 후 실제 사용 관찰을 한다. 동의 범위 내에서 비식별 질문, 선택/수정, 결과 채택·거부, 오류, task 소요시간과 관찰 한계를 기록한다. 합성 에이전트나 지어낸 피드백은 사용하지 않는다. 관찰로 발견한 변경은 새 사례/회귀 평가를 거쳐 별도 PR로 제안한다. |
+| 최종 / 40회차 | 분석가 작업 흐름 관찰 (운영 검증 기록) | A–G와 39회차 검증 후 AI 가상 분석가 시나리오를 우선 실행해 임시 Gate 증거로 사용할 수 있다. AI 작성·판정과 실제 사람 관찰을 구분하고, 질문, 선택/수정, 결과 채택·거부, 오류, task 소요시간과 관찰 한계를 기록한다. 실제 분석가 1–2명 관찰은 가능할 때 별도로 기록하며 AI 결과를 사람 관찰로 표시하지 않는다. 관찰로 발견한 변경은 새 사례/회귀 평가를 거쳐 별도 PR로 제안한다. |
 
 #### 작업별 운영 규칙
 
@@ -227,7 +227,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다. AI가 반환한 새 분류는 case 승인이나 기존 사례 label 수정과 동일하지 않다.
 
-개발은 코드 review를 줄이고 순서를 분명히 하기 위해 네 구현 PR로 묶는다. PR 1은 B와 C(30–33회차), PR 2는 D(34회차), PR 3은 E(35–36회차), PR 4는 F/G와 통합 검증(37–39회차)이다. 각 PR은 해당 Gate exit check와 필요한 회귀 suite를 포함하며 선행 Gate 통과 기록 없이 후속 Gate를 완료로 표시하지 않는다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다. 분석가 1–2명 관찰은 마지막 40회차이며 별도 제품 구현 PR을 만들지 않는다.
+개발은 코드 review를 줄이고 순서를 분명히 하기 위해 네 구현 PR로 묶는다. PR 1은 B와 C(30–33회차), PR 2는 D(34회차), PR 3은 E(35–36회차), PR 4는 F/G와 통합 검증(37–39회차)이다. 각 PR은 해당 Gate exit check와 필요한 회귀 suite를 포함하며 선행 Gate 통과 기록 없이 후속 Gate를 완료로 표시하지 않는다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다. 분석가 작업 흐름 관찰은 마지막 40회차이며 AI 시뮬레이션 결과는 그 출처를 표시한다.
 
 ### 별도 작업
 
