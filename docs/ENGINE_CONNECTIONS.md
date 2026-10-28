@@ -1,6 +1,6 @@
 # 엔진 연결 설계 — 실제 흐름과 대용량 인계
 
-기준: 2026-10-28, PR #81이 병합된 기본 브랜치 `30f910f` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
+기준: 2026-10-28, PR #82가 병합된 기본 브랜치 `334ab9b` 소스 확인. **실선은 구현된 호출, 점선은 후속 연결 설계**다.
 API·BOJ·BLS·Census·파일 감시의 runner 조립과 저장 plan 재개는 공통 composition root/EngineRegistry를 사용한다.
 transport·parser·capacity 검사·storage는 출처별 engine adapter의 내부 부품이다. 대용량 worker는 잠금·checkpoint 복구가
 별도이므로 전용 runner를 유지한다.
@@ -85,6 +85,9 @@ API chunk 계획만 반환하며 실행 queue가 아니다.
 - typed 시계열 경계: World Bank GDP/WDI, BOJ FXERD01, BLS, Census collection과 명시 mapping을 지정한
   local tabular input은 공통 `TimeSeries`/`Observation` 계약으로 구조를 확인한다. 기존 task payload 저장 형식은
   호환성을 위해 유지하며 typed observations의 영속화/export와 workbook은 연결하지 않았다.
+- freshness policy v2: frequency defaults는 `frequency_fallback`으로 표시된다. exact-series override는
+  `FreshnessEvidence`의 HTTPS URL/hash/capture/citation와 approved review metadata에 연결돼야 하며 누락·미승인
+  근거는 `FRESHNESS_UNVERIFIED`로 차단한다. 이 모델은 문서·hash·reviewer를 독립 검증하지 않고, source별 승인 근거는 아직 없다.
 - 성공이면 다음 stage로 간다. retryable이면 원래 task를 멈추고 Retry-After/시도 예산 후 같은 task를 resume한다.
   성공 prefix 재사용은 fingerprint·TTL·검증기를 모두 통과해야 한다.
 - 대용량 qualification은 task claim 전부터 workspace lock을 잡고 child worker에 상속한다. process가 강제 종료되면

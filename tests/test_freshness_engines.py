@@ -279,11 +279,27 @@ def test_fresh_and_unverified_engine_cases_are_explicit(frequency, period_format
 
 
 def test_series_override_is_exact_and_persisted_in_freshness_evidence():
-    from macro_data_platform.ingestion.freshness import assess_freshness, series_key_override_key
+    from macro_data_platform.ingestion.freshness import (
+        FreshnessEvidence,
+        assess_freshness,
+        series_key_override_key,
+    )
 
-    policy = FreshnessPolicy(series_overrides={
-        series_key_override_key(WB_SERIES_KEY): 1500,
-    })
+    override_key = series_key_override_key(WB_SERIES_KEY)
+    policy = FreshnessPolicy(
+        series_overrides={override_key: 1500},
+        series_evidence={override_key: FreshnessEvidence(
+            evidence_id="world-bank-fixture",
+            source_url="https://data.worldbank.org/indicator/NY.GDP.MKTP.CD",
+            source_sha256="d" * 64,
+            captured_at=AS_OF,
+            evidence_type="official_frequency_metadata",
+            citation="Test fixture only",
+            review_status="approved",
+            reviewer_id="fixture-reviewer",
+            reviewed_at=AS_OF,
+        )},
+    )
     result = assess_freshness(["2022"], frequency=None, period_format="YYYY",
                               series_key=WB_SERIES_KEY, as_of=AS_OF, policy=policy)
     assert result["status"] == "FRESH"

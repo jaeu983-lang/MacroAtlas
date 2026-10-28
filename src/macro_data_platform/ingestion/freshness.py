@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from types import MappingProxyType
+from urllib.parse import urlsplit
 
 DEFAULT_MAX_AGE_DAYS = {
     "daily": 7,
@@ -20,7 +21,7 @@ DEFAULT_MAX_AGE_DAYS = {
     "semiannual": 183,
     "annual": 730,
 }
-DEFAULT_POLICY_ID = "frequency_max_age_v1"
+DEFAULT_POLICY_ID = "frequency_max_age_v2"
 _FORMAT_FREQUENCIES = {
     "YYYY": "annual",
     "YYYY-MM": "monthly",
@@ -35,6 +36,98 @@ class FreshnessStatus(StrEnum):
     FRESH = "FRESH"
     STALE = "STALE"
     FRESHNESS_UNVERIFIED = "FRESHNESS_UNVERIFIED"
+
+
+class FreshnessEvidenceType(StrEnum):
+    OFFICIAL_RELEASE_CALENDAR = "official_release_calendar"
+    OFFICIAL_FREQUENCY_METADATA = "official_frequency_metadata"
+    DOCUMENTED_RELEASE_LAG = "documented_release_lag"
+
+
+class FreshnessEvidenceReviewStatus(StrEnum):
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+def _aware_utc(value: datetime, name: str) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{name} must be a timezone-aware datetime")
+    return value.astimezone(UTC)
+
+
+@dataclass(frozen=True)
+class FreshnessEvidence:
+    """Reference and review record for an exact-series freshness tolerance.
+
+    The URL and digest identify evidence captured by an operator. This model
+    does not fetch or independently verify the referenced document.
+    """
+
+    evidence_id: str
+    source_url: str
+    source_sha256: str
+    captured_at: datetime
+    evidence_type: FreshnessEvidenceType | str
+    citation: str
+    review_status: FreshnessEvidenceReviewStatus | str = (
+        FreshnessEvidenceReviewStatus.PENDING_REVIEW
+    )
+    reviewer_id: str | None = None
+    reviewed_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.evidence_id, str) or not self.evidence_id.strip():
+            raise ValueError("evidence_id must be nonempty")
+        if not isinstance(self.source_url, str):
+            raise TypeError("source_url must be an HTTPS URL")
+        parsed = urlsplit(self.source_url)
+        if (parsed.scheme != "https" or not parsed.hostname or parsed.username
+                or parsed.password or parsed.query or parsed.fragment):
+            raise ValueError("source_url must be credential-free HTTPS without query or fragment")
+        if (not isinstance(self.source_sha256, str)
+                or re.fullmatch(r"[0-9a-fA-F]{64}", self.source_sha256) is None):
+            raise ValueError("source_sha256 must be a 64-character hexadecimal digest")
+        if not isinstance(self.evidence_type, FreshnessEvidenceType):
+            try:
+                object.__setattr__(self, "evidence_type", FreshnessEvidenceType(self.evidence_type))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("unsupported freshness evidence_type") from exc
+        if not isinstance(self.citation, str) or not self.citation.strip():
+            raise ValueError("citation must be nonempty")
+        if not isinstance(self.review_status, FreshnessEvidenceReviewStatus):
+            try:
+                object.__setattr__(
+                    self, "review_status", FreshnessEvidenceReviewStatus(self.review_status)
+                )
+            except (TypeError, ValueError) as exc:
+                raise ValueError("unsupported freshness evidence review_status") from exc
+        object.__setattr__(self, "source_sha256", self.source_sha256.lower())
+        object.__setattr__(self, "captured_at", _aware_utc(self.captured_at, "captured_at"))
+        if self.review_status == FreshnessEvidenceReviewStatus.APPROVED:
+            if not isinstance(self.reviewer_id, str) or not self.reviewer_id.strip():
+                raise ValueError("approved evidence requires reviewer_id")
+            if self.reviewed_at is None:
+                raise ValueError("approved evidence requires reviewed_at")
+        elif self.reviewer_id is not None or self.reviewed_at is not None:
+            raise ValueError("reviewer_id and reviewed_at require approved evidence")
+        if self.reviewed_at is not None:
+            object.__setattr__(self, "reviewed_at", _aware_utc(self.reviewed_at, "reviewed_at"))
+            if self.reviewed_at < self.captured_at:
+                raise ValueError("reviewed_at cannot precede captured_at")
+
+    def to_dict(self) -> dict:
+        return {
+            "evidence_id": self.evidence_id,
+            "source_url": self.source_url,
+            "source_sha256": self.source_sha256,
+            "captured_at": self.captured_at.isoformat(),
+            "evidence_type": self.evidence_type.value,
+            "citation": self.citation,
+            "review_status": self.review_status.value,
+            "reviewer_id": self.reviewer_id,
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+        }
 
 
 def normalize_frequency(value: str | None) -> str | None:
@@ -81,6 +174,7 @@ class FreshnessPolicy:
         default_factory=lambda: dict(DEFAULT_MAX_AGE_DAYS)
     )
     series_overrides: Mapping[str, int] = field(default_factory=dict)
+    series_evidence: Mapping[str, FreshnessEvidence] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not isinstance(self.policy_id, str) or not self.policy_id.strip():
@@ -97,8 +191,16 @@ class FreshnessPolicy:
                     or type(days) is not int or not 0 <= days <= 36500):
                 raise ValueError("invalid series freshness override")
             overrides[key] = days
+        evidence = {}
+        for key, record in self.series_evidence.items():
+            if not isinstance(key, str) or key not in overrides:
+                raise ValueError("freshness evidence must match an exact-series override")
+            if not isinstance(record, FreshnessEvidence):
+                raise TypeError("series_evidence values must be FreshnessEvidence records")
+            evidence[key] = record
         object.__setattr__(self, "frequency_max_age_days", MappingProxyType(defaults))
         object.__setattr__(self, "series_overrides", MappingProxyType(overrides))
+        object.__setattr__(self, "series_evidence", MappingProxyType(evidence))
 
     @property
     def fingerprint_sha256(self) -> str:
@@ -125,6 +227,10 @@ class FreshnessPolicy:
             "policy_id": self.policy_id,
             "frequency_max_age_days": dict(sorted(self.frequency_max_age_days.items())),
             "series_overrides": dict(sorted(self.series_overrides.items())),
+            "series_evidence": {
+                key: self.series_evidence[key].to_dict()
+                for key in sorted(self.series_evidence)
+            },
         }
 
 
@@ -214,6 +320,8 @@ def assess_freshness(
         "age_days": None,
         "max_age_days": maximum,
         "series_override_key": override_key,
+        "policy_evidence_status": "not_applicable",
+        "policy_evidence": None,
         "evaluated_at": evaluated_at.isoformat(),
         "reason": None,
     }
@@ -226,6 +334,19 @@ def assess_freshness(
         result["reason"] = "frequency_tolerance_unconfigured"
         return result
     result["policy_basis"] = "series_override" if override_key else "frequency_fallback"
+    if override_key:
+        evidence = policy.series_evidence.get(override_key)
+        if evidence is None:
+            result["policy_evidence_status"] = "missing"
+            result["reason"] = "series_override_evidence_missing"
+            return result
+        result["policy_evidence"] = evidence.to_dict()
+        result["policy_evidence_status"] = evidence.review_status.value
+        if evidence.review_status != FreshnessEvidenceReviewStatus.APPROVED:
+            result["reason"] = f"series_override_evidence_{evidence.review_status.value}"
+            return result
+    else:
+        result["policy_evidence_status"] = "frequency_fallback"
     if not isinstance(periods, (tuple, list)) or not periods:
         result["reason"] = "observation_period_missing"
         return result
