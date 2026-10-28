@@ -79,7 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     boj.add_argument("--live", action="store_true", required=True,
                      help="explicitly permit the official API requests")
     boj_range = sources.add_parser(
-        "boj-fxer-range", help="BOJ FM08/FXERD01 daily observations across 1–12 months",
+        "boj-fxer-range", help="BOJ FM08/FXERD01 daily observations across 1–120 months",
     )
     boj_range.add_argument("--start-month", required=True, help="first month as YYYYMM")
     boj_range.add_argument("--end-month", required=True, help="last month as YYYYMM")

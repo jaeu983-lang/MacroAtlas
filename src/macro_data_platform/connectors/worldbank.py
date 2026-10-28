@@ -21,6 +21,7 @@ SOURCE = "2"
 API_DOCS = "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392"
 TERMS_URL = "https://www.worldbank.org/en/about/legal/terms-of-use-for-datasets"
 MAX_BYTES = 1024 * 1024
+MAX_SERIES_PERIODS = 100
 
 
 class ConnectorFailure(Exception):
@@ -80,9 +81,9 @@ class WorldBankSeriesQuery:
         if (
             type(self.start_year) is not int or type(self.end_year) is not int
             or not 1960 <= self.start_year <= self.end_year <= 2100
-            or self.end_year - self.start_year >= 10
+            or self.end_year - self.start_year >= MAX_SERIES_PERIODS
         ):
-            raise ValueError("request requires 1 to 10 years in 1960..2100")
+            raise ValueError("request requires 1 to 100 years in 1960..2100")
 
     @property
     def url(self) -> str:

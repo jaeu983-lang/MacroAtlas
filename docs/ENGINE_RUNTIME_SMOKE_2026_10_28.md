@@ -80,6 +80,32 @@ remain in ignored local `data/`; they were not committed. The 903-test full
 suite, Ruff, and `git diff --check` passed for this follow-up. This single query
 does not verify other WDI indicators, their meanings, or dataset terms.
 
+## Post-merge WDI longer-range follow-up
+
+After PR #77 merged, the `worldbank_series/1` annual request cap was raised from
+10 to 100 periods while retaining the one-page, one-series, 1 MiB response
+limits. A live Canada `SP.POP.TOTL` request for 1990–2025 completed as task
+`2ad0c8e6-9b2f-4251-9b00-05f8e7e4d3e7` with 36 preserved rows, latest period
+2025, age 301 days, and `FRESH`. Its raw response and manifest remain in ignored
+local `data/`; they were not committed. This confirms that selected 36-year
+request only, not other WDI series, units, metadata, or multi-page retrieval.
+Product Gate D–G is unchanged.
+
+## Post-merge BOJ longer-range follow-up
+
+After PR #77 merged, the BOJ FXERD01 range cap was raised from 12 to 120
+consecutive months. The 120-month API query still stays far below the official
+60,000-point response cap; the existing 2 MiB transport limit remains active.
+A live November 2016–October 2026 request completed as task
+`00c40451-2a11-4966-aa9a-32e4d3bfb0ac`: 3,652 daily rows, 1,215 preserved nulls,
+latest non-null date 2026-10-26, age two days, `FRESH`. CSV export revalidated
+the stored response and completed with the same row and missing-value counts.
+Raw, manifest, CSV, and provenance remain in ignored local `data/`; none were
+committed. This confirms only that exact query and does not verify other BOJ
+series, changed revisions, or natural failure/resume behavior. Product Gate D–G
+is unchanged. After both range expansions, the full local pytest suite passed
+911 tests; Ruff and `git diff --check` passed.
+
 ## Post-merge BOJ monthly-range follow-up
 
 After PR #76 merged, `boj_observations_range/1` and the `collect boj-fxer-range`

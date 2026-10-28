@@ -990,3 +990,15 @@ Fixture parser/engine/CLI와 query boundary 테스트를 수행했다. 이어서
 2026-10-28. PR #76 병합 후 지원 경로 확대의 다음 제한 변경으로 기존 BOJ 한 달 `boj_observations/2` 계약은 유지하고, `boj_observations_range/1`을 추가했다. 새 `collect boj-fxer-range` 명령은 FM08/FXERD01만 허용하고 연속된 1–12개월을 검증한다. 응답은 요청 구간·series identity·단조 증가 날짜·중복·유한 수/`null`을 확인한 뒤 raw/manifest 보존, freshness, 저장 task 재개, CSV raw 재검증을 기존 공통 orchestration에 연결한다.
 
 Fixture/CLI/export 대상으로 한정 회귀와 전체 검증은 PR에서 기록한다. Live로 202609–202610을 한 차례 조회해 task `da20c2c3-aa05-48ab-99c1-d2232308dd46`에 61행·25 null을 보존했고, 최신 유효 날짜 `2026-10-26`의 일간 freshness는 `FRESH`였다. CSV export도 raw 재검증 후 61행·25 missing으로 완료했다. 출력은 ignored `data/`에 두어 commit하지 않았다. 이는 선택한 구간만 검증하며 다른 BOJ 계열·자연 실패 재개·변경 revision 검토는 미검증이다. Gate C 범위와 D–G 완료 상태는 바꾸지 않는다.
+
+## D-119 — WDI exact-series 단일 페이지 구간 확대
+
+2026-10-28. PR #77 병합 후 generic `worldbank_series/1`의 연간 조회 한도를 1–10년에서 최대 100년으로 높였다. 요청은 계속 한 country/source-2/indicator 시리즈, 한 JSON page(`per_page=100`), 1 MiB raw limit에 묶인다. fixed USA GDP adapter의 기존 1–10년 품질검증 계약은 변경하지 않았다. 100 periods는 요청 page size와 맞고 101번째 year는 query validation에서 거절된다.
+
+Live Canada `SP.POP.TOTL`, 1990–2025 조회는 task `2ad0c8e6-9b2f-4251-9b00-05f8e7e4d3e7`로 완료했다. 36행을 보존했고 최신 period 2025, age 301일, annual freshness `FRESH`였다. Raw/manifest는 ignored `data/`에 두고 commit하지 않는다. 이는 단일 공개 WDI 요청만 확인하며 다중 page, 다른 indicator의 의미·단위, dataset terms를 입증하지 않는다. Gate C 또는 제품 Gate D–G 상태는 바꾸지 않는다.
+
+## D-120 — BOJ FXERD01 range의 10년 수집 지원
+
+2026-10-28. PR #77에서 연결한 `boj_observations_range/1`의 임의 12개월 제한을 120개월로 높였다. FM08/FXERD01 고정 identity, 연속 월 검증, 2 MiB HTTP raw limit, 60,000-point 공식 cap보다 작은 단일 응답, 기존 freshness·resume·CSV raw 재검증을 유지한다. 121개월 이상은 task 생성 전에 query validation에서 거절한다. 기존 one-month contract에는 변경이 없다.
+
+Live 201611–202610 요청은 task `00c40451-2a11-4966-aa9a-32e4d3bfb0ac`로 완료했다. 3,652 calendar rows와 1,215 null을 보존했고 최신 유효 날짜 `2026-10-26`, age 2일, daily freshness `FRESH`였다. CSV 재검증 export도 같은 행/null 수로 완료했다. Raw/manifest/CSV/provenance는 ignored `data/`에 두었고 commit하지 않는다. 이는 이 시리즈와 이 구간만 확인한다. Gate C·D–G 상태는 변경하지 않는다.

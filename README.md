@@ -23,8 +23,8 @@ BIS GLI flat ZIP 한 건 전용 Linux 경로가 구조 보존 JSONL을 만들며
 
 ## 현재 지원 경로
 
-- World Bank WDI: 고정 미국 GDP 경로와, 사용자가 국가·indicator ID를 직접 고르는 1개 annual series 원자료 경로(source ID 2, 각 1~10개 연도).
-- BOJ: FM08/FXERD01 한 달 또는 같은 일간 시리즈의 연속 1–12개월 범위.
+- World Bank WDI: 고정 미국 GDP 경로와, 사용자가 국가·indicator ID를 직접 고르는 1개 annual series 원자료 경로(source ID 2, 최대 100개 연도).
+- BOJ: FM08/FXERD01 한 달 또는 같은 일간 시리즈의 연속 1–120개월 범위.
 - `macroatlas search`: 네트워크 없이 고정 WDI 후보와 로컬에 보존된 BLS/Census metadata를 검색합니다. 기관 전체 catalog 검색은 아닙니다.
 - TIC/BIS: 필요할 때 명시적으로 실행하는 지정 파일 intake. 자료 변경상태의 반복·예약 확인은 사용자
   요청에 따라 중지했다.

@@ -127,10 +127,17 @@ class BOJRangeQueryTests(unittest.TestCase):
         self.assertIn("endDate=202610", RANGE_QUERY.data_url)
         for start, end in [
             ("202613", "202701"), ("202610", "202609"),
-            ("202501", "202601"), ("20260", "202609"),
+            ("190001", "200101"), ("20260", "202609"),
         ]:
             with self.subTest(start=start, end=end), self.assertRaises(ValueError):
                 BOJRangeQuery(start, end)
+
+    def test_range_query_accepts_ten_years_and_rejects_longer_ranges(self):
+        query = BOJRangeQuery("201611", "202610")
+        self.assertIn("startDate=201611", query.data_url)
+        self.assertIn("endDate=202610", query.data_url)
+        with self.assertRaisesRegex(ValueError, "1 to 120"):
+            BOJRangeQuery("201610", "202610")
 
     def test_range_parser_preserves_rows_and_checks_requested_calendar_span(self):
         metadata = parse_boj_metadata(api_download(METADATA_ENDPOINT, metadata_document()),
