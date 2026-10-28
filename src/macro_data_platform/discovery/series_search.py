@@ -325,8 +325,12 @@ def rank_candidates(request: DataRequest, candidates: Iterable[Candidate], *,
 
 class CandidateSearchEngine:
     """Register as (\"series_search\", \"1\"); no network access is performed."""
-    def __init__(self, settings: Settings, *, clock: Callable[[], datetime] = lambda: datetime.now(UTC)):
+    def __init__(self, settings: Settings | None, *,
+                 clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+                 candidate_loader: Callable[[Settings | None], Iterable[Candidate]] | None = None,
+                 ranker: Callable[..., list[dict]] | None = None):
         self.settings, self.clock = settings, clock
+        self.candidate_loader, self.ranker = candidate_loader, ranker
 
     def run(self, request: StageInput) -> StageResult[dict]:
         data = request.input_data
@@ -336,8 +340,10 @@ class CandidateSearchEngine:
                                warnings=("Expected a structured request and optional result limit.",))
         try:
             structured = DataRequest.from_dict(data["request"])
-            candidates = load_candidate_catalog(self.settings)
-            ranked = rank_candidates(structured, candidates, limit=data.get("limit", 25))
+            loader = self.candidate_loader or load_candidate_catalog
+            ranker = self.ranker or rank_candidates
+            candidates = loader(self.settings)
+            ranked = ranker(structured, candidates, limit=data.get("limit", 25))
             at = self.clock()
             if at.tzinfo is None or at.utcoffset() is None or at.utcoffset().total_seconds():
                 raise ValueError("clock must return UTC")

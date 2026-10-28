@@ -3,10 +3,13 @@
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 
-from macro_data_platform.discovery.series_search import rank_candidates
+from macro_data_platform.contracts import StageStatus
+from macro_data_platform.discovery.series_search import CandidateSearchEngine, rank_candidates
 from macro_data_platform.evaluation.cases import EvaluationCorpus
-from macro_data_platform.workflow_contracts import DataRequest
+from macro_data_platform.orchestration.models import StageInput
+from macro_data_platform.workflow_contracts import CandidateProposal, DataRequest
 
 _FIELDS = {
     "institution_id",
@@ -48,8 +51,8 @@ class SearchPolicy:
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode()).hexdigest()
 
-    def rank(self, request, candidates):
-        ranked = rank_candidates(request, candidates, limit=self.limit)
+    def rank(self, request, candidates, *, limit=None):
+        ranked = rank_candidates(request, candidates, limit=self.limit if limit is None else limit)
         return [row for row in ranked if row["score"] >= self.minimum_score]
 
 
@@ -102,6 +105,18 @@ def evaluate_split(
         raise ValueError("Only development and validation splits may be evaluated here")
     policy = policy or SearchPolicy()
     groups = {}
+    action_trace = {
+        "search_queries": 0,
+        "explicit_confirmation_required": 0,
+        "confirmation_bypasses": 0,
+        "selection_or_collection_payloads": 0,
+    }
+    search_engine = CandidateSearchEngine(
+        settings=None,
+        clock=lambda: datetime(2026, 1, 1, tzinfo=UTC),
+        candidate_loader=lambda _settings: corpus.candidates,
+        ranker=policy.rank,
+    )
     for case in corpus.cases:
         if case.split != split:
             continue
@@ -137,7 +152,33 @@ def evaluate_split(
         for variant in case.query_variants:
             request = dict(case.request)
             request["text"] = variant
-            ranked = policy.rank(DataRequest.from_dict(request), corpus.candidates)
+            structured_request = DataRequest.from_dict(request)
+            result = search_engine.run(
+                StageInput(
+                    "evaluation",
+                    variant,
+                    "series_search",
+                    {"request": structured_request.to_dict(), "limit": policy.limit},
+                    None,
+                    (),
+                )
+            )
+            if result.status != StageStatus.SUCCEEDED or result.payload is None:
+                raise ValueError("CandidateSearchEngine failed on a validated evaluation request")
+            payload = result.payload
+            action_trace["search_queries"] += 1
+            confirmation_required = payload.get("selection_requires_explicit_confirmation") is True
+            action_trace["explicit_confirmation_required"] += confirmation_required
+            action_trace["confirmation_bypasses"] += not confirmation_required
+            action_trace["selection_or_collection_payloads"] += bool(
+                {"selection", "confirmed_selection", "collection_plan", "task_plan"} & set(payload)
+            )
+            proposal = CandidateProposal.from_dict(payload["proposal"])
+            metadata_by_id = {row["candidate_id"]: row for row in payload["ranking"]}
+            ranked = [
+                {"candidate": candidate, **metadata_by_id[candidate.candidate_id]}
+                for candidate in proposal.candidates
+            ]
             ids = [row["candidate"].candidate_id for row in ranked]
             by_id = {row["candidate"].candidate_id: row for row in ranked}
             group["queries"] += 1
@@ -213,10 +254,18 @@ def evaluate_split(
         "policy_sha256": policy.sha256,
         "groups": groups,
         "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
-        "execution_boundary": "offline_ranker_only_no_collection_confirmation_database_or_export_calls",
+        "execution_boundary": "fixed_catalog_candidate_search_stage_no_task_db_collection_or_export",
+        "search_stage_safety": {
+            "status": "PASS"
+            if action_trace["confirmation_bypasses"] == 0
+            and action_trace["selection_or_collection_payloads"] == 0
+            else "FAIL",
+            **action_trace,
+            "scope": "CandidateSearchEngine proposal stage only; downstream collection/export is not run",
+        },
         "prohibited_action_measurement": {
             "status": "NOT_MEASURED",
-            "reason": "The offline ranker exposes no product-action trace to evaluate prohibited actions.",
+            "reason": "Downstream collection, raw-write, and export actions are outside the search-stage evaluation.",
             "case_count": sum(group["cases"] for group in groups.values()),
         },
         "not_measured": not_measured,

@@ -42,7 +42,7 @@ Gate가 실패하면 36건으로 간주하지 않고 evaluator 단계로 넘어�
 
 새 ranker를 만들지 않는다. 기존 discovery/series_search.py의 rank_candidates를 baseline으로 사용하고, candidate 변경은 SearchPolicy 버전 주입으로 분리한다. 평가 입력은 case, catalog, policy의 고정 snapshot이며 네트워크·자격증명·task/raw DB 쓰기·제품 export가 없어야 한다.
 
-보고서에는 input/case/catalog/policy SHA, 전체 및 case type별 분자·분모, Top-1/MRR, 기대 상태 일치, 관련 후보 누락, unrelated abstention, forbidden candidate 반환, false-exact, 구조적 필드 일치를 기록한다. 금지 행동 실행은 ranker에 관측 가능한 action trace가 없으므로 `NOT_MEASURED`다. 동일 입력의 보고서는 결정적이어야 한다. unknown을 정답으로 추측하거나 지원하지 않는 collector 경로를 성공으로 채점하지 않는다.
+보고서에는 input/case/catalog/policy SHA, 전체 및 case type별 분자·분모, Top-1/MRR, 기대 상태 일치, 관련 후보 누락, unrelated abstention, forbidden candidate 반환, false-exact, 구조적 필드 일치를 기록한다. 실제 CandidateSearchEngine도 고정 catalog에서 실행해 명시 확인 요구와 선택·수집 payload 부재를 검사한다. 수집·raw-write·export 후속 동작은 실행하거나 trace하지 않으므로 해당 금지 행동은 계속 `NOT_MEASURED`다. 동일 입력의 보고서는 결정적이어야 한다. unknown을 정답으로 추측하거나 지원하지 않는 collector 경로를 성공으로 채점하지 않는다.
 
 통과 조건은 목표 case type 개선, 비목표 유형 퇴행 0, false-exact 0, 금지 동작 0이다. 통과하지 못하면 policy를 승격하지 않는다.
 
