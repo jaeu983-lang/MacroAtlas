@@ -78,6 +78,19 @@ def build_parser() -> argparse.ArgumentParser:
     census.add_argument("--live", action="store_true", required=True,
                         help="explicitly permit the official API request")
 
+    search = commands.add_parser(
+        "search", help="rank the fixed WDI seed and locally archived BLS/Census metadata",
+    )
+    search.add_argument("query", type=_search_query, help="English terms or source identifiers")
+    search.add_argument("--institution", choices=("worldbank", "bls", "census"))
+    search.add_argument("--country", action="append", metavar="ISO3",
+                        help="restrict by country code; may be repeated")
+    search.add_argument("--period-start", help="known start period, e.g. 2020 or 2020-Q1")
+    search.add_argument("--period-end", help="known end period, e.g. 2024 or 2024-Q4")
+    search.add_argument("--frequency", choices=("source", "annual", "quarterly", "monthly", "daily"))
+    search.add_argument("--limit", type=_search_limit, default=25,
+                        help="maximum results (1..50; default 25)")
+
     watch = commands.add_parser("watch", help="check an exact-scope TIC or BIS source file")
     watch.add_argument("source", choices=("tic", "bis"))
     watch.add_argument("--live", action="store_true", required=True,
@@ -133,6 +146,22 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--approve-review", action="store_true",
                         help="acknowledge a NEEDS_REVIEW result before resuming")
     return parser
+
+
+def _search_query(value: str) -> str:
+    if not isinstance(value, str) or not value.strip() or len(value) > 500:
+        raise argparse.ArgumentTypeError("query must contain 1..500 characters")
+    return value.strip()
+
+
+def _search_limit(value: str) -> int:
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError("limit must be an integer between 1 and 50") from None
+    if not 1 <= limit <= 50:
+        raise argparse.ArgumentTypeError("limit must be an integer between 1 and 50")
+    return limit
 
 
 def _worldbank_task(store: HistoryStore, settings: Settings,
@@ -255,6 +284,23 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
             summary["observation_count"] = sum(len(series["data"]) for series in observations)
         else:
             summary["observation_count"] = len(observations)
+    proposal = payload.get("proposal")
+    if isinstance(proposal, dict) and isinstance(proposal.get("candidates"), list):
+        ranking = payload.get("ranking", [])
+        rank_by_id = {
+            item.get("candidate_id"): item for item in ranking
+            if isinstance(item, dict) and isinstance(item.get("candidate_id"), str)
+        } if isinstance(ranking, list) else {}
+        summary["search_status"] = payload.get("search_status")
+        summary["selection_requires_explicit_confirmation"] = payload.get(
+            "selection_requires_explicit_confirmation", True,
+        )
+        summary["candidates"] = [
+            {"rank": index + 1, **rank_by_id.get(candidate.get("candidate_id"), {}),
+             "candidate": candidate}
+            for index, candidate in enumerate(proposal["candidates"])
+            if isinstance(candidate, dict)
+        ]
     return summary
 
 
@@ -466,6 +512,22 @@ def dispatch(args, *, boj_transport=None, bls_transport=None, census_transport=N
         return 0, estimate
 
     store = HistoryStore(settings)
+
+    if args.command == "search":
+        request = DataRequest(
+            str(uuid4()), args.query, institution_hint=args.institution,
+            countries=tuple(args.country or ()), period_start=args.period_start,
+            period_end=args.period_end, frequency=args.frequency,
+        )
+        plan = TaskPlan((StageSpec("search", "series_search", {
+            "request": request.to_dict(), "limit": args.limit,
+        }, max_attempts=1),))
+        registry = build_engine_registry(settings, store, clock=clock)
+        runner = registry.orchestrator_for(plan=plan)
+        task = runner.create("Local metadata candidate search")
+        runner.plan(task.task_id, plan)
+        doc = runner.run(task.task_id)
+        return _exit_code(doc), _summary(doc)
 
     if args.command == "large-run":
         from macro_data_platform.ingestion.large_file_production import (

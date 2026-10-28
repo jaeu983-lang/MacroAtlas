@@ -968,3 +968,9 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 2026-10-28. 사용자는 현재 기관 지원 경로가 너무 작다고 지적했다. 기존에 EngineRegistry에 등록됐지만 Python 호출만 필요하던 BLS·Census API engine을 `macroatlas collect bls`와 `macroatlas collect census`에서 exact query로 실행할 수 있게 했다. 입력은 각 connector의 `BLSQuery`·`CensusQuery` 계약으로 task 생성 전에 검증하고, `--live`를 필수로 하며, 저장 `TaskPlan`·공통 EngineRegistry·Orchestrator와 기존 `resume` 경로를 사용한다. credentials는 프로세스 환경에서만 읽고 query/task/manifest에 넣지 않는다.
 
 BLS는 요청당 20개까지의 series ID와 최대 20년의 구간, Census는 ACS1/ACS5 한 해, 최대 50개 variable(`NAME` 포함), `us:1` 또는 `state:NN` 범위만 받는다. 기관 전체 catalog 탐색, variable 의미 확정, XLSX/CSV export는 추가되지 않았고, fixture 검증은 실제 API 성공 증거가 아니다. 제품 Gate D–G의 상태를 바꾸지 않는다. CLI fixture, 공통 engine 회귀 포함 전체 878개 pytest, Ruff, `git diff --check`가 통과했다.
+
+## D-116 — 보존 metadata에 대한 오프라인 검색 CLI
+
+2026-10-28. PR #74에서 exact-ID BLS/Census collection CLI가 병합된 뒤에도 사용자가 검색 기능을 바로 실행할 수 없다는 점을 확인했다. 기존 `CandidateSearchEngine`을 `macroatlas search` 명령과 공통 EngineRegistry에 연결해 검색 요청·결과를 task history에 보존한다. 검색은 network를 사용하지 않고 고정 WDI seed와 이미 보존되어 hash가 검증된 BLS/Census metadata archive만 읽는다. 결과는 후보·근거·unknown 필드를 표시하며 자동 선택이나 수집은 하지 않는다.
+
+검색 알고리즘과 Gate C 정책은 변경하지 않는다. 전체 provider catalog 갱신, 한국어 의미검색, 후보 자동 선택, API 호출·raw write·export는 범위 밖이다. 기존 lexical rank가 `exact`여도 동등성 증명이 아니며, 사용자에게 `review_required` 등 검토 정보를 그대로 표시한다. 검색 query와 결과는 `data/catalog.sqlite`에 저장된다. Fixture 기준 CLI/search/registry 회귀로 검증하며 이는 live API 또는 전체 catalog 지원 증거가 아니다.
