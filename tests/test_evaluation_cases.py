@@ -19,6 +19,7 @@ from macro_data_platform.workflow_contracts import Candidate
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/fixtures/evaluation/v1"
+REVIEWED_CORPUS = ROOT / "tests/fixtures/evaluation/v2"
 
 
 def test_initial_manifest_and_case_snapshots_are_deterministic_and_evidence_checked():
@@ -195,6 +196,84 @@ def test_manifest_detects_tampering_without_touching_the_source_corpus(tmp_path)
     with (copied / "catalog_snapshot.json").open("a", encoding="utf-8") as stream:
         stream.write(" ")
     with pytest.raises(ValueError, match="manifest hash"):
+        load_corpus(copied, repo_root=ROOT)
+
+
+def test_reviewed_v2_corpus_links_every_draft_to_an_approved_gpt_review():
+    corpus = load_corpus(REVIEWED_CORPUS)
+    ledger = [json.loads(line) for line in
+              (REVIEWED_CORPUS / "review_ledger.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert corpus.manifest["manifest_version"] == 2
+    assert corpus.manifest["gate_status"] == "complete"
+    assert len(corpus.cases) == 36
+    assert len(corpus.candidates) == 13
+    assert len(ledger) == corpus.manifest["reviewed_draft_count"] == 27
+    assert all(row["reviewer_type"] == "ai_assistant" and row["reviewer_model"] == "GPT-6"
+               for row in ledger)
+    assert sum(row["decision"] == "approved_after_revision" for row in ledger) == 1
+    assert dict(corpus.manifest["counts_by_split"]) == {
+        "development": 12, "validation": 12, "holdout": 12,
+    }
+    assert dict(corpus.manifest["counts_by_type"]) == {
+        "rankable": 9, "near_match": 9,
+        "insufficient_evidence": 9, "unrelated": 9,
+    }
+    assert corpus.split_leakage_issues == ()
+
+
+def test_reviewed_v2_cli_reports_corpus_readiness_but_not_engine_evaluation(capsys):
+    result = evaluation_cli([
+        "validate-corpus", "--corpus-dir", str(REVIEWED_CORPUS), "--repo-root", str(ROOT),
+    ])
+
+    report = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert report["status"] == "READY"
+    assert report["ready"] is True
+    assert report["case_count"] == 36
+    assert report["reviewed_draft_count"] == 27
+    assert report["split_leakage_issues"] == []
+
+
+def test_review_ledger_rejects_unsubstantiated_source_draft_hash(tmp_path):
+    copied = tmp_path / "v2"
+    shutil.copytree(REVIEWED_CORPUS, copied)
+    ledger_path = copied / "review_ledger.jsonl"
+    rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()]
+    rows[0]["source_draft_sha256"] = "0" * 64
+    ledger_path.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                  for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    manifest_path = copied / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["review_ledger.jsonl"] = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                             encoding="utf-8")
+
+    with pytest.raises(ValueError, match="source draft hash"):
+        load_corpus(copied, repo_root=ROOT)
+
+
+def test_review_ledger_rejects_non_string_decision_as_invalid_data(tmp_path):
+    copied = tmp_path / "v2"
+    shutil.copytree(REVIEWED_CORPUS, copied)
+    ledger_path = copied / "review_ledger.jsonl"
+    rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()]
+    rows[0]["decision"] = []
+    ledger_path.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                  for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    manifest_path = copied / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["review_ledger.jsonl"] = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                             encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Only approved cases"):
         load_corpus(copied, repo_root=ROOT)
 
 

@@ -915,3 +915,14 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 ## D-104 — 계획 기준 통합과 PR 묶음 축소
 
 2026-10-27. 사용자가 반복 계획·과거 다음 단계 문구·회차별 PR 수를 줄이고 기준을 통합하도록 요청했다. 제품 요구사항과 실행 순서는 `PROJECT_PLAN.md`에만 두고, `IMPLEMENTATION_PLAN.md`는 현행 상태 요약, `PRODUCT_EVALUATION_ENGINE_PLAN.md`는 상세 gate, 회차 보고서는 당시 실행 증거로 분리한다. 28–29, 30–32, 33–37, 38–39회차를 네 review PR 묶음으로 관리하며, 내부 회차 checkpoint와 실패 gate는 그대로 유지한다. 기존 열린 PR #50은 corpus gate가 통과한 것으로 취급하지 않으며, 27개 assistant-simulated 사례의 독립 검토·명시적 승격 전까지 draft 상태를 유지한다. PR의 push와 pull_request 이벤트가 중복 matrix를 실행하던 설정은 기본 branch push와 PR에서만 실행하도록 제한한다. 과거 보고서의 결과·수치는 소급 변경하지 않고, 과거의 다음 단계는 현행 순서가 아님을 문서 안내에 명시한다. 이 통합은 코드 기능 구현, 평가 gate 통과 또는 사람 검토 완료를 뜻하지 않는다.
+
+
+## D-105 — 병합 후 기준 상태와 남은 작업 순서
+
+2026-10-28. PR #50을 기본 브랜치 commit 825f2aa로 병합했다. 사용자는 27개 draft의 독립 검토 완료를 확인했다. 다만 저장소에는 사례별 판정·근거 ledger가 없고 draft 원본/manifest는 생성 당시 검토 대기 상태이므로 사례를 승격하지 않는다. 고정 v1 corpus 9/36과 BLOCKED gate를 유지한다. 현재 코드의 실제 기반부터 사례 기록, evaluator, explicit promotion, typed series/freshness, 원자료와 비교 workbook, 마지막 분석가 관찰 순으로 계획을 다시 정리한다. 공통 provider composition은 완료 상태로 유지하고 기관 adapter를 다시 합치지 않는다. 회차 보고서는 당시 증거로 보존하고 현행 상태는 PROJECT_PLAN 및 IMPLEMENTATION_PLAN에서만 갱신한다.
+
+## D-106 — 요청에 따른 GPT case review와 v2 corpus
+
+2026-10-28. 사용자가 이전에 생성된 27개 사례의 결과 기록을 GPT가 직접 만들도록 요청했다. GPT-6는 27개 draft 각각의 질문·기대 상태·candidate/field·금지 동작·Excel 정책을 공식 evidence snapshot과 hash, fixed catalog 범위, privacy, split/family audit에 대조했다. 26건을 원문대로 승인했고, GDP total-versus-per-capita near-match 한 건은 두 definition 기대값을 해당 candidate metadata 문자열과 맞추고 case version 2로 승인했다. draft 파일과 generation-time `independent_review_pending` metadata는 덮어쓰지 않고 별도 ledger에 original draft hash, source/adopted case hash, reviewer type/model, UTC 시각, evidence ID/hash, decision, correction, privacy basis와 limitations를 남겼다. AI 검토는 사람 검토나 실제 사용자 관찰이 아니다.
+
+기존 v1 corpus와 `catalog-v1` snapshot은 보존한다. v2는 v1의 9건과 검토된 27건, 13개 frozen candidate로 구성했고 split/type quota 36/36, evidence hash, source-draft-to-review link, family/split leakage를 검증한다. `validate-corpus` READY는 사례 corpus 무결성만 뜻하며 ranking evaluator 결과는 아니다. Review ledger validator가 실제 원본 draft manifest·hash와 채택 case hash를 매번 검사한다. FeedbackStore bridge, search evaluator, rule promotion은 후속 단계로 둔다.

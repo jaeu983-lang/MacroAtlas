@@ -1,137 +1,27 @@
-# 엔진 통합·분리 개선안
+# 엔진 책임 경계
 
-기준일: 2026-10-27. 이 문서는 현재 실행 경로를 대조해 중복을 줄이고 경계를 선명하게 하는 상세 설계와 구현 기록이다. 제품 범위·현재 우선순위는 [통합 제품 기획](../PROJECT_PLAN.md)을 따르며, 24회차 common check entrypoint와 26회차 isolated updater handoff는 구현됐다. 제품 데이터 경로와 개발자 코드 업데이트 경로는 하나의 거대 엔진으로 합치지 않는다. 각 경로 내부에서 반복되는 실행·기록·검증만 공통화한다.
+> 제품 범위와 우선순위는 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 현재 구현 여부는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 남은 순서는 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)가 기준이다. 이 문서는 엔진 통합을 반복 계획하지 않고 코드 경계만 고정한다.
 
-## 용어
+## 공통으로 묶는 것
 
-- **Engine:** 제품 Orchestrator가 실행하는 독립된 stage 구현. source/format별 입력과 검증 계약을 갖는다.
-- **Orchestrator:** 제품 task·stage·attempt·retry/resume을 관리하고 등록된 engine을 순서대로 실행한다.
-- **Maintenance workflow:** 저장소 분석부터 코드 candidate·QA·review 자료까지 잇는 개발자 도구 흐름이다. 기획서의 기존 “Improvement Engine” 표현은 이 흐름을 가리키며 제품 데이터 engine과 다른 trust boundary다.
-- **Shared service:** transport, raw/artifact store, parser helpers, capacity/duration profile처럼 여러 stage에서 호출하는 부품이다. 독립 권한·수명 주기가 없는 한 이를 별도의 engine으로 부르지 않는다.
+- EngineRegistry와 composition root가 저장된 engine/version에 맞는 실행기를 조립한다.
+- Orchestrator가 stage lifecycle, attempt, 상태, 저장 이력, 명시적 resume를 관리한다.
+- 공통 품질·freshness·raw provenance·성능 metric은 typed contract로 전달한다.
+- FeedbackStore는 피드백의 append-only 기록이다. case review ledger, 평가 결과, rule promotion은 별도 기록이다.
+- Export는 검증된 저장 결과를 읽고 새 산출물을 만든다. 저장된 raw와 task history를 수정하지 않는다.
 
-## 먼저 답: 무엇을 합치고 무엇을 남길까
+## 출처별로 유지하는 것
 
-MacroAtlas에는 성격이 다른 두 제어 흐름이 필요하다.
+World Bank, BOJ, BLS, Census adapter는 endpoint, 인증, paging, 응답 schema와 period 표현이 다르므로 각각 유지한다. 공통 registry는 실행 lifecycle을 공유할 뿐 출처 의미를 합치지 않는다. 파일 parser는 처음에는 구조를 보존하며, 공식 의미가 확인되기 전에는 economic TimeSeries라고 선언하지 않는다.
 
-1. **데이터 제품 흐름**은 사용자 요청을 저장된 `TaskPlan`으로 만들고 Orchestrator가 등록된 source engine을 호출한다. World Bank·BOJ API, TIC/BIS 파일 watch, 작은 파일 parser, 대용량 worker, CSV exporter는 입력과 위험이 달라 독립 adapter/worker로 남긴다. 공통 `Engine` / `StageInput` / `StageResult`, task history, raw/artifact 참조, 명시적 retry 정책을 사용한다.
-2. **개발자 유지보수 흐름**은 저장소 근거를 분석하고 코드 변경 후보를 만든 뒤, 별도 worktree에서 수정·QA·검토 자료를 생성한다. 제품 task나 수집 원본을 처리하는 Orchestrator와 분리한다. 사용자가 요청한 자동 업데이트는 검증된 전용 branch까지 자동화할 수 있지만 merge와 배포는 사람 검토로 남긴다.
+대용량 trial/production worker는 자원 한도, 잠금, checkpoint 복구가 일반 API/tabular 경로와 달라 전용 실행 경계를 유지한다. TIC/BIS 반복 변경 감시는 현재 범위에서 제외한다.
 
-즉, 제품 엔진은 **공통 실행 계약 아래 분리**하고, 유지보수 스크립트는 **한 개발자 workflow controller 아래 통합**한다. source별 처리 규칙이나 대용량 worker를 공통 로직에 억지로 흡수하지 않는다.
+## 남은 구현 경계
 
-요구사항 A–G와 현재 코드의 대조 결과는 [엔진 요구사항 감사](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md)에 기록한다. 2026-10-27에는 기존 split-set scaffold validator와 split별 synthetic 사례 여섯 건, 별도의 evidence-backed `EvaluationCase` v1 contract·고정 snapshot·9개 사례 corpus를 추가했다. 고정 corpus는 목표 36개 중 9개여서 gate가 차단됐고, 독립 검토 전인 27개 assistant-simulated draft는 별도 보관한다. 실제 검토된 feedback 사례와 candidate 평가(C)·규칙 승격 심사(D)·공통 다중 시계열 Excel 출력(E–G)은 구현 완료가 아니다.
+- 사례 검토 ledger는 초안 파일을 덮어쓰지 않고 원본 hash와 reviewer decision을 연결한다.
+- evaluator는 기존 rank_candidates를 불러 같은 case/catalog snapshot에 대한 결과를 비교한다. 두 번째 독립 ranker를 만들지 않는다.
+- freshness 구현은 기존 FreshnessPolicy와 assess_freshness를 확장한다. 별도 threshold 엔진을 병렬 추가하지 않는다.
+- typed series model은 source adapter를 대체하지 않고 adapter 결과를 정규화하는 공통 계약이다.
+- XLSX writer는 기존 입력용 parser와 구분한다. 원본 전달과 다중 series 정렬을 같은 출력 기능으로 뭉치지 않는다.
 
-## 현재 코드에서 확인한 중복과 단절
-
-| 구성요소 | 지금 하는 일 | 확인한 중복·공백 | 목표 위치 |
-|---|---|---|---|
-| `Orchestrator`와 `Engine` protocol | 제품 task/stage를 저장하고 `(engine, version)` 구현을 순차 호출 | 공통 제품 실행 계약은 이미 존재한다. 새로운 상위 data super-engine은 중복이다. | 데이터 제품 control plane으로 유지 |
-| API·file·large engines | provider transport, parser, source guard, resource budget 등 서로 다른 작업 | 역할이 달라 이름만 비슷한 중복으로 취급하면 안전 경계가 사라진다. | 전문 engine/adapter/worker로 유지, 반복되는 값 계약만 공통화 |
-| `large_file_duration.py` | qualification과 production/resume 양쪽에서 같은 bounded profiler/forecast service 호출 | 여기서는 유용한 중복 제거가 이미 되어 있다. 두 실행의 기록/승인/자원 한도는 여전히 다르다. | 공유 estimator를 유지하고 `qualification`/`production` 학습 이력과 실행 가드를 분리 |
-| `pattern_cli` / `PatternAnalyzer` | SQLite 이력을 읽고 개선 후보를 제안하는 read-only 분석 | 제안을 실제 코드 수정이나 QA에 넘기는 연결이 없다. scope가 unknown이면 근거를 만들지 않는다. | 유지보수 controller의 분석 단계 |
-| `scripts/run_improvement.ps1` / `run_improvement.py` | clean base에서 task branch/worktree를 만들고 Codex를 실행. 변경 경로를 allowlist로 검사한 뒤 candidate commit·QA·조건부 push/PR을 수행 | 실제 Codex 장시간 pilot과 scheduler 운영 증거는 아직 없다. 허용 경로 밖 변경은 보존하되 push하지 않는다. | supervised pilot 후 scheduler policy 평가 |
-| `scripts/run_maintenance_qa.py` | clean `HEAD` 또는 지정 base→candidate SHA를 detached worktree에서 pytest/Ruff/diff/CLI 검사 | QA 실패·timeout이면 push/PR 단계로 가지 않는다. updater는 같은 candidate SHA를 넘긴다. | 공통 QA service로 유지 |
-| `scripts/run_checks.ps1` | 24회차부터 `run_maintenance_qa.py`를 호출하는 Windows wrapper | 이전에는 현재 checkout에서 pytest/health를 따로 돌리고 text report를 썼다. | 단일 Python runner만 호출. 실제 Windows wrapper invocation은 CI matrix에서 확인 |
-| `scripts/install_tasks.ps1` | 매일 health task와 매주 improvement task를 따로 등록 | scheduled improvement가 별도 QA flow와 연결되지 않는다. 운영 설명과 실행 경로가 여러 파일에 나뉜다. | 단일 maintenance command를 부르는 scheduler entry |
-
-`run_improvement.ps1`은 `run_improvement.py`의 Windows wrapper다. updater는 원래 checkout을 전환하지 않고, Git에 저장된 base만 별도 worktree로 가져온다. allowlist 검사와 동일 candidate SHA QA가 통과한 경우에만 push하고 review PR을 연다. merge와 publish는 자동화하지 않는다. 실제 Codex task 실행 pilot과 예약 작업 경계는 별도 확인 대상이다.
-
-2026-10-27 첫 read-only pattern 분석은 47 tasks/55 stages에서 insufficient-evidence 7개를 반환했다. 재검증에서는 다섯 fixture 오류와 BIS 오류 둘의 성격이 달랐다. 보존 event와 manifest를 연결한 후 analyzer snapshot은 49 tasks/57 stages 중 synthetic qualification fixture 15건, 보존 파일 qualification trial 5건, operational stage 37건으로 분리된다. 전체 69 task/57 stage catalog audit에서는 operational 오류 3건(BIS 2, World Bank 1)과 BLS/Census/large-file-production 성공 stage의 projection 공백 5건을 확인했다. 전체 집계와 후속 scope 작업은 [scope evidence recovery 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [engine×institution 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)에 있다.
-
-## 목표 구성
-
-```mermaid
-flowchart LR
-    subgraph PRODUCT[데이터 제품 control plane]
-        U[사용자 CLI/API] --> O[Orchestrator · TaskPlan · history]
-        O --> R[engine registry]
-        R --> API[기관 API adapters]
-        R --> FILE[파일 watch · tabular engine]
-        R --> LARGE[승인된 대용량 worker]
-        R --> EXPORT[검증된 exporter]
-        API --> E[raw · manifest · quality evidence]
-        FILE --> E
-        LARGE --> E
-        EXPORT --> E
-    end
-    subgraph DEV[개발자 maintenance control plane]
-        S[schedule / CLI] --> MC[한 개 maintenance controller]
-        MC --> A[read-only pattern analyzer + scope adapter]
-        A --> P[증거가 붙은 변경 계획]
-        P --> W[별도 branch/worktree의 updater]
-        W --> Q[candidate SHA용 QA service]
-        Q --> B[실행 보고서 · diff · review PR]
-    end
-```
-
-두 control plane은 코드를 공유할 수 있지만 task DB, worker, 권한, 결과 상태를 공유하지 않는다. 유지보수 updater는 제품 CLI의 source collection 경로를 호출하지 않는다. 제품 실행 중에는 저장소 파일을 수정하지 않는다.
-
-### 공통화할 것
-
-- **데이터 경로:** `TaskPlan`, `(engine, version)` registry, `StageInput/StageResult`, retry budget, artifact references. 기존 Orchestrator 계약을 기준으로 빠진 adapter만 연결한다.
-- **대용량 예측:** `large_file_duration.py`의 bounded profiling과 estimator를 qualification 및 production/resume에서 공유한다. workload profile 계산 중복은 만들지 않되, 성공 실측·신뢰도·예측 오차는 operation별로 분리한다. qualification 성공은 production 승인으로 이어지지 않는다.
-- **개발 경로:** 환경 점검, run manifest, timeout, subprocess log, QA 결과, diff 요약, 종료 상태 처리를 한 maintenance controller/service로 둔다.
-- **이력 표현:** 실행마다 input commit, base commit, candidate commit, OS/Python/tool versions, 실행 mode, 검사별 결과, 변경 파일, 최종 상태를 구조화 report에 남긴다.
-
-### 분리해서 유지할 것
-
-- 기관별 API endpoint, authentication, pagination, response schema는 connector/engine adapter에 둔다.
-- `TabularFileEngine`과 대용량 worker는 parser 범위·memory/time budget·checkpoint가 다르므로 분리한다. trial qualification은 production 승인으로 승격하지 않는다.
-- `PatternAnalyzer`는 운영 task evidence만 읽는다. 개발자 코드 diff를 고치거나 품질을 승인하지 않는다.
-- Codex updater는 격리 worktree에서 코드만 수정한다. source raw, catalog, credentials, 환경 권한을 읽거나 바꾸지 않는다.
-- QA service는 candidate를 검사하고 결과를 판정한다. updater의 성공 메시지를 신뢰해 QA를 생략하지 않는다.
-- 사람 리뷰는 merge/deploy 결정으로 남긴다. 자동화는 검증된 branch commit/push와 PR까지 지원할 수 있지만 main 병합·환경 publish를 하지 않는다.
-
-## 실행 단계를 하나로 잇는 설계
-
-현재 초기 유지보수 check 진입점은 `python scripts/run_maintenance_qa.py`다. 제품 사용자용 `macroatlas`와 구별하며,
-장기적인 maintenance subcommand 이름은 후속 CLI 설계에서 결정한다.
-
-1. `check` (24회차 완료): OS·Python의 clean committed checkout에서 project health, pytest, Ruff, commit whitespace, Python/installed CLI help를 한 번씩 실행하고 structured JSON report와 check별 log를 남긴다. `run_checks.ps1`은 이 Python entrypoint만 호출한다.
-2. `analyze`: PatternAnalyzer와 scope adapter를 읽기 전용으로 실행한다. missing scope는 unknown으로 남기고, 파일/라인 또는 task/event 근거가 없는 후보를 `NOT_ACTIONABLE`로 끝낸다.
-3. `improve --finding <id>`: 명시 근거와 수용 조건이 있는 변경만 최대 3개 선택한다. clean base SHA에서 task 전용 branch/worktree를 만들며 기존 checkout의 branch를 바꾸지 않는다. `Codex`는 허용 경로 안에서만 수정한다.
-4. `qa --candidate <sha> --base <sha>` (검증기 완료): 전체 commit SHA 두 개를 받고 base가 candidate의 조상인지 확인한 뒤 detached worktree에서 candidate 자체를 검사한다. 원 checkout은 dirty여도 되며 report에 두 SHA·변경 파일·원 checkout 상태를 남긴다.
-5. `report` (isolated updater handoff 완료): Codex의 변경 경로와 symlink/credential/database 파일을 검사하고, 허용 변경만 commit한다. 같은 candidate SHA의 QA가 통과할 때만 push와 PR 생성으로 넘어간다. no-op은 worktree와 생성 branch를 정리하며, 실패·범위 밖 결과는 로컬 보고서와 검토용 worktree를 보존한다. 자동 merge와 publish는 제공하지 않는다.
-
-한 주기 실행은 동시 update를 막는 lock/idempotency key를 가져야 한다. 이미 실행 중이면 두 번째 수정 작업을 시작하지 않고 `ALREADY_RUNNING`으로 끝낸다. 변경이 정당화되지 않으면 `NO_ACTIONABLE_FINDING`, 정보 부족이면 `INSUFFICIENT_EVIDENCE`, 환경을 쓸 수 없으면 `NOT_EXECUTED`를 구분한다.
-
-## 도입 순서와 완료 기준
-
-한 회차에 아래 항목 중 하나씩 진행한다. 24회차 공통 검사 경로, 25회차 검증된 scope adapter, 26회차 candidate SHA QA와 updater handoff 구현이 끝났다. Windows 수동 no-op과 cleanup은 통과했다. Read-only Windows task 조회에서 MacroAtlas 예약 작업이 하나도 등록되지 않은 것을 확인했다. task principal과 실행 조건은 등록된 task가 없어 관찰할 수 없었다. 예약 설정을 실행하거나 활성화하지 않았다.
-
-| 순서 | 다음 작업 | 선행 이유 | 완료 기준 |
-|---|---|---|---|
-| 24 완료 | Cross-platform maintenance check service | pytest 중복과 text/JSON report 차이를 줄인다. | `run_maintenance_qa.py`가 health·pytest·Ruff·CLI·commit whitespace를 구조화 report로 실행한다. `run_checks.ps1`은 wrapper다. CI matrix가 동일 Python entrypoint를 실행한다. [24회차 보고서](ITERATION_24_REPORT.md) |
-| 25 후속 완료 | Analyzer evidence domain, institution scope adapters, technical/economic requirements | 초기 분석이 합성 시험과 운영 오류를 섞고 보존 provider scope 일부를 읽지 못했다. | 저장 event 검증으로 trial 분리, BIS/BLS/Census exact raw/manifest scope 검증, production plan hash 확인을 수행한다. BLS dataset ID는 근거가 없어 unknown으로 남긴다. 기술 오류는 concept 없이 같은 engine/version/stage/dataset에서만 검토하며 경제 의미는 concept이 없으면 제안하지 않는다. [검토 기록](SCOPE_EVIDENCE_RECOVERY_PLAN.md) |
-| 26 완료 | Isolated updater와 candidate QA handoff | 기존 updater가 현재 branch를 바꾸고 QA를 호출하지 않았다. | `run_improvement.py`는 origin/명시 base에서 isolated worktree를 만들고 경로 allowlist·no-op·동일 SHA QA·조건부 push/PR을 연결한다. CI dry run과 unit tests가 no-op 정리 및 QA 실패 시 무push를 확인한다. 실제 Codex pilot은 27회차에서 확인한다. [보고서](ITERATION_26_REPORT.md) |
-| 27 진행 | Updater 운영 가드와 감독 pilot | 자동 주기는 통합 흐름이 Windows에서 운영 가능한지 입증한 뒤에만 검토한다. | 명시 base ref/Python/principal, 교차 프로세스 lock, `ALREADY_RUNNING`, 보수적 90일 retention을 구현한다. Windows installer dry-run, updater no-op/cleanup, OS lock 경합 검증은 통과했다. 예약 작업은 비활성으로 두며 Windows candidate handoff/failure 복구 및 실제 scheduler 실행 검토를 남긴다. |
-
-2026-10-27 상태: PR #26 뒤 첫 Linux updater 시도는 token refresh `401`로 실패했지만 device-code 재인증 후 재실행은 candidate QA/PR handoff에 성공해 PR #28로 병합됐다. Windows 첫 수동 run은 no-op 후 cleanup이 실패했으며, PR #31에서 오류 기록과 빈 orphan cleanup을 보완했다. 후속 Windows run은 `NO_ACTIONABLE_CHANGE`와 `cleanup=PASSED`로 끝났다. Scheduler 정적 검토에서는 명시 base ref, 교차 실행 lock, report 보존 정책이 없는 점을 확인했다. read-only Windows 확인에서도 MacroAtlas 예약 작업은 등록되지 않았다. 가드와 Windows candidate/failure 경로를 검증하기 전까지 scheduler를 활성화하지 않는다. 자세한 실행 근거는 [27회차 pilot 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했다.
-
-2026-10-27 PR #34에서 installer에 명시 base branch·Python 경로·현재 사용자의 `Interactive`/`Limited` principal을 추가했다. Updater OS file lock은 manual/scheduled invocation을 직렬화하고, 이미 실행 중이면 `ALREADY_RUNNING`으로 기록한다. 90일 retention은 정상 no-op updater와 정상 일상 QA report에만 적용하며 candidate, 실패, cleanup 미완료, 예상 밖 파일은 보존한다. 로컬 733개 테스트와 Ruff는 통과했다. GitHub Actions는 결제/사용 한도 문제로 실행되지 않았지만, 최신 Windows checkout의 수동 installer dry-run에서 base SHA/principal/action 계획과 `registered=false`가 확인됐다. 구버전 checkout에서 실수 등록된 두 task는 제거된 뒤 조회상 남지 않았다. 실제 Windows changed/failure updater pilot과 Task Scheduler 실행은 미완료이며 예약 task는 비활성이다.
-
-사용자는 이어 `20261027T062202Z-a897a292`를 Windows에서 실행해 최신 base `689cd1b14dd15c50987893ac9cd25dbe9c6aab62`의 no-op path를 확인했다. Worktree/branch cleanup이 통과했고, network/push/PR 없이 retention 요약 `scanned=3, removed=0, preserved=3`을 남겼다. 이 결과는 정상 no-op 경로만 증명한다. 동시 lock 경합, Windows candidate QA/handoff, 실제 scheduled invocation은 미검증이며 scheduler는 비활성이다.
-
-뒤이어 사용자는 temporary Python holder가 lock을 점유한 상태에서 두 번째 PowerShell updater를 실행했다. Windows run `20261027T063105Z-60a54edf`는 `ALREADY_RUNNING`, `network_requested=false`, `push_status=NOT_RUN`을 반환했다. 따라서 OS lock contention 경로는 Windows에서도 확인됐다. 이는 provider transient failure/resume나 scheduled invocation의 증거가 아니다. Windows candidate QA/handoff와 실제 scheduler 실행은 미검증이며 scheduler는 비활성이다.
-
-PR #38 병합 후 사용자는 최신 base `aefd320a67d0abb5779393b90d32f6d149efa77e`에서 updater를 다시 수동 실행했다. Run `20261027T063907Z-d01e9247`는 `NO_ACTIONABLE_CHANGE`, `cleanup=PASSED`, `network_requested=false`와 retention `scanned=5, removed=0, preserved=5`를 기록했다. 이 no-op 반복 검증은 candidate/failure 경로와 실제 scheduled invocation 검증을 대체하지 않는다.
-
-2026-10-27 후속 Windows 검증에서 사용자는 checkout `f8693f0`의 `test_run_improvement.py`와 `test_maintenance_retention.py`를 Anaconda Python으로 실행해 34개를 모두 통과했다. 이 suite는 Windows에서 updater lock/no-op cleanup/retention 및 candidate QA 결과에 따른 push 차단·순서를 검증한다. 실제 Codex changed-candidate handoff와 scheduled invocation은 여전히 관측되지 않았으며 예약 task는 비활성이다.
-
-같은 날 최신 base `e25d944af1b789b47d712707c0e180757b749bfb`에서 Windows updater run `20261027T084854Z-00b29eb9`가 실행됐다. Codex exit code 0, `NO_ACTIONABLE_CHANGE`, cleanup `PASSED`, retention `scanned=7/removed=0/preserved=7`을 기록했다. 이는 정상 no-op 실측이며 candidate QA/handoff나 실제 scheduled invocation은 아니다.
-
-이 순서는 코드 업데이트 자동화의 완결성을 우선한다. 사용자 요청에 따라 제품 사용자 관찰은 참가자 확보만으로 병행하지 않고,
-[제품 평가·엔진 통합·Excel 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)의 A–G가 끝난 뒤 최종 검증으로 진행한다. 유지보수 실행 결과는
-제품 사용성이나 Gate 증거로 세지 않는다.
-
-## 안전 조건과 미결 설계 결정
-
-- updater write allowlist는 `src/`, `tests/`, `docs/`, `.py/.ps1/.sh` 형식의 `scripts/`, `README.md`, `PROJECT_PLAN.md`로 고정한다. `data/`, `.env`, credential/database 파일, symlink, `.github/`, reports 원본 dump는 제외한다. Codex는 git worktree에서 실행하므로 source checkout의 ignored/untracked 파일을 포함하지 않는다.
-- `Codex CLI`/`gh` 부재, `origin/HEAD` 또는 명시 base 부재, 네트워크 실패는 자동 fallback하지 않고 미실행/단계 실패 사유로 남긴다.
-- QA가 통과해도 acceptance criteria, data-integrity guard, 사용자 변경 범위는 수동 검토한다.
-- commit/push는 통과 candidate branch에만 허용한다. merge, deploy, publish, 보호 정책 변경은 범위 밖이다.
-- Windows 예약 실행은 현재 사용자의 sign-in/권한/작업 경로를 확인하고 실제 Windows dry run을 통과하기 전까지 켜지 않는다.
-- 공통 code utility를 만들 때 source별 분기 대신 typed contract와 adapter를 사용한다. 공통화로 source-specific timeout, schema guard, capacity budget이 약해지는지 회귀 검사한다.
-
-### 2026-10-27 scope 재점검 정정
-
-근거 부족 7건 재검토와 full-catalog engine×institution 오류 감사를 완료했다. 현재 저장 이력에는 운영 오류가 BIS 2건과 World Bank 1건 있으며, 미상 institution/dataset을 가진 오류 stage는 없다. 이어 BLS·Census·large-file-production 성공 stage 5건의 projection을 manifest/raw 근거로 보완했다. 재검증 시 institution unknown은 0건이며 dataset unknown 2건은 BLS payload의 명시적 null로 남겼다. 다음은 BLS official series metadata를 확인하는 일이다. 전체 근거와 범위는 [scope recovery](SCOPE_EVIDENCE_RECOVERY_PLAN.md) 및 [full-catalog 감사](ENGINE_INSTITUTION_ERROR_AUDIT_2026_10_27.md)를 따른다.
+성능 report는 fixture·저장 자료 161개를 offline 기준으로만 설명한다. live API latency를 증명하지 않으며 측정된 병목 전에는 cache, SQLite, raw-write 최적화를 하지 않는다. Windows updater/scheduler는 제품 데이터 engine과 분리된 maintenance workstream이다.

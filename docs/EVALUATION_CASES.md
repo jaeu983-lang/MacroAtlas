@@ -1,68 +1,34 @@
 # Evaluation scaffolds and evidence-backed cases
 
-This documentation covers two separate inputs: the original JSON-per-split
-scaffold in `evaluation/sets/` and the evidence-backed JSONL v1 corpus in
-`tests/fixtures/evaluation/v1/`. Neither is an automatic learner.
+This documentation covers three separate inputs: the original JSON-per-split
+scaffold in `evaluation/sets/`, the initial evidence-backed JSONL v1 corpus in
+`tests/fixtures/evaluation/v1/`, and the GPT-reviewed v2 corpus in
+`tests/fixtures/evaluation/v2/`. None is an automatic learner.
 `macro-feedback` keeps the append-only runtime feedback log; accepted feedback
 does not enter an evaluation corpus unless a reviewer creates, verifies, and
 privacy-clears a case explicitly.
-The complete feedback→evaluation→promotion contract and priority order are in
-[`PROJECT_PLAN.md`](../PROJECT_PLAN.md), §7 and §11.
+Product requirements are in [PROJECT_PLAN.md](../PROJECT_PLAN.md); the current implementation order is in [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md).
 
 ## Current state
 
-The original split-set scaffold has six synthetic contract cases, two per
-split. It covers the fixed World Bank and BOJ paths, a BLS CPI
-contrast between a qualified and ambiguous request, incompatible frequencies
-in Excel, and unknown-frequency freshness. They are author-generated fixtures,
-not user feedback or evidence that live providers returned the expected data.
-The reviewer field records the synthetic author's self-review; it is not an
-independent human review.
+The original split-set scaffold and v1/v2 JSONL corpora are separate contracts.
+The legacy scaffold has six synthetic cases. The initial v1 corpus remains at
+9/36 and BLOCKED as a historical version. The v2 corpus has 36/36 cases, 12
+per split and three per case type per split, and validates READY.
 
-Its validation and holdout file bytes and versions are pinned in
-`evaluation/sets/frozen.json`. A change to either frozen set must include a
-deliberate, reviewed lock update in the same PR. The hash detects unreviewed
-drift; it does not make the public holdout secret or prevent an approved
-baseline change. The validator reports structural `READY` separately from
-`reviewed_feedback_split_coverage` (`none`, `partial`, or `complete`). Coverage
-is based only on declared provenance labels; the validator does not
-authenticate feedback IDs against the SQLite feedback log. Neither status
-scores engine behavior. These six synthetic cases are scaffolding only and do
-not satisfy the user-evidence or generalization gate.
+The original 27 assistant-simulated draft files remain unchanged with their
+generation-time `independent_review_pending` metadata. A separate v2 review
+ledger records GPT-6's case-by-case result against the exact draft hash,
+accepted case version, evidence hashes, privacy basis, and corrections. Twenty
+six were approved as written; one GDP total/per-capita case was corrected and
+approved as version 2. The ledger identifies an AI reviewer and does not claim
+human review or human-observed usage.
 
-This scaffold is not the current gold evaluation corpus and does not evaluate
-engine behavior. The v1 evidence-backed corpus is the versioned JSONL source
-for the planned search-evaluation gate. Its current manifest contains 9 of 36
-target cases across the three splits and is explicitly `blocked`. One fixed
-World Bank candidate is retained with local official evidence hashes; the
-manifest does not claim broader catalog coverage. A separate 27-case pool is
-marked `independent_review_pending`. Those assistant-simulated drafts remain
-outside the fixed catalog and corpus; hash and text-template checks do not
-replace independent semantic review. No engine evaluator or rule promotion is
-implemented by these files.
-
-Validate the original scaffold from the repository root:
-
-```text
-python -m macro_data_platform.evaluation.cli validate
-```
-
-After installing the project, the equivalent command is:
-
-```text
-macro-eval validate
-```
-
-Validate the evidence-backed v1 corpus and its evidence file hashes with:
-
-```text
-python -m macro_data_platform.evaluation.cli validate-corpus
-```
-
-This command returns exit code 2 while the corpus gate is blocked or invalid.
-It reports verified inputs and gate blockers; it never promotes drafts or runs
-the search engine.
-
+The v2 validator verifies structure, hashes, case-to-review links, evidence
+references, and split leakage. READY means the case corpus is complete and
+internally verified; it does not run a search engine, calculate ranking
+accuracy, or promote a search rule. The ranking evaluator and rule-promotion
+workflow are not implemented.
 ## Legacy scaffold record
 
 Each case has a stable `case_id`, integer `case_version`, assigned split,
@@ -136,16 +102,14 @@ field states, evidence references, prohibited actions, and Excel policy.
 Evidence paths are repository-relative and hash checked; official references
 must be clean HTTPS URIs without credential-bearing query data. Unknown or
 conflicting expected fields require supporting evidence and a review-required
-candidate status. Agent/assistant authorship is preserved as simulated and
-cannot be marked human-observed.
+candidate status. Assistant authorship remains simulated provenance and cannot be marked human-observed. Review decisions live in the separate ledger and do not rewrite draft authorship. The current v2 ledger explicitly marks GPT-6 as an AI reviewer.
 
 ## Not implemented by this step
 
 The validator does not authenticate source evidence, run an engine, calculate
 answer/ranking accuracy, compare baseline and candidate rules, calculate
-false-confirmation rates, or approve a rule. The current synthetic cases only
-exercise corpus structure. A representative evaluation still needs
-independently reviewed cases and verified feedback/source references, plus a
-shared, versioned outcome record from the product engines. Rule promotion and
-rollback remain explicit human decisions with no automatic feedback-to-code
-path.
+false-confirmation rates, or approve a rule. The legacy synthetic cases exercise
+structure only; neither the v1 nor v2 cases have been scored by an engine. The
+v2 set is an AI-reviewed, source-backed regression fixture, not evidence of
+production ranking accuracy or analyst usability. Rule promotion and rollback
+remain explicit decisions with no automatic feedback-to-code path.

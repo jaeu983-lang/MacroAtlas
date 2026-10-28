@@ -1,0 +1,787 @@
+{
+  "candidates": [
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:EN.POP.DNST",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Population density is midyear population divided by land area in square kilometers. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship--except for refugees not permanently settled in the country of asylum, who are generally considered part of the population of their country of origin. Land area is a country's total area, excluding area under inland water bodies, national claims to continental shelf, and exclusive economic zones. In most cases the definition of inland water bodies includes major rivers and lakes.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-density-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_population_density_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:17.712242+00:00",
+          "series_id": "EN.POP.DNST",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/EN.POP.DNST?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-density-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_population_density_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:18.041524+00:00",
+          "series_id": "EN.POP.DNST",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/EN.POP.DNST?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Population density (people per sq. km of land area) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "EN.POP.DNST",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:FP.CPI.TOTL",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Index of the prices of consumption goods and services, as compared to a certain reference period (2010=100).",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-cpi-index-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_cpi_index_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:32:40.592186+00:00",
+          "series_id": "FP.CPI.TOTL",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-cpi-index-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_cpi_index_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:32:41.154670+00:00",
+          "series_id": "FP.CPI.TOTL",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Consumer price index (2010 = 100) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "FP.CPI.TOTL",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+        "Observed availability evidence covers only USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:FP.CPI.TOTL.ZG",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Inflation as measured by the consumer price index reflects the annual percentage change in the cost to the average consumer of acquiring a basket of goods and services that may be fixed or changed at specified intervals, such as yearly.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-cpi-inflation-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_cpi_inflation_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:32:39.847667+00:00",
+          "series_id": "FP.CPI.TOTL.ZG",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/FP.CPI.TOTL.ZG?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-cpi-inflation-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_cpi_inflation_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:32:40.240621+00:00",
+          "series_id": "FP.CPI.TOTL.ZG",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Inflation, consumer prices (annual %) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "FP.CPI.TOTL.ZG",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+        "Observed availability evidence covers only USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:NY.GDP.DEFL.KD.ZG",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Inflation as measured by the annual growth rate of the GDP implicit deflator shows the rate of price change in the economy as a whole. The GDP implicit deflator is the ratio of GDP in current local currency to GDP in constant local currency.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-deflator-inflation-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_gdp_deflator_inflation_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:15.706277+00:00",
+          "series_id": "NY.GDP.DEFL.KD.ZG",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.DEFL.KD.ZG?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-deflator-inflation-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_gdp_deflator_inflation_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:16.323524+00:00",
+          "series_id": "NY.GDP.DEFL.KD.ZG",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.DEFL.KD.ZG?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Inflation, GDP deflator (annual %) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "NY.GDP.DEFL.KD.ZG",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the API unit field is empty and metadata has no structured frequency field.",
+        "Observed availability is limited to USA 2020–2022.",
+        "The current MacroAtlas collector does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.CD",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Official indicator label only: GDP (current US$); the retained evidence does not contain the full methodological definition.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": null,
+          "evidence_id": "worldbank-wdi-guide",
+          "kind": "official_docs",
+          "original_ref": "docs/connectors/WORLDBANK.md:indicator-reference",
+          "retrieved_at": "2026-10-24T15:29:32+00:00",
+          "series_id": null,
+          "source_agency": "World Bank",
+          "source_url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+          "source_version": null
+        },
+        {
+          "dataset_id": null,
+          "evidence_id": "worldbank-gate-a-run",
+          "kind": "live_ingestion",
+          "original_ref": "docs/ITERATION_04_REPORT.md:2020-2022-live-result",
+          "retrieved_at": "2026-10-24T15:29:32+00:00",
+          "series_id": null,
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "GDP (current US$) — USA, WDI",
+      "metadata_revision": "gate-a-2026-10-24",
+      "rationale": "The same source, country, indicator and 2020–2022 period were collected in the documented Gate A run.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "NY.GDP.MKTP.CD",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "supported",
+      "supported_outputs": [
+        "raw_json"
+      ],
+      "uncertainties": [
+        "Full methodological definition is not in retained metadata.",
+        "Unit and frequency remain unknown; use source values without conversion.",
+        "Availability evidence covers only 2020–2022."
+      ],
+      "unit": null,
+      "verification_status": "documented"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.KD",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "World Bank label and source note: GDP expressed in constant prices, adjusted for price changes with 2015 as the reference year, in US dollars.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-constant-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_gdp_constant_metadata_20261027.json:indicator",
+          "retrieved_at": "2026-10-27T13:51:33+00:00",
+          "series_id": "NY.GDP.MKTP.KD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.KD?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-constant-usa-2020-2022-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_gdp_constant_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T13:51:33+00:00",
+          "series_id": "NY.GDP.MKTP.KD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.KD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "GDP (constant 2015 US$) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official metadata distinguishes constant-price GDP from the current-price WDI series. This is a catalog distractor only; MacroAtlas collection currently rejects this indicator.",
+      "schema_version": 1,
+      "series_id": "NY.GDP.MKTP.KD",
+      "series_key": {
+        "country": "USA",
+        "indicator": "NY.GDP.MKTP.KD",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency are not supplied in the retained indicator metadata.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "The current World Bank product collector does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:NY.GDP.MKTP.PP.CD",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "This indicator provides values for gross domestic product (GDP) expressed in current international dollars, converted by purchasing power parities (PPPs). PPPs account for the different price levels across countries and thus PPP-based comparisons of economic output are more appropriate for comparing the output of economies and the average material well-being of their inhabitants than exchange-rate based comparisons.  \n\nGross domestic product is the total income earned through the production of goods and services in an economic territory during an accounting period. It can be measured in three different ways: using either the expenditure approach, the income approach, or the production approach. This series has been linked to produce a consistent time series to counteract breaks in series over time due to changes in base years, source data and methodologies. Thus, it may not be comparable with other national accounts series in the database for historical years. This indicator is expressed in current prices, meaning no adjustment has been made to account for price changes over time. The PPP conversion factor is a currency conversion factor and a spatial price deflator. PPPs convert different currencies to a common currency and, in the process of conversion, equalize their purchasing power by eliminating the differences in price levels between countries, thereby allowing volume or output comparisons of GDP and its expenditure components.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-ppp-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_gdp_ppp_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:15.143531+00:00",
+          "series_id": "NY.GDP.MKTP.PP.CD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.PP.CD?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-ppp-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_gdp_ppp_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:15.582171+00:00",
+          "series_id": "NY.GDP.MKTP.PP.CD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.MKTP.PP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "GDP, PPP (current international $) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "NY.GDP.MKTP.PP.CD",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the API unit field is empty and metadata has no structured frequency field.",
+        "Observed availability is limited to USA 2020–2022.",
+        "The current MacroAtlas collector does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:NY.GDP.PCAP.CD",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Official WDI label and note: GDP is divided by the general population to form a per-capita estimate; values are in current prices and United States dollars.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-pcap-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_gdp_per_capita_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:23:47.657372+00:00",
+          "series_id": "NY.GDP.PCAP.CD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-gdp-pcap-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_gdp_per_capita_usa_2020_2022_20261027.json",
+          "retrieved_at": "2026-10-27T14:23:50.864552+00:00",
+          "series_id": "NY.GDP.PCAP.CD",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/NY.GDP.PCAP.CD?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "GDP per capita (current US$) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata distinguishes per-capita GDP from total GDP. The current MacroAtlas World Bank collector rejects this indicator, so it is a catalog distractor only.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "NY.GDP.PCAP.CD",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the retained API metadata has an empty unit and no frequency field.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "Current MacroAtlas collection does not support NY.GDP.PCAP.CD."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:SL.TLF.CACT.ZS",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Labor force participation rate is the proportion of the population ages 15 and older that is economically active: all people who supply labor for the production of goods and services during a specified period.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-labor-force-participation-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_labor_force_participation_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:16.808752+00:00",
+          "series_id": "SL.TLF.CACT.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/SL.TLF.CACT.ZS?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-labor-force-participation-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_labor_force_participation_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:17.196638+00:00",
+          "series_id": "SL.TLF.CACT.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SL.TLF.CACT.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Labor force participation rate, total (% of total population ages 15+) (modeled ILO estimate) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "SL.TLF.CACT.ZS",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:SL.UEM.TOTL.ZS",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Unemployment refers to the share of the labor force that is without work but available for and seeking employment.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-unemployment-rate-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_unemployment_rate_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:16.433068+00:00",
+          "series_id": "SL.UEM.TOTL.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/SL.UEM.TOTL.ZS?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-unemployment-rate-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_unemployment_rate_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:16.736659+00:00",
+          "series_id": "SL.UEM.TOTL.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SL.UEM.TOTL.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Unemployment, total (% of total labor force) (modeled ILO estimate) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "SL.UEM.TOTL.ZS",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:SP.POP.GROW",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Annual population growth rate for year t is the exponential rate of growth of midyear population from year t-1 to t, expressed as a percentage. Population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-growth-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_population_growth_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:41:17.250063+00:00",
+          "series_id": "SP.POP.GROW",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/SP.POP.GROW?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-growth-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_population_growth_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:41:17.668569+00:00",
+          "series_id": "SP.POP.GROW",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.GROW?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Population growth (annual %) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; current MacroAtlas collection does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "SP.POP.GROW",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown; no values are inferred from blank/missing metadata fields.",
+        "Observed availability evidence is limited to USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:SP.POP.TOTL",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Total population is based on the de facto definition of population, which counts all residents regardless of legal status or citizenship. The values shown are midyear estimates.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-total-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_population_total_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:32:41.353825+00:00",
+          "series_id": "SP.POP.TOTL",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-population-total-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_population_total_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:32:41.796253+00:00",
+          "series_id": "SP.POP.TOTL",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.POP.TOTL?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Population, total — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "SP.POP.TOTL",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+        "Observed availability evidence covers only USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    },
+    {
+      "auth_requirement": "none",
+      "availability_status": "available",
+      "available_end": "2022",
+      "available_start": "2020",
+      "candidate_id": "worldbank:2:USA:SP.URB.TOTL.IN.ZS",
+      "countries": [
+        "USA"
+      ],
+      "credential_env_var": null,
+      "dataset_id": "2",
+      "definition": "Urban population refers to people living in urban areas as defined by national statistical offices. The data are collected and smoothed by United Nations Population Division.",
+      "dimensions": {},
+      "evidence": [
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-urban-population-share-metadata-20261027",
+          "kind": "live_api",
+          "original_ref": "docs/evidence/worldbank_urban_population_share_metadata_20261027.json",
+          "retrieved_at": "2026-10-27T14:32:41.889506+00:00",
+          "series_id": "SP.URB.TOTL.IN.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/indicator/SP.URB.TOTL.IN.ZS?format=json",
+          "source_version": null
+        },
+        {
+          "dataset_id": "2",
+          "evidence_id": "wdi-urban-population-share-observations-20261027",
+          "kind": "live_ingestion",
+          "original_ref": "docs/evidence/worldbank_urban_population_share_usa_2020_2022_20261027.json:USA-2020-2022",
+          "retrieved_at": "2026-10-27T14:32:42.229156+00:00",
+          "series_id": "SP.URB.TOTL.IN.ZS",
+          "source_agency": "World Bank",
+          "source_url": "https://api.worldbank.org/v2/country/USA/indicator/SP.URB.TOTL.IN.ZS?source=2&date=2020%3A2022&format=json&per_page=100&page=1",
+          "source_version": null
+        }
+      ],
+      "frequency": null,
+      "institution_id": "worldbank",
+      "label": "Urban population (% of total population) — USA, WDI",
+      "metadata_revision": "2026-10-27",
+      "rationale": "Official WDI metadata and USA observations support the candidate label and 2020–2022 scope; the current MacroAtlas collector does not support this indicator.",
+      "schema_version": 1,
+      "series_id": null,
+      "series_key": {
+        "country": "USA",
+        "indicator": "SP.URB.TOTL.IN.ZS",
+        "source": "2"
+      },
+      "source_version": null,
+      "support_status": "unsupported",
+      "supported_outputs": [],
+      "uncertainties": [
+        "Structured unit and frequency remain unknown because the official unit is empty and the metadata response has no frequency field.",
+        "Observed availability evidence covers only USA 2020–2022.",
+        "Current MacroAtlas collection does not support this indicator."
+      ],
+      "unit": null,
+      "verification_status": "metadata_verified"
+    }
+  ],
+  "snapshot_version": "catalog-v2"
+}

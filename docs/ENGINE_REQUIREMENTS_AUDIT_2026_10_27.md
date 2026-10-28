@@ -1,5 +1,7 @@
 # 엔진 요구사항 대조 감사 — 2026-10-27
 
+> 병합 전 날짜 고정 snapshot이다. 현재 코드 상태와 사용자가 확인한 검토 상태는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 남은 수정 순서는 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)를 따른다. 아래 당시 결과와 수치는 소급 수정하지 않는다.
+
 이 문서는 이전에 합의한 엔진 통합·피드백·평가·시계열 출력 요구사항을 현재 코드와 테스트에 대조한다. 계획 문서나 시나리오에 적혀 있다는 이유만으로 구현 완료로 판정하지 않는다.
 
 ## 현재 구현 여부

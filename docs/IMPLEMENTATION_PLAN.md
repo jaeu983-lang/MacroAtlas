@@ -1,42 +1,42 @@
-# MacroAtlas 현재 구현 상태와 Gate 증거
+# MacroAtlas 구현 현황
 
-> 기준일: 2026-10-27. 요구사항·우선순위의 단일 기준은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md)입니다. 이 문서는 현재 상태만 요약하고, 과거 실행의 수치와 원본 기록은 각 보고서에 보존합니다. 이전 회차의 “다음 단계” 문구는 당시 계획이며 최신 순서는 현재 기획서를 따릅니다.
+> 기준: 2026-10-28. 제품 범위와 완료 조건은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 남은 코드 순서는 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)가 기준이다. 이 문서는 관측된 구현과 증거만 기록한다.
 
-## 현재 상태
+## 기준선
 
-원격 PR 현황을 2026-10-27에 확인했습니다. PR 57개 중 56개가 병합됐고, 열린 PR은 #50 하나입니다. #50은 `codex/iteration-28-evaluation-cases` → `codex/iteration-04-gate-a` draft PR이며 GitHub는 `MERGEABLE/CLEAN`으로 보고하고 등록된 CI 검사도 통과했습니다. 다만 27개 assistant-simulated 사례는 독립 검토 전이라 corpus gate는 계속 차단 상태입니다. 코드가 mergeable인 것과 평가 gate 통과는 별개입니다.
+- 기본 브랜치: codex/iteration-04-gate-a, merge commit 825f2aa.
+- PR #50은 merge commit 825f2aa로 병합됐고 당시 Ubuntu/Windows × Python 3.11/3.12 Actions 검사는 통과했다. 현재 변경은 PR #58에서 검토 중이다.
+- 2026-10-28 base `825f2aa` 기준 로컬 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY이고, 기존 v1 corpus validator는 9/36 BLOCKED였다.
+- 요청에 따라 GPT-6가 27개 draft를 원본 hash, 공식 evidence, 기대 state/candidate/field, 금지 행동, Excel policy, split과 privacy 기준으로 하나씩 검토했다. 26건은 그대로 승인, 1건은 definition 기대값 2곳을 바로잡아 case version 2로 승인했다. 검토자 유형은 AI로 ledger에 표시했다.
+- v2 corpus는 36/36, split/type quota 완성, 13 candidate, 27 review rows, evidence hash 통과, split leakage 0건이다. 원본 v1 9/36 BLOCKED는 이력으로 보존한다. v2 READY는 사례 무결성만 뜻하며 engine 평가 통과는 아니다.
 
-| 영역 | 현재 상태 | 남은 조건 |
+## 현재 코드와 남은 조건
+
+| 영역 | 현재 코드 | 남은 조건 |
 |---|---|---|
-| 공통 실행 제어 | `EngineRegistry`가 버전별 engine을 공통 Orchestrator에 등록하고 saved plan 재개를 지원합니다. | 기관별 통신·응답 adapter는 유지합니다. 대용량 worker도 별도 자원·복구 경계를 유지합니다. |
-| 성능 계측 | monotonic stage/phase 측정과 개인정보 없는 `macro-perf report`가 구현됐습니다. offline fixture/stored 표본은 161개입니다. | 실사용 network 기준선은 자연 요청에서만 수집합니다. 실제 병목이 확인되기 전 최적화하지 않습니다. |
-| 피드백 | SQLite append-only 로그, 검토 상태, 범위 지정 재사용이 구현됐습니다. | 피드백을 평가 사례로 보내는 승인 bridge와 규칙 자동 반영은 없습니다. |
-| 최신성 | daily–annual 정책 평가가 일부 API connector와 CSV 재검증에 연결됐습니다. | 기본 허용 기간은 source 공표 달력의 보증이 아닙니다. 모든 일반 파일 경로와 검증된 series별 정책 연결이 남았습니다. |
-| 평가·규칙 | 기존 synthetic scaffold와 evidence-backed v1 계약은 별도 경로로 보존합니다. | v1 고정 corpus 9/36, 27개 초안은 독립 검토 전. 실제 evaluator와 rule promotion 기록은 없습니다. |
-| 시계열 모델 | provider별 observation parsing과 provenance가 있습니다. | 모든 provider에서 identity, field, unit/currency, frequency/calendar, period, raw/source lineage를 보존하는 공통 typed contract가 없습니다. |
-| 파일 전달 | 완료된 World Bank GDP와 BOJ FXERD01 task를 제한 CSV로 전달합니다. XLSX 읽기 parser도 있습니다. | parser는 exporter가 아닙니다. 원자료 XLSX와 다중 series 비교 workbook은 미구현입니다. |
+| 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
+| 검색 | CandidateSearchEngine과 rank_candidates가 고정 catalog를 검색한다. | 같은 결과를 평가하는 evaluator와 versioned SearchPolicy 비교가 없다. |
+| 피드백 | SQLite append-only FeedbackStore와 명시 review 상태·CLI가 있다. | 사례 초안을 만들고 승인된 사례만 corpus 개발 세트로 전달하는 bridge가 없다. |
+| 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | FeedbackStore-to-case bridge와 engine evaluator는 없다. v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
+| 최신성 | FreshnessPolicy와 assess_freshness가 있고 World Bank·BOJ·BLS·Census 경로와 CSV 재검증에 연결된다. | source release calendar로 검증된 series policy와 공통 typed TimeSeries/Observation은 없다. 일반 tabular input도 freshness gate 범위 밖이다. |
+| 출력 | 품질 통과 World Bank GDP·BOJ FXERD01 task의 CSV와 provenance sidecar를 내보낸다. XLSX parser는 입력 전용이다. | 원자료 XLSX와 다중 시계열 정렬 workbook이 없다. |
+| 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본은 161개다. | live latency 표본은 승인된 자연 요청에서만 모은다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |
 
-## A–G gate 상태
+## 제품 Gate
 
-| Workstream | 상태 | 다음 완료 조건 |
+| Gate | 상태 | 완료 조건 |
 |---|---|---|
-| A–B 사례·세트 | **차단** | 27개 초안을 독립 검토하고 오류를 고친 뒤에만 고정 catalog/corpus에 명시적으로 반영합니다. 36개 목표, evidence hash, family/split audit를 통과해야 합니다. |
-| C 기준/후보 평가 | **미구현** | 동일 case/catalog snapshot에서 candidate state, ranking, fields, evidence, false-exact와 금지 행동을 재현 가능하게 비교합니다. |
-| D 규칙 승격 | **미구현** | 승인자·case version·전후 지표·적용/rollback commit을 연결하고 validation/holdout gate 전에는 승격하지 않습니다. |
-| E 시계열·최신성 | **부분 구현** | 공통 typed series와 검증된 series별 freshness policy를 World Bank·BOJ부터 provider/file 경계까지 연결합니다. |
-| F 원자료 XLSX | **미구현** | 원값·결측·provenance·호환성·충돌·최신성 경고를 보존하고 no-overwrite를 검증합니다. |
-| G 비교 XLSX | **미구현** | 호환 series만 같은 sheet에 두고 별도 정렬 결과를 만듭니다. 결측은 빈칸이며 자동 보간/forward-fill은 하지 않습니다. |
-| 최종 사용자 관찰 | **대기** | 28–39 gate가 통과된 뒤 40회차(기존 23회차 명칭)에서 분석가 1–2명을 관찰합니다. |
-
-상세 수용 기준은 [제품 평가·시계열·Excel 실행 계획](PRODUCT_EVALUATION_ENGINE_PLAN.md)을 따릅니다. 27개 draft는 rankable/near-match를 포함하지만 현재 collector가 지원하지 않는 후보가 섞여 있습니다. `candidate_found`는 검색 후보 발견을 의미할 수 있으며 사용·수집 승인을 의미하지 않는다는 기대를 사례 리뷰에서 확인해야 합니다. `unrelated`도 고정 catalog 범위의 판정이지 MacroAtlas 전체의 부재 주장이 아닙니다.
+| 사례 corpus A | 통과 (v2) | 36건 quota, 27 review ledger rows, original/case/evidence hash, privacy, split/family 검사를 통과 |
+| feedback bridge B | 미구현 | 명시 승인·비식별화된 FeedbackStore 기록만 case draft로 전달하고, 자동 promotion이 없음을 검증 |
+| 평가 C | 미구현 | 동일 input/case/catalog으로 baseline과 candidate를 비교하고 유형별 ranking, field exactness, abstention, false-exact, 금지 행동을 보고 |
+| 승격 D | 미구현 | validation 통과, frozen holdout 단회 확인, reviewer와 적용·rollback commit 기록 |
+| Series·freshness E | 부분 구현 | 공통 typed model과 source-aware freshness를 provider별로 연결. latest 요청의 STALE/FRESHNESS_UNVERIFIED 값을 차단 |
+| 원자료 XLSX F | 미구현 | source 값·결측·provenance 유지, no-overwrite와 freshness 확인 |
+| 비교 XLSX G | 미구현 | 호환성 검증, 별도 정렬 sheet, 명시 변환 정책, 빈칸 결측, 자동 채움 금지 |
+| 최종 관찰 | 대기 | A–G 통과 뒤 실제 분석가 1–2명 관찰 및 익명 evidence |
 
 ## 별도 workstream
 
-- TIC/BIS 반복 변경 감시는 현재 사용자 범위에서 제외돼 중지됐습니다. 과거 unchanged와 자연 변경 미관측 기록, Gate C의 제한 범위 판정은 보존합니다.
-- 대용량 worker는 승인된 BIS flat ZIP 한 건의 Linux 구조 보존 경로만 완료했습니다. 모든 파일 형식이나 의미 정규화 지원은 아닙니다.
-- Windows updater의 no-op/cleanup/lock 경로는 일부 검증됐습니다. Windows changed-candidate/failure 경로와 scheduler 실실행은 미검증이며 scheduler는 비활성입니다.
-- 시간 예측은 qualification 15건, production 1건, paired forecast 0건으로 신뢰도가 낮습니다. 표본 확보만을 위한 작업은 하지 않습니다.
+반복 TIC/BIS 변경 감시는 범위에서 제외됐다. 대용량 처리 확인은 보존한 BIS GLI flat ZIP 한 건의 Linux 구조 보존 경로로 제한된다. Windows updater의 변경 후보·실패 복구와 실제 scheduler invocation은 미검증이고 scheduler는 꺼져 있다. 이 항목은 제품 A–G를 막지 않는다.
 
-## 증거와 과거 기록
-
-요구사항과 순서는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 엔진별 구현 대조는 [`ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md`](ENGINE_REQUIREMENTS_AUDIT_2026_10_27.md), 결정 이력은 [`DECISION_LOG.md`](DECISION_LOG.md)를 봅니다. `ITERATION_*_REPORT.md`, Gate 기록과 live report는 당시의 증거로 보존하며, 과거의 다음 단계 문구는 현재 순서를 바꾸지 않습니다. 원초 기획은 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](../PROJECT_PLAN_ORIGINAL_2026_10_24.md)에 보존합니다.
+회차별 과거 수치와 실행 순서는 각 당시 보고서에 보존한다. 현재 상태와 다음 단계는 이 문서 및 위 두 기준 문서에서만 갱신한다.

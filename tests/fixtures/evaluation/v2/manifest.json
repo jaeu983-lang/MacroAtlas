@@ -1,0 +1,29 @@
+{
+  "case_count": 36,
+  "corpus_version": "reviewed-v2-2026-10-28",
+  "counts_by_split": {
+    "development": 12,
+    "holdout": 12,
+    "validation": 12
+  },
+  "counts_by_type": {
+    "insufficient_evidence": 9,
+    "near_match": 9,
+    "rankable": 9,
+    "unrelated": 9
+  },
+  "files": {
+    "cases.jsonl": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+    "catalog_snapshot.json": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+    "review_ledger.jsonl": "1ab3277702d530fabc26cfeeb57029b93cb9cb0cec7d4df047def61a77aca520",
+    "schema.json": "ace4c459c31e184073321b4894436752e0188b8b2589e4f78806479e405909cc"
+  },
+  "gate_blockers": [],
+  "gate_status": "complete",
+  "intended_case_count": 36,
+  "intended_cases_per_split": 12,
+  "intended_cases_per_type_per_split": 3,
+  "manifest_version": 2,
+  "missing_case_types": [],
+  "reviewed_draft_count": 27
+}
