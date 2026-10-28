@@ -936,3 +936,7 @@ SHA-256을 같이 갱신한다. 공개 저장소의 holdout hash는 secrecy나 a
 2026-10-28. 사용자가 엔진 통합·수정을 이어가되 먼저 기획을 구체화하고 중복 기획을 단일화해 문서 수와 분량을 줄이도록 요청했다. `PROJECT_PLAN.md`를 유일한 요구·우선순위·완료 기준으로 유지하고, 현재 상태는 `IMPLEMENTATION_PLAN.md`, 코드 호출 경로/제한은 `ENGINE_CONNECTIONS.md`와 `ENGINE_IMPLEMENTATION_STATUS.md`에서 관리한다. 반복된 엔진/사용자 흐름/지식/출력/평가 계획은 이 기준으로 통합하고 기존 링크를 위한 짧은 인덱스로 축약한다. 회차 보고서·검토 감사는 역사 evidence라 보존한다.
 
 공통 `EngineRegistry` composition은 이미 연결돼 있으므로 기관 transport/parser를 다시 합치지 않는다. 다음 engine hardening은 Iteration 29로, file transport·table parser·preflight 사이의 용량 초과 정보를 typed reason, observed, threshold, inspection point, disposition으로 통일한다. 기존 byte/row/cell 제한과 사용자 승인 경계는 바꾸지 않는다. Parser의 error-message substring 분류는 제거하고, 완료는 경계값·비용량 오류·raw 보존·deferral 회귀 테스트로 판정한다. 이는 제품 Gate C/D 통과를 주장하지 않는다.
+
+## D-109 — AI 합성 사용 사례를 표시된 Gate 증거로 인정
+
+2026-10-28. 사용자의 요청에 따라 GPT가 작성·검토한 가상 사용자 사례도 AI 출처를 명시한 Gate 사례 증거로 사용한다. 최종 분석가 작업 흐름 관찰도 AI 시뮬레이션을 임시 증거로 사용할 수 있다. 실제 사람의 질문·관찰이나 독립 분석가 관찰로 표시하지 않는다. 이미 관찰했거나 기존 development 사례와 겹치는 입력은 development에서만 비교하고 v2 quota, validation 또는 holdout에 중복 집계하지 않는다. 이 결정은 금지 동작 trace, frozen holdout 등 미측정 조건을 통과시킨 것이 아니며, 정책 자동 승격도 허용하지 않는다.

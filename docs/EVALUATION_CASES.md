@@ -127,6 +127,19 @@ must be clean HTTPS URIs without credential-bearing query data. Unknown or
 conflicting expected fields require supporting evidence and a review-required
 candidate status. Assistant authorship remains simulated provenance and cannot be marked human-observed. Review decisions live in the separate ledger and do not rewrite draft authorship. The current v2 ledger explicitly marks GPT-6 as an AI reviewer.
 
+## AI-simulated development evidence
+
+By user decision, AI-authored and AI-reviewed simulated user cases may contribute to Gate evaluation
+when their provenance and split are recorded. `python -m macro_data_platform.evaluation.synthetic_gate_evidence`
+compares the two reviewed synthetic examples against the same fixed catalog and labels them `ai_simulated`,
+`human_observed=false`. These already-observed examples overlap the existing development material; they are
+not added to the v2 corpus quota and cannot be treated as independent validation or holdout. The comparison
+does not measure downstream actions, user observation, holdout, or promotion and cannot pass Gate C on its own.
+The reviewed expectations state the reviewer, UTC time and `same_assistant` provenance; reviewer identity is
+recorded as supplied rather than independently authenticated.
+For other reviewed AI cases, supply `--cases` and `--expectations` JSON with the same schema. The tool is
+development-only and does not independently detect semantic split leakage; review case families before using them.
+
 ## Not implemented by this step
 
 The validator does not authenticate source evidence, calculate semantic

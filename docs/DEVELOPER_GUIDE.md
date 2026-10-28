@@ -109,12 +109,14 @@ git diff --check
 실제 사용자 피드백 원장과 분리된 `data/synthetic_feedback.sqlite`에만 저장합니다. 입력의
 `answer_origin`으로 실제 엔진의 결과와 가상 답변을 구분하고, 답변이 해당 시험 범위에서 충분한
 `answered` 사례는 `feedback: null`로 남깁니다. 실패 시에만 구체적 교정을 적습니다. 합성 기록은
-실제 사용자 기록, 검토된 평가 corpus 또는 Gate 통과 증거로 자동 전환되지 않습니다.
+실제 사용자 기록이나 평가 corpus로 자동 전환되지 않습니다. 명시된 AI 출처와 기대 결과를 검토하고
+개발용 비교를 실행하면 Gate 사례 증거로 사용할 수 있습니다. 이는 전체 Gate 통과와는 별개입니다.
 
 ```text
 python -m macro_data_platform.evaluation.synthetic_feedback --project-root . import --file tests/fixtures/evaluation/synthetic_gpt_examples.json
 python -m macro_data_platform.evaluation.synthetic_feedback --project-root . list
 python -m macro_data_platform.evaluation.synthetic_feedback --project-root . runs
+python -m macro_data_platform.evaluation.synthetic_gate_evidence --project-root .
 ```
 
 예제 두 건은 이 대화의 GPT가 작성한 질문과 로컬 후보 검색 결과입니다. 후보 검색만 측정하며 숫자 수집이나
