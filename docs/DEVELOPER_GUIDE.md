@@ -38,7 +38,7 @@ py -3 -m venv .venv
 | `ingestion/csv_export.py` | 완료된 World Bank/BOJ task와 저장 원본을 읽기 전용 검증한 뒤 CSV/provenance 파일 생성 |
 | `discovery/` | 근거가 붙은 제한 후보 찾기와 명시 선택 보조 |
 | `analysis/` | 기록을 읽는 pattern 분석. 결과는 검토 후보이지 자동 지식이나 코드가 아님 |
-| `evaluation/` | 사례 split/hash 검증, development/validation 검색 ranker 비교, feedback에서 불완전 draft 생성. 규칙 승격/rollback은 미구현 |
+| `evaluation/` | 사례 split/hash 검증, development/validation 검색 ranker 비교, feedback에서 불완전 draft 생성, `macro-promotion`의 명시 결정·rollback ledger |
 | `tests/` | offline fixture, 계약, 상태 전이, 제한된 live 관련 단위 검증 |
 | `docs/` | 제품 범위, 실제 상태, 개발 설계, 날짜가 붙은 증거 |
 
@@ -110,9 +110,21 @@ python -m macro_data_platform.evaluation.gate_c initialize-holdout --project-roo
 python -m macro_data_platform.evaluation.gate_c holdout --project-root .
 ```
 
-holdout 명령은 고정 case/catalog/policy/code/budget hash를 확인하고 실행 전에 잠금을 소비합니다. 성공·실패·중단을 모두 1회 사용으로 기록하며 같은 holdout은 다시 실행하지 않습니다. 보고서 결과가 Gate C `PASS`여도 자동 승격은 없고 D의 명시 승인·rollback 절차가 남습니다. 저장소가 공개되어 있으므로 holdout은 분리·고정된 평가 split이지 비밀 데이터는 아닙니다.
+holdout 명령은 고정 case/catalog/policy/code/budget hash를 확인하고 실행 전에 잠금을 소비합니다. 성공·실패·중단을 모두 1회 사용으로 기록하며 같은 holdout은 다시 실행하지 않습니다. 보고서 결과가 Gate C `PASS`여도 자동 승격은 없습니다. 다음 절의 `macro-promotion`은 evidence hash를 확인하고 사람의 명시 결정만 기록합니다. 저장소가 공개되어 있으므로 holdout은 분리·고정된 평가 split이지 비밀 데이터는 아닙니다.
 
 2026-10-28의 v2 holdout은 이미 한 번 실행되어 잠금이 `COMPLETED`입니다. 결과는 [`gate_c_holdout_result.json`](../evaluation/results/gate_c_holdout_result.json)에 있고 같은 split을 재실행하지 마세요. 후보를 더 수정하려면 holdout 내용을 development/validation으로 재분류하고 새 corpus/split version을 만든 뒤 새 hash와 새 one-use lock으로 시작해야 합니다.
+
+### Gate D 결정과 rollback 원장
+
+`macro-promotion --project-root . inspect`은 원장 상태를 보여주고, `macro-promotion --project-root . verify`는 hash chain과 결정 당시 Git evidence를 확인합니다. 사람의 검토 후에만 다음과 같이 결정을 기록합니다.
+
+```text
+macro-promotion --project-root . decide --decision hold --decision-maker-id operator-1 --reviewer-id reviewer-2 --decision-maker-is-human --reviewer-is-human --reason-code risk_unresolved
+```
+
+`accept`에는 Gate C PASS와 적용된 정책 commit의 전체 SHA가 필요합니다. 운영자와 독립 reviewer는 서로 다른 ID를 써야 하고 두 역할의 사람 attestation도 명시해야 합니다. 이 입력은 self-attestation일 뿐이며 도구가 계정·신원·검토 독립성을 인증하지 않습니다. `hold` 또는 `reject`는 정책을 적용하지 않습니다. 도구는 어떤 결정에서도 기본 검색 정책을 자동 변경하지 않습니다.
+
+활성 accept를 되돌릴 때는 해당 `acceptance-event-id`와 적용 commit 이후의 새 rollback commit을 `macro-promotion --project-root . rollback`에 전달합니다. 원장은 추적 파일 [`promotion_ledger.jsonl`](../evaluation/results/promotion_ledger.jsonl)에 저장됩니다. 파일 잠금과 append-only writer가 동시 추가와 덮어쓰기를 막고 hash chain은 편집·재정렬·중간 누락을 감지합니다. 결정 후에는 이 파일을 Git에 commit해야 기록이 팀에 공유되고 검토 가능한 상태가 됩니다. `verify`는 미커밋 ledger를 `UNCOMMITTED`로 표시합니다. 현재 이 원장에는 결정이 기록되어 있지 않으므로 후보는 계속 미승격이고 Gate D도 완료되지 않았습니다.
 
 `macro-perf report --project-root .`는 `data/performance.sqlite`만 읽어 engine/version/scope/workload별 성능 표본을 집계합니다. p95는 각 그룹 표본이 20개 미만이면 `INSUFFICIENT_SAMPLE`이며, fixture·stored·live_api 표본은 별도 그룹입니다. report는 task DB를 만들거나 수정하지 않습니다. 성능 계측의 범위와 해석은 [엔진 연결 설계](ENGINE_CONNECTIONS.md)를 확인하세요.
 
