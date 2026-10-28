@@ -12,6 +12,7 @@ from macro_data_platform.evaluation.feedback_bridge import (
     build_feedback_case_draft,
     write_feedback_case_draft,
 )
+from macro_data_platform.evaluation.search_baseline import evaluate_development
 from macro_data_platform.storage.feedback import FeedbackStore
 from macro_data_platform.storage.history import HistoryStore
 
@@ -29,6 +30,10 @@ def main(argv=None):
         default=Path.cwd() / "tests" / "fixtures" / "evaluation" / "v2",
     )
     corpus.add_argument("--repo-root", type=Path, default=None)
+    baseline = commands.add_parser("search-baseline", help="measure development ranking offline")
+    baseline.add_argument("--corpus-dir", type=Path,
+                          default=Path.cwd() / "tests/fixtures/evaluation/v2")
+    baseline.add_argument("--repo-root", type=Path, default=None)
     feedback_draft = commands.add_parser(
         "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
     )
@@ -76,7 +81,7 @@ def main(argv=None):
             ready = False
         else:
             complete = loaded.manifest["gate_status"] == "complete"
-            report = {
+            report = evaluate_development(loaded) if args.command == "search-baseline" else {
                 "status": "READY" if complete else "BLOCKED",
                 "ready": complete,
                 "corpus_version": loaded.manifest["corpus_version"],
