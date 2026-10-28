@@ -30,7 +30,7 @@
 
 `FeedbackStore.feedback_revisions`가 이전 질문을 포함하는 원본 append-only 원장이다. 새 피드백과 수정 revision은 계속 누적하며 분류나 엔진 승격 때문에 원문 revision을 덮어쓰거나 삭제하지 않는다. AI 분류는 별도 파생 저장소로, 원장과 분리된 `classification_run_id`와 source `(feedback_id, revision)` 링크를 갖는다. 기존 category 필드를 AI가 수정하지 않는다.
 
-분류 실행은 저장된 snapshot/watermark를 고정해 시작한다. 자유 태그와 비정형 요약을 허용하되, 개인정보를 제거한 입력만 사용하고 원문은 결과에 복사하지 않는다. 모델·prompt·taxonomy 버전, 입력 snapshot hash, 시작/완료 시각, 행별 처리시간을 기록하며 batch latency와 모델 사용량/비용은 로컬 snapshot·분류 후처리 시간과 분리한다. 표본이 충분할 때 p50/p95를 보고한다. 분류할 수 없는 행도 `unclassified` 결과로 남겨 누락시키지 않는다. 새로 들어온 행은 실행 중 snapshot에 섞지 않고 다음 run에서 처리한다.
+분류 실행은 저장된 snapshot/watermark를 고정해 시작한다. 자유 태그와 비정형 요약을 허용하되, 개인정보를 제거한 입력만 사용하고 원문은 결과에 복사하지 않는다. 분류기는 운영자가 승인한 고정 지시문을 사용하며, 분류 과정에서 system/prompt 지시문을 스스로 수정하거나 새 지시문을 만들지 않는다. 모델·prompt hash·taxonomy 버전, 입력 snapshot hash, 시작/완료 시각, 행별 처리시간을 기록하며 batch latency와 모델 사용량/비용은 로컬 snapshot·분류 후처리 시간과 분리한다. 표본이 충분할 때 p50/p95를 보고한다. 분류할 수 없는 행도 `unclassified` 결과로 남겨 누락시키지 않는다. 새로 들어온 행은 실행 중 snapshot에 섞지 않고 다음 run에서 처리한다.
 
 데이터 보존 수용 기준:
 - 입력은 현재 revision만이 아니라 snapshot에 포함된 각 feedback revision이다. 같은 질문이 revision에 반복되어도 조용히 deduplicate하지 않는다.
@@ -38,7 +38,7 @@
 - source row count와 canonical content hash를 실행 전후 대조한다. 분류 실행은 source table의 row, revision, text, original category를 바꾸지 않는다.
 - 분류 결과가 추가되므로 저장소 전체의 물리적 byte 수는 늘 수 있다. 보존해야 하는 불변조건은 원본 데이터의 양과 내용이 그대로이고, 파생 분류가 입력을 1:1로 덮는다는 점이다.
 
-분류는 우선 운영자가 명령한 배치로 가끔 실행한다. 이후 cadence가 필요해도 이전 batch와 결과를 보존하고 변경된 source revision만 새 snapshot에 넣는다. 실제 사용자 문구를 외부 AI 서비스로 보내는 정책은 현재 없다. 모델 연결 전에는 privacy scope, 승인된 model, 비용 한도와 보존 방식을 별도로 정해야 한다. 분류 결과도 사례·프롬프트·코드 변경을 자동 승인하거나 적용하지 않는다.
+분류는 우선 운영자가 명령한 배치로 가끔 실행한다. 이후 cadence가 필요해도 이전 batch와 결과를 보존하고 변경된 source revision만 새 snapshot에 넣는다. 실제 사용자 문구를 외부 AI 서비스로 보내는 정책은 현재 없다. 모델 연결 전에는 privacy scope, 승인된 model, 비용 한도와 보존 방식을 별도로 정해야 한다. AI 지시문 변경은 이 흐름의 기능이 아니다. 분류 결과는 운영자가 읽고, 코드 수정이 필요하면 운영자가 별도로 AI에 명시 지시한다. 생성된 코드 변경은 사례 평가·테스트·검토·명시 승인을 거쳐야 하며 분류기가 자동 승인하거나 적용하지 않는다.
 
 통과 조건:
 - fixed corpus 36건, development/validation/holdout 각각 12건, 각 case type은 split마다 3건
