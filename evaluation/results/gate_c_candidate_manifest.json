@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "FROZEN",
+  "created_at": "2026-10-28T13:27:45.595260+00:00",
+  "repository_revision": "ba43fb4cad76d5f3cc2c05b82948e6689b8c589f",
+  "source_code_sha256": "382efac2df36c4b380b03d76983cf7873fa1f24d8923511894c69b8ac6821fec",
+  "corpus_version": "reviewed-v2-2026-10-28",
+  "case_sha256": "d3c30d6f7c30c38bf2b91f382223cb74100b4499b4abe7893667356ebdefa924",
+  "split_input_sha256": {
+    "development": "13c34a9ba706ca65a7e84186b6807bebed428d63fb89057e7b633116d28649f1",
+    "validation": "114b9630c0b64ef9769f6e4a83845d87c510be0ebda07a29675c93ac1c726e40",
+    "holdout": "ae67e8d9cc2ccc3f0eb806318c8e0e032627edb74832ae583487e8446d9549fe"
+  },
+  "catalog_sha256": "c3e559366d72a68eee0558e6e91b28832631f2bd0afea9b8117ab27a44ad3448",
+  "budget_sha256": "64fc2b4171b04e82dfb1e9e783bc69385ffceb44d38e80fe591954867a19c3df",
+  "baseline_policy": {
+    "version": "lexical-baseline-v1",
+    "limit": 50,
+    "minimum_score": 0,
+    "semantic_disambiguation": false,
+    "sha256": "e1519fd3167f8d0a0f533edb1777c81ebb8ecdaeb377d0f757b96003df40dcd5"
+  },
+  "candidate_policy": {
+    "version": "semantic-disambiguation-v1",
+    "limit": 50,
+    "minimum_score": 37.5,
+    "semantic_disambiguation": true,
+    "sha256": "e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67"
+  },
+  "qualification_report_sha256": "edc157105f86ba61a8ef01d13703169827bc0827f5c32e1bf6f233f4a0f3942e",
+  "development_pass": true,
+  "validation_pass": true,
+  "target_improvement_coverage_pass": true,
+  "ai_simulated_development_pass": true,
+  "manifest_sha256": "726a94a9a60f3cb792421f1e6d13de22324c75f19988bd3b4371b1784d97fb5b"
+}
