@@ -178,6 +178,15 @@ python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK
 python -m macro_data_platform.feedback_cli --project-root . review --feedback-id <FEEDBACK_ID> --expected-revision 1 --status accepted --note "범위와 근거를 확인함"
 ```
 
+평가 초안이 필요하면 원본 feedback을 확인하고 직접 비식별화한 질문만 전달합니다. bridge는 현재 revision이 승인된
+`user_instruction`인지 확인하고 privacy 확인과 reviewer ID가 명시된 경우에만, 원문·task ID·scope·evidence를 제외한
+development seed를 `data/feedback_case_drafts/`에 새 파일로 씁니다. 이 파일은 완성된 사례가 아니며 corpus에 자동 추가되지 않습니다.
+`--privacy-cleared`는 호출자의 검토 확인이고 시스템이 개인정보를 자동 판별하거나 reviewer 신원을 인증한다는 뜻은 아닙니다.
+
+```text
+python -m macro_data_platform.evaluation.cli feedback-draft --project-root . --feedback-id <FEEDBACK_ID> --expected-revision 2 --sanitized-question "Show annual GDP values for the requested period." --reviewer-id reviewer-01 --privacy-cleared
+```
+
 반복 패턴 분석은 읽기 전용입니다.
 
 ```text

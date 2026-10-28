@@ -5,8 +5,15 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from macro_data_platform.config import Settings
 from macro_data_platform.evaluation.case_sets import validate_case_sets
 from macro_data_platform.evaluation.cases import load_corpus
+from macro_data_platform.evaluation.feedback_bridge import (
+    build_feedback_case_draft,
+    write_feedback_case_draft,
+)
+from macro_data_platform.storage.feedback import FeedbackStore
+from macro_data_platform.storage.history import HistoryStore
 
 
 def main(argv=None):
@@ -22,10 +29,45 @@ def main(argv=None):
         default=Path.cwd() / "tests" / "fixtures" / "evaluation" / "v2",
     )
     corpus.add_argument("--repo-root", type=Path, default=None)
+    feedback_draft = commands.add_parser(
+        "feedback-draft", help="create a local, incomplete case seed from reviewed feedback"
+    )
+    feedback_draft.add_argument("--project-root", type=Path, default=Path.cwd())
+    feedback_draft.add_argument("--feedback-id", required=True)
+    feedback_draft.add_argument("--expected-revision", type=int, required=True)
+    feedback_draft.add_argument("--sanitized-question", required=True)
+    feedback_draft.add_argument("--reviewer-id", required=True)
+    feedback_draft.add_argument("--privacy-cleared", action="store_true", required=True)
     args = parser.parse_args(argv)
     if args.command == "validate":
         report = validate_case_sets(args.sets_dir)
         ready = report["status"] in {"READY", "VALID_BUT_EMPTY"}
+    elif args.command == "feedback-draft":
+        try:
+            settings = Settings(args.project_root.resolve())
+            feedback = FeedbackStore(HistoryStore(settings))
+            draft = build_feedback_case_draft(
+                feedback,
+                feedback_id=args.feedback_id,
+                expected_revision=args.expected_revision,
+                sanitized_question=args.sanitized_question,
+                reviewer_id=args.reviewer_id,
+                privacy_cleared=args.privacy_cleared,
+            )
+            path = write_feedback_case_draft(settings, draft)
+        except (KeyError, OSError, ValueError) as exc:
+            report = {"status": "REJECTED", "errors": [str(exc)]}
+            ready = False
+        else:
+            report = {
+                "status": "DRAFT_CREATED",
+                "draft_id": draft["draft_id"],
+                "draft_status": draft["draft_status"],
+                "target_split": draft["target_split"],
+                "promotion_status": draft["promotion_status"],
+                "path": str(path),
+            }
+            ready = True
     else:
         try:
             loaded = load_corpus(args.corpus_dir, repo_root=args.repo_root)
