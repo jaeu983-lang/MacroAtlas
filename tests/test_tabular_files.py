@@ -201,6 +201,88 @@ def test_engine_archives_raw_before_parse_and_reuses_identical_input(tmp_path):
     assert manifest["table"]["duplicate_data_rows"] == [2]
 
 
+def test_engine_validates_explicit_file_series_mapping_without_guessing_metadata(tmp_path):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "series.csv").write_text(
+        "year,value,country\n2020,0,USA\n2021,,USA\n", encoding="utf-8",
+    )
+    request = StageInput("typed-file", "map an explicit series", "tabular_file", {
+        "relative_path": "data/inbox/series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "GDP", "dataset_id": "national-accounts",
+            "period_column": "year", "value_column": "value",
+            "dimension_columns": {"country": "country"}, "unit": "USD",
+            "frequency": "annual",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings).run(request)
+
+    assert result.status is StageStatus.SUCCEEDED
+    contract = result.payload["series_contract"]
+    assert contract["schema_version"] == "time-series-v1"
+    assert contract["series_id"] == "GDP"
+    assert contract["dataset_id"] == "national-accounts"
+    assert contract["observation_count"] == 2
+    assert contract["unit"] == "USD"
+    assert contract["frequency"] == "annual"
+    assert contract["frequency_basis"] == "request_contract"
+    assert contract["dimensions"] == {"country": "USA"}
+    assert contract["raw_ref"] == result.payload["raw_path"]
+    assert contract["manifest_ref"] == result.payload["manifest_path"]
+    assert result.payload["source_url"] is None
+
+
+def test_engine_preserves_file_but_rejects_invalid_series_mapping(tmp_path):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "series.csv").write_text("year,value\n2020,1\n", encoding="utf-8")
+    request = StageInput("typed-file-review", "map an invalid series", "tabular_file", {
+        "relative_path": "data/inbox/series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "GDP", "period_column": "missing-year",
+            "value_column": "value",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.payload["raw_path"]
+    assert result.payload["normalized_path"]
+    assert "series_contract" not in result.payload
+
+
+@pytest.mark.parametrize("csv_text", [
+    "year,value\n2020,1\n2020,2\n",
+    "year,value\nFY2020,1\n",
+])
+def test_engine_rejects_duplicate_or_noncanonical_mapped_periods(tmp_path, csv_text):
+    settings = Settings(tmp_path)
+    inbox = settings._inside("data/inbox")
+    inbox.mkdir(parents=True)
+    (inbox / "series.csv").write_text(csv_text, encoding="utf-8")
+    request = StageInput("typed-file-period", "validate mapped periods", "tabular_file", {
+        "relative_path": "data/inbox/series.csv", "format": "csv",
+        "source_agency": "Example Statistical Office",
+        "series_mapping": {
+            "series_id": "GDP", "period_column": "year", "value_column": "value",
+            "frequency": "annual",
+        },
+    }, None, ())
+
+    result = TabularFileEngine(settings).run(request)
+
+    assert result.status is StageStatus.NEEDS_REVIEW
+    assert result.payload["raw_path"]
+    assert "series_contract" not in result.payload
+
+
 @pytest.mark.parametrize(("fixture_name", "format_name", "options", "headers", "first_row"), [
     ("tic_monthly_holdings.tsv", "tsv", {},
      ["Country", "2020-01", "2020-02", "2020-03"], ["Japan", "123.4", "125.0", "127.2"]),
