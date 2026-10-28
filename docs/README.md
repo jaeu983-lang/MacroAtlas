@@ -9,6 +9,7 @@
 | 현재 구현·gate·증거 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) |
 | 실제 source/worker/CLI 연결 | [`ENGINE_CONNECTIONS.md`](ENGINE_CONNECTIONS.md) |
 | 기관 API·비API의 지원 범위와 한계 | [`ENGINE_IMPLEMENTATION_STATUS.md`](ENGINE_IMPLEMENTATION_STATUS.md) |
+| BLS/Census 공식 endpoint·요청 한도·응답 처리 | [`US_STATISTICS_APIS.md`](connectors/US_STATISTICS_APIS.md) |
 | 평가 사례 schema | [`EVALUATION_CASES.md`](EVALUATION_CASES.md) |
 | 최신성·출력 세부 계약 | [`SERIES_FRESHNESS.md`](SERIES_FRESHNESS.md), [`OUTPUT_AND_VARIANT_POLICY.md`](OUTPUT_AND_VARIANT_POLICY.md) |
 | 명령과 개발 절차 | [`USER_GUIDE.md`](USER_GUIDE.md), [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) |
