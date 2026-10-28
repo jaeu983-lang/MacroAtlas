@@ -31,6 +31,16 @@ accuracy, or promote a search rule. The ranking evaluator and rule-promotion
 workflow are not implemented.
 ## Legacy scaffold record
 
+`macro-eval feedback-draft` is the opt-in bridge for an accepted current
+`user_instruction`. It requires the selected feedback ID/revision, a sanitized
+question, a reviewer ID, and an explicit `--privacy-cleared` attestation. It
+writes a no-overwrite local seed under `data/feedback_case_drafts/`; `.gitignore`
+keeps this user-derived output out of version control. The seed omits original
+feedback text, task ID, scope, and source evidence, targets development only,
+and remains incomplete until its expected result, official evidence, forbidden
+actions, Excel policy, and case review are authored. It never changes a split
+set or v1/v2 corpus. No real user feedback has been bridged yet.
+
 Each case has a stable `case_id`, integer `case_version`, assigned split,
 canonical question and paraphrase variants, expected response state and source
 entity/field, required evidence, forbidden actions, and an explicit Excel

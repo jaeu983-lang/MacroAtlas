@@ -1,10 +1,10 @@
 # 남은 엔진 구현 순서
 
-> 기준: 기본 브랜치 merge commit 825f2aa, 2026-10-28. 제품 요구·정책은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 현재 구현 상태는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)가 기준이다. 이 문서는 남은 작업만 정한다.
+> 기준: 기본 브랜치 merge commit 4b26bc9, 2026-10-28. 제품 요구·정책은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 현재 구현 상태는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)가 기준이다. 이 문서는 남은 작업만 정한다.
 
 이미 구현된 공통 실행 제어, provider registry, 피드백 저장소, 검색 ranker, freshness 정책/판정 함수, CSV export를 다시 만들지 않는다. 기관별 transport·응답 parser는 유지한다. 남은 코드는 아래 의존 순서대로 네 개의 PR 묶음으로 제출한다.
 
-2026-10-28 상태: base `825f2aa` 전체 pytest와 Ruff 기준선이 통과했다. 27개 draft에 대해 GPT-6가 case-by-case 검토를 완료해 v2 corpus 36/36을 만들었고 ledger validator와 split/evidence 검사가 통과했다. 이 기록은 AI 검토이며 human review나 engine 평가로 간주하지 않는다.
+2026-10-28 상태: base `4b26bc9`까지의 v2 corpus 36/36과 Actions matrix가 통과했다. 27개 draft에 대해 GPT-6가 case-by-case 검토를 완료했고, FeedbackStore에서 privacy-cleared development seed를 만드는 제한 bridge를 구현했다. 이 기록은 AI 검토·fixture bridge 검증이며 human review, 실제 사용자 관찰, engine 평가로 간주하지 않는다.
 
 ## 0. 기준선과 사례 판정 기록 — 완료
 
@@ -12,9 +12,19 @@
 
 27개 draft 원본은 수정하지 않고 source file/case hash와 함께 [v2 review ledger](../tests/fixtures/evaluation/v2/review_ledger.jsonl)에 기록했다. 26건은 그대로 승인했고 1건은 candidate definition 기대값 두 곳을 고친 뒤 version 2로 승인했다. reviewer는 `GPT-6` / `ai_assistant`이며 검토 시각, 근거 ID·hash, privacy 판정, correction, limitation을 각 row에 남겼다. 생성 provenance의 `independent_review_pending`은 작성 당시 상태로 보존한다. AI 검토를 사람 검토나 실제 사용자 관찰로 바꾸어 표기하지 않는다.
 
-## 1. 사례 corpus와 feedback bridge — PR 묶음 1
+## 1. 사례 corpus와 feedback bridge — PR 묶음 1, 제한 완료
 
-초기 v1 JSONL corpus 9/36은 그대로 보존했다. 새 catalog snapshot과 review ledger를 포함하는 v2 corpus에 27개 승인 사례를 연결해 36/36을 채웠고 manifest validator는 original draft hash, adopted case hash, evidence hash, review record와 split leakage를 검증한다. corpus는 quota와 구조 기준 READY다. FeedbackStore 원본은 유지하며 사용자가 명시적으로 선택·승인하고 비식별화한 feedback만 case draft로 전달하는 bridge는 아직 미구현이다.
+초기 v1 JSONL corpus 9/36은 그대로 보존했다. 새 catalog snapshot과 review ledger를 포함하는 v2 corpus에 27개 GPT 검토 사례를 연결해 36/36을 채웠고 manifest validator는 original draft hash, adopted case hash, evidence hash, review record와 split leakage를 검증한다. corpus는 quota와 구조 기준 READY다.
+
+`macro-eval feedback-draft`는 `feedback_id`와 현재 `expected_revision`을 명시해야 한다. source record가 `accepted`이고 `user_instruction`이어야 하며, 호출자가 `--privacy-cleared`, pseudonymous `--reviewer-id`, 비식별화한 `--sanitized-question`을 제공해야 한다. bridge는 원문, task ID, scope, source evidence를 저장하지 않고 `data/feedback_case_drafts/`에 no-overwrite local file로 development-only seed를 만든다. seed에는 provenance와 privacy attestation을 연결하지만 전체 EvaluationCase는 아니며, corpus에 자동 추가되지 않는다. 실제 사용자 feedback은 아직 seed하지 않았다.
+
+통과 조건:
+- 미수락·stale revision·inference/official evidence는 거부하고 최신 accepted user instruction만 받는다.
+- 개인정보 확인 flag가 없거나 sanitized question/reviewer ID가 비어 있으면 seed를 만들지 않는다.
+- 원본 feedback text, task ID, scope, evidence refs가 seed에 포함되지 않는다.
+- 출력은 development seed이고 자동 승격·set/corpus 수정이 없다. 완성 사례는 근거 검증과 별도 검토를 거쳐야 한다.
+
+이 제한 bridge 구현은 fixture 기반으로 검증됐다. 실제 사용 관찰이나 36-case v2 corpus 변경을 뜻하지 않는다.
 
 통과 조건:
 - fixed corpus 36건, development/validation/holdout 각각 12건, 각 case type은 split마다 3건

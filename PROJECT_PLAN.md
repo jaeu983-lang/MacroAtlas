@@ -62,7 +62,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | TIC/BIS 지정 파일 | 필요할 때 사용자가 요청하는 제한 파일 intake/watch 명령 | 자료 변경의 반복·예약 확인은 현재 필요 범위에서 제외했고 자동 감시는 중지함. 과거 `unchanged` 및 natural revision 미관측 상태는 기록으로 보존. Gate C는 승격하지 않음 |
 | CSV 전달 | 완료·품질 통과 World Bank GDP와 BOJ FXERD01 task | 로컬 저장값 재검증 후 CSV와 provenance sidecar 작성. XLSX·다중 series 비교는 미지원 |
 | BIS GLI flat ZIP | 지정 보존 원본 한 건의 명시 승인형 Linux worker | 구조 보존 JSONL만 생성. 일반 파일·Windows worker·경제 의미 정규화는 미지원 |
-| 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용 | 자동 사례 생성·코드 수정·공통 규칙 승격 없음 |
+| 피드백·지식 | task 연결 SQLite append-only 피드백 기록, 검토 상태, 제한된 명시 재사용, 승인 피드백의 비식별 case seed CLI | 자동 사례 생성·corpus 편입·코드 수정·공통 규칙 승격 없음. 실제 사용자 피드백 seed는 아직 생성되지 않음 |
 | 주기별 최신성 | daily부터 annual까지 frequency 정책과 exact-series override를 적용하는 공통 gate | 기본 일수는 운영 기본값이며 각 기관의 실제 공표 일정 보증은 아님 |
 | 평가 사례 | legacy JSON split scaffold 6건, 초기 evidence-backed v1 corpus 9건, GPT 검토 ledger와 evidence를 연결한 v2 corpus 36건 | v1은 9/36 BLOCKED 이력으로 보존한다. v2는 27개 초안을 사례별 GPT 검토하고 1건을 정의 문자열 수정 후 36/36 READY로 고정했다. 이는 AI 검토이며 사용자 관찰이나 엔진 평가가 아니다. evaluator와 rule promotion은 미구현 |
 
@@ -163,7 +163,7 @@ Registry 등록 범위와 세부 호출 경로는 [`docs/ENGINE_CONNECTIONS.md`]
 - 승격 기록은 실패 유형, 근거 case/source/version, 지표, candidate/applied commit, reviewer decision, rollback commit을 포함한다. 통과한 평가도 사람 승인 전에는 규칙이나 코드를 반영하지 않는다.
 - raw feedback body를 공개 case 파일에 복사하지 않는다. 승인된 경우에도 필요한 문장만 비식별화하고 privacy review를 통과시킨다.
 
-FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. FeedbackStore-to-case bridge, 후보 engine 비교기, 규칙 승격·rollback record는 미구현이다. 자세한 schema는 사례 계약 문서를 따른다.
+FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feedback-draft`는 ID와 revision을 지정한 현재 수락된 `user_instruction`만 받고, 사용자가 입력한 sanitized question과 명시 privacy attestation을 포함한 local development seed를 만든다. 원문 피드백, task ID, scope, evidence는 복사하지 않으며 초안은 전체 EvaluationCase가 아니고 corpus에 자동 추가되지 않는다. 테스트는 fixture DB만 사용했고 실제 사용자 피드백은 아직 seed하지 않았다. legacy validator의 READY는 synthetic scaffold 6건 구조 검증만 뜻한다. 초기 v1 corpus 9/36은 변경하지 않고 BLOCKED 이력으로 보존한다. v2 loader는 36개 사례, 13개 고정 후보, 27개 GPT 검토 ledger row, 원본 draft·채택 case·근거 hash와 split leakage를 검사한다. v2 READY는 사례/증거 gate이며 search engine 평가 통과가 아니다. GPT review는 human review나 실제 분석가 관찰로 표시하지 않는다. 후보 engine 비교기와 규칙 승격·rollback record는 미구현이다. 자세한 schema는 사례 계약 문서를 따른다.
 
 ## 8. 지식 검색과 제한적 재사용
 
@@ -200,7 +200,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. legacy validator
 | 순서 | 남은 작업 | 다음 단계로 넘어갈 조건 |
 |---:|---|---|
 | 0 완료 | 기준선·사례 검토 기록 | base `825f2aa`에서 전체 pytest와 Ruff를 통과했다. 별도 ledger에 27개 draft의 원본 hash, GPT-6 판정·시각, 근거, privacy 결정, 채택 case hash를 기록했다. 1건은 definition 기대값을 수정해 새 case version으로 만들었다. AI 검토임을 명시하고 human review로 간주하지 않는다. |
-| 1 | 사례 corpus·feedback bridge | v2 corpus 36/36의 schema, quota, evidence hash, split leakage와 review ledger는 통과했다. 남은 일은 FeedbackStore에서 사용자가 명시 선택·승인하고 privacy-cleared한 feedback만 case draft로 전달하는 bridge다. legacy split scaffold와 v1 corpus는 유지한다. |
+| 1 완료 (bridge 제한) | 사례 corpus·feedback bridge | v2 corpus 36/36 gate와 bridge의 accepted/current revision, explicit privacy attestation, raw-data exclusion, development-only seed 및 no-promotion 동작을 fixture로 검증했다. 실제 사용자 feedback을 seed하거나 완성 사례로 검토·승격한 것은 아니다. legacy split scaffold와 v1 corpus는 유지한다. |
 | 2 | 검색 평가기 | 같은 case/catalog snapshot으로 현행 ranker와 후보 policy를 offline 비교한다. 정확도, 순위, 미확정, false-exact, 금지 동작을 유형별로 재현 가능하게 보고한다. |
 | 3 | 규칙 승격 기록 | validation 통과 후 고정 후보를 holdout에서 한 번 확인한다. reviewer, case/policy hash, 지표, 적용 commit과 rollback을 연결하고 자동 승격은 하지 않는다. |
 | 4 | typed series와 freshness | 기존 freshness 정책·판정 함수를 확장해 공통 series/observation 계약에 연결한다. World Bank, BOJ, BLS, Census, 구조 보존 파일 순으로 검증한다. |
