@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from macro_data_platform.evaluation.cases import load_corpus
-from macro_data_platform.evaluation.synthetic_gate_evidence import compare
+from macro_data_platform.evaluation.synthetic_gate_evidence import compare, main
 
 FIXTURES = Path("tests/fixtures/evaluation")
 
@@ -24,7 +24,7 @@ def test_simulated_evidence_measures_both_policies_without_claiming_user_or_gate
     assert report["origin"] == "ai_simulated" and report["human_observed"] is False
     assert report["measurements"]["baseline"]["matches"] == 1
     assert report["measurements"]["candidate"]["matches"] == 2
-    assert {"holdout", "downstream_actions", "false_exact", "non_target_regression",
+    assert {"holdout", "downstream_actions", "false_exact", "non_target_regression", "split_leakage",
             "timing_cost_budget"} <= set(report["not_measured"])
 
 
@@ -44,3 +44,15 @@ def test_missing_expectation_cannot_silently_reduce_case_count():
     expected["cases"].pop()
     with pytest.raises(ValueError, match="key sets differ"):
         compare(corpus, cases, expected)
+
+
+def test_cli_accepts_explicit_reviewed_synthetic_files(tmp_path, capsys):
+    _, cases, expectations = inputs()
+    cases_path = tmp_path / "cases.json"
+    expected_path = tmp_path / "expectations.json"
+    cases_path.write_text(json.dumps(cases), encoding="utf-8")
+    expected_path.write_text(json.dumps(expectations), encoding="utf-8")
+    assert main(["--cases", str(cases_path), "--expectations", str(expected_path)]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["split"] == "development" and report["human_observed"] is False
+    assert "split_leakage" in report["not_measured"]

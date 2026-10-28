@@ -13,7 +13,7 @@ from macro_data_platform.workflow_contracts import DataRequest
 
 
 def compare(corpus, cases, expectations):
-    if (not isinstance(cases, list) or not cases or not isinstance(expectations, dict)
+    if (not isinstance(cases, list) or not 1 <= len(cases) <= 500 or not isinstance(expectations, dict)
             or set(expectations) != {"schema_version", "split", "origin", "human_observed",
                                      "reviewer_type", "reviewer_model", "cases"}
             or type(expectations["schema_version"]) is not int or expectations["schema_version"] != 1
@@ -75,7 +75,7 @@ def compare(corpus, cases, expectations):
             "case_sha256": digest(cases), "expectations_sha256": digest(expectations),
             "catalog_sha256": corpus.catalog_sha256, "measurements": measurements,
             "delta_matches": measurements["candidate"]["matches"] - measurements["baseline"]["matches"],
-            "not_measured": ["actual_user_observation", "downstream_actions", "false_exact",
+            "not_measured": ["actual_user_observation", "downstream_actions", "false_exact", "split_leakage",
                              "non_target_regression", "timing_cost_budget", "validation",
                              "holdout", "promotion_eligibility"]}
 
@@ -83,12 +83,18 @@ def compare(corpus, cases, expectations):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
+    parser.add_argument("--cases", type=Path, help="reviewed synthetic cases JSON; development only")
+    parser.add_argument("--expectations", type=Path, help="AI provenance and expectations JSON")
     args = parser.parse_args(argv)
     root = args.project_root.resolve()
     fixture = root / "tests/fixtures/evaluation"
     corpus = load_corpus(fixture / "v2", repo_root=root)
-    cases = json.loads((fixture / "synthetic_gpt_examples.json").read_text(encoding="utf-8"))
-    expectations = json.loads((fixture / "synthetic_gpt_expectations.json").read_text(encoding="utf-8"))
+    def read_json(path):
+        if path.stat().st_size > 4 * 1024 * 1024:
+            raise ValueError("synthetic evidence file exceeds size budget")
+        return json.loads(path.read_text(encoding="utf-8"))
+    cases = read_json(args.cases or fixture / "synthetic_gpt_examples.json")
+    expectations = read_json(args.expectations or fixture / "synthetic_gpt_expectations.json")
     print(json.dumps(compare(corpus, cases, expectations), ensure_ascii=False, indent=2))
     return 0
 

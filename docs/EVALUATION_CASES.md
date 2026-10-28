@@ -135,6 +135,8 @@ compares the two reviewed synthetic examples against the same fixed catalog and 
 `human_observed=false`. These already-observed examples overlap the existing development material; they are
 not added to the v2 corpus quota and cannot be treated as independent validation or holdout. The comparison
 does not measure downstream actions, user observation, holdout, or promotion and cannot pass Gate C on its own.
+For other reviewed AI cases, supply `--cases` and `--expectations` JSON with the same schema. The tool is
+development-only and does not independently detect semantic split leakage; review case families before using them.
 
 ## Not implemented by this step
 
