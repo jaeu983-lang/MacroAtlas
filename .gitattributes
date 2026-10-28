@@ -4,3 +4,5 @@ tests/fixtures/sdmx_metadata/recorded_*.xml -text -diff
 
 # API response archives and manifests are hash-checked; preserve their exact bytes.
 data/raw/api/** -text -diff
+
+snapshots/workspace-2026-10-28/** -text -diff
