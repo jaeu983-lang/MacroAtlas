@@ -100,3 +100,42 @@ def test_search_policy_rejects_out_of_range_thresholds():
 
     with pytest.raises(ValueError):
         SearchPolicy(minimum_score=100.1)
+
+
+def test_abstention_and_unmatched_behavior_are_reported_separately(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    monkeypatch.setattr(
+        "macro_data_platform.evaluation.search_baseline.rank_candidates",
+        lambda request, candidates, *, limit: [],
+    )
+
+    report = evaluate_development(corpus)
+    unrelated = report["groups"]["unrelated"]
+    rankable = report["groups"]["rankable"]
+    assert unrelated["unrelated_abstentions"] == unrelated["unrelated_queries"]
+    assert unrelated["unrelated_with_candidates"] == 0
+    assert rankable["relevant_missing_queries"] == rankable["rankable_queries"]
+    assert report["prohibited_action_measurement"]["status"] == "NOT_MEASURED"
+    assert report["execution_boundary"].startswith("offline_ranker_only")
+
+
+def test_forbidden_exact_candidate_fails_expected_review_state(monkeypatch):
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    case = next(
+        item
+        for item in corpus.cases
+        if item.split == "development" and item.case_type == "insufficient_evidence"
+    )
+    candidate_id = case.forbidden_candidate_ids[0]
+    candidate = next(item for item in corpus.candidates if item.candidate_id == candidate_id)
+
+    def rank(request, candidates, *, limit):
+        if request.request_id == case.case_id:
+            return [{"candidate": candidate, "score": 100, "match_status": "exact"}]
+        return []
+
+    monkeypatch.setattr("macro_data_platform.evaluation.search_baseline.rank_candidates", rank)
+    group = evaluate_development(corpus)["groups"]["insufficient_evidence"]
+    assert group["forbidden_candidate_returns"] == len(case.query_variants)
+    assert group["forbidden_exact_candidates"] == len(case.query_variants)
+    assert group["expected_state_matches"] == 0

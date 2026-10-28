@@ -61,6 +61,34 @@ def _candidate_field(candidate, name):
     return _UNSUPPORTED
 
 
+def _state_matches(case, rows, returned_ids):
+    """Compare the case's expected search state using only labeled candidates."""
+    if case.expected_state == "candidate_found":
+        return bool(set(case.relevant_candidate_ids).intersection(returned_ids))
+    if case.expected_state == "unmatched":
+        return not rows
+    labeled = set(case.relevant_candidate_ids) | set(case.forbidden_candidate_ids)
+    return any(
+        row["candidate"].candidate_id in labeled and row["match_status"] == "review_required"
+        for row in rows
+    )
+
+
+def _development_input_sha256(corpus):
+    payload = [
+        {
+            "case_id": case.case_id,
+            "case_version": case.case_version,
+            "request": DataRequest.from_dict(dict(case.request)).to_dict(),
+            "query_variants": list(case.query_variants),
+        }
+        for case in corpus.cases
+        if case.split == "development"
+    ]
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None = None) -> dict:
     """Measure rank and unmatched behavior without running collection or promotion."""
     policy = policy or SearchPolicy()
@@ -76,8 +104,16 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
                 "rankable_queries": 0,
                 "top1_hits": 0,
                 "reciprocal_rank_sum": 0.0,
+                "queries_with_candidates": 0,
+                "empty_result_queries": 0,
+                "expected_state_matches": 0,
+                "expected_state_queries": 0,
+                "relevant_missing_queries": 0,
+                "forbidden_candidate_returns": 0,
+                "forbidden_exact_candidates": 0,
                 "unrelated_queries": 0,
                 "unrelated_with_candidates": 0,
+                "unrelated_abstentions": 0,
                 "false_exact_candidates": 0,
                 "status_expected": 0,
                 "status_returned": 0,
@@ -96,6 +132,10 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
             ids = [row["candidate"].candidate_id for row in ranked]
             by_id = {row["candidate"].candidate_id: row for row in ranked}
             group["queries"] += 1
+            group["queries_with_candidates"] += bool(ranked)
+            group["empty_result_queries"] += not ranked
+            group["expected_state_queries"] += 1
+            group["expected_state_matches"] += _state_matches(case, ranked, ids)
             relevant = set(case.relevant_candidate_ids)
             if relevant:
                 group["rankable_queries"] += 1
@@ -103,9 +143,18 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
                 ranks = [index for index, identifier in enumerate(ids, 1) if identifier in relevant]
                 if ranks:
                     group["reciprocal_rank_sum"] += 1 / min(ranks)
+                else:
+                    group["relevant_missing_queries"] += 1
+            forbidden = set(case.forbidden_candidate_ids)
+            group["forbidden_candidate_returns"] += len(forbidden.intersection(ids))
+            group["forbidden_exact_candidates"] += sum(
+                row["candidate"].candidate_id in forbidden and row["match_status"] == "exact"
+                for row in ranked
+            )
             if case.case_type == "unrelated":
                 group["unrelated_queries"] += 1
                 group["unrelated_with_candidates"] += bool(ids)
+                group["unrelated_abstentions"] += not ids
             group["false_exact_candidates"] += sum(
                 row["match_status"] == "exact"
                 and (
@@ -140,19 +189,25 @@ def evaluate_development(corpus: EvaluationCorpus, policy: SearchPolicy | None =
     return {
         "status": "POLICY_MEASUREMENT_ONLY",
         "split": "development",
+        "input_sha256": _development_input_sha256(corpus),
         "case_sha256": corpus.case_sha256,
         "catalog_sha256": corpus.catalog_sha256,
         "policy": asdict(policy),
         "policy_sha256": policy.sha256,
         "groups": groups,
         "field_measurement": "structural equality only; missing candidates and unsupported fields are reported separately",
+        "execution_boundary": "offline_ranker_only_no_collection_confirmation_database_or_export_calls",
+        "prohibited_action_measurement": {
+            "status": "NOT_MEASURED",
+            "reason": "The offline ranker exposes no product-action trace to evaluate prohibited actions.",
+            "case_count": sum(group["cases"] for group in groups.values()),
+        },
         "not_measured": [
             "engine_confirmation",
-            "prohibited_actions",
+            "prohibited_action_execution",
             "semantic_equivalence",
             "validation",
             "holdout",
-            "prohibited_actions",
         ],
     }
 
@@ -173,7 +228,13 @@ def compare_development_policies(
             for metric in (
                 "top1_hits",
                 "rankable_queries",
+                "expected_state_matches",
+                "expected_state_queries",
+                "relevant_missing_queries",
+                "forbidden_candidate_returns",
+                "forbidden_exact_candidates",
                 "unrelated_with_candidates",
+                "unrelated_abstentions",
                 "false_exact_candidates",
                 "status_matches",
                 "fields_matches",
@@ -187,6 +248,7 @@ def compare_development_policies(
     return {
         "status": "DEVELOPMENT_COMPARISON_ONLY",
         "split": "development",
+        "input_sha256": baseline_report["input_sha256"],
         "case_sha256": corpus.case_sha256,
         "catalog_sha256": corpus.catalog_sha256,
         "baseline": baseline_report,
@@ -194,7 +256,7 @@ def compare_development_policies(
         "deltas": deltas,
         "not_measured": [
             "engine_confirmation",
-            "prohibited_actions",
+            "prohibited_action_execution",
             "semantic_equivalence",
             "promotion_eligibility",
             "validation",
