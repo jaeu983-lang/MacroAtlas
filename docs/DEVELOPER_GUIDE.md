@@ -1,8 +1,8 @@
 # MacroAtlas 개발자 안내서
 
-기준일: 2026-10-27. 통합 범위·우선순위는 [제품 기획](../PROJECT_PLAN.md), 사용자가 실행하는 기능은
-[사용자 안내서](USER_GUIDE.md), 간단 실행 요약은 [제품 로드맵](ROADMAP_2026_10_26.md), 목표 구조는
-[제품 및 시스템 아키텍처](PRODUCT_ARCHITECTURE.md)를 참조합니다. 과거 보고서의 상태 문구를 현재 구현 여부로 사용하지 않습니다.
+기준일: 2026-10-28. 통합 범위·우선순위는 [제품 기획](../PROJECT_PLAN.md), end-user 명령은
+[사용자 안내서](USER_GUIDE.md), 현재 Gate와 코드 상태는 [구현 현황](IMPLEMENTATION_PLAN.md), 목표 구조는
+[엔진 연결표](ENGINE_CONNECTIONS.md)를 참조합니다. 축약된 옛 계획 문서는 색인이고 과거 보고서는 당시 증거입니다.
 
 ## 개발 환경 준비
 
@@ -101,6 +101,33 @@ git diff --check
 
 외부 수집은 기본 자동 검사가 아닙니다. live 요청에는 대상·scope·키 사용 여부·원본 저장 위치·요청 횟수가
 명시돼 있어야 합니다. 네트워크 fixture는 실제 기관 장애나 자연 source revision의 증거가 아닙니다.
+
+## 피드백 검토와 사례 초안
+
+이 절차는 운영자·개발자가 사용합니다. 먼저 저장된 task에 피드백을 연결합니다. 로그는 별도 텍스트 파일이 아니라
+`data/catalog.sqlite`의 append-only revision 원장과 current snapshot에 남습니다. 다른 저장소나 대화의 내용은 자동 수집되지 않습니다.
+
+```text
+python -m macro_data_platform.feedback_cli --project-root . add --task-id <TASK_ID> --text "확인된 source method를 사용" --category source_method --knowledge-kind user_instruction --scope-json '{"institution_id":"worldbank","dataset_id":"2"}'
+python -m macro_data_platform.feedback_cli --project-root . list --task-id <TASK_ID>
+python -m macro_data_platform.feedback_cli --project-root . review --feedback-id <FEEDBACK_ID> --expected-revision 1 --status accepted --note "범위와 근거를 확인함"
+```
+
+피드백은 자동 승인·사례 채택·규칙 변경되지 않으며, AI 일괄 분류도 미구현입니다. accepted/current `user_instruction`을
+평가 초안으로 넘길 때는 원문을 검토하고 직접 비식별화한 질문, reviewer ID, privacy clearance를 제공해야 합니다.
+결과는 불완전한 development seed이며 사례 corpus에 자동 추가되지 않습니다.
+
+```text
+python -m macro_data_platform.evaluation.cli feedback-draft --project-root . --feedback-id <FEEDBACK_ID> --expected-revision 2 --sanitized-question "Show annual GDP values for the requested period." --reviewer-id reviewer-01 --privacy-cleared
+python -m macro_data_platform.pattern_cli --project-root .
+```
+
+AI 지시문 수정은 자동화하지 않습니다. 운영자가 별도 지시한 경우에만 사람이 수동 편집하고 버전을 고정합니다. 같은 고정
+사례에서 답변 품질·지시 준수·실행 시간·모델 비용을 변경 전후 비교하며 적용 여부는 운영자가 결정합니다. 코드 수정은 별도
+변경 요청, 코드 검토, 회귀 검사를 거칩니다. 구현 위치는 [`feedback_cli.py`](../src/macro_data_platform/feedback_cli.py),
+[`storage/feedback.py`](../src/macro_data_platform/storage/feedback.py),
+[`evaluation/feedback_bridge.py`](../src/macro_data_platform/evaluation/feedback_bridge.py),
+[`pattern_cli.py`](../src/macro_data_platform/pattern_cli.py)입니다.
 
 ## 제품 Gate와 증거
 
