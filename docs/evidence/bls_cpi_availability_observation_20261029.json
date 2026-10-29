@@ -1,0 +1,62 @@
+{
+  "schema_version": "source-availability-observation-v1",
+  "observation_id": "bls-cpi-availability-20261029T005236Z",
+  "evidence_class": "live_api",
+  "publisher": "U.S. Bureau of Labor Statistics",
+  "retrieval_provider": "BLS Public Data API v2",
+  "series_id": "CUUR0000SA0",
+  "query": {
+    "start_year": 2026,
+    "end_year": 2026,
+    "series_count": 1,
+    "retry_count": 0
+  },
+  "scheduled_release": {
+    "reference_period": "2026-09",
+    "scheduled_at_local": "2026-10-14T08:30:00-04:00",
+    "timezone": "America/New_York",
+    "citation": "October 2026 BLS release schedule lists Consumer Price Index for September 2026 on Wednesday, October 14, 2026 at 08:30 AM Eastern Time.",
+    "source_url": "https://www.bls.gov/schedule/2026/10_sched_list.htm",
+    "captured_source_manifest": "docs/evidence/freshness_bls_october_schedule_20261029.json",
+    "source_sha256": "bb86b1bb2616027b0b1751699574f1b1f2d708b3505a84207310cf9ef3920f0b"
+  },
+  "observation": {
+    "retrieved_at_utc": "2026-10-29T00:52:36.781297+00:00",
+    "retrieved_at_local": "2026-10-28T20:52:36.781297-04:00",
+    "elapsed_after_scheduled_release_seconds": 1254156.781297,
+    "http_status": 200,
+    "content_type": "application/json",
+    "api_result_status": "REQUEST_SUCCEEDED",
+    "task_status": "COMPLETED",
+    "stage_status": "SUCCEEDED",
+    "quality_status": "passed",
+    "series_count": 1,
+    "observation_count": 9,
+    "latest_observation_period": "2026-09",
+    "freshness": {
+      "status": "FRESH",
+      "age_days": 29,
+      "maximum_age_days": 120,
+      "frequency": "monthly",
+      "policy_id": "frequency_max_age_v2",
+      "policy_basis": "frequency_fallback"
+    }
+  },
+  "local_task_reference": {
+    "task_id": "9ca5f8b6-7e36-4511-9e76-70987286a6cf",
+    "raw_path": "data/raw/bls/905dbd5148c64262b59f34b47e42963d/response.json",
+    "raw_sha256": "2e67c9359aba2a7785d2afe8e5d846f76f0e83ded2dfb7fe034aaaf66ee533db",
+    "raw_bytes": 928,
+    "manifest_path": "data/raw/bls/905dbd5148c64262b59f34b47e42963d/request.json",
+    "manifest_sha256": "047dfc2ee40bc53f1f5b8ba6560a22f7aa6bf2a3e5d18275e8d4557de0e67903",
+    "retention": "Raw response and manifest remain in ignored local data storage; response values are not copied into this tracked record."
+  },
+  "interpretation": {
+    "availability_observed_after_scheduled_release": true,
+    "first_availability_time_measured": false,
+    "release_lag_bound_established": false,
+    "sixty_day_exact_override_supported": false,
+    "runtime_policy_changed": false,
+    "limitation": "This single request shows the scheduled September 2026 CPI period was available by the observation time, about 14 days 12 hours after the scheduled release. It does not establish when it first became available or validate a repeated availability threshold."
+  }
+}

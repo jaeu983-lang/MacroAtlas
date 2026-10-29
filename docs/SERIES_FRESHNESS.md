@@ -103,17 +103,25 @@ An AI review of the archived Census page found that October 14, 2026 is the
 press-kit list date; the page banner schedules the 2025 ACS 1-year data for
 October 29. The 400-day candidate would mark the 2024 annual value stale from
 February 5, 2026, 266 days before that scheduled release, so the AI review
-rejects this candidate. The BLS 60-day proposal remains pending because two
-scheduled dates do not establish a guaranteed or repeatedly observed
-availability limit. Both remain disabled; runtime policy does not load either
-override. The review record is explicitly AI-authored and does not count as an
-independent source-policy approval.
+rejects this candidate. A live BLS request on October 28, 2026 at 20:52 EDT
+returned the scheduled September 2026 period after the official calendar date
+of October 14 at 08:30 EDT. This is one post-release availability sample at
+T+14 days 12 hours; it does not establish first availability, a repeated
+latency bound, or the proposed 60-day threshold. The BLS 60-day proposal
+remains pending and the Census 400-day candidate remains rejected; neither
+override is enabled. The AI classification and value-free request summary are
+in [`bls_cpi_availability_observation_20261029.json`](evidence/bls_cpi_availability_observation_20261029.json)
+and [`freshness_live_availability_ai_review_20261029.json`](evidence/freshness_live_availability_ai_review_20261029.json).
+The record is explicitly AI-authored and does not count as an independent
+source-policy approval.
 
 The current defaults therefore remain active: daily 7 days, monthly 120 days,
 and annual 730 days. BOJ `FM08/FXERD01` has official DAILY frequency metadata,
 but no reviewed publication-lag threshold. The preserved World Bank WDI GDP
 metadata does not state periodicity or a release calendar. Those paths continue
 to use the labeled frequency/period-format fallback without a series override.
-The evidence hashes bind the captured pages, and the archive is checked into the
-repository; the runtime still does not authenticate the reviewer or verify
-remote source URLs.
+The BLS schedule capture is hash-bound in
+[`freshness_bls_october_schedule_20261029.json`](evidence/freshness_bls_october_schedule_20261029.json).
+The Census post-release observation is still outstanding, so Gate E remains
+PARTIAL. Evidence hashes bind the captured pages; the runtime still does not
+authenticate the reviewer or verify remote source URLs.

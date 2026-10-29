@@ -1,0 +1,12 @@
+{
+  "capture_encoding": "gzip with deterministic mtime",
+  "capture_path": "freshness_bls_october_schedule_20261029.html.gz",
+  "capture_sha256": "c3d9add9ac520ac01045c1afa5966ba7deff4220c259fd98efefcefd6e74f116",
+  "content_type": "text/html",
+  "http_status": 200,
+  "retrieved_at_utc": "2026-10-29T00:53:47.236204+00:00",
+  "schema_version": "official-source-capture-v1",
+  "source_bytes": 57158,
+  "source_sha256": "bb86b1bb2616027b0b1751699574f1b1f2d708b3505a84207310cf9ef3920f0b",
+  "source_url": "https://www.bls.gov/schedule/2026/10_sched_list.htm"
+}

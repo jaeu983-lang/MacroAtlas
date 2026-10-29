@@ -1,0 +1,52 @@
+{
+  "schema_version": "freshness-live-availability-ai-review-v1",
+  "review_id": "freshness-live-review-20261029T005458Z",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T00:54:58+00:00",
+  "authorization_ref": "user_instruction_2026-10-29",
+  "independent_human_review": false,
+  "scope": "classify one BLS post-release API availability sample and determine its effect on Gate E and the disabled BLS freshness candidate",
+  "input_evidence": [
+    {
+      "path": "docs/evidence/bls_cpi_availability_observation_20261029.json",
+      "sha256": "17b11c01daab77db440302cd89c2e499c9e0c55fe05ff0d1873cc803e333acb1"
+    },
+    {
+      "path": "docs/evidence/freshness_bls_october_schedule_20261029.json",
+      "sha256": "149941fc55a2dcc40be50325950610b9089a408104431748f74ee74fde1e1395"
+    },
+    {
+      "path": "docs/evidence/freshness_fallback_ai_review_20261029.json",
+      "sha256": "4a87b0d87069c0be07d9b47fd92d0376b1025c7512bf777c7dcc7e9e3348c8a3"
+    }
+  ],
+  "decisions": [
+    {
+      "series_scope": "BLS CPI-U CUUR0000SA0, September 2026 observation",
+      "decision": "accept_as_post_release_availability_sample",
+      "basis": "The official calendar schedules the September CPI release for October 14, 2026 at 08:30 Eastern. The single official API request on October 28 at 20:52 Eastern returned HTTP 200, REQUEST_SUCCEEDED, and included period 2026-09.",
+      "limitations": [
+        "The capture occurred 14 days 12 hours after the scheduled release, not at the scheduled minute.",
+        "It proves availability by capture time only; first availability time and release latency are unknown.",
+        "One sample does not establish a repeated availability threshold or support the proposed exact 60-day override."
+      ],
+      "sixty_day_candidate": "retain_pending",
+      "activation_effect": "none"
+    },
+    {
+      "series_scope": "Census ACS1 2025 scheduled data release",
+      "decision": "no_observation_yet",
+      "basis": "The observation was made at 2026-10-28 20:52 EDT, before the scheduled October 29 U.S. local release date. No Census API request was sent in this step.",
+      "activation_effect": "none"
+    }
+  ],
+  "overall_decision": "Gate E remains partial",
+  "remaining_evidence": [
+    "One tracked Census ACS1 availability observation after its scheduled October 29, 2026 U.S. local release time."
+  ],
+  "runtime_policy_changed": false,
+  "exact_overrides_activated": false,
+  "reviewer_identity_authenticated": false
+}

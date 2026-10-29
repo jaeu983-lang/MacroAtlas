@@ -1,0 +1,37 @@
+{
+  "schema_version": "live-task-xlsx-export-observation-v1",
+  "observation_id": "bls-cpi-xlsx-export-20261029T005619Z",
+  "evidence_class": "live_api_task_export",
+  "observed_at_utc": "2026-10-29T00:56:19.437063+00:00",
+  "task_id": "9ca5f8b6-7e36-4511-9e76-70987286a6cf",
+  "source_task_status": "COMPLETED",
+  "input": {
+    "series_id": "CUUR0000SA0",
+    "latest_period": "2026-09",
+    "raw_sha256": "2e67c9359aba2a7785d2afe8e5d846f76f0e83ded2dfb7fe034aaaf66ee533db",
+    "typed_series_freshness": "FRESH"
+  },
+  "export": {
+    "command": "macroatlas export-xlsx <task-id> --output data/exports/gate-e-bls-cpi-20261029.xlsx",
+    "network_requests": 0,
+    "status": "exported",
+    "observation_count": 9,
+    "series_count": 1,
+    "freshness_rechecked_at_export": "FRESH",
+    "freshness_policy": "frequency_max_age_v2",
+    "policy_basis": "frequency_fallback",
+    "output_path": "data/exports/gate-e-bls-cpi-20261029.xlsx",
+    "output_sha256": "34fa6328249521bced2a8fd2c31445d39be14f9f3d1cd5eb98d46707ede7072d",
+    "provenance_path": "data/exports/gate-e-bls-cpi-20261029.xlsx.json",
+    "provenance_sha256": "a46e674aa519fe5abe4c016fbb42f87439d1d3ec7189d5d612ad24c67f4377d1"
+  },
+  "workbook_reopen_check": {
+    "valid": true,
+    "sheet_names": ["Provenance", "CUUR0000SA0"],
+    "observation_rows": 9,
+    "columns": 20,
+    "output_hash_matches_sidecar": true,
+    "source_values_copied_to_this_record": false
+  },
+  "retention": "The workbook and task raw data remain in ignored local data storage; they are not committed."
+}
