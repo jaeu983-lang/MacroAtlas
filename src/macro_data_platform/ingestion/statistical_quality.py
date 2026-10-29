@@ -78,7 +78,9 @@ def validate_bls_result(
         warnings.append("frequency_unknown")
     if parsed.get("source_version") is None:
         warnings.append("revision_vintage_unknown")
-    if parsed.get("metadata_status") != "verified":
+    if parsed.get("metadata_status") == "partial":
+        warnings.append("series_metadata_partial")
+    elif parsed.get("metadata_status") != "verified":
         warnings.append("series_metadata_unverified")
     _append_source_change(issues, warnings, source_change_status)
     return {

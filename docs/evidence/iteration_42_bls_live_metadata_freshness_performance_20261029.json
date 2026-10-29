@@ -1,0 +1,187 @@
+{
+  "schema_version": "iteration-42-bounded-source-evidence-v1",
+  "iteration": 42,
+  "evidence_class": "explicit_live_api_and_stored_export_diagnostic",
+  "observed_at_utc": "2026-10-29T04:01:45.194167+00:00",
+  "provider_scope": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "retrieval_provider": "BLS Public Data API v2",
+    "endpoint": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+    "official_documentation": "https://www.bls.gov/developers/api_signature_v2.htm",
+    "live_request_count": 1,
+    "retry_count": 0,
+    "response_status": "REQUEST_SUCCEEDED",
+    "response_bytes": 2807,
+    "catalog_requested": true,
+    "catalogue_fields_are_partial": true,
+    "additional_series_tested": "LNS14000000",
+    "scope_limit": "BLS only; this evidence does not establish another provider's coverage."
+  },
+  "series": [
+    {
+      "series_id": "LNS14000000",
+      "series_title": "(Seas) Unemployment Rate",
+      "official_attributes": {
+        "survey_name": "Labor Force Statistics from the Current Population Survey",
+        "survey_abbreviation": "LN",
+        "measure_data_type": "Percent or rate",
+        "seasonal_adjustment": "Seasonally Adjusted"
+      },
+      "metadata_source_pointer": "/Results/series/0/catalog",
+      "dataset_id": "unknown",
+      "unit": "unknown",
+      "currency": "unknown",
+      "frequency": "monthly",
+      "frequency_basis": "observation_period_format",
+      "observation_count": 9,
+      "period_range": {
+        "first": "2026-01",
+        "latest": "2026-09"
+      },
+      "missing_count": 0,
+      "zero_count": 0,
+      "freshness": {
+        "status": "FRESH",
+        "policy_id": "frequency_max_age_v2",
+        "policy_basis": "frequency_fallback",
+        "max_age_days": 120,
+        "age_days": 29,
+        "evaluated_at_utc": "2026-10-29T03:56:23.319693+00:00"
+      }
+    },
+    {
+      "series_id": "CUUR0000SA0",
+      "series_title": "All items in U.S. city average, all urban consumers, not seasonally adjusted",
+      "official_attributes": {
+        "survey_name": "Consumer Price Index for All Urban Consumers (CPI-U)",
+        "survey_abbreviation": "CU",
+        "measure_data_type": "All items",
+        "area": "U.S. city average",
+        "item": "All items",
+        "seasonal_adjustment": "Not Seasonally Adjusted"
+      },
+      "metadata_source_pointer": "/Results/series/1/catalog",
+      "dataset_id": "unknown",
+      "unit": "unknown",
+      "currency": "unknown",
+      "frequency": "monthly",
+      "frequency_basis": "observation_period_format",
+      "observation_count": 9,
+      "period_range": {
+        "first": "2026-01",
+        "latest": "2026-09"
+      },
+      "missing_count": 0,
+      "zero_count": 0,
+      "freshness": {
+        "status": "FRESH",
+        "policy_id": "frequency_max_age_v2",
+        "policy_basis": "frequency_fallback",
+        "max_age_days": 120,
+        "age_days": 29,
+        "evaluated_at_utc": "2026-10-29T03:56:23.319693+00:00"
+      }
+    }
+  ],
+  "source_schedule_check": {
+    "source_url": "https://www.bls.gov/schedule/2026/10_sched_list.htm",
+    "capture_manifest": "freshness_bls_october_schedule_20261029.json",
+    "capture_sha256": "c3d9add9ac520ac01045c1afa5966ba7deff4220c259fd98efefcefd6e74f116",
+    "source_sha256": "bb86b1bb2616027b0b1751699574f1b1f2d708b3505a84207310cf9ef3920f0b",
+    "captured_at_utc": "2026-10-29T00:53:47.236204+00:00",
+    "scheduled_releases": [
+      {
+        "series_family": "Labor Force Statistics from the Current Population Survey",
+        "release": "Employment Situation for September 2026",
+        "scheduled_at_local": "2026-10-02T08:30:00-04:00",
+        "available_by_api_check_at_utc": "2026-10-29T03:56:23.318232+00:00",
+        "elapsed_from_scheduled_time": "26 days, 15 hours, 26 minutes"
+      },
+      {
+        "series_family": "Consumer Price Index for All Urban Consumers",
+        "release": "Consumer Price Index for September 2026",
+        "scheduled_at_local": "2026-10-14T08:30:00-04:00",
+        "available_by_api_check_at_utc": "2026-10-29T03:56:23.318232+00:00",
+        "elapsed_from_scheduled_time": "14 days, 15 hours, 26 minutes"
+      }
+    ],
+    "interpretation": "The sample proves availability no later than the checked timestamp. It does not reveal first-availability time or justify an exact-series freshness override."
+  },
+  "performance": {
+    "environment": {
+      "python_version": "3.12.14",
+      "platform": "linux",
+      "architecture": "x86_64"
+    },
+    "api_collection": {
+      "sample_count": 1,
+      "sample_class": "live_api",
+      "code_sha": "unknown",
+      "status": "SUCCEEDED",
+      "total_duration_ns": 473079076,
+      "request_bytes": 2807,
+      "phase_duration_ns": {
+        "network": 469992552,
+        "parse": 232751,
+        "quality": 257959,
+        "raw_write": 951775
+      },
+      "p50_p95": "not calculated; one sample"
+    },
+    "stored_typed_xlsx_export": {
+      "sample_count": 1,
+      "sample_class": "stored",
+      "code_sha": "unknown",
+      "status": "exported",
+      "total_duration_ns": 14879956,
+      "input_bytes": 15281,
+      "input_observation_count": 18,
+      "output_bytes_in_telemetry": 21596,
+      "phase_duration_ns": {
+        "parse": 1016966,
+        "quality": 219069,
+        "export": 13345393
+      },
+      "p50_p95": "not calculated; one sample",
+      "network_requests": 0
+    }
+  },
+  "artifacts": {
+    "request_manifest_sha256": "d00373e8a93543994cf5e44b875e22eb2e76adb263f6bff642cc37a25e91fd85",
+    "raw_response_sha256": "8e0bec32bb4f5bad8071912c4a89d4432cbd3dcb12e33bb95c08dc2407bf88ec",
+    "raw_response_bytes": 2807,
+    "typed_series_sha256": "f35a7db23fcec6b7caad562b2648ad68bbbce0aac077204a813ce43d4fa3004d",
+    "typed_series_manifest_sha256": "539014df32e6d5a6502b49531a6e227d806e85e4fa147a8089fbc1988923154b",
+    "workbook_path": "data/iteration-42-validation/exports/bls-macro-20261029-with-metadata.xlsx",
+    "workbook_sha256": "f65d13eb9a147b1321e0ea622d5c132d4412888061ad97a4577ddcd806370b65",
+    "workbook_bytes": 12426,
+    "provenance_path": "data/iteration-42-validation/exports/bls-macro-20261029-with-metadata.xlsx.json",
+    "provenance_sha256": "29dd94c1153ac4f07e41a2866ee0d11ba8837867afa5ae1a704d09620436384e",
+    "workbook_reopen": {
+      "valid": true,
+      "sheet_names": ["Provenance", "Series metadata", "LNS14000000", "CUUR0000SA0"],
+      "series_count": 2,
+      "observation_count": 18,
+      "observation_rows_per_series": 9,
+      "data_columns_per_series": 22,
+      "official_title_rows": 2,
+      "explicit_unknown_unit_currency_rows": 4,
+      "source_pointer_rows": 21,
+      "source_observation_values_copied_to_this_record": false
+    }
+  },
+  "privacy": {
+    "api_key_recorded": false,
+    "request_body_recorded": false,
+    "raw_observation_values_recorded": false,
+    "task_id_recorded": false
+  },
+  "not_established": [
+    "first publication or first API availability time",
+    "a source-specific freshness guarantee or exact-series override",
+    "coverage of providers other than BLS or all BLS series",
+    "provider-level p50/p95 or production performance",
+    "actual analyst usability or user feedback"
+  ],
+  "retention": "Raw API data, the workbook, and telemetry database remain local under data/iteration-42-validation and are not committed."
+}

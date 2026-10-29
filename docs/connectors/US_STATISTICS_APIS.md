@@ -15,10 +15,12 @@ datasets.
 
 BLS accepts one to twenty unique series IDs and an inclusive range of one to twenty calendar years
 within 1900–2100. The connector sends one JSON POST with `seriesid`, `startyear`, and `endyear`.
-`BLS_API_KEY` is optional for this ordinary series-data request; the connector adds it to the POST
-body only when configured. A series ID does not prove its unit, frequency, seasonal adjustment, or
-economic meaning. The response currently leaves metadata unknown unless an independent metadata
-source establishes it.
+`BLS_API_KEY` is optional for ordinary series data. When a registered key is configured, the
+connector also requests `catalog=true` and keeps source-returned series title and catalogue
+attributes with JSON-pointer provenance. The catalogue may still omit dataset ID, frequency, unit,
+or currency; those fields remain unknown. Without a registered key, the connector omits the
+catalogue option and preserves ordinary series-data access. A series ID alone does not prove its
+unit, frequency, seasonal adjustment, or economic meaning.
 
 Census accepts one year (connector validation range 2009–2100), dataset `acs/acs1` or `acs/acs5`,
 one to fifty unique variable IDs including `NAME`, and geography `us:1` or one `state:NN`. It sends
@@ -31,6 +33,9 @@ EngineRegistry and Orchestrator. Their task plan contains only the validated que
 The Census transport sends its required key as a URL parameter to the official endpoint; the
 transport strips the query string from returned source identity, errors, and persisted manifest.
 BLS sends its optional key in the POST body, and the body is not included in task history or logs.
+When available, the catalogue response is retained as partial metadata evidence and displayed in
+the raw XLSX series sheets and the `Series metadata` tab; missing title is explicitly marked
+`unknown` and unavailable unit/currency/dataset fields remain unknown.
 
 ## Response handling and limits
 

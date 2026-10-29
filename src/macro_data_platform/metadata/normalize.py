@@ -45,7 +45,7 @@ def _valid_timestamp(value: str) -> None:
 @measured_phase("parse")
 def normalize_bls_catalog(payload: Mapping, *, source_url: str, retrieved_at: str,
                           raw_path: str, start_year: int, end_year: int,
-                          expected_series_id: str) -> dict:
+                          expected_series_id: str, series_index: int = 0) -> dict:
     _valid_source(source_url)
     _valid_timestamp(retrieved_at)
     results = payload.get("Results")
@@ -58,7 +58,9 @@ def normalize_bls_catalog(payload: Mapping, *, source_url: str, retrieved_at: st
     catalog = row.get("catalog")
     if not isinstance(catalog, Mapping):
         raise TypeError("BLS catalogue fields were not returned")
-    pointer = "/Results/series/0"
+    if type(series_index) is not int or series_index < 0:
+        raise ValueError("BLS catalogue series index must be a nonnegative integer")
+    pointer = f"/Results/series/{series_index}"
     get = lambda key: _field(catalog.get(key), f"{pointer}/catalog/{key}")
     fields = {name: _unknown("field_not_exposed_by_selected_bls_catalogue")
               for name in NORMALIZED_FIELDS}

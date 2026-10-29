@@ -101,8 +101,11 @@ export를 지원합니다. 다른 BOJ DB·series나 자동 탐색은 지원하�
 
 BLS와 Census 명령은 이미 등록된 Python API 엔진을 공통 CLI/task 경로에서 실행합니다. BLS에는
 `--series-id`를 한 개 이상 반복해 지정하고, 한 요청에 최대 20개 ID·1~20년 구간을 사용할 수 있습니다.
-요청한 ID의 정의·단위·주기는 catalogue로 검증하지 않으므로 응답에도 미확인으로 남을 수 있습니다.
-`BLS_API_KEY`는 series-data 요청에서 선택 사항입니다. Census ACS는 `acs/acs1` 또는 `acs/acs5`, 한 해,
+catalogue는 선택 series의 일부 속성만 반환하며, 전체 정의·단위·주기를 보장하지 않습니다. 등록된 `BLS_API_KEY`가 설정된 경우 같은 요청에서
+공식 catalogue 정보를 요청하며, 반환된 시리즈 제목은
+원자료 XLSX의 series sheet와 `Series metadata` 탭에 표시됩니다. 단위·통화·dataset ID 등 출처가 주지 않은
+정보는 계속 unknown입니다. 키가 없으면
+catalogue 요청을 생략하고 일반 series-data 요청을 수행합니다. Census ACS는 `acs/acs1` 또는 `acs/acs5`, 한 해,
 최대 50개 variable ID와 `us:1` 또는 `state:NN` geography만 받으며 `NAME`을 포함해야 합니다.
 `CENSUS_API_KEY`를 프로세스 환경변수로 설정해야 합니다. 두 연결 경로는 API에서 전체 metadata catalog를
 수집하거나 임의 dataset·지리 수준을 다루지 않으며 catalogue 의미를 자동 확인하지 않습니다. 품질·freshness

@@ -124,7 +124,7 @@ def _record_export_shape(
         metrics.observe_output(
             byte_count=output_bytes,
             rows=observation_count,
-            columns=max(20, 1 + 2 * (series_count or len(document.get("series", [])))),
+            columns=max(22, 1 + 2 * (series_count or len(document.get("series", [])))),
         )
 
 
@@ -235,6 +235,99 @@ def _source_hashes(document: Mapping) -> dict[tuple[str, str], dict]:
     }
 
 
+def _series_titles(metadata_evidence: object) -> dict[str, str]:
+    """Use only source-linked, normalized series names; leave absent names unknown."""
+    titles = {}
+    if not isinstance(metadata_evidence, list):
+        return titles
+    for record in metadata_evidence:
+        if not isinstance(record, Mapping):
+            continue
+        identifier = record.get("identifier")
+        fields = record.get("fields")
+        name = fields.get("name") if isinstance(fields, Mapping) else None
+        if (not isinstance(identifier, Mapping) or identifier.get("state") != "known"
+                or not isinstance(identifier.get("value"), str)
+                or not isinstance(name, Mapping) or name.get("state") != "known"
+                or not isinstance(name.get("value"), str) or not name["value"].strip()):
+            continue
+        titles[identifier["value"]] = name["value"]
+    return titles
+
+
+def _metadata_state(record: Mapping, key: str, *, nested: bool = False) -> tuple[str, str, str | None]:
+    """Return a source-backed metadata value, state, and source pointer."""
+    container = record.get("fields") if nested else record
+    field = container.get(key) if isinstance(container, Mapping) else None
+    if not isinstance(field, Mapping):
+        return "unknown", "unknown", None
+    state = field.get("state")
+    value = field.get("value")
+    refs = field.get("source_refs")
+    source_ref = refs[0] if isinstance(refs, list) and refs and isinstance(refs[0], str) else None
+    if state == "known" and value not in (None, ""):
+        return str(value), "known", source_ref
+    return "unknown", "unknown", source_ref
+
+
+def _metadata_sheet(workbook: Workbook, metadata_evidence: object) -> None:
+    """Render normalized fields and source catalogue attributes in a readable tab."""
+    if not isinstance(metadata_evidence, list) or not metadata_evidence:
+        return
+    sheet = workbook.create_sheet("Series metadata")
+    headers = ("series_id", "field", "value", "status", "source_url", "source_json_pointer")
+    for column, value in enumerate(headers, start=1):
+        _set_literal(sheet.cell(1, column), value)
+    rows = []
+    normalized = (
+        ("series_title", "name", True),
+        ("dataset_id", "dataset_id", False),
+        ("frequency", "frequency", True),
+        ("unit", "unit", True),
+        ("currency", "currency", False),
+        ("seasonal_adjustment", "seasonal_adjustment", True),
+        ("geographic_coverage", "geo_coverage", True),
+        ("metadata_completeness", "metadata_completeness", False),
+    )
+    for record in metadata_evidence:
+        if not isinstance(record, Mapping):
+            continue
+        identifier, identifier_state, _ = _metadata_state(record, "identifier")
+        if identifier_state != "known":
+            continue
+        raw_ref = record.get("raw_ref")
+        pointer = raw_ref.get("json_pointer") if isinstance(raw_ref, Mapping) else None
+        source_url = record.get("source_url")
+        for label, key, nested in normalized:
+            value, state, source_ref = _metadata_state(record, key, nested=nested)
+            if key == "metadata_completeness":
+                value = str(record.get(key) or "unknown")
+                state = "known" if value != "unknown" else "unknown"
+            if source_ref is None and isinstance(pointer, str) and key in (
+                "name", "seasonal_adjustment", "geo_coverage",
+            ):
+                source_ref = pointer
+            rows.append((identifier, label, value, state, source_url, source_ref))
+        attributes = record.get("source_attributes")
+        if isinstance(attributes, Mapping):
+            for key, value in sorted(attributes.items()):
+                if key in {"series_id", "series_title", "seasonality", "area", "unit", "currency", "dataset_id"}:
+                    continue
+                if value is None:
+                    continue
+                if isinstance(value, (dict, list)):
+                    value = json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True)
+                source_ref = f"{pointer}/catalog/{key}" if isinstance(pointer, str) else None
+                rows.append((identifier, f"source_attribute:{key}", str(value), "known", source_url, source_ref))
+    for row_index, row in enumerate(rows, start=2):
+        for column, value in enumerate(row, start=1):
+            _set_literal(sheet.cell(row_index, column), value)
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+    for column, width in ((1, 18), (2, 34), (3, 84), (4, 14), (5, 52), (6, 54)):
+        sheet.column_dimensions[chr(64 + column)].width = width
+
+
 def _build_raw_workbook(
     document: Mapping,
     freshness: list[dict],
@@ -267,6 +360,7 @@ def _build_raw_workbook(
         _set_literal(provenance.cell(row, 2), json.dumps(
             metadata_evidence, ensure_ascii=False, allow_nan=False, sort_keys=True,
         ))
+        _metadata_sheet(workbook, metadata_evidence)
     for index, result in enumerate(freshness, start=1):
         metadata = (
             f"series_{index}_freshness_status", result["status"],
@@ -293,11 +387,15 @@ def _build_raw_workbook(
             _set_literal(provenance.cell(row, 2), value)
 
     hashes = _source_hashes(document)
+    series_titles = _series_titles(metadata_evidence)
     used = {"provenance"}
+    if isinstance(metadata_evidence, list) and metadata_evidence:
+        used.add("series metadata")
     observation_count = 0
     headers = (
         "period", "source_period", "raw_value", "observation_status",
-        "source_agency", "dataset_id", "series_id", "dimensions_json", "calendar",
+        "source_agency", "dataset_id", "series_id", "series_title",
+        "series_title_status", "dimensions_json", "calendar",
         "unit", "currency", "frequency", "frequency_basis", "source_revision",
         "retrieved_at", "source_url", "raw_path", "raw_sha256", "manifest_path",
         "manifest_sha256",
@@ -309,10 +407,14 @@ def _build_raw_workbook(
         sheet = workbook.create_sheet(_sheet_name(contract["series_id"], used))
         for column, value in enumerate(headers, start=1):
             _set_literal(sheet.cell(1, column), value)
+        sheet.column_dimensions["H"].width = 64
+        sheet.column_dimensions["I"].width = 18
         raw_ref, manifest_ref = contract["raw_ref"], contract["manifest_ref"]
         raw_hash = hashes.get(("raw", raw_ref), {}).get("sha256")
         manifest_hash = hashes.get(("manifest", manifest_ref), {}).get("sha256")
         dimensions = json.dumps(contract["dimensions"], ensure_ascii=False, sort_keys=True)
+        series_title = series_titles.get(contract["series_id"])
+        series_title_status = "known" if series_title is not None else "unknown"
         row_count = len(contract["observations"])
         if row_count > MAX_XLSX_OBSERVATIONS:
             raise ValueError("xlsx_observation_limit")
@@ -320,7 +422,9 @@ def _build_raw_workbook(
             values = (
                 observation["period"], observation["source_period"],
                 observation["raw_value"], observation["status"], contract["source_agency"],
-                contract["dataset_id"], contract["series_id"], dimensions, contract["calendar"],
+                contract["dataset_id"], contract["series_id"],
+                series_title if series_title is not None else "unknown",
+                series_title_status, dimensions, contract["calendar"],
                 contract["unit"], contract["currency"], contract["frequency"],
                 contract["frequency_basis"], contract["source_revision"],
                 contract["retrieved_at"], contract["source_url"], raw_ref, raw_hash,
