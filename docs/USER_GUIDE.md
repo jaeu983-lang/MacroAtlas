@@ -1,6 +1,6 @@
 # MacroAtlas 사용자 안내서
 
-기준일: **2026-10-28**. 현재 사용자 명령은 [`cli.py`](../src/macro_data_platform/cli.py), 대용량 용량 판정은
+기준일: **2026-10-29**. 현재 사용자 명령은 [`cli.py`](../src/macro_data_platform/cli.py), 대용량 용량 판정은
 [`capacity.py`](../src/macro_data_platform/capacity.py) 및 [구현 현황](IMPLEMENTATION_PLAN.md)과 대조했습니다.
 
 제품 범위·정책·작업 순서는 [통합 제품 기획](../PROJECT_PLAN.md), 실제 Gate 및 구현 상태는
@@ -20,8 +20,8 @@ BLS·Census ACS query, TIC/BIS 지정 파일 intake를 위한 구조화 CLI를 �
 3. 실제 외부 요청 명령에는 `--live`를 붙입니다. 요청은 task ID를 먼저 저장하고 실행합니다.
 4. 출력의 상태를 읽습니다. `COMPLETED`는 해당 제한 경로 완료, `NEEDS_REVIEW`는 검토 대기,
    `FAILED_RETRYABLE`은 같은 task 재개 검토, `NOT_EXECUTED`는 본 처리가 시작되지 않았음을 뜻합니다.
-5. 완료된 지원 task는 JSON 요약·저장 artifact를 확인하거나, 로컬 CSV export 명령으로 분석 파일을 생성합니다.
-   CSV export는 World Bank/BOJ의 명시 지원 task만 받으며 일반 CSV/XLSX 변환기는 아닙니다.
+5. 완료된 지원 task는 JSON 요약·저장 artifact를 확인하거나, 지원되는 CSV/XLSX 명령으로 분석 파일을 생성합니다.
+   Excel 출력은 freshness를 다시 검사한 typed-series artifact만 받으며 임의 파일 변환기는 아닙니다.
 
 ## 설치
 
@@ -72,6 +72,8 @@ git diff --check
 .\.venv\Scripts\macroatlas.exe status <TASK_ID>
 .\.venv\Scripts\macroatlas.exe resume <TASK_ID> --live
 .\.venv\Scripts\macroatlas.exe export <TASK_ID> --format csv --output data/exports/result.csv
+.\.venv\Scripts\macroatlas.exe export-xlsx <TASK_ID> --output data/exports/raw-series.xlsx
+.\.venv\Scripts\macroatlas.exe compare-xlsx --spec data/inbox/compare.json --output data/exports/comparison.xlsx
 ```
 
 Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실행합니다. `worldbank-gdp`는
@@ -79,7 +81,8 @@ Linux/macOS에서는 `.venv/Scripts/macroatlas.exe` 대신 `macroatlas`를 실�
 `worldbank-series`는 사용자가 uppercase ISO3 국가와 indicator ID를 명시하는 별도 raw-only 경로입니다.
 source ID는 WDI의 `2`로 고정하고, 요청당 한 series·최대 100개 연도·1 page·1 MiB 제한을 둡니다. URL, 국가/지표
 탐색, source 선택, 단위·의미 추론은 하지 않습니다. 원본 응답과 request manifest를 보존하고, 파싱한
-행은 freshness 통과 전에는 task에서 보류합니다. 이 경로는 CSV/XLSX export 대상이 아닙니다.
+행은 freshness 통과 전에는 task에서 보류합니다. freshness 통과 task는 CSV exporter 대상은 아니지만
+typed artifact를 `export-xlsx`로 전달할 수 있습니다.
 fixture 범위와 한 건의 live 검증 근거는 [World Bank series 연결 설명](connectors/WORLDBANK_SERIES.md)에 있습니다.
 BOJ의 boj-fxer는 한 달, boj-fxer-range는 같은 FM08/FXERD01 일간 시리즈의 연속 1–120개월을
 지원합니다. 두 경로는 metadata와 관측을 분리 실행하고 freshness를 적용합니다. range 결과도 품질 통과 후 CSV
@@ -102,7 +105,8 @@ BLS와 Census 명령은 이미 등록된 Python API 엔진을 공통 CLI/task �
 `BLS_API_KEY`는 series-data 요청에서 선택 사항입니다. Census ACS는 `acs/acs1` 또는 `acs/acs5`, 한 해,
 최대 50개 variable ID와 `us:1` 또는 `state:NN` geography만 받으며 `NAME`을 포함해야 합니다.
 `CENSUS_API_KEY`를 프로세스 환경변수로 설정해야 합니다. 두 연결 경로는 API에서 전체 metadata catalog를
-수집하거나 임의 dataset·지리 수준을 다루지 않으며, catalogue 의미 확인 또는 XLSX export도 하지 않습니다.
+수집하거나 임의 dataset·지리 수준을 다루지 않으며 catalogue 의미를 자동 확인하지 않습니다. 품질·freshness
+통과 typed artifact는 `export-xlsx`로 전달할 수 있습니다.
 예시의 2022 Census 연도는
 사용자가 요청 범위와 API 공개 가능성을 확인한 뒤 바꿔야 합니다. endpoint, transport cap, 오류 처리와
 응답 검사 상세는 [BLS/Census 연결 설명](connectors/US_STATISTICS_APIS.md)을 보세요.
@@ -145,6 +149,38 @@ raw hash를 검증했다는 점을 sidecar에 명시합니다.
 미완료·미지원 task, 품질 미통과, source가 `changed` 또는 비교 불가인 경우, 손상된 파일·manifest,
 경로 탈출·symlink는 export하지 않습니다. 결과와 sidecar는 로컬 산출물이고 Git에 포함되지 않습니다.
 
+## Typed series를 Excel로 내보내고 비교하기
+
+`export-xlsx`는 완료 task의 typed artifact를 hash와 원본 raw/manifest 참조까지 검증한 뒤 현재 시각 기준으로
+freshness를 다시 계산합니다. 유효하면 원 period·원값·결측 상태·단위·주기·출처·hash를 보존한 `.xlsx`와
+`<파일명>.xlsx.json` provenance를 `data/exports/` 아래 새로 씁니다. 0과 결측은 구별되고 원본 문자열은
+Excel 수식으로 실행되지 않게 텍스트로 저장합니다. 두 파일 중 하나라도 이미 있거나 입력이 stale/unverified,
+손상, 경로 탈출 또는 symlink이면 출력하지 않습니다.
+
+```powershell
+.\.venv\Scripts\macroatlas.exe export-xlsx <TASK_ID> --output data/exports/raw-series.xlsx
+```
+
+`compare-xlsx`는 명시적으로 승인된 `series-comparison-spec-v1` JSON만 받습니다. spec은 task ID·series ID·표시명,
+공통 개념 ID와 근거 URL/hash/citation, AI 또는 사람 검토 표기, 날짜·revision·결측 정책을 고정합니다.
+최상위 필드는 `schema_version`, `common_concept_id`, `evidence`, `review`, `comparison`, `series`입니다.
+`review`는 `decision=approved`, `reviewer_type=AI|human`, `reviewer_id`, timezone 포함 `reviewed_at`을 요구합니다.
+현재 허용 정책은 `date_basis=typed_period`, `aggregation=none`, `transformation=none`,
+`missing_values=blank`, `interpolation=none`, `forward_fill=none`, `revision_policy=as_retrieved`입니다.
+비교 전에 각 typed artifact와 freshness를 다시 검증하고 calendar·frequency·unit·currency·dimension 이름이
+호환되는지 확인합니다. unit 또는 주기가 다르거나 미상인 경우 자동 변환하지 않고 멈춥니다. 원자료 sheet는
+유지하고 별도 `Alignment` sheet에는 typed period의 합집합을 사용합니다. 없는 기간과 원본 결측은 빈 값으로
+구분하고, 자동 집계·보간·forward-fill을 하지 않습니다.
+
+```powershell
+.\.venv\Scripts\macroatlas.exe compare-xlsx --spec data/inbox/compare.json --output data/exports/comparison.xlsx
+```
+
+비교 spec의 evidence hash와 reviewer 표기는 sidecar에 기록되지만 원격 문서 hash 또는 reviewer 신원을 도구가
+인증하지 않습니다. AI review를 사람의 독립 검토로 표시하지 않습니다. 실제 통계 동등성은 spec 근거가 뒷받침해야
+하며, 현재 provider 간 실자료 비교 승인은 기록되지 않았습니다. Gate E의 release-lag 근거와 가용성 표본도 아직
+부족하므로 이 기능의 fixture 통과를 제품 Gate E/F/G 통과로 해석하지 않습니다.
+
 World Bank 이전 검증 스크립트도 유지됩니다.
 
 ```text
@@ -169,7 +205,8 @@ python scripts/verify_worldbank.py --live --gate-a
 
 표 형식 자료는 `data/inbox/` 아래 명시적으로 선택한 기존 파일을 Python API의
 `TabularFileEngine`으로 처리할 수 있습니다. 자동 파일 탐색과 일반 파일 가져오기 CLI는 없습니다. 지원된
-World Bank/BOJ task CSV export 외의 범용 CSV/XLSX 변환기는 제공하지 않습니다. 파일 형식·시트·ZIP member가
+World Bank/BOJ task CSV export와 freshness 재검증 typed-artifact XLSX export를 제공합니다. 임의 CSV/XLSX 변환기는
+아니며, 파일 형식·시트·ZIP member가
 모호하면 `NEEDS_REVIEW`로 멈춥니다.
 
 ## 기관별 연결 및 API 키

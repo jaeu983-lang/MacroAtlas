@@ -79,8 +79,11 @@ successfully. Successful API series and mapped-file series are saved under
 `data/processed/typed_series/` as JSON artifacts. Their contract records link
 the raw response and source manifest, and a separate manifest records hashes of
 the typed artifact and both source files. Artifact loading rechecks all of those
-hashes and freshness states. CSV revalidation/export currently supports the
-World Bank and BOJ task formats; no typed-artifact XLSX exporter is connected.
+hashes and stored freshness states. `export-xlsx` verifies the artifact and its raw/manifest
+references, then re-evaluates freshness at export time using the current policy and clock.
+It emits a source-value workbook and hash-linked provenance sidecar without overwriting.
+This connection is fixture-verified and is not evidence that each provider's release calendar
+has been measured.
 These are local deterministic tests and code-path
 coverage; they do not establish live API freshness behavior or validate each
 source's publication calendar. Unmapped generic tabular data has no normalized
