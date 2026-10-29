@@ -1,0 +1,64 @@
+{
+  "schema_version": "freshness-fallback-ai-review-v1",
+  "review_id": "freshness-fallback-review-20261029T004636Z",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T00:46:36.106989+00:00",
+  "authorization_ref": "user_instruction_2026-10-29",
+  "independent_human_review": false,
+  "scope": "acceptability of the explicitly labeled frequency fallback while source-specific release-lag overrides remain disabled",
+  "input_evidence": [
+    {
+      "path": "docs/evidence/freshness_policy_ai_review_20261029.json",
+      "sha256": "93e1db7691fbab025987bf4c3e796f3902ebd5ac6bd651dff28e70c6028c58c8"
+    },
+    {
+      "path": "docs/evidence/freshness_policy_candidate_20261028.json",
+      "sha256": "dc690fe30f1e557d982b3298a44344b147d69dc45766f73f674a5bdf0b98fa4d"
+    },
+    {
+      "path": "docs/SERIES_FRESHNESS.md",
+      "sha256": "6434166683887274a91033e40dd3f011a18448c7a22d836997e7c84cdb9e693f"
+    }
+  ],
+  "decisions": [
+    {
+      "series_scope": "World Bank WDI annual observations",
+      "active_fallback_days": 730,
+      "decision": "accept_bounded_fallback_only",
+      "reason": "Annual observation periods can be assessed with the explicit annual fallback. The source metadata does not establish publication lag, so the fallback must remain labeled as operational and must not be described as a World Bank release guarantee.",
+      "exact_override": "disabled"
+    },
+    {
+      "series_scope": "BOJ FM08/FXERD01 daily observations",
+      "active_fallback_days": 7,
+      "decision": "accept_bounded_fallback_only",
+      "reason": "The preserved official metadata confirms DAILY frequency but not release latency. Seven days is accepted only as an explicit operational fallback; a FRESH result does not prove that the provider published every expected business-day observation.",
+      "exact_override": "disabled"
+    },
+    {
+      "series_scope": "BLS CPI-U CUUR0000SA0 monthly observations",
+      "active_fallback_days": 120,
+      "decision": "accept_bounded_fallback_only",
+      "reason": "Keep the generic monthly fallback visible while the 60-day exact candidate remains pending. The schedule alone does not establish actual data availability or a guaranteed BLS latency.",
+      "exact_override": "disabled"
+    },
+    {
+      "series_scope": "Census ACS1 B01001_001E state:06 annual observations",
+      "active_fallback_days": 730,
+      "decision": "accept_bounded_fallback_only",
+      "reason": "Keep the generic annual fallback visible and retain the AI rejection of the 400-day candidate, which would stale the 2024 value well before the scheduled 2025 ACS release. The fallback is not a Census release guarantee.",
+      "exact_override": "disabled"
+    }
+  ],
+  "overall_decision": "accept_frequency_fallback_as_interim_policy; Gate E remains partial",
+  "resolved_review_requirement": "The current frequency fallbacks are explicitly reviewed and accepted as bounded operational defaults for these series scopes; no source-specific release-lag claim or override is approved.",
+  "remaining_evidence": [
+    "Capture a tracked BLS CPI availability observation after a scheduled local release time.",
+    "Capture a tracked Census ACS1 availability observation after the scheduled October 29, 2026 U.S. local release time."
+  ],
+  "runtime_policy_changed": false,
+  "exact_overrides_activated": false,
+  "reviewer_identity_authenticated": false
+}
