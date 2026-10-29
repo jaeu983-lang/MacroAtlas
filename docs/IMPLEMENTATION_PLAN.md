@@ -4,7 +4,7 @@
 
 ## 기준선
 
-- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `9d61865` (PR #94 merge; 2026-10-29). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
+- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `7c807cc` (PR #95 merge; 2026-10-29). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
 - PR #50은 825f2aa, PR #58은 4b26bc9로 병합됐다. PR #58의 merge commit은 Ubuntu/Windows × Python 3.11/3.12 Actions 네 작업이 통과했다.
 - PR #58 변경 기준 로컬 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY이고, 기존 v1 corpus validator는 9/36 BLOCKED였다.
 - 요청에 따라 GPT-6가 27개 draft를 원본 hash, 공식 evidence, 기대 state/candidate/field, 금지 행동, Excel policy, split과 privacy 기준으로 하나씩 검토했다. 26건은 그대로 승인, 1건은 definition 기대값 2곳을 바로잡아 case version 2로 승인했다. 검토자 유형은 AI로 ledger에 표시했다.
@@ -15,7 +15,7 @@
 | 영역 | 현재 코드 | 남은 조건 |
 |---|---|---|
 | 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
-| 제한 API 사용 | `macroatlas collect bls`와 `macroatlas collect census`는 입력을 connector query contract로 검증하고 저장 plan에 기록한 뒤 EngineRegistry/Orchestrator로 실행·재개한다. API key는 query/task와 분리된 process environment에서 읽는다. | 전체 기관 catalog 검색, 전 series 단위·주기 보증, BLS/Census XLSX export는 구현하지 않았다. |
+| 제한 API 사용 | `macroatlas collect bls`와 `macroatlas collect census`는 query contract와 공통 EngineRegistry/Orchestrator 경로를 사용한다. 등록된 BLS 키가 있으면 같은 요청에서 `catalog=true`를 요청해 부분 metadata를 보존하고, fresh typed artifact를 원자료 XLSX로 출력할 수 있다. | 전체 기관 catalog 검색과 전 series 단위·주기 보증은 미구현이다. BLS catalogue 필드 누락은 unknown으로 남고, 이번 live sample은 BLS 두 series에 한정된다. |
 | World Bank exact series | `macroatlas collect worldbank-series`는 country/source/indicator/year 범위를 검증한 뒤 `worldbank_series/1`로 원자료·manifest·typed artifact를 보존하고 parser/freshness 결과를 기록한다. | 연간 최대 100년·단일 series·단일 page만 허용. 자동 metadata 탐색/의미·단위 추론과 legacy CSV 전달은 없다. 완료·fresh typed artifact는 `export-xlsx` 대상이다. fixture 검증은 API live 증거가 아니다. |
 | 로컬 후보 검색 | `macroatlas search`는 고정 WDI 후보와 저장된 hash-verified BLS/Census metadata를 `series_search/1`로 조회하고 versioned `semantic-disambiguation-v1` policy를 task에 기록한다. | network refresh가 없고 검색·선택·수집은 분리돼 있다. fixed 13-candidate v2 catalog에서만 검증됐다; ranking은 semantic equivalence를 증명하지 않는다. |
 | 파일 용량 판정 | Iteration 29에서 transport·table parser·preflight가 공유 `CapacityFinding`과 고정 reason/observed/threshold/inspection point/disposition을 사용한다. Parser 용량 예외는 메시지 부분 문자열로 분류하지 않는다. | 새 용량 threshold와 scheduler는 추가하지 않았다. PR #64의 Linux/Windows × Python 3.11/3.12 CI 네 작업이 통과했다. |
@@ -24,8 +24,8 @@
 | 피드백 | SQLite FeedbackStore의 revision 원장, 명시 review와 incomplete case seed에 더해 전체 revision의 고정 snapshot과 수동 분류 batch import/list/show를 구현했다. 입력/출력 count·key·hash 및 원본 revision hash가 다르면 저장을 거부한다. | AI 호출과 비식별화는 운영자가 수동으로 수행한다. 실제 사용자 feedback의 AI 분류 batch와 자연 사용자 사례는 아직 검증되지 않았다. 지시문과 코드는 자동 수정되지 않는다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
 | Freshness runtime | 공통 typed contract, freshness evaluator, API/file mapping 결과, success-only typed artifact와 stale/unverified 차단을 구현했다. BLS/Census exact override 후보는 비활성이고 frequency fallback은 operational default로만 남는다. | Census post-release sample은 미관측이지만 사용자의 명시 결정으로 별도 제품 Gate E는 제외됐다. Freshness 재평가는 F/G 실행에서 계속 적용되고 이 결정은 기관 발표 보증이나 freshness 완화를 뜻하지 않는다. |
-| 출력 | completed typed-artifact raw XLSX와 reviewed-spec comparison XLSX를 제공하며 매번 artifact hash·source refs·freshness를 재검증한다. F는 BLS CPI live export, G는 같은 WDI `NY.GDP.MKTP.CD`의 2024 USA/Canada comparison 범위에서 AI review로 수용됐다. | Gate 판정은 해당 범위로 한정된다. G는 cross-provider 동등성·실질 GDP·PPP를 뜻하지 않으며 evidence/reviewer identity는 런타임에서 인증되지 않는다. |
-| 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본은 161개다. | live latency 표본은 승인된 자연 요청에서만 모은다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |
+| 출력 | completed typed-artifact raw XLSX와 reviewed-spec comparison XLSX를 제공하며 매번 artifact hash·source refs·freshness를 재검증한다. 원자료 XLSX는 검증된 series title과 제공 metadata를 별도 `Series metadata` 탭에 읽기 쉽게 표시한다. | F AI acceptance는 BLS CPI live 범위, G는 같은 WDI `NY.GDP.MKTP.CD`의 2024 USA/Canada comparison 범위로 한정된다. 새 BLS metadata sample은 Gate F의 AI 판정을 넓히지 않는다. G는 cross-provider 동등성·실질 GDP·PPP를 뜻하지 않으며 evidence/reviewer identity는 런타임에서 인증되지 않는다. |
+| 성능 | monotonic stage/선택 phase 계측과 privacy-safe report가 있다. 저장 fixture 표본 161개와 BLS live API 1회, typed XLSX export 1회가 기록됐다. | live API·export 각 한 표본은 진단 자료이며 p50/p95·production baseline이 아니다. 측정 전 cache·SQLite·raw-write 최적화는 하지 않는다. |
 
 2026-10-28의 bounded API live smoke, AI 개발 질문 비교, CLI·registry·테스트 환경 결과는 [엔진 실행 검증 기록](ENGINE_RUNTIME_SMOKE_2026_10_28.md)에 정리했다. 공통 typed series checkpoint는 [35회차 보고](ITERATION_35_REPORT.md), [36회차 보고](ITERATION_36_REPORT.md), [37회차 보고](ITERATION_37_REPORT.md)를 따른다.
 
@@ -41,7 +41,7 @@
 | 원자료 XLSX F | **AI PASS — BLS CPI live 범위.** BLS source response와 workbook의 9개 period/value/status를 대조하고 raw/manifest/XLSX/provenance hash, 재개방, FRESH recheck를 확인했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). | 이 판정은 live BLS CPI export와 generic fixture contract로 한정한다. 다른 기관의 live export와 사람의 usability observation은 포함하지 않는다. |
 | 비교 XLSX G | **AI PASS — 같은 WDI 지표의 USA/Canada 2024 비교 범위.** official metadata source note에 근거한 exact USD mapping을 기록하고 원자료 sheet·typed period alignment·hash·provenance를 검증했다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json). | Cross-provider 동등성, 다른 WDI indicator, 실질 GDP, PPP, welfare 비교는 승인하지 않는다. AI reviewer identity는 인증되지 않는다. |
 | 통합 40 | **PASS — immutable candidate QA.** pytest 973건, Ruff, diff, CLI module/entrypoint/collect help, health가 통과했고 격리 worktree 정리도 통과했다. [QA evidence](evidence/gate_40_integration_qa_20261029.json). | QA는 provider 가용성·ACS 2025 공개 후 조회·분석가 사용성 검증을 대신하지 않는다. |
-| 최종 41 | **PASS — AI-simulated workflow scope.** `python scripts/run_gate_41_preflight.py` returned `READY`; GPT answered both BLS and WDI task cards against the existing hashed artifacts. [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json). | No provider request, OpenAI API, DB write, raw-value output, or feedback record. BLS title/dataset/unit/currency gaps remain explicit. No human usability claim. |
+| 최종 41 | **PASS — AI-simulated workflow scope.** `python scripts/run_gate_41_preflight.py` returned `READY`; GPT answered both BLS and WDI task cards against the existing hashed artifacts. [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json). | No provider request, OpenAI API, DB write, raw-value output, or feedback record occurred in Gate 41. At that point the BLS title was not in the workbook; Iteration 42 added source-linked titles and metadata. Unit/currency/dataset ID remain unknown. No human usability claim. |
 
 ## 별도 workstream
 
@@ -51,6 +51,6 @@
 
 ## Gate 41 결과
 
-Gate D는 fixed v2 local-search 범위, F는 BLS CPI live XLSX, G는 같은 WDI GDP의 USA/Canada 2024 비교로 각각 AI acceptance를 기록했다. 사용자의 범위 결정에 따라 E는 별도 제품 gate가 아니며 freshness runtime은 유지한다. 통합 검증 40과 AI 작업흐름 시뮬레이션 41은 각각 [QA evidence](evidence/gate_40_integration_qa_20261029.json)와 [Gate 41 evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)로 통과했다. Gate 41은 두 기존 artifact의 value-free 해석에 한정하며 사람의 usability나 실제 사용자 feedback을 입증하지 않는다. Census ACS 2025 요청은 하지 않았다. 후속 개선은 [PROJECT_PLAN.md §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)의 요청 기반 backlog를 따른다.
+Gate D는 fixed v2 local-search 범위, F는 BLS CPI live XLSX, G는 같은 WDI GDP의 USA/Canada 2024 비교로 각각 AI acceptance를 기록했다. 사용자의 범위 결정에 따라 E는 별도 제품 gate가 아니며 freshness runtime은 유지한다. 통합 검증 40과 AI 작업흐름 시뮬레이션 41은 각각 [QA evidence](evidence/gate_40_integration_qa_20261029.json)와 [Gate 41 evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)로 통과했다. Gate 41은 두 기존 artifact의 value-free 해석에 한정하며 사람의 usability나 실제 사용자 feedback을 입증하지 않는다. Census ACS 2025 요청은 하지 않았다. [Iteration 42 후속](ITERATION_42_REPORT.md)은 BLS partial metadata, 공식 일정과 가용성 표본, 단일 API/XLSX 시간 측정을 추가했으나 provider-wide 수용이나 human observation으로 확대하지 않는다. 남은 일은 [PROJECT_PLAN.md §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에 정리했다.
 
-기본 브랜치의 대조 기준 commit은 [`9d61865`](https://github.com/jaeu983-lang/MacroAtlas/commit/9d61865179dbe5af7ee7eed0678d3cf08bac095f)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.
+기본 브랜치의 대조 기준 commit은 [`7c807cc`](https://github.com/jaeu983-lang/MacroAtlas/commit/7c807cc)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

@@ -1113,3 +1113,11 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 2026-10-29. 단일 preflight는 `READY`였다. GPT-6가 hash-linked BLS CPI-U XLSX와 WDI GDP 비교 XLSX를 읽기 전용으로 해석하고, 두 task 응답 및 범위 한정 `PASS`를 [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)에 기록했다. BLS 응답은 월별 9개 관측치, 2026-01~2026-09, 기록상 export-time `FRESH`, 결측 0·0값 0을 구분했고 dataset ID·unit·currency와 파일에 없는 정식 series title은 unknown으로 남겼다. WDI 응답은 source 2의 `NY.GDP.MKTP.CD`, USA/CAN, annual 2024 정렬, source-note 기반 current USD mapping, 변환·보간 없음과 명목 GDP 해석 한계를 확인했다. 별도 API, provider 요청, DB 쓰기, feedback 생성, 정책 승격은 없었다. measured preflight는 41.7 ms이며 AI 응답시간과 실제 사용자·분석가 인지시간은 측정하지 않았다. reviewer type은 `AI`; 사람의 usability를 입증하지 않는다.
 
 Gate 41에서 드러난 개선 후보는 BLS XLSX의 읽기 쉬운 공식 series title과 사용 가능한 source metadata 보존이다. 사용자가 필요를 요청하면 공식 근거를 확보해 추가하되 제공되지 않는 필드는 계속 unknown으로 남긴다. 이후 우선순위는 요청 기반 provider/series live coverage, source-specific 공표 지연 evidence, 자연 요청의 network/local stage timing이며, 사전 측정 없이 성능 최적화하지 않는다. Census 재조회·TIC/BIS 감시·Vantage·scheduler는 계속 비활성이다.
+
+## D-141 — BLS metadata와 단일 freshness/performance 표본
+
+2026-10-29. 사용자의 요청에 따라 Iteration 42에서 BLS API의 공식 catalogue 속성을 같은 series 요청에서 받아 normalized metadata evidence와 XLSX `Series metadata` 탭에 연결했다. 등록된 키가 있을 때만 `catalog=true`를 보낸다. XLSX에는 제목, survey/계절조정/측정 유형과 확인 가능한 추가 속성, 원본 JSON pointer를 표시한다. source가 제공하지 않은 dataset ID·unit·currency는 `unknown`으로 표시하고 자동 추론하지 않는다.
+
+기존 CPI-U `CUUR0000SA0`과 추가 BLS 실업률 `LNS14000000`을 한 번 조회했다. 월별 2026-09 관측이 10월 29일 03:56 UTC까지 API에서 확인됐고, 두 계열 모두 기존 monthly frequency fallback에서 `FRESH`였다. BLS 공식 일정에는 9월 Employment Situation이 10월 2일 08:30 ET, CPI가 10월 14일 08:30 ET로 안내됐다. 이는 일정 이후 특정 시각의 데이터 가용성만 보여주며 최초 공개·최초 API 접근 시각, release lag, exact-series override를 입증하지 않는다.
+
+live API 총 473.079 ms, 그중 network 469.993 ms를 기록했다. 저장 typed artifact XLSX export는 14.880 ms였다. 각 표본 수는 1이므로 p50/p95나 production baseline이 아니고 최적화 결정을 하지 않았다. 실제 분석가·사용자 세션은 참가자를 확보하지 못해 실행하지 않았으며 AI로 대체하지 않는다. 범위와 hash는 [value-free evidence](evidence/iteration_42_bls_live_metadata_freshness_performance_20261029.json), 실행 범위와 남은 조건은 [Iteration 42 report](ITERATION_42_REPORT.md)에 기록한다. BLS sample은 Gate F의 AI acceptance 범위를 넓히지 않는다.

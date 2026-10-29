@@ -44,6 +44,10 @@ class BLSTransport:
         key = read_optional_api_key("BLS_API_KEY")
         if key is not None:
             payload["registrationkey"] = key
+            # BLS documents catalogue enrichment as a registered-key option. Keep
+            # ordinary series collection usable without a key and never infer that
+            # metadata exists when it was not returned.
+            payload["catalog"] = True
         body = json.dumps(payload, separators=(",", ":")).encode()
         return request_json(API_URL, method="POST", body=body,
                             headers={"Content-Type": "application/json"})
@@ -80,12 +84,14 @@ def parse_bls(download: ApiDownload, query: BLSQuery) -> dict:
                     or not isinstance(value, str)):
                 raise SourceFailure(StageStatus.NEEDS_REVIEW, ErrorCode.SCHEMA_CHANGED,
                                     "BLS observation fields failed structural validation.")
+    catalogued = sum(isinstance(entry.get("catalog"), dict) for entry in series)
     return {
         "source_agency": "U.S. Bureau of Labor Statistics", "source_url": API_URL,
         "api_documentation_url": API_DOCS, "dataset_id": None,
         "series_ids": list(query.series_ids), "start_year": query.start_year,
         "end_year": query.end_year, "frequency": None, "unit": None,
-        "metadata_status": "unknown_without_series_catalogue_verification",
+        "metadata_status": ("partial" if catalogued else
+                             "unknown_without_series_catalogue_verification"),
         "status": data["status"], "message_codes": data.get("messageCodes", []),
         "observations": series, "retrieved_at": download.retrieved_at.isoformat(),
     }

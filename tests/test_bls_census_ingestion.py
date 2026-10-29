@@ -2,13 +2,14 @@
 import json
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 
 from freshness_support import HISTORICAL_FIXTURE_POLICY
+from openpyxl import load_workbook
 
 from macro_data_platform.config import Settings
 from macro_data_platform.connectors.bls import BLSQuery, BLSTransport, parse_bls
@@ -17,6 +18,7 @@ from macro_data_platform.connectors.statistical_http import ApiDownload
 from macro_data_platform.contracts import EvidenceKind, StageStatus
 from macro_data_platform.ingestion.bls import BLSEngine as _BLSEngine
 from macro_data_platform.ingestion.census import CensusEngine as _CensusEngine
+from macro_data_platform.ingestion.xlsx_export import export_typed_series_artifact
 from macro_data_platform.orchestration import build_engine_registry
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
 from macro_data_platform.storage.history import HistoryStore
@@ -88,6 +90,62 @@ class BLSTests(unittest.TestCase):
             self.assertTrue(Path(
                 directory, result.payload["typed_series_artifact"]["typed_series_path"],
             ).is_file())
+
+    def test_engine_exports_catalog_title_and_preserves_unknown_unit_and_currency(self):
+        body = json.loads(json.dumps(self.body))
+        body["Results"]["series"][0]["catalog"] = {
+            "series_title": "All items in U.S. city average",
+            "seasonality": "Not Seasonally Adjusted",
+            "survey_abbreviation": "CU",
+            "survey_name": "Consumer Price Index",
+            "measure_data_type": "All items",
+            "area": "U.S. city average",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            settings = Settings(Path(directory), network_enabled=True)
+            engine = BLSEngine(settings, FixtureTransport(download(BLS_URL, body)))
+            result = engine.run(StageInput("t", "request", "bls", {
+                "series_ids": ["CUUR0000SA0"], "start_year": 2024, "end_year": 2024,
+            }, None, ()))
+            self.assertEqual(result.status, StageStatus.SUCCEEDED)
+            evidence, = result.payload["quality"]["metadata_evidence"]
+            self.assertEqual(evidence["fields"]["name"]["value"],
+                             "All items in U.S. city average")
+            self.assertEqual(evidence["fields"]["name"]["source_refs"],
+                             ["/Results/series/0/catalog/series_title"])
+            self.assertEqual(evidence["fields"]["unit"]["state"], "unknown")
+            self.assertIn("series_metadata_partial", result.payload["quality"]["warnings"])
+            export = export_typed_series_artifact(
+                settings, result.payload["typed_series_artifact"],
+                "data/exports/catalog-title.xlsx", as_of=date(2024, 2, 1),
+            )
+            workbook = load_workbook(
+                Path(directory, export["output_path"]), data_only=True, read_only=True,
+            )
+            sheet = workbook["CUUR0000SA0"]
+            headers = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+            row = [cell.value for cell in next(sheet.iter_rows(min_row=2, max_row=2))]
+            values = dict(zip(headers, row))
+            self.assertEqual(values["series_title"], "All items in U.S. city average")
+            self.assertEqual(values["series_title_status"], "known")
+            self.assertIsNone(values["unit"])
+            self.assertIsNone(values["currency"])
+            metadata_sheet = workbook["Series metadata"]
+            metadata_headers = [cell.value for cell in next(
+                metadata_sheet.iter_rows(min_row=1, max_row=1),
+            )]
+            metadata_rows = [dict(zip(metadata_headers, row)) for row in metadata_sheet.iter_rows(
+                min_row=2, values_only=True,
+            )]
+            indexed = {row["field"]: row for row in metadata_rows}
+            self.assertEqual(indexed["series_title"]["value"], "All items in U.S. city average")
+            self.assertEqual(indexed["series_title"]["status"], "known")
+            self.assertEqual(indexed["unit"]["value"], "unknown")
+            self.assertEqual(indexed["unit"]["status"], "unknown")
+            self.assertEqual(indexed["currency"]["value"], "unknown")
+            self.assertEqual(indexed["source_attribute:survey_name"]["value"],
+                             "Consumer Price Index")
+            workbook.close()
 
     def test_network_disabled_before_transport(self):
         transport = FixtureTransport(download(BLS_URL, self.body))
@@ -187,6 +245,7 @@ class CredentialTransportTests(unittest.TestCase):
         self.assertEqual(args[0], BLS_URL)
         self.assertEqual(kwargs["method"], "POST")
         self.assertEqual(json.loads(kwargs["body"])["registrationkey"], "fake-key")
+        self.assertIs(json.loads(kwargs["body"])["catalog"], True)
         self.assertEqual(result.source_url, BLS_URL)
 
     def test_bls_series_data_does_not_require_an_optional_registration_key(self):
@@ -197,6 +256,7 @@ class CredentialTransportTests(unittest.TestCase):
             BLSTransport().fetch(query)
         payload = json.loads(send.call_args.kwargs["body"])
         self.assertNotIn("registrationkey", payload)
+        self.assertNotIn("catalog", payload)
         self.assertEqual(payload["seriesid"], ["CUUR0000SA0"])
 
     def test_census_key_is_removed_from_returned_source_identity(self):

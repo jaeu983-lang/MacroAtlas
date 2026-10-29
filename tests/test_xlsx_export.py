@@ -197,6 +197,54 @@ def test_raw_xlsx_preserves_ai_reviewed_metadata_mapping_evidence(tmp_path):
     workbook.close()
 
 
+def test_raw_xlsx_displays_linked_series_title_and_marks_missing_title_unknown(tmp_path):
+    metadata = [{
+        "identifier": {"value": "FIXTURE.VALUE", "state": "known"},
+        "fields": {"name": {"value": "Official fixture title", "state": "known"}},
+    }]
+    settings, reference = _artifact(tmp_path, metadata_evidence=metadata)
+    result = export_typed_series_artifact(
+        settings, reference, "data/exports/series-title.xlsx", as_of=date(2026, 10, 29),
+    )
+    workbook = load_workbook(tmp_path / result["output_path"], data_only=True, read_only=True)
+    sheet = workbook["FIXTURE.VALUE"]
+    headers = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+    row = [cell.value for cell in next(sheet.iter_rows(min_row=2, max_row=2))]
+    values = dict(zip(headers, row))
+    assert values["series_title"] == "Official fixture title"
+    assert values["series_title_status"] == "known"
+    metadata = workbook["Series metadata"]
+    metadata_headers = [cell.value for cell in next(metadata.iter_rows(min_row=1, max_row=1))]
+    metadata_rows = [dict(zip(metadata_headers, values)) for values in metadata.iter_rows(
+        min_row=2, values_only=True,
+    )]
+    title_row = next(item for item in metadata_rows if item["field"] == "series_title")
+    unit_row = next(item for item in metadata_rows if item["field"] == "unit")
+    assert title_row["value"] == "Official fixture title"
+    assert title_row["status"] == "known"
+    assert unit_row["value"] == "unknown"
+    assert unit_row["status"] == "unknown"
+    workbook.close()
+
+    unknown_settings, unknown_reference = _artifact(
+        tmp_path / "unknown", series_id="UNKNOWN.TITLE", metadata_evidence=[],
+    )
+    unknown_result = export_typed_series_artifact(
+        unknown_settings, unknown_reference, "data/exports/unknown-title.xlsx",
+        as_of=date(2026, 10, 29),
+    )
+    workbook = load_workbook(
+        tmp_path / "unknown" / unknown_result["output_path"], data_only=True, read_only=True,
+    )
+    sheet = workbook["UNKNOWN.TITLE"]
+    headers = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+    row = [cell.value for cell in next(sheet.iter_rows(min_row=2, max_row=2))]
+    values = dict(zip(headers, row))
+    assert values["series_title"] == "unknown"
+    assert values["series_title_status"] == "unknown"
+    workbook.close()
+
+
 def test_export_rechecks_freshness_and_creates_no_partial_files(tmp_path):
     settings, reference = _artifact(tmp_path)
     with pytest.raises(ValueError, match="typed_series_not_fresh:STALE"):

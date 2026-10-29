@@ -9,6 +9,7 @@ from macro_data_platform.contracts import ErrorCode, StageResult, StageStatus
 from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.ingestion.statistical_quality import validate_bls_result
 from macro_data_platform.ingestion.typed_series import persist_typed_series_result
+from macro_data_platform.metadata.normalize import normalize_bls_catalog
 from macro_data_platform.metadata.series import normalize_bls_series
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.storage.statistical_downloads import save_statistical_download
@@ -82,6 +83,27 @@ class BLSEngine:
             parsed, saved["source_change_status"], as_of=self.clock(),
             freshness_policy=self.freshness_policy,
         )
+        metadata_evidence = []
+        for index, source_series in enumerate(parsed["observations"]):
+            if not isinstance(source_series.get("catalog"), dict):
+                continue
+            single_series_payload = {"Results": {"series": [source_series]}}
+            try:
+                metadata_evidence.append(normalize_bls_catalog(
+                    single_series_payload,
+                    source_url=download.source_url,
+                    retrieved_at=download.retrieved_at.isoformat(),
+                    raw_path=saved["raw_path"],
+                    start_year=query.start_year,
+                    end_year=query.end_year,
+                    expected_series_id=source_series["seriesID"],
+                    series_index=index,
+                ))
+            except (TypeError, ValueError):
+                # Catalog enrichment is optional; source observations remain authoritative.
+                continue
+        if metadata_evidence:
+            quality["metadata_evidence"] = metadata_evidence
         parsed["quality"] = quality
         if quality["status"] == "failed":
             if any(issue in quality["issues"]

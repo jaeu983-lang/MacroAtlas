@@ -43,3 +43,7 @@ PR #91에서 추가된 원자료·비교 XLSX 경로에는 성능 telemetry가 �
 Comparison fixture에서는 workbook 생성·게시가 가장 큰 계측 구간이었다. 이 자료는 2개 연도·2개 series fixture에서 비교 workbook 생성 비용이 raw export보다 큰 것을 보여줄 뿐, 실제 자료 크기나 production 병목을 증명하지 않는다. p95 latency/throughput 예산을 실행 전에 정하지 않았으므로 성능 gate 통과나 최적화 필요성을 주장하지 않는다. 재현 가능한 비용 한도를 정하려면 더 큰 fixture와 허용 예산이 필요하다.
 
 같은 시점에 기존 프로젝트의 `macro-perf report`를 읽기 전용으로 확인한 결과는 별도 `live_api` 표본이다. 4개 그룹에 각 2개씩 총 8개 sample이 있어 p95는 모두 `INSUFFICIENT_SAMPLE`이다. `worldbank_series` collect의 stage p50은 11.727 s였고 network phase p50 11.726 s가 대부분을 차지했다; parse 0.113 ms, quality 0.162 ms, raw write 0.912 ms였다. `boj_observations_range` collect p50은 1.423 s, network phase 1.413 s였다. 해당 sample들의 `code_sha`는 `unknown`이므로 이를 현재 commit의 성능이나 최적화 증거로 묶지 않는다. 이번 점검에서 provider에 새 요청을 보내지 않았으며, n=2만으로 병목 일반화·기관 전체 latency·원격 서비스 책임을 판단하지 않는다. 이는 fixture XLSX 표와 합산하지 않은 기존 live sample 관찰이다.
+
+### 후속 BLS 진단 표본 — Iteration 42, 2026-10-29
+
+명시 요청된 BLS metadata 확인 요청은 별도 `live_api` class로 저장했다. 단일 API stage 총시간은 473.079 ms, network 469.993 ms, parse 0.233 ms, quality 0.258 ms, raw write 0.952 ms였다. 같은 typed artifact의 로컬 raw XLSX export는 별도 `stored` class로 14.880 ms였다. 두 표본 모두 n=1이고 앞의 fixture·기존 provider 표본과 합치지 않으며 p50/p95·production 기준선·최적화 판정을 만들지 않는다. value-free hash와 phase 기록은 [Iteration 42 evidence](evidence/iteration_42_bls_live_metadata_freshness_performance_20261029.json)에 있다.

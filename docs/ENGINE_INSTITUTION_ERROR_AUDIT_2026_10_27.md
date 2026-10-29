@@ -46,3 +46,7 @@ World Bank task는 attempt 1에서 `FAILED_RETRYABLE/TRANSIENT`, attempt 2에서
 2. 새 운영 이력이 쌓일 때 같은 full-catalog 방식으로 기관·dataset·engine/version·stage·error category를 재감사한다. 운영 오류 수와 Gate C 자연 증거 판정은 계속 분리한다.
 
 이 결과는 2026-10-27 당시 local catalog 전체의 감사다. 다른 catalog, 이후 task, 또는 모든 기관이 오류가 없다는 뜻은 아니다. TIC/BIS Gate C의 자연 변경과 해당 watch scope의 자연 장애 후 재개 조건도 별도로 남아 있다.
+
+### 후속 확인 — 2026-10-29
+
+Iteration 42에서 등록키를 사용하는 BLS 요청에 `catalog=true`를 설정하고 CPI-U와 실업률 series 두 건의 선택 metadata를 실제로 보존했다. 제목과 일부 survey/seasonality 속성이 확인됐으나 두 응답 모두 `dataset_id=null`로 유지했다. 이 후속 표본은 위 2026-10-27 catalog snapshot이나 전체 series coverage를 바꾸지 않는다. value-free 근거와 한계는 [Iteration 42 report](ITERATION_42_REPORT.md)에 기록했다.

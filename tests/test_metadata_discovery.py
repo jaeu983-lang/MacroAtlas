@@ -53,6 +53,7 @@ class NormalizationTests(unittest.TestCase):
         record = normalize_bls_catalog(
             bls_payload(), source_url=BLS_URL, retrieved_at=NOW.isoformat(), raw_path="raw.json",
             start_year=2024, end_year=2024, expected_series_id="CUUR0000SA0",
+            series_index=2,
         )
         self.assertEqual(record["fields"]["name"]["value"], "All items in U.S. city average")
         self.assertEqual(record["fields"]["geo_coverage"]["value"], "U.S. city average")
@@ -61,6 +62,9 @@ class NormalizationTests(unittest.TestCase):
         for name in ("definition", "unit", "frequency", "time_coverage"):
             self.assertEqual(record["fields"][name]["state"], "unknown")
         self.assertEqual(record["identifier"]["value"], "CUUR0000SA0")
+        self.assertEqual(record["raw_ref"]["json_pointer"], "/Results/series/2")
+        self.assertEqual(record["fields"]["name"]["source_refs"],
+                         ["/Results/series/2/catalog/series_title"])
 
     def test_census_variable_keeps_label_and_attributes_without_inference(self):
         payload = {"name": "B01001_001E", "label": "Estimate!!Total:",

@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.7 | 기준일: 2026-10-29
+> 문서 ID: MDP-PLAN-002 | 버전: 2.8 | 기준일: 2026-10-29
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -57,7 +57,7 @@ MacroAtlas는 사용자가 요청한 국제금융·거시경제 통계를 공식
 | World Bank WDI | 미국 GDP 고정 workflow와 country·indicator를 지정하는 1-series 경로(source 2), 최대 100개 연도·단일 page | 일반 경로는 단위·의미 추론과 metadata 탐색을 하지 않음. 완료된 fresh typed artifact는 raw XLSX로 전달 가능; legacy CSV는 별도 GDP task에 한정. stale/unverified observations는 보류 |
 | BOJ | FM08/FXERD01 한 달 수집과 같은 daily series의 1–120개월 범위 query | 다른 series/database 및 120개월 초과는 미지원. CSV export는 freshness 통과 task에 연결 |
 | Offline candidate search | WDI 고정 후보 + 이미 보존된 BLS/Census metadata archive의 versioned lexical/semantic CLI 검색 | network/catalog refresh 없음, 후보 자동 선택 없음, 전체 provider catalog가 아님; 의미 동등성 판정은 아님 |
-| BLS | 반복 지정한 series ID와 제한 연도를 받는 Public Data API v2 CLI/Python 경로 | 한 요청 최대 20개 ID, 1~20년 구간. Catalogue 의미·단위·주기는 자동 확인하지 않음 |
+| BLS | 반복 지정한 series ID와 제한 연도를 받는 Public Data API v2 CLI/Python 경로; 등록 키가 설정되면 선택 series의 catalogue 속성도 같은 요청에서 보존 | 한 요청 최대 20개 ID, 1~20년 구간. 전체 catalogue 검색은 없고 catalogue가 제공하지 않는 dataset ID·unit·currency·frequency는 unknown |
 | Census ACS | 지정 변수·연도·지리범위의 acs/acs1·acs/acs5 CLI/Python 경로 | 최대 50개 variable, `NAME` 필수, geography는 `us:1`·`state:NN`; API key 필수. 전 기관 변수 검색은 미지원 |
 | TIC/BIS 지정 파일 | 필요할 때 사용자가 요청하는 제한 파일 intake/watch 명령 | 자료 변경의 반복·예약 확인은 현재 필요 범위에서 제외했고 자동 감시는 중지함. 과거 `unchanged` 및 natural revision 미관측 상태는 기록으로 보존. Gate C는 승격하지 않음 |
 | 파일 전달 | 완료·품질 통과 World Bank GDP/BOJ FXERD01 task CSV 및 freshness 통과 typed-artifact task XLSX | 새 파일과 hash-linked provenance sidecar. XLSX는 export 시 freshness 재평가; compare는 explicit compatibility spec 필요 |
@@ -199,7 +199,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 ## 11. 남은 구현 순서와 완료 조건
 
-아래는 저장소를 새로 설계하지 않고 **2026-10-29 PR #94 병합본 `9d61865`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI는 제품 gate 통과로 간주하지 않는다. local candidate search는 fixed v2 scope의 C/D만 통과했으며 provider 수집·freshness·export를 승인하지 않는다.
+아래는 저장소를 새로 설계하지 않고 **2026-10-29 PR #95 병합본 `7c807cc`의 실제 코드**에서 남은 조건을 이어서 관리하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV/XLSX exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI는 제품 gate 통과로 간주하지 않는다. local candidate search는 fixed v2 scope의 C/D만 통과했으며 provider 수집·freshness·export를 승인하지 않는다.
 
 현재 필수 검증은 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 원자료 XLSX(F) → 비교 XLSX(G) → 통합 검증(40) → AI 작업흐름 시뮬레이션(41)`까지 범위 한정으로 통과했다. AI 판정은 `reviewer_type=AI`로 기록하며 실제 분석가 사용성이나 미검증 provider·series로 확대하지 않는다. 사용자의 명시적 결정에 따라 E는 별도 제품 Gate가 아니지만 typed-series freshness 검사는 계속 실행되어 stale/unverified 입력을 차단한다. ACS 공개 후 관측은 F/G의 선행 수용조건이 아니다.
 
@@ -235,13 +235,14 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 | 우선순위 | 남은 일 | 범위와 종료 기준 |
 |---|---|---|
 | 완료 / 41 | 오프라인 AI workflow simulation | `READY` preflight 뒤 BLS·WDI 두 응답과 hash-linked AI 기록을 남겼다. [Evidence](docs/evidence/gate_41_ai_workflow_simulation_20261029.json). 입력·응답은 value-free이고 별도 API, provider 요청, 운영 DB 쓰기는 없었다. |
-| 선택 / 제품 Gate 아님 | 실제 분석가 1–2명 정성 조사 및 실제 사용자 피드백 | workbook 의미 이해·혼란·도움 요청을 관찰한다. 실제로 제출된 피드백만 append-only 로그에 보존하고 검토는 별도 운영자 절차로 둔다. Gate 41 AI simulation과 별도다. 소수 표본으로 성공률을 추정하지 않고 완료 조건이나 기존 gate pass로 세지 않는다. 절차는 [`ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)에 둔다. |
-| 후속 개선 / 요청 기반 | BLS XLSX의 공식 series title·제공 metadata 표현; 추가 provider/series live export; source별 공표 지연 근거; 자연 API latency | Gate 41에서 BLS series title과 dataset/unit/currency가 파일에 없음을 확인했다. 필요하면 공식 metadata만 추가하고 없는 필드는 계속 unknown으로 둔다. provider·freshness·latency 개선은 실제 요청과 근거가 있을 때 따로 측정·검증한다. 기존 Gate F/G 범위를 넓히거나 fallback을 보증으로 바꾸지 않는다. |
+| 완료 / Iteration 42 — 제한 범위 | BLS catalogue metadata, 한 개 추가 series, source schedule 대조, live API·XLSX 측정 | 공식 제목·제공 속성을 원자료 XLSX의 `Series metadata` 탭에 표시하고, 단위·통화·dataset ID는 근거 없이 채우지 않았다. BLS 시리즈 2개를 한 번 조회했고 공식 일정과 조회 당시 가용성, API 1회 및 저장 자료 export 1회의 시간을 기록했다. [보고서와 value-free evidence](docs/ITERATION_42_REPORT.md). 다른 기관 coverage, 최초 공개시각, p50/p95, 분석가 사용성을 승인하지 않는다. |
+| 선택 / 제품 Gate 아님 | 실제 분석가 1–2명 정성 조사 및 실제 사용자 피드백 | workbook 의미 이해·혼란·도움 요청을 실제 참여자와 관찰한다. 실제로 제출된 피드백만 append-only 로그에 보존하고 검토는 별도 운영자 절차로 둔다. Gate 41 AI simulation과 별도이며, Iteration 42에서도 세션은 실행하지 않았다. 소수 표본으로 성공률을 추정하지 않고 완료 조건이나 기존 gate pass로 세지 않는다. 절차와 기록 양식은 [`ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)와 [`ANALYST_OBSERVATION_RECORD_TEMPLATE.md`](docs/ANALYST_OBSERVATION_RECORD_TEMPLATE.md)에 둔다. |
+| 후속 개선 / 요청 기반 | BLS 외 provider/series live export·coverage; 기관별 freshness 근거; provider별 API p50/p95 | BLS 한 번의 명시 진단 표본과 공식 일정만 확보했다. 새 provider·series는 실제 요청이 정해지면 공식 경로와 응답을 각각 검증한다. freshness 기본값은 운영 차단 정책으로 유지하며 이번 표본으로 exact override나 공표 시한 보증을 만들지 않는다. API 성능은 provider별 반복 표본이 쌓인 뒤 p50/p95를 계산하며, 표본 전에는 최적화하지 않는다. 기존 Gate F/G 범위는 넓히지 않는다. |
 | 현재 제외·비활성 | Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage, scheduler 활성화 | 사용자가 범위를 다시 열기 전에는 실행하지 않는다. Windows updater/scheduler의 미검증 상태는 제품 gate의 선행조건으로 두지 않는다. |
 
 ### 별도 작업
 
-Gate 41 이후에는 위 개선 backlog만 요청이 있을 때 연다. preflight의 41.7 ms는 로컬 readiness 점검 시간이며 model/API 또는 제품 성능 기준선이 아니다. fixture/저장 자료의 성능 표본을 live API latency로 해석하지 않고, provider coverage를 확대하기 전에 근거와 비용·권한을 확인한다.
+Iteration 42에서 BLS live API 한 건은 473.1 ms(그중 network 470.0 ms), 저장 typed artifact의 XLSX export 한 건은 14.9 ms였다. 각 표본이 하나라 p50/p95나 production 성능 기준선으로 쓰지 않는다. Gate 41 preflight의 41.7 ms도 로컬 readiness 점검 시간일 뿐이다. provider별 coverage 확대에는 해당 출처의 실제 요청과 근거가 필요하다.
 
 ## 12. 완료·검토 규칙
 
