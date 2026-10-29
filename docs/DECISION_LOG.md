@@ -1062,3 +1062,17 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 2026-10-29. 사용자가 freshness 정책 검토를 AI가 수행하고 유형을 기록하도록 위임했다. GPT-6는 보존된 source metadata, release-calendar candidate와 frequency policy를 검토해 annual 730일, monthly 120일, daily 7일 fallback을 해당 계열의 **제한된 operational default**로만 수용했다. WDI/BOJ의 공표 지연 보증으로 해석하지 않고 BLS 60일은 pending, Census 400일은 기각 상태를 유지하며 exact-series override는 하나도 켜지 않았다. 기존 fail-closed freshness evaluator와 사용자에게 표시되는 `frequency_fallback` 근거는 변경하지 않았다.
 
 AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshness_fallback_ai_review_20261029.json)은 reviewer type/model, 입력 hash, 범위, 결론과 한계를 기록한다. 그 결과 공식 release-lag 근거 대신 fallback rationale를 검토한다는 조건은 정리됐지만, Gate E에는 BLS/Census의 scheduled local release 이후 실제 availability 표본이 여전히 필요하다. 그러므로 Gate E는 PARTIAL, F/G 제품 Gate는 미통과이며 이 결정은 사람 검토나 source availability 측정으로 표시되지 않는다.
+
+## D-132 — BLS CPI 공개 후 단발 가용성 표본
+
+2026-10-29. Gate E의 남은 live evidence 중 BLS CPI에 한해 공식 BLS API를 한 번 호출했다. BLS 일정 capture는 September 2026 CPI의 발표를 2026-10-14 08:30 Eastern으로 명시한다. `CUUR0000SA0`, 2026년 단일 연도 요청은 2026-10-29 00:52:36 UTC (2026-10-28 20:52:36 EDT)에 HTTP 200 / `REQUEST_SUCCEEDED`로 끝났고 9개 월 행, latest period `2026-09`, quality `passed`, monthly fallback 120일 중 age 29일 `FRESH`였다. 공개 예정 이후 약 14일 12시간에 데이터가 조회 가능했음을 보이는 표본이며 first availability 시각이나 최대 지연을 뜻하지 않는다.
+
+조회 task `9ca5f8b6-7e36-4511-9e76-70987286a6cf`의 response SHA-256은 `2e67c9359aba2a7785d2afe8e5d846f76f0e83ded2dfb7fe034aaaf66ee533db` (928 bytes), manifest SHA-256은 `047dfc2ee40bc53f1f5b8ba6560a22f7aa6bf2a3e5d18275e8d4557de0e67903`이며 raw response/manifest는 로컬 ignored `data/`에 남겼다. tracked [availability record](evidence/bls_cpi_availability_observation_20261029.json)은 값·자격 증명을 싣지 않고 해당 hash와 집계만 보존한다. official schedule capture의 source hash는 `bb86b1bb2616027b0b1751699574f1b1f2d708b3505a84207310cf9ef3920f0b`다. 재시도하지 않았다.
+
+사용자가 위임한 GPT-6 AI review는 이 결과를 `post-release availability sample`로 수용하되, BLS 60일 exact candidate는 반복 측정이나 first-availability 근거가 없어 pending으로 유지했다. capture 당시 미국 현지 날짜는 10월 28일로 Census ACS 예정일 전이었으므로 Census API 요청은 보내지 않았다. [AI 판정](evidence/freshness_live_availability_ai_review_20261029.json)은 추가로 Census 공개 후 표본 하나가 필요하다고 남긴다. Gate E는 PARTIAL, Gate F/G 제품 acceptance와 전체 통합 Gate는 미통과다.
+
+## D-133 — BLS live task의 실제 원자료 XLSX export
+
+2026-10-29. D-132의 보존된 BLS task를 이용해 `macroatlas export-xlsx`를 네트워크 없이 실행했다. typed artifact의 source/raw/manifest hash를 검증하고 현재 freshness를 다시 평가한 뒤 1개 series·9개 observation 행이 있는 workbook과 provenance sidecar를 썼다. Workbook을 다시 열어 `Provenance`와 `CUUR0000SA0` sheet, 20개 원자료 columns, row count와 sidecar의 output SHA 일치를 확인했다. 출력 SHA-256 `34fa6328249521bced2a8fd2c31445d39be14f9f3d1cd5eb98d46707ede7072d`, sidecar SHA-256 `a46e674aa519fe5abe4c016fbb42f87439d1d3ec7189d5d612ad24c67f4377d1`. [Value-free export record](evidence/bls_cpi_xlsx_export_observation_20261029.json)은 경로·hash·검증 집계만 기록하며 workbook과 원자료는 local ignored `data/`에 보존한다.
+
+이것은 Gate F의 단일 live task 실행 확인이며 제품 acceptance는 아니다. Gate E는 Census 공개 후 availability sample이 없어 PARTIAL이고, G도 실제 호환성 review sample 없이 완료 처리하지 않는다.
