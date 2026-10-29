@@ -1,0 +1,79 @@
+{
+  "schema_version": "feedback-classification-ai-simulated-gate-evidence-v1",
+  "evidence_class": "ai_simulated",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "model_version": "GPT-6",
+  "prompt_version": "feedback-classification-v1-ai-review",
+  "independent_human_review": false,
+  "actual_user_feedback": false,
+  "source": {
+    "path": "data/synthetic_feedback.sqlite",
+    "case_count": 3,
+    "tracked_fixture_inputs": [
+      {
+        "path": "tests/fixtures/evaluation/chatgpt_engine_smoke_examples_2026_10_28.json",
+        "sha256": "cdd3a7bc0907a8a42543729a1651d89f7b4598e2fdb914c77dbd086ecee8e539",
+        "case_ids": [
+          "chatgpt-engine-smoke-gdp-total-001",
+          "chatgpt-engine-smoke-cpi-rate-001"
+        ]
+      },
+      {
+        "path": "tests/fixtures/evaluation/synthetic_gpt_examples.json",
+        "sha256": "9738247996042de8c167c457f1c3f8c92714179335d486403740f28087356046",
+        "case_ids": ["gpt-synthetic-gold-001"]
+      }
+    ],
+    "cases": [
+      {
+        "case_id": "chatgpt-engine-smoke-cpi-rate-001",
+        "feedback_sha256": "40677b262c6400fc7e2e3d5445a5a5379636bd43eab17c369b8346dfb6dfc3b2",
+        "classification": "statistical_definition"
+      },
+      {
+        "case_id": "chatgpt-engine-smoke-gdp-total-001",
+        "feedback_sha256": "a06e03e877eeba9859543f7095fc4e9d4373a21fb9af66dc0eebd86b95eafc59",
+        "classification": "candidate_group"
+      },
+      {
+        "case_id": "gpt-synthetic-gold-001",
+        "feedback_sha256": "43889824b6f69a8a042948b096575858e2fb446b290c912878ede1bb5c9278af",
+        "classification": "candidate_group"
+      }
+    ]
+  },
+  "feedback_ledger": {
+    "local_only_database": "data/synthetic_feedback_ledger/data/catalog.sqlite",
+    "revision_count": 3,
+    "feedback_text_copied_to_tracked_evidence": false
+  },
+  "snapshot": {
+    "snapshot_id": "9fadb3e2-4769-4e5e-af11-d97807ad76b6",
+    "row_count": 3,
+    "key_hash": "4e8f06f7194d94fd2bd6d6c5db591f222923ede41e8836f59c7e74f61ce57707",
+    "source_hash": "4cb053dc08ca0adb989e711e5f4d336376ac388836c06a32d6bffe18abe79395"
+  },
+  "classification_batch": {
+    "batch_id": "1dd511c7-4c3f-4329-beea-b6d40401ca5f",
+    "snapshot_id": "9fadb3e2-4769-4e5e-af11-d97807ad76b6",
+    "row_count": 3,
+    "key_hash": "4e8f06f7194d94fd2bd6d6c5db591f222923ede41e8836f59c7e74f61ce57707",
+    "source_hash": "4cb053dc08ca0adb989e711e5f4d336376ac388836c06a32d6bffe18abe79395",
+    "result_hash": "ae7940c9059c932b99e481d0d0a6b1da729be2539a92fa31874c1d26edf5ea42",
+    "labels": {
+      "candidate_group": 2,
+      "statistical_definition": 1
+    },
+    "all_snapshot_revisions_present_once": true,
+    "duplicate_or_missing_revisions": 0,
+    "privacy_clearance_basis": "AI-generated questions and feedback contain no actual user data",
+    "prompt_and_code_automatically_changed": false
+  },
+  "overall_decision": "PASS_FOR_AI_SIMULATED_FEEDBACK_PIPELINE_ONLY",
+  "limitations": [
+    "This proves append-only feedback revision snapshot and batch import for three AI-simulated rows only.",
+    "It is not a natural-user sample or an independent human classification.",
+    "Feedback text remains in the ignored local synthetic ledger and is not committed."
+  ]
+}
