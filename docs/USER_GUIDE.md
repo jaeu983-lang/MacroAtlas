@@ -89,8 +89,9 @@ export를 지원합니다. 다른 BOJ DB·series나 자동 탐색은 지원하�
 
 `search`는 고정 WDI 후보와 `data/raw/metadata/`에 이미 보존된 hash-검증 BLS/Census metadata만 읽습니다.
 새 metadata를 API에서 가져오지 않고, 로컬 catalog가 비어 있으면 그 범위에서는 `unmatched`가 나올 수
-있습니다. 현재 순위기는 영어 단어와 식별자 토큰을 비교하는 lexical search입니다. 결과에는 후보의
-정의·근거·unknown 필드와 순위만 표시하며, 점수나 `exact` 라벨도 의미 동등성 증명이 아닙니다.
+있습니다. 순위기는 영어 단어·식별자 점수와 GDP 기준·CPI/물가 구분을 위한 고정 규칙을 함께 사용하며,
+근거가 약하면 후보를 비워 둘 수 있습니다. 결과에는 후보의 정의·근거·unknown 필드와 순위를 표시합니다.
+이 규칙은 고정된 13개 후보 catalog에서 평가됐으며, 점수나 `exact` 라벨도 의미 동등성 증명이 아닙니다.
 검색은 자동 선택·수집하지 않습니다. 검색 요청과 결과는 `data/catalog.sqlite`에 task로 남고, `status`
 명령으로 다시 볼 수 있습니다. BLS/Census 수집에는 여전히 exact series/variable ID와 별도 `--live`
 명령이 필요합니다.

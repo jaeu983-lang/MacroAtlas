@@ -1,4 +1,4 @@
-"""Record and verify explicit, independently reviewed evaluation policy decisions."""
+"""Record and verify explicit, auditable evaluation policy decisions."""
 
 import argparse
 import hashlib
@@ -389,6 +389,55 @@ def _validate_people(decision_maker_id, reviewer_id, decision_maker_is_human,
         raise ValueError("both people must explicitly attest to their human roles")
 
 
+def _validate_ai_review(decision_maker_id, reviewer_id, decision_maker_is_human,
+                        reviewer_is_human, reviewer_model, authorization_ref, review_scope):
+    """Validate a user-delegated AI decision without claiming independent review."""
+    _identifier(decision_maker_id, "AI decision maker ID")
+    _identifier(reviewer_id, "AI reviewer ID")
+    if decision_maker_id != reviewer_id:
+        raise ValueError("AI decision maker and reviewer must be the same recorded system")
+    if decision_maker_is_human is not False or reviewer_is_human is not False:
+        raise ValueError("AI review must not be represented as a human role")
+    _identifier(reviewer_model, "AI reviewer model")
+    _identifier(authorization_ref, "AI review authorization reference")
+    _identifier(review_scope, "AI review scope")
+    return {
+        "schema_version": 2,
+        "decision_maker_id": decision_maker_id,
+        "decision_maker_is_human": False,
+        "decision_maker_type": "AI",
+        "reviewer_id": reviewer_id,
+        "reviewer_is_human": False,
+        "reviewer_type": "AI",
+        "reviewer_model": reviewer_model,
+        "authorization_ref": authorization_ref,
+        "review_scope": review_scope,
+        "independent_reviewer": False,
+    }
+
+
+def _actor_fields(*, decision_maker_id, reviewer_id, decision_maker_is_human,
+                  reviewer_is_human, reviewer_type, reviewer_model,
+                  authorization_ref, review_scope):
+    if reviewer_type == "AI":
+        return _validate_ai_review(
+            decision_maker_id, reviewer_id, decision_maker_is_human,
+            reviewer_is_human, reviewer_model, authorization_ref, review_scope,
+        )
+    if reviewer_type != "human":
+        raise ValueError("reviewer type must be human or AI")
+    _validate_people(
+        decision_maker_id, reviewer_id, decision_maker_is_human, reviewer_is_human,
+    )
+    return {
+        "schema_version": 1,
+        "decision_maker_id": decision_maker_id,
+        "decision_maker_is_human": True,
+        "reviewer_id": reviewer_id,
+        "reviewer_is_human": True,
+    }
+
+
 def _resolve_commit(root, value, label):
     if not isinstance(value, str) or not _REVISION.fullmatch(value):
         raise ValueError(f"{label} must be a full Git commit SHA")
@@ -407,17 +456,32 @@ def _active_acceptance(events):
     active = None
     for event in events:
         body = event["body"]
-        if body.get("schema_version") != 1:
+        schema_version = body.get("schema_version")
+        if schema_version not in {1, 2}:
             raise ValueError("unsupported promotion ledger event version")
         record_type = body.get("record_type")
         if record_type == "decision":
             decision = body.get("decision")
             if decision not in {"accept", "hold", "reject"}:
                 raise ValueError("unknown decision in promotion ledger")
-            _validate_people(
-                body.get("decision_maker_id"), body.get("reviewer_id"),
-                body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
-            )
+            if schema_version == 1:
+                if "reviewer_type" in body or "decision_maker_type" in body:
+                    raise ValueError("legacy human event cannot claim an AI role")
+                _validate_people(
+                    body.get("decision_maker_id"), body.get("reviewer_id"),
+                    body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
+                )
+            else:
+                _validate_ai_review(
+                    body.get("decision_maker_id"), body.get("reviewer_id"),
+                    body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
+                    body.get("reviewer_model"), body.get("authorization_ref"),
+                    body.get("review_scope"),
+                )
+                if (body.get("decision_maker_type") != "AI"
+                        or body.get("reviewer_type") != "AI"
+                        or body.get("independent_reviewer") is not False):
+                    raise ValueError("AI decision must be explicitly labeled and non-independent")
             if body.get("reason_code") not in _REASON_CODES[decision]:
                 raise ValueError("invalid decision reason in promotion ledger")
             if active is not None:
@@ -435,10 +499,22 @@ def _active_acceptance(events):
             elif body.get("applied_commit") is not None:
                 raise ValueError("hold/reject decisions cannot contain an applied commit")
         elif record_type == "rollback":
-            _validate_people(
-                body.get("decision_maker_id"), body.get("reviewer_id"),
-                body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
-            )
+            if schema_version == 1:
+                _validate_people(
+                    body.get("decision_maker_id"), body.get("reviewer_id"),
+                    body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
+                )
+            else:
+                _validate_ai_review(
+                    body.get("decision_maker_id"), body.get("reviewer_id"),
+                    body.get("decision_maker_is_human"), body.get("reviewer_is_human"),
+                    body.get("reviewer_model"), body.get("authorization_ref"),
+                    body.get("review_scope"),
+                )
+                if (body.get("decision_maker_type") != "AI"
+                        or body.get("reviewer_type") != "AI"
+                        or body.get("independent_reviewer") is not False):
+                    raise ValueError("AI rollback must be explicitly labeled and non-independent")
             if body.get("reason_code") not in _REASON_CODES["rollback"]:
                 raise ValueError("invalid rollback reason in promotion ledger")
             if active is None or active["event_id"] != body.get("acceptance_event_id"):
@@ -490,7 +566,7 @@ def _historical_git_verify(root, event):
     if body.get("record_type") == "decision" and body.get("decision") == "accept":
         applied_commit = _resolve_commit(root, body.get("applied_commit"), "applied commit")
         _require_ancestor(root, candidate_revision, applied_commit, "applied commit")
-        _require_ancestor(root, applied_commit, evidence_commit, "evidence commit")
+        _require_ancestor(root, evidence_commit, applied_commit, "applied commit")
     elif body.get("record_type") == "rollback":
         applied_commit = _resolve_commit(root, body.get("applied_commit"), "applied commit")
         rollback_commit = _resolve_commit(root, body.get("rollback_commit"), "rollback commit")
@@ -543,11 +619,16 @@ def _require_committed_clean_ledger(ledger, root):
 
 def record_decision(ledger, root, *, decision, decision_maker_id, reviewer_id,
                     decision_maker_is_human, reviewer_is_human, reason_code,
-                    applied_commit=None):
+                    applied_commit=None, reviewer_type="human", reviewer_model=None,
+                    authorization_ref=None, review_scope=None):
     if decision not in _REASON_CODES or decision == "rollback":
         raise ValueError("decision must be accept, hold, or reject")
-    _validate_people(
-        decision_maker_id, reviewer_id, decision_maker_is_human, reviewer_is_human
+    actor_fields = _actor_fields(
+        decision_maker_id=decision_maker_id, reviewer_id=reviewer_id,
+        decision_maker_is_human=decision_maker_is_human,
+        reviewer_is_human=reviewer_is_human, reviewer_type=reviewer_type,
+        reviewer_model=reviewer_model, authorization_ref=authorization_ref,
+        review_scope=review_scope,
     )
     if reason_code not in _REASON_CODES[decision]:
         raise ValueError("invalid reason code for decision")
@@ -567,18 +648,14 @@ def record_decision(ledger, root, *, decision, decision_maker_id, reviewer_id,
             root, evidence["candidate_revision"], applied_commit, "applied commit"
         )
         _require_ancestor(
-            root, applied_commit, evidence["evidence_commit"], "evidence commit"
+            root, evidence["evidence_commit"], applied_commit, "applied commit"
         )
     elif applied_commit is not None:
         raise ValueError("only accept decisions may include an applied commit")
     return ledger.append({
-        "schema_version": 1,
         "record_type": "decision",
         "decision": decision,
-        "decision_maker_id": decision_maker_id,
-        "decision_maker_is_human": True,
-        "reviewer_id": reviewer_id,
-        "reviewer_is_human": True,
+        **actor_fields,
         "reason_code": reason_code,
         "applied_commit": applied_commit,
         "evidence": evidence,
@@ -586,9 +663,15 @@ def record_decision(ledger, root, *, decision, decision_maker_id, reviewer_id,
 
 
 def record_rollback(ledger, root, *, acceptance_event_id, decision_maker_id, reviewer_id,
-                    decision_maker_is_human, reviewer_is_human, reason_code, rollback_commit):
-    _validate_people(
-        decision_maker_id, reviewer_id, decision_maker_is_human, reviewer_is_human
+                    decision_maker_is_human, reviewer_is_human, reason_code, rollback_commit,
+                    reviewer_type="human", reviewer_model=None, authorization_ref=None,
+                    review_scope=None):
+    actor_fields = _actor_fields(
+        decision_maker_id=decision_maker_id, reviewer_id=reviewer_id,
+        decision_maker_is_human=decision_maker_is_human,
+        reviewer_is_human=reviewer_is_human, reviewer_type=reviewer_type,
+        reviewer_model=reviewer_model, authorization_ref=authorization_ref,
+        review_scope=review_scope,
     )
     if reason_code not in _REASON_CODES["rollback"]:
         raise ValueError("invalid rollback reason code")
@@ -610,13 +693,9 @@ def record_rollback(ledger, root, *, acceptance_event_id, decision_maker_id, rev
         raise ValueError("current Gate C evidence does not bind to the accepted policy")
     _require_ancestor(root, rollback_commit, evidence["evidence_commit"], "evidence commit")
     return ledger.append({
-        "schema_version": 1,
         "record_type": "rollback",
         "acceptance_event_id": acceptance_event_id,
-        "decision_maker_id": decision_maker_id,
-        "decision_maker_is_human": True,
-        "reviewer_id": reviewer_id,
-        "reviewer_is_human": True,
+        **actor_fields,
         "reason_code": reason_code,
         "applied_commit": applied_commit,
         "rollback_commit": rollback_commit,
@@ -646,8 +725,12 @@ def main(argv=None):
     decide.add_argument("--decision", required=True, choices=("accept", "hold", "reject"))
     decide.add_argument("--decision-maker-id", required=True)
     decide.add_argument("--reviewer-id", required=True)
-    decide.add_argument("--decision-maker-is-human", action="store_true", required=True)
-    decide.add_argument("--reviewer-is-human", action="store_true", required=True)
+    decide.add_argument("--decision-maker-is-human", action="store_true")
+    decide.add_argument("--reviewer-is-human", action="store_true")
+    decide.add_argument("--reviewer-type", choices=("human", "AI"), default="human")
+    decide.add_argument("--reviewer-model")
+    decide.add_argument("--authorization-ref")
+    decide.add_argument("--review-scope")
     decide.add_argument("--reason-code", required=True, choices=sorted({
         reason for decision in ("accept", "hold", "reject") for reason in _REASON_CODES[decision]
     }))
@@ -656,8 +739,12 @@ def main(argv=None):
     rollback.add_argument("--acceptance-event-id", required=True)
     rollback.add_argument("--decision-maker-id", required=True)
     rollback.add_argument("--reviewer-id", required=True)
-    rollback.add_argument("--decision-maker-is-human", action="store_true", required=True)
-    rollback.add_argument("--reviewer-is-human", action="store_true", required=True)
+    rollback.add_argument("--decision-maker-is-human", action="store_true")
+    rollback.add_argument("--reviewer-is-human", action="store_true")
+    rollback.add_argument("--reviewer-type", choices=("human", "AI"), default="human")
+    rollback.add_argument("--reviewer-model")
+    rollback.add_argument("--authorization-ref")
+    rollback.add_argument("--review-scope")
     rollback.add_argument("--reason-code", required=True, choices=sorted(_REASON_CODES["rollback"]))
     rollback.add_argument("--rollback-commit", required=True)
     args = parser.parse_args(argv)
@@ -680,6 +767,10 @@ def main(argv=None):
                 reviewer_is_human=args.reviewer_is_human,
                 reason_code=args.reason_code,
                 applied_commit=args.applied_commit,
+                reviewer_type=args.reviewer_type,
+                reviewer_model=args.reviewer_model,
+                authorization_ref=args.authorization_ref,
+                review_scope=args.review_scope,
             )
             result = {"status": "RECORDED", **event}
         else:
@@ -693,6 +784,10 @@ def main(argv=None):
                 reviewer_is_human=args.reviewer_is_human,
                 reason_code=args.reason_code,
                 rollback_commit=args.rollback_commit,
+                reviewer_type=args.reviewer_type,
+                reviewer_model=args.reviewer_model,
+                authorization_ref=args.authorization_ref,
+                review_scope=args.review_scope,
             )
             result = {"status": "RECORDED", **event}
     except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError) as exc:

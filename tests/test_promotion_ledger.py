@@ -133,6 +133,87 @@ def test_human_attestation_and_independent_reviewer_are_required(changes, messag
         promotion._validate_people(**people)
 
 
+def test_ai_decision_is_labeled_and_does_not_claim_independent_review():
+    fields = promotion._validate_ai_review(
+        "gpt-6-codex-primary", "gpt-6-codex-primary", False, False,
+        "GPT-6", "user_instruction_2026-10-29", "fixed_local_search_policy",
+    )
+    assert fields["schema_version"] == 2
+    assert fields["decision_maker_type"] == "AI"
+    assert fields["reviewer_type"] == "AI"
+    assert fields["independent_reviewer"] is False
+
+
+def test_ai_acceptance_requires_explicit_delegation_and_is_active_only_with_gate_c_pass():
+    body = {
+        "schema_version": 2,
+        "record_type": "decision",
+        "decision": "accept",
+        **promotion._validate_ai_review(
+            "gpt-6-codex-primary", "gpt-6-codex-primary", False, False,
+            "GPT-6", "user_instruction_2026-10-29", "fixed_local_search_policy",
+        ),
+        "reason_code": "reviewed_and_approved",
+        "applied_commit": "a" * 40,
+        "evidence": {"gate_c_passed": True, "candidate_policy_sha256": "c" * 64},
+    }
+    event = {"event_id": "ai-accept", "body": body}
+    assert promotion._active_acceptance([event]) is event
+
+    invalid = {**body, "evidence": {"gate_c_passed": False}}
+    with pytest.raises(ValueError, match="without Gate C PASS"):
+        promotion._active_acceptance([{"event_id": "ai-invalid", "body": invalid}])
+
+    invalid = {**body, "independent_reviewer": True}
+    with pytest.raises(ValueError, match="non-independent"):
+        promotion._active_acceptance([{"event_id": "ai-false-independence", "body": invalid}])
+
+    rollback = {
+        "schema_version": 2,
+        "record_type": "rollback",
+        "acceptance_event_id": "ai-accept",
+        **promotion._validate_ai_review(
+            "gpt-6-codex-primary", "gpt-6-codex-primary", False, False,
+            "GPT-6", "user_instruction_2026-10-29", "fixed_local_search_policy",
+        ),
+        "reason_code": "regression_observed",
+        "applied_commit": "a" * 40,
+        "rollback_commit": "b" * 40,
+        "evidence": {"candidate_policy_sha256": "c" * 64},
+    }
+    assert promotion._active_acceptance([
+        event, {"event_id": "ai-rollback", "body": rollback},
+    ]) is None
+
+
+def test_ai_decision_cli_records_explicit_authorization_and_scope(monkeypatch, tmp_path, capsys):
+    captured = {}
+    monkeypatch.setattr(promotion, "_ledger_for_root", lambda _root: object())
+
+    def capture(_ledger, _root, **kwargs):
+        captured.update(kwargs)
+        return {"event_id": "review-event"}
+
+    monkeypatch.setattr(promotion, "record_decision", capture)
+    status = promotion.main([
+        "--project-root", str(tmp_path), "decide", "--decision", "accept",
+        "--decision-maker-id", "gpt-6-codex-primary",
+        "--reviewer-id", "gpt-6-codex-primary", "--reviewer-type", "AI",
+        "--reviewer-model", "GPT-6",
+        "--authorization-ref", "user_instruction_2026-10-29",
+        "--review-scope", "fixed_local_search_policy",
+        "--reason-code", "reviewed_and_approved", "--applied-commit", "a" * 40,
+    ])
+    assert status == 0
+    assert captured["decision_maker_is_human"] is False
+    assert captured["reviewer_is_human"] is False
+    assert captured["reviewer_type"] == "AI"
+    assert captured["reviewer_model"] == "GPT-6"
+    assert captured["authorization_ref"] == "user_instruction_2026-10-29"
+    assert captured["review_scope"] == "fixed_local_search_policy"
+    assert json.loads(capsys.readouterr().out)["status"] == "RECORDED"
+
+
 def test_active_acceptance_requires_a_new_rollback_before_another_decision():
     acceptance = _decision_event("event-accept")
     assert promotion._active_acceptance([acceptance]) is acceptance

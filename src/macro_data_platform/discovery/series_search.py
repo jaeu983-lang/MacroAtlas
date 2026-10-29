@@ -16,6 +16,7 @@ from macro_data_platform.contracts import (
     StageResult,
     StageStatus,
 )
+from macro_data_platform.discovery.search_policy import PROMOTED_SEARCH_POLICY
 from macro_data_platform.ingestion.freshness import DEFAULT_FRESHNESS_POLICY, FreshnessPolicy
 from macro_data_platform.orchestration.models import StageInput, StageSpec, TaskPlan
 from macro_data_platform.workflow_contracts import (
@@ -341,7 +342,7 @@ class CandidateSearchEngine:
         try:
             structured = DataRequest.from_dict(data["request"])
             loader = self.candidate_loader or load_candidate_catalog
-            ranker = self.ranker or rank_candidates
+            ranker = self.ranker or PROMOTED_SEARCH_POLICY.rank
             candidates = loader(self.settings)
             ranked = ranker(structured, candidates, limit=data.get("limit", 25))
             at = self.clock()
@@ -361,6 +362,11 @@ class CandidateSearchEngine:
                         for item in ranked],
             "search_status": "candidates_found" if ranked else "unmatched",
             "selection_requires_explicit_confirmation": True,
+            "ranking_policy": PROMOTED_SEARCH_POLICY.version if self.ranker is None else "injected",
+            "ranking_policy_sha256": (
+                PROMOTED_SEARCH_POLICY.sha256 if self.ranker is None else None
+            ),
+            "ranking_is_equivalence_proof": False,
         }
         refs = tuple(dict.fromkeys(e.original_ref for item in ranked
                                    for e in item["candidate"].evidence))

@@ -1,10 +1,10 @@
 # MacroAtlas 구현 현황
 
-> 기준: 2026-10-28. 이 문서는 관측된 구현과 Gate 증거만 기록한다. 제품 범위·순서·완료 조건은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 엔진별 데이터 접근 한계는 [ENGINE_IMPLEMENTATION_STATUS.md](ENGINE_IMPLEMENTATION_STATUS.md)를 따른다.
+> 기준: 2026-10-29. 이 문서는 관측된 구현과 Gate 증거만 기록한다. 제품 범위·순서·완료 조건은 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 엔진별 데이터 접근 한계는 [ENGINE_IMPLEMENTATION_STATUS.md](ENGINE_IMPLEMENTATION_STATUS.md)를 따른다.
 
 ## 기준선
 
-- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `5b73bec` (PR #88 merge; 2026-10-28). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
+- 대조 기준 기본 브랜치: `codex/iteration-04-gate-a`, HEAD `e5a6569` (PR #89 merge; 2026-10-29). 남은 구현 순서의 수용 기준은 [통합 제품 기획 §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)을 따른다.
 - PR #50은 825f2aa, PR #58은 4b26bc9로 병합됐다. PR #58의 merge commit은 Ubuntu/Windows × Python 3.11/3.12 Actions 네 작업이 통과했다.
 - PR #58 변경 기준 로컬 전체 `pytest`와 `ruff check .`가 통과했다. legacy synthetic validator는 구조 기준 READY이고, 기존 v1 corpus validator는 9/36 BLOCKED였다.
 - 요청에 따라 GPT-6가 27개 draft를 원본 hash, 공식 evidence, 기대 state/candidate/field, 금지 행동, Excel policy, split과 privacy 기준으로 하나씩 검토했다. 26건은 그대로 승인, 1건은 definition 기대값 2곳을 바로잡아 case version 2로 승인했다. 검토자 유형은 AI로 ledger에 표시했다.
@@ -17,9 +17,9 @@
 | 공통 실행 | EngineRegistry와 composition root가 World Bank·BOJ·BLS·Census 및 Gate C adapter를 공통 Orchestrator에 조립한다. 대용량 worker는 별도 recovery 경계를 쓴다. | provider adapter를 다시 통합하지 않는다. |
 | 제한 API 사용 | `macroatlas collect bls`와 `macroatlas collect census`는 입력을 connector query contract로 검증하고 저장 plan에 기록한 뒤 EngineRegistry/Orchestrator로 실행·재개한다. API key는 query/task와 분리된 process environment에서 읽는다. | 전체 기관 catalog 검색, 전 series 단위·주기 보증, BLS/Census XLSX export는 구현하지 않았다. |
 | World Bank exact series | `macroatlas collect worldbank-series`는 country/source/indicator/year 범위를 검증한 뒤 `worldbank_series/1`로 원자료와 manifest를 보존하고 parser/freshness 결과를 기록한다. | 연간 최대 100년·단일 series·단일 page만 허용. 자동 metadata 탐색/의미·단위 추론과 XLSX/CSV 전달은 없다. fixture 검증은 API live 증거가 아니다. |
-| 로컬 후보 검색 | `macroatlas search`는 고정 WDI 후보와 저장된 hash-verified BLS/Census metadata를 `series_search/1`로 조회하고 결과 task를 보존한다. | network refresh가 없고 검색·선택·수집은 분리돼 있다. 전 provider catalog를 다루지 않으며 Gate D 결정도 대신하지 않는다. |
+| 로컬 후보 검색 | `macroatlas search`는 고정 WDI 후보와 저장된 hash-verified BLS/Census metadata를 `series_search/1`로 조회하고 versioned `semantic-disambiguation-v1` policy를 task에 기록한다. | network refresh가 없고 검색·선택·수집은 분리돼 있다. fixed 13-candidate v2 catalog에서만 검증됐다; ranking은 semantic equivalence를 증명하지 않는다. |
 | 파일 용량 판정 | Iteration 29에서 transport·table parser·preflight가 공유 `CapacityFinding`과 고정 reason/observed/threshold/inspection point/disposition을 사용한다. Parser 용량 예외는 메시지 부분 문자열로 분류하지 않는다. | 새 용량 threshold와 scheduler는 추가하지 않았다. PR #64의 Linux/Windows × Python 3.11/3.12 CI 네 작업이 통과했다. |
-| 검색 | CandidateSearchEngine은 versioned lexical baseline과 semantic evaluation candidate를 고정 catalog에서 비교한다. `macro-gate-c`는 split/hash, ranking/state/abstention/false-exact/forbidden/field 지표, confirmation-boundary trace, 반복 local p50/p95·처리량·표본 수를 기록한다. | 제품 Gate C는 fixed v2 search scope에서 2026-10-28 PASS다. holdout target 개선은 rankable/unrelated, near-match는 baseline과 동률이며 유형 퇴행은 없다. candidate p95 1.508ms, budget 100ms 및 baseline 대비 1.5배 안에 들었다. validation은 후보 조정에 사용돼 blind가 아니다. provider/API/raw-write/export 경로는 실행하지 않았고 정책은 승격되지 않았다. |
+| 검색 | CandidateSearchEngine은 Gate C candidate와 동일한 versioned lexical/semantic policy를 기본 경로에서 실행한다. `macro-gate-c`는 split/hash, ranking/state/abstention/false-exact/forbidden/field 지표, confirmation-boundary trace, 반복 local p50/p95·처리량·표본 수를 기록한다. | Gate C는 fixed v2 scope에서 2026-10-28 PASS, Gate D는 user-delegated AI acceptance를 append-only ledger에 기록했다. holdout rankable Top-1은 3→5, unrelated abstention은 0→8, near-match MRR은 유지, false-exact·금지 동작 위반은 0이다. candidate p95 1.508ms / baseline 1.273ms, 예산 100ms·상대 상한 1.5x 이내다. validation은 후보 조정에 사용되어 blind가 아니다. provider/API/raw-write/export 내부 동작은 미측정이다. |
 | GPT 합성 사례 | 이 대화의 GPT가 만든 질문과 엔진 결과·피드백을 실제 사용자 원장과 분리해 기록한다. 별도 OpenAI API는 필요하지 않다. 새 AI 개발 사례 4건은 fixture에 보존하고 synthetic DB에 import했다. | 합성 기록은 AI 사례이며 실제 사용자 관찰이 아니다. 개발용으로만 비교하며 v2 quota, validation 또는 holdout 사례 수에 더하지 않는다. |
 | 피드백 | SQLite FeedbackStore의 revision 원장, 명시 review와 incomplete case seed에 더해 전체 revision의 고정 snapshot과 수동 분류 batch import/list/show를 구현했다. 입력/출력 count·key·hash 및 원본 revision hash가 다르면 저장을 거부한다. | AI 호출과 비식별화는 운영자가 수동으로 수행한다. 실제 사용자 feedback의 AI 분류 batch와 자연 사용자 사례는 아직 검증되지 않았다. 지시문과 코드는 자동 수정되지 않는다. |
 | 사례 | legacy split scaffold 6건, 역사적 v1 9건, GPT review ledger가 연결된 v2 36건이 분리돼 있다. v2는 schema, 원본·채택 case·근거 hash, split leakage를 검증한다. | v2 case review는 AI provenance이며 실제 사용자 관찰을 대체하지 않는다. |
@@ -36,7 +36,7 @@
 | 사례 corpus A | 통과 (v2) | 36건 quota, 27 review ledger rows, original/case/evidence hash, privacy, split/family 검사를 통과 |
 | feedback bridge B | snapshot·수동 batch 구현, fixture 검증; 실제 사용자 검증 미완료. 합성 질문/피드백 6건은 별도 ignored DB에 있고 4건은 tracked fixture로 재생 가능 | feedback revision 원장을 계속 보존. 선택 seed는 privacy attestation을 거쳐 development draft만 출력한다. 실제 사용자 sample은 아직 없고 OpenAI API는 요구되지 않음 |
 | 평가 C | PASS — fixed v2 search scope, 2026-10-28. holdout lock은 `COMPLETED` | dev/validation/holdout 전체 false-exact·forbidden-exact 0. 금지 동작 위반 0; holdout 36 query에서 확인 없는 계획은 전부 차단. Holdout rankable Top-1 +2, unrelated abstention +8, near-match 유지, 유형 퇴행 없음. candidate p95 1.508ms/100ms, baseline 대비 1.184배/1.5배, 외부 호출·비용 0. 후보 자동 승격은 없으며 provider/raw/export 내부 동작·통계적 동등성·사람 관찰은 미측정 |
-| 승격 D | 원장·CLI 구현, AI 권고 hold, Gate D 미완료 | `macro-promotion`은 C artifact/hash/metrics를 검증하고 append-only hash-chain 원장에 accept/hold/reject 또는 rollback을 남긴다. AI가 별도 decision log에 `hold/evidence_follow_up_needed` 권고를 남겼다. 공식 승격 원장은 비어 있고 실제 사람 결정은 없다. accept에는 Gate C PASS, 서로 다른 사람의 self-attestation, 적용 commit이 필요하다. rollback은 적용 commit 뒤의 새 commit을 요구한다. 도구는 신원을 인증하지 않고 기본 정책을 바꾸지 않는다. |
+| 승격 D | PASS — AI 검토/결정/적용 기록, local search scope | `macro-promotion`은 C evidence와 적용 commit을 결합한 AI decision을 `reviewer_type=AI`, 모델·사용자 위임 참조·scope와 함께 hash-chain ledger에 기록한다. 동일 AI가 판단자와 검토자라는 점과 독립 human review 부재를 명시한다. rollback은 active acceptance 이후 새 commit으로만 기록된다. 도구는 AI/model identity를 인증하지 않는다. |
 | Series·freshness E | 부분 구현 — typed contract·API/file-mapping freshness·success-only typed artifact persistence·exact override evidence binding을 적용. BLS CPI와 Census ACS1의 공식 release-calendar capture 및 비활성 한도 후보를 [검토 자료](SERIES_FRESHNESS.md#pending-source-specific-tolerance-review)로 보존하고 캡처·예상 경계 회귀 fixture를 검증했다. | 후보 한도는 독립 검토 전 비활성이다. World Bank/BOJ release-lag 근거, 운영상 release-availability 확인, 추가 provider calendar/lag fixtures와 artifact 기반 검증된 XLSX 연결이 남았다. 일반 unmapped 파일은 제외되고 현재 활성 built-in policy는 frequency fallback이다. |
 | 원자료 XLSX F | 미구현 | validated typed series만 입력. 원값·period·missing/zero·unit/frequency·source/raw hash/provenance를 보존하고 no-overwrite/path/formula safety를 검증 |
 | 비교 XLSX G | 미구현 | compatibility contract를 통과한 series만 정렬. 원자료 sheet는 보존, 별도 alignment sheet에 명시 변환·calendar·결측 정책을 남기며 자동 보간/forward-fill 없음 |
@@ -50,6 +50,6 @@
 
 ## 다음 Gate
 
-Gate B의 snapshot과 수동 결과 저장은 구현했으나 실제 사용자 feedback 분류 결과는 아직 없다. AI 호출을 자동·예약 실행하지 않고, 운영자가 privacy를 확인한 snapshot에서 수동 분류한다. 제품 Gate C는 fixed v2 search scope에서 통과했고 후보 manifest·qualification·one-time holdout 결과는 [`evaluation/results/`](../evaluation/results/) 아래 보존했다. AI는 해당 제한을 근거로 `hold/evidence_follow_up_needed`를 권고했으며 [결정 로그 D-121](DECISION_LOG.md)에 AI 의견으로 분리 기록했다. 이는 공식 promotion ledger의 사람 결정이 아니므로 후보는 계속 미승격이고 Gate D는 미완료다. 도구는 사람 신원과 독립 검토의 실체를 인증하지 않는다. provider/raw/export 실행 경로는 향후 해당 기능 Gate에서 별도 검증한다. 세부 작업·산출물·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에만 둔다.
+Gate D는 fixed v2 local-search 범위의 AI acceptance를 적용 커밋·사용자 위임 근거와 함께 원장에 기록했다. 다음은 Gate E이며, source-specific freshness 한도 근거와 검토, Census 공개 시점 확인, typed artifact를 이용한 검증 XLSX 연결이 남아 있다. Gate E가 통과하기 전에는 F/G 출력 Gate를 완료 처리하지 않는다. 실제 사용자 feedback 분류 sample은 아직 없다. 세부 작업·판정 기준은 [PROJECT_PLAN §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)에 있다.
 
-기본 브랜치의 대조 기준 commit은 [`5b73bec`](https://github.com/jaeu983-lang/MacroAtlas/commit/5b73bec798672a8ee411d0820006e7447f199227)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.
+기본 브랜치의 대조 기준 commit은 [`e5a6569`](https://github.com/jaeu983-lang/MacroAtlas/commit/e5a6569383de6927582b856bac18601b307cff77)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.
