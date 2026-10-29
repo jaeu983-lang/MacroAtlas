@@ -19,7 +19,10 @@ from macro_data_platform.ingestion.freshness import (
     assess_freshness,
 )
 from macro_data_platform.ingestion.typed_series import persist_typed_series_result
-from macro_data_platform.metadata.series import normalize_worldbank_series
+from macro_data_platform.metadata.series import (
+    normalize_worldbank_series,
+    worldbank_metadata_evidence,
+)
 from macro_data_platform.orchestration.models import StageInput
 from macro_data_platform.performance.metrics import measure_current
 from macro_data_platform.storage.raw_downloads import save_worldbank_download
@@ -96,8 +99,12 @@ class WorldBankSeriesEngine:
             "stale_observations" if freshness["status"] == FreshnessStatus.STALE else
             "freshness_unverified" if freshness["status"] != FreshnessStatus.FRESH else None
         )
-        payload["quality"] = {"status": "failed" if issue else "passed",
-                               "issues": [issue] if issue else [], "freshness": freshness}
+        quality = {"status": "failed" if issue else "passed",
+                   "issues": [issue] if issue else [], "freshness": freshness}
+        metadata_evidence = worldbank_metadata_evidence(payload)
+        if metadata_evidence:
+            quality["metadata_evidence"] = metadata_evidence
+        payload["quality"] = quality
         if issue:
             payload["withheld_observation_count"] = len(payload["observations"])
             payload["observations"] = []

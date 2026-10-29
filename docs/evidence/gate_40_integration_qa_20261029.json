@@ -1,0 +1,52 @@
+{
+  "schema_version": "gate-40-maintenance-qa-v1",
+  "run_id": "abfac1bfa28a475bbeb8e44daf7cc626",
+  "status": "PASSED",
+  "verifier": "automated_maintenance_qa",
+  "base_commit": "9d61865179dbe5af7ee7eed0678d3cf08bac095f",
+  "candidate_commit": "87b18d434c9566b8049161febebc64634d7916f0",
+  "candidate_checkout": "immutable_detached_worktree",
+  "network_requested": false,
+  "started_at": "2026-10-29T02:53:32.065755+00:00",
+  "finished_at": "2026-10-29T02:53:48.411923+00:00",
+  "checks": [
+    {
+      "name": "pytest",
+      "status": "PASSED",
+      "summary": "973 passed"
+    },
+    {
+      "name": "ruff",
+      "status": "PASSED"
+    },
+    {
+      "name": "diff",
+      "status": "PASSED"
+    },
+    {
+      "name": "cli",
+      "status": "PASSED"
+    },
+    {
+      "name": "cli_entrypoint",
+      "status": "PASSED"
+    },
+    {
+      "name": "cli_collect",
+      "status": "PASSED"
+    },
+    {
+      "name": "health",
+      "status": "PASSED"
+    }
+  ],
+  "cleanup": "PASSED",
+  "local_report": {
+    "path": "reports/maintenance_qa_abfac1bfa28a475bbeb8e44daf7cc626/report.json",
+    "sha256": "06099d7fd2b28d5b7f733b99929ef1658df2658710de364ea7eacf59704b35e1"
+  },
+  "limitations": [
+    "The QA ran against the immutable candidate commit before this value-free evidence record and status documentation were added.",
+    "This check proves repository tests and operational CLI health in the QA environment; it does not claim live provider availability, Census post-release availability, or analyst usability."
+  ]
+}

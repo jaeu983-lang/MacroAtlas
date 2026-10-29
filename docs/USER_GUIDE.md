@@ -177,9 +177,11 @@ Excel 수식으로 실행되지 않게 텍스트로 저장합니다. 두 파일 
 ```
 
 비교 spec의 evidence hash와 reviewer 표기는 sidecar에 기록되지만 원격 문서 hash 또는 reviewer 신원을 도구가
-인증하지 않습니다. AI review를 사람의 독립 검토로 표시하지 않습니다. 실제 통계 동등성은 spec 근거가 뒷받침해야
-하며, 현재 provider 간 실자료 비교 승인은 기록되지 않았습니다. Gate E의 release-lag 근거와 가용성 표본도 아직
-부족하므로 이 기능의 fixture 통과를 제품 Gate E/F/G 통과로 해석하지 않습니다.
+인증하지 않습니다. AI review를 사람의 독립 검토로 표시하지 않습니다. 실자료 비교가 검토된 범위는 같은 World Bank
+WDI 명목 GDP 지표의 2024 USA/Canada 쌍입니다. 이는 다른 provider 간 통계 동등성이나 실질 GDP·PPP 비교를 뜻하지
+않습니다. 비교하려는 각 series에 대해 단위·주기·달력·개념 근거를 spec에서 확인해야 합니다.
+공개 출처 URL은 HTTPS여야 하며 endpoint가 요구하는 `?format=json`만 허용합니다. credential이나 다른 query 값은
+근거 URL에 넣지 않습니다.
 
 World Bank 이전 검증 스크립트도 유지됩니다.
 

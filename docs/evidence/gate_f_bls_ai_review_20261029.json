@@ -1,0 +1,59 @@
+{
+  "schema_version": "gate-f-ai-review-v1",
+  "review_id": "gate-f-bls-xlsx-review-20261029T024719Z",
+  "gate": "F",
+  "decision": "accepted_scoped",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T02:47:19+00:00",
+  "authorization_ref": "user_instruction_2026-10-29_f_g_ai_acceptance",
+  "independent_human_review": false,
+  "scope": "live BLS CPI-U CUUR0000SA0 task export plus generic typed-XLSX fixture contract",
+  "inputs": [
+    {
+      "path": "docs/evidence/bls_cpi_availability_observation_20261029.json",
+      "sha256": "17b11c01daab77db440302cd89c2e499c9e0c55fe05ff0d1873cc803e333acb1"
+    },
+    {
+      "path": "docs/evidence/bls_cpi_xlsx_export_observation_20261029.json",
+      "sha256": "fb0f13700042d6a02df40f8e8e90af9ba282842151df57373ef1383e1519d426"
+    },
+    {
+      "path": "src/macro_data_platform/ingestion/xlsx_export.py",
+      "sha256": "18a8fc08e81a29c12e4ec0e59a64b4ce63d48838d00fb3765a12cdd1ba2f1559"
+    },
+    {
+      "path": "tests/test_xlsx_export.py",
+      "sha256": "6598c826770126186059d9c1721539a8aadb9a564ab4d23238aa62eafd9e65ed"
+    }
+  ],
+  "live_task": {
+    "task_id": "9ca5f8b6-7e36-4511-9e76-70987286a6cf",
+    "status": "COMPLETED",
+    "series_id": "CUUR0000SA0",
+    "observation_count": 9,
+    "source_raw_sha256": "2e67c9359aba2a7785d2afe8e5d846f76f0e83ded2dfb7fe034aaaf66ee533db",
+    "workbook_path": "data/exports/gate-e-bls-cpi-20261029.xlsx",
+    "workbook_sha256": "34fa6328249521bced2a8fd2c31445d39be14f9f3d1cd5eb98d46707ede7072d",
+    "provenance_path": "data/exports/gate-e-bls-cpi-20261029.xlsx.json",
+    "provenance_sha256": "a46e674aa519fe5abe4c016fbb42f87439d1d3ec7189d5d612ad24c67f4377d1"
+  },
+  "checks": {
+    "source_raw_and_manifest_hashes_match": true,
+    "all_9_source_observations_match_exported_period_value_and_status": true,
+    "workbook_reopened": true,
+    "export_freshness_recheck": "FRESH",
+    "formula_cells": 0,
+    "workbook_and_sidecar_hashes_match_recorded_evidence": true,
+    "generic_fixture_checks_cover_zero_missing_formula_literals_path_guards_and_no_overwrite": true
+  },
+  "decision_basis": "The BLS live task was exported to a write-once workbook. A local verification compared every exported observation's period, raw value, and missing/observed status with the preserved source response without copying values into tracked evidence. The workbook reopened and its output and provenance hashes matched the recorded capture. Runtime freshness was rechecked at export.",
+  "limitations": [
+    "This accepts the observed BLS CPI live path and generic fixture contract; it does not claim live XLSX evidence for every provider or series.",
+    "This is an AI product review, not human usability observation; reviewer identity is not authenticated by the platform.",
+    "The repository's Census freshness gate is excluded from this product acceptance by explicit user scope decision; the exporter's per-artifact freshness recheck remains active."
+  ],
+  "identity_authenticated": false,
+  "raw_values_copied_to_tracked_evidence": false
+}

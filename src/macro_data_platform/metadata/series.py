@@ -44,6 +44,49 @@ _BLS_MONTH = re.compile(r"M(?:0[1-9]|1[0-2])\Z")
 _BLS_QUARTER = re.compile(r"Q0[1-4]\Z")
 _BLS_SEMIANNUAL = re.compile(r"S0[1-2]\Z")
 
+_WDI_NOMINAL_GDP_MAPPING = {
+    "mapping_id": "wdi-source-2-ny-gdp-mktp-cd-usd-v1",
+    "dataset_id": "2",
+    "indicator_id": "NY.GDP.MKTP.CD",
+    "unit": "current U.S. dollars",
+    "currency": "USD",
+    "source_metadata": {
+        "path": "docs/evidence/worldbank_gdp_indicator_metadata_20261027.json",
+        "sha256": "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28",
+        "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json",
+        "citation": (
+            "World Bank WDI identifies GDP (current US$); its source note says the "
+            "indicator is expressed in current prices and United States dollars."
+        ),
+    },
+    "review_id": "wdi-gdp-usd-metadata-review-20261029",
+}
+
+
+def worldbank_metadata_evidence(payload: Mapping) -> list[dict]:
+    """Return only a reviewed, exact WDI mapping whose structured unit is absent."""
+    identity = payload.get("series_key")
+    if (
+        payload.get("source_agency") != "World Bank"
+        or payload.get("dataset_id") != _WDI_NOMINAL_GDP_MAPPING["dataset_id"]
+        or payload.get("indicator_id") != _WDI_NOMINAL_GDP_MAPPING["indicator_id"]
+        or not isinstance(identity, Mapping)
+        or identity.get("source") != _WDI_NOMINAL_GDP_MAPPING["dataset_id"]
+        or identity.get("indicator") != _WDI_NOMINAL_GDP_MAPPING["indicator_id"]
+        or payload.get("unit") not in (None, "")
+        or payload.get("currency") not in (None, "")
+    ):
+        return []
+    return [{
+        "mapping_id": _WDI_NOMINAL_GDP_MAPPING["mapping_id"],
+        "unit": _WDI_NOMINAL_GDP_MAPPING["unit"],
+        "currency": _WDI_NOMINAL_GDP_MAPPING["currency"],
+        "source_metadata": dict(_WDI_NOMINAL_GDP_MAPPING["source_metadata"]),
+        "review_id": _WDI_NOMINAL_GDP_MAPPING["review_id"],
+        "reviewer_type": "AI",
+        "reviewer_model": "GPT-6",
+    }]
+
 
 def _bls_period(row: Mapping) -> tuple[str, str | None, str]:
     year, period = row.get("year"), row.get("period")
@@ -63,7 +106,7 @@ def _bls_period(row: Mapping) -> tuple[str, str | None, str]:
 
 
 def normalize_worldbank_series(payload: Mapping) -> TimeSeries:
-    """Normalize a validated annual WDI payload without inferring its unit or currency."""
+    """Normalize WDI rows, applying only exact reviewed source-metadata mappings."""
     if not isinstance(payload, Mapping) or payload.get("source_agency") != "World Bank":
         raise ValueError("expected a validated World Bank payload")
     key = payload.get("series_key")
@@ -79,6 +122,8 @@ def normalize_worldbank_series(payload: Mapping) -> TimeSeries:
     if frequency is None:
         frequency = frequency_from_period_format(payload.get("period_format"))
         basis = "period_format" if frequency else None
+    metadata_evidence = worldbank_metadata_evidence(payload)
+    mapped_metadata = metadata_evidence[0] if metadata_evidence else {}
     return TimeSeries(
         source_agency="World Bank",
         dataset_id=source,
@@ -90,8 +135,8 @@ def normalize_worldbank_series(payload: Mapping) -> TimeSeries:
         source_url=payload.get("source_url"),
         raw_ref=payload.get("raw_path"),
         manifest_ref=payload.get("manifest_path"),
-        unit=payload.get("unit"),
-        currency=None,
+        unit=payload.get("unit") or mapped_metadata.get("unit"),
+        currency=payload.get("currency") or mapped_metadata.get("currency"),
         frequency=frequency,
         frequency_basis=basis or "unknown",
         source_revision=payload.get("source_version"),

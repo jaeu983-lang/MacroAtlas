@@ -1,14 +1,10 @@
-# 평가·시계열 엔진 작업 순서 — 통합 문서로 이관됨
+# 제품 평가·시계열 작업 순서 — 통합 문서
 
-활성 제품 계획·순서·완료 조건은 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §7, §11에만 둔다.
-현재 구현 및 Gate 판정은 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), source별 코드 경로와
-한계는 [`ENGINE_CONNECTIONS.md`](ENGINE_CONNECTIONS.md) 및 [`ENGINE_IMPLEMENTATION_STATUS.md`](ENGINE_IMPLEMENTATION_STATUS.md)를 참조한다.
+이 파일은 이전의 상세 계획을 옮긴 인덱스다. 별도의 요구사항이나 backlog를 정의하지 않는다.
 
-현재 제품 Gate C는 fixed v2 search 범위에서 통과했다. D용 hash-chain promotion ledger와 CLI는 구현됐지만
-사람의 독립 검토·결정은 아직 기록되지 않아 D는 미완료이며 후보는 미승격이다. 다음 Gate 순서는
-D 결정 기록 → E typed series/freshness → F 원자료 XLSX → G 비교 XLSX → 마지막 분석가 관찰이다.
-Iteration 29 파일 용량 정비는 별도 checkpoint이며 이 파일은 별도 PR 목록이나 또 다른 backlog가 아니다.
+- 제품 범위·순서·완료 기준: [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) §7, §11
+- 현재 Gate 상태: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+- 엔진 연결·지원 한계: [`ENGINE_CONNECTIONS.md`](ENGINE_CONNECTIONS.md), [`ENGINE_IMPLEMENTATION_STATUS.md`](ENGINE_IMPLEMENTATION_STATUS.md)
+- 결정과 당시 실행 근거: [`DECISION_LOG.md`](DECISION_LOG.md) 및 회차별 보고서
 
-기존 v2 corpus 36/36과 GPT review, candidate v2 평가, feedback draft bridge의 수치·실행 이력은
-[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), [`DECISION_LOG.md`](DECISION_LOG.md),
-회차 보고서에 보존한다. AI 검토는 human review나 실제 분석가 관찰을 대체하지 않는다.
+현재 B/C/D, 범위 한정 F/G, 통합 40은 기록된 증거 범위에서 완료됐다. Gate E는 별도 제품 조건에서 제외됐으며 freshness runtime은 유지된다. 필수로 남은 제품 checkpoint는 Gate 41 AI workflow simulation 하나다. 선택적인 실제 분석가 관찰은 [`ITERATION_23_PLAN.md`](ITERATION_23_PLAN.md)에 별도로 둔다.

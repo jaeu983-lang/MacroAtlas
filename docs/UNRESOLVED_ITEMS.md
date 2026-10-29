@@ -1,6 +1,6 @@
 # 2026-10-27 미해결 항목 snapshot — 데이터 처리와 서버 접속 분리
 
-> 역사 기록: 이 문서는 2026-10-27 당시의 backlog와 Windows updater 증거를 보존한다. 현재 backlog·Gate 순서는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)와 [PRODUCT_EVALUATION_ENGINE_PLAN.md](PRODUCT_EVALUATION_ENGINE_PLAN.md)를 따른다. 아래의 당시 '현재 남은 제품 과제' 문구는 지금의 실행 순서가 아니다.
+> 역사 기록: 이 문서는 2026-10-27 당시의 backlog와 Windows updater 증거를 보존한다. 현재 제품 범위와 Gate 순서는 [PROJECT_PLAN.md](../PROJECT_PLAN.md), 현재 상태는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)를 따른다. 아래의 당시 '현재 남은 제품 과제' 문구는 지금의 실행 순서가 아니다.
 >
 > 2026-10-27 갱신: updater 코드 기준은 PR #34 merge commit `543c719be506350ce57fd14358173e54ede812b3`이다. 이후 Windows updater pilot evidence는 [27회차 보고서](ITERATION_27_PILOT_REPORT.md)에 기록했으며, 기관·dataset scope 근거는 PR #23–#26에서 보완했고 PR #28은 malformed task plan의 CSV export를 거부한다. 현재 남은 제품 과제는 대용량 예측 보정, 통계 의미 검증, 지원 범위 확대와 사용자 관찰이다. TIC/BIS 자료 변경상태 확인은 사용자 요청으로 현재 범위에서 제외했으며 updater scheduler의 실제 Windows 검증은 아래 별도 상태를 따른다.
 

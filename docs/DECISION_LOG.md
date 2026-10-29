@@ -1,6 +1,6 @@
 # Decision Log — 설계 변경·미해결 판단
 
-> 이 문서는 날짜가 붙은 결정 이력이다. 현재 범위와 우선순위는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 구현·Gate 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 짧은 순서 요약은 [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)를 따른다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+> 이 문서는 날짜순 결정 이력이다. 현재 제품 범위·순서는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), Gate 상태·증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)를 따른다. 오래된 결정의 미완료 상태는 당시 기록이며, 최신 범위 결정은 [D-138](#d-138-남은-gate와-후속-작업-계획-재구성)에서 확인한다.
 
 ## 05회차 제한 구현 (2026-10-26)
 
@@ -1082,3 +1082,34 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 2026-10-29. 기존에 별도 보존된 AI-simulated 검색 사례 중 피드백이 실제로 필요한 correction 사례 3건만 사용했다. 정답이 충분한 나머지 사례에는 피드백을 만들지 않았다. 세 건을 사용자 feedback과 분리된 local-only `FeedbackStore`에 `AI-simulated`/`inference`로 기록하고 고정 snapshot을 만든 뒤, GPT-6가 `candidate_group` 2건과 `statistical_definition` 1건으로 분류한 batch를 수동 import했다. batch row 3건이 snapshot의 `(feedback_id, revision)` 집합과 정확히 일치하고 중복·누락이 0이며 key/source/result hash가 저장 batch와 동일함을 확인했다.
 
 검토자는 `AI` (`gpt-6-codex-primary`)로 표시한다. batch와 feedback text는 ignored local DB `data/synthetic_feedback_ledger/data/catalog.sqlite`에만 남겼고, tracked [evidence record](evidence/feedback_classification_ai_simulated_20261029.json)에는 fixture 경로/hash, 집계, hash와 AI provenance만 기록했다. 별도 fixture에 AI 질문·feedback과 observed result가 남아 있어 입력을 재확인할 수 있다. 이 결과는 Gate B의 합성 데이터 분류·저장 경로를 통과한 증거이며 자연 사용자 입력, 독립 사람 검토, 자동 prompt/code 수정은 증명하지 않는다. 따라서 B는 해당 AI-simulated 범위에서 실행 검증됐고 실제 사용자 workflow는 미관측이다.
+
+## D-135 — Gate E 제품 판정 제외와 F/G AI 수용 범위
+
+2026-10-29. 사용자는 최신성 evaluator와 정책이 코드에 반영돼 있으므로 Gate E를 별도 제품 수용 gate로 요구하지 말고 F/G를 진행하도록 지시했다. 이에 따라 F/G의 선행 gate 목록에서 E를 제외한다. 이는 freshness 구현, `frequency_fallback`, `STALE`/`FRESHNESS_UNVERIFIED` 차단 또는 export 직전 freshness 재평가를 끄지 않는다. ACS 2025 post-release observation은 미관측 상태로 명시하고, 공개·API 가용성에 관한 주장을 하지 않는다. Census sample을 기다리지 않고 F/G의 범위별 근거로 판정한다. AI 판정은 reviewer type `AI`로 기록하며 독립 human review나 AI identity 인증을 주장하지 않는다.
+
+## D-136 — Gate F/G 범위 한정 AI acceptance
+
+2026-10-29. 사용자 위임에 따라 GPT-6 AI가 Gate F와 G의 실자료 및 재현 해시를 검토했다.
+
+- **F — `accepted_scoped`:** BLS CPI-U `CUUR0000SA0` live task의 저장 raw response·manifest와 export workbook·sidecar 해시가 일치한다. workbook의 9개 observation을 원 response와 period/raw value/status 단위로 대조했고 workbook 재개방, formula cell 0, export freshness `FRESH`를 확인했다. 일반 exporter의 zero/missing, formula-like literal, 경로·덮어쓰기 fixture 검사도 통과했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). 수용 범위는 이 live BLS 경로와 generic fixture contract이며 다른 기관의 live export나 실제 사람 사용성은 포함하지 않는다.
+- **G — `accepted_scoped`:** World Bank WDI source 2의 `NY.GDP.MKTP.CD` USA·Canada 2024년 자료를 각각 한 번 수집했다. 공식 indicator metadata의 source note는 현재 가격과 미국 달러를 명시하며 structured unit은 비어 있다. AI가 정확한 source/dataset/indicator와 빈 unit/currency에 한해 `current U.S. dollars`/`USD`를 적용하는 mapping을 검토했고 근거 hash를 typed artifact·comparison workbook·sidecar에 보존했다. workbook은 동일한 annual period의 raw rows를 유지해 정확히 정렬했고 집계·단위변환·보간·forward-fill을 하지 않았다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json) 및 [단위 mapping 판정](evidence/wdi_gdp_usd_metadata_ai_review_20261029.json). 수용 범위는 동일 source·동일 지표의 2024 cross-country nominal GDP 비교 하나다. 다른 provider 간 통계 동등성, real GDP, PPP, welfare interpretation은 승인하지 않는다.
+
+두 판정은 AI reviewer/model provenance를 기록하지만 identity를 인증하지 않고 독립 사람 검토로 표시하지 않는다. observation values는 tracked evidence에 복사하지 않았으며 raw input과 output workbook은 ignored local `data/`에 남는다. 다음 단계는 수정 후 Gate 40 통합 QA다.
+
+## D-137 — Gate 40 통합 QA 완료
+
+2026-10-29. F/G 변경을 기준선 `9d61865179dbe5af7ee7eed0678d3cf08bac095f`에서 immutable candidate `87b18d434c9566b8049161febebc64634d7916f0`로 검사했다. 격리 worktree에서 전체 pytest 973건, Ruff, diff 검사, CLI module/entrypoint/collect help, health check가 모두 통과했고 정리도 성공했다. 네트워크 요청은 없었다. [Value-free QA evidence](evidence/gate_40_integration_qa_20261029.json)는 결과와 local report SHA를 기록한다. 이는 provider의 실시간 가용성, Census ACS 2025 공개 후 조회 또는 사람의 사용성 검증을 뜻하지 않는다. 다음 제품 checkpoint는 AI 분석가 작업흐름 시뮬레이션 41이다.
+
+## D-138 — 남은 Gate와 후속 작업 계획 재구성
+
+2026-10-29. F/G의 범위 한정 AI acceptance와 Gate 40 통합 검증 후 현재 필수 제품 단계는 Gate 41 AI workflow simulation 하나로 정리한다. 시뮬레이션은 기존 BLS·WDI workbook artifact만 격리된 로컬 사본에서 사용하고 새 provider 요청, 운영 feedback DB 쓰기, C 사례·holdout 변경을 하지 않는다. 피드백은 실제 교정 필요가 있을 때만 별도 AI-simulated 기록으로 남기며, 시간 측정은 도구 처리 wall-clock으로 제한해 사람의 인지 시간이나 실제 사용성으로 해석하지 않는다. 실제 분석가 1–2명 관찰은 별도 선택 연구로 분리하고 Gate 완료 조건에서 제외한다. 추가 provider/series 검증, source-specific release-lag 근거, 자연 요청 latency는 사용자 수요가 있을 때 범위를 정하는 backlog이며 Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage와 scheduler 활성화는 현재 제외한다. `PROJECT_PLAN.md`만 활성 범위·순서의 단일 기준으로 유지하고 오래된 하위 계획은 redirect/역사 기록으로 정리한다.
+
+## D-139 — Gate 41 단일 명령 preflight
+
+2026-10-29. Gate 41 준비를 빠르게 반복하도록 `scripts/run_gate_41_preflight.py`를 추가했다. 이 도구는 AI 수용 기록과 로컬 F/G workbook·provenance hash, freshness, sheet/schema·행 수, formula cells, WDI alignment, 0/결측 개수를 읽기 전용으로 확인하고 value-free scenario card를 stdout에 출력한다. 네트워크·DB·파일 쓰기 없이 실행한다. 여러 로컬 실행에서 `READY`가 나왔고 preflight는 약 14–46 ms가 걸렸다. 이 소요시간은 이 로컬 확인의 기록이며 운영 성능 기준선은 아니다. BLS CPI workbook에는 dataset ID·unit·currency가 비어 있어 Gate 41 답변은 이를 unknown으로 밝혀야 한다. 이 preflight는 두 AI analyst task의 답변이나 Gate 41 completion evidence를 만들지 않는다. 신규 helper 테스트 3건 및 전체 976 tests, Ruff, compileall, diff 검사가 통과했다.
+
+## D-140 — Gate 41 AI 작업흐름 시뮬레이션 완료
+
+2026-10-29. 단일 preflight는 `READY`였다. GPT-6가 hash-linked BLS CPI-U XLSX와 WDI GDP 비교 XLSX를 읽기 전용으로 해석하고, 두 task 응답 및 범위 한정 `PASS`를 [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)에 기록했다. BLS 응답은 월별 9개 관측치, 2026-01~2026-09, 기록상 export-time `FRESH`, 결측 0·0값 0을 구분했고 dataset ID·unit·currency와 파일에 없는 정식 series title은 unknown으로 남겼다. WDI 응답은 source 2의 `NY.GDP.MKTP.CD`, USA/CAN, annual 2024 정렬, source-note 기반 current USD mapping, 변환·보간 없음과 명목 GDP 해석 한계를 확인했다. 별도 API, provider 요청, DB 쓰기, feedback 생성, 정책 승격은 없었다. measured preflight는 41.7 ms이며 AI 응답시간과 실제 사용자·분석가 인지시간은 측정하지 않았다. reviewer type은 `AI`; 사람의 usability를 입증하지 않는다.
+
+Gate 41에서 드러난 개선 후보는 BLS XLSX의 읽기 쉬운 공식 series title과 사용 가능한 source metadata 보존이다. 사용자가 필요를 요청하면 공식 근거를 확보해 추가하되 제공되지 않는 필드는 계속 unknown으로 남긴다. 이후 우선순위는 요청 기반 provider/series live coverage, source-specific 공표 지연 evidence, 자연 요청의 network/local stage timing이며, 사전 측정 없이 성능 최적화하지 않는다. Census 재조회·TIC/BIS 감시·Vantage·scheduler는 계속 비활성이다.
