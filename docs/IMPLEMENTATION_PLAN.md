@@ -40,7 +40,8 @@
 | Freshness runtime | E는 사용자 범위 결정으로 별도 제품 Gate에서 제외했다. 공통 typed contract와 freshness evaluator는 코드에 남고 F/G 실행에서 계속 동작한다. | ACS 2025 post-release sample은 수행·주장하지 않는다. 이 보류는 F/G 수용의 blocker가 아니며 freshness fallback/exact override 동작을 바꾸지 않는다. 사용자 scope decision은 [D-135](../DECISION_LOG.md#d-135-gate-e-제품-판정-제외와-fg-ai-수용-범위)에서 기록한다. |
 | 원자료 XLSX F | **AI PASS — BLS CPI live 범위.** BLS source response와 workbook의 9개 period/value/status를 대조하고 raw/manifest/XLSX/provenance hash, 재개방, FRESH recheck를 확인했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). | 이 판정은 live BLS CPI export와 generic fixture contract로 한정한다. 다른 기관의 live export와 사람의 usability observation은 포함하지 않는다. |
 | 비교 XLSX G | **AI PASS — 같은 WDI 지표의 USA/Canada 2024 비교 범위.** official metadata source note에 근거한 exact USD mapping을 기록하고 원자료 sheet·typed period alignment·hash·provenance를 검증했다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json). | Cross-provider 동등성, 다른 WDI indicator, 실질 GDP, PPP, welfare 비교는 승인하지 않는다. AI reviewer identity는 인증되지 않는다. |
-| 최종 관찰 | A–D, F, G와 40회차 뒤 AI 가상 분석가 시나리오를 수행할 수 있다. | AI 관찰은 AI simulation으로만 기록하며 실제 사람 관찰로 표시하지 않는다. 실사용성은 별도 사람 관찰이 있을 때 추가한다. |
+| 통합 40 | **PASS — immutable candidate QA.** pytest 973건, Ruff, diff, CLI module/entrypoint/collect help, health가 통과했고 격리 worktree 정리도 통과했다. [QA evidence](evidence/gate_40_integration_qa_20261029.json). | QA는 provider 가용성·ACS 2025 공개 후 조회·분석가 사용성 검증을 대신하지 않는다. |
+| 최종 41 | AI 작업흐름 시뮬레이션 예정 | AI simulation은 실제 사람 관찰로 표시하지 않는다. 실사용성은 별도 사람 관찰이 있을 때 추가한다. |
 
 ## 별도 workstream
 
@@ -50,6 +51,6 @@
 
 ## 다음 Gate
 
-Gate D는 fixed v2 local-search 범위에서 AI acceptance를 적용했다. 사용자는 Gate E를 별도 제품 수용 조건에서 제외하고 freshness runtime은 유지하도록 범위를 정했다. F의 BLS live XLSX와 G의 동일 WDI GDP USA/Canada 2024 comparison은 [AI 판정](evidence/gate_f_bls_ai_review_20261029.json) 및 [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json)에 reviewer type `AI`로 기록했다. 입력 raw values는 tracked evidence에 복사하지 않았다. 다음은 변경 후 통합 검증 40이다. Census의 ACS 2025 데이터 요청과 post-release sample은 수행하지 않으며 현재 F/G 판정의 조건으로도 두지 않는다.
+Gate D는 fixed v2 local-search 범위에서 AI acceptance를 적용했다. 사용자는 Gate E를 별도 제품 수용 조건에서 제외하고 freshness runtime은 유지하도록 범위를 정했다. F의 BLS live XLSX와 G의 동일 WDI GDP USA/Canada 2024 comparison은 [AI 판정](evidence/gate_f_bls_ai_review_20261029.json) 및 [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json)에 reviewer type `AI`로 기록했고, 통합 검증 40도 [QA evidence](evidence/gate_40_integration_qa_20261029.json)와 같이 통과했다. 입력 raw values는 tracked evidence에 복사하지 않았다. 다음 단계는 AI 분석가 작업흐름 시뮬레이션 41이다. Census의 ACS 2025 데이터 요청과 post-release sample은 수행하지 않으며 F/G 판정의 조건으로도 두지 않는다.
 
 기본 브랜치의 대조 기준 commit은 [`9d61865`](https://github.com/jaeu983-lang/MacroAtlas/commit/9d61865179dbe5af7ee7eed0678d3cf08bac095f)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

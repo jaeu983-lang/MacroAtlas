@@ -1095,3 +1095,7 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 - **G — `accepted_scoped`:** World Bank WDI source 2의 `NY.GDP.MKTP.CD` USA·Canada 2024년 자료를 각각 한 번 수집했다. 공식 indicator metadata의 source note는 현재 가격과 미국 달러를 명시하며 structured unit은 비어 있다. AI가 정확한 source/dataset/indicator와 빈 unit/currency에 한해 `current U.S. dollars`/`USD`를 적용하는 mapping을 검토했고 근거 hash를 typed artifact·comparison workbook·sidecar에 보존했다. workbook은 동일한 annual period의 raw rows를 유지해 정확히 정렬했고 집계·단위변환·보간·forward-fill을 하지 않았다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json) 및 [단위 mapping 판정](evidence/wdi_gdp_usd_metadata_ai_review_20261029.json). 수용 범위는 동일 source·동일 지표의 2024 cross-country nominal GDP 비교 하나다. 다른 provider 간 통계 동등성, real GDP, PPP, welfare interpretation은 승인하지 않는다.
 
 두 판정은 AI reviewer/model provenance를 기록하지만 identity를 인증하지 않고 독립 사람 검토로 표시하지 않는다. observation values는 tracked evidence에 복사하지 않았으며 raw input과 output workbook은 ignored local `data/`에 남는다. 다음 단계는 수정 후 Gate 40 통합 QA다.
+
+## D-137 — Gate 40 통합 QA 완료
+
+2026-10-29. F/G 변경을 기준선 `9d61865179dbe5af7ee7eed0678d3cf08bac095f`에서 immutable candidate `87b18d434c9566b8049161febebc64634d7916f0`로 검사했다. 격리 worktree에서 전체 pytest 973건, Ruff, diff 검사, CLI module/entrypoint/collect help, health check가 모두 통과했고 정리도 성공했다. 네트워크 요청은 없었다. [Value-free QA evidence](evidence/gate_40_integration_qa_20261029.json)는 결과와 local report SHA를 기록한다. 이는 provider의 실시간 가용성, Census ACS 2025 공개 후 조회 또는 사람의 사용성 검증을 뜻하지 않는다. 다음 제품 checkpoint는 AI 분석가 작업흐름 시뮬레이션 41이다.
