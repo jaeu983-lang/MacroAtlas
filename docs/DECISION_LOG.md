@@ -1076,3 +1076,9 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 2026-10-29. D-132의 보존된 BLS task를 이용해 `macroatlas export-xlsx`를 네트워크 없이 실행했다. typed artifact의 source/raw/manifest hash를 검증하고 현재 freshness를 다시 평가한 뒤 1개 series·9개 observation 행이 있는 workbook과 provenance sidecar를 썼다. Workbook을 다시 열어 `Provenance`와 `CUUR0000SA0` sheet, 20개 원자료 columns, row count와 sidecar의 output SHA 일치를 확인했다. 출력 SHA-256 `34fa6328249521bced2a8fd2c31445d39be14f9f3d1cd5eb98d46707ede7072d`, sidecar SHA-256 `a46e674aa519fe5abe4c016fbb42f87439d1d3ec7189d5d612ad24c67f4377d1`. [Value-free export record](evidence/bls_cpi_xlsx_export_observation_20261029.json)은 경로·hash·검증 집계만 기록하며 workbook과 원자료는 local ignored `data/`에 보존한다.
 
 이것은 Gate F의 단일 live task 실행 확인이며 제품 acceptance는 아니다. Gate E는 Census 공개 후 availability sample이 없어 PARTIAL이고, G도 실제 호환성 review sample 없이 완료 처리하지 않는다.
+
+## D-134 — Gate B AI-simulated feedback batch 실행 확인
+
+2026-10-29. 기존에 별도 보존된 AI-simulated 검색 사례 중 피드백이 실제로 필요한 correction 사례 3건만 사용했다. 정답이 충분한 나머지 사례에는 피드백을 만들지 않았다. 세 건을 사용자 feedback과 분리된 local-only `FeedbackStore`에 `AI-simulated`/`inference`로 기록하고 고정 snapshot을 만든 뒤, GPT-6가 `candidate_group` 2건과 `statistical_definition` 1건으로 분류한 batch를 수동 import했다. batch row 3건이 snapshot의 `(feedback_id, revision)` 집합과 정확히 일치하고 중복·누락이 0이며 key/source/result hash가 저장 batch와 동일함을 확인했다.
+
+검토자는 `AI` (`gpt-6-codex-primary`)로 표시한다. batch와 feedback text는 ignored local DB `data/synthetic_feedback_ledger/data/catalog.sqlite`에만 남겼고, tracked [evidence record](evidence/feedback_classification_ai_simulated_20261029.json)에는 fixture 경로/hash, 집계, hash와 AI provenance만 기록했다. 별도 fixture에 AI 질문·feedback과 observed result가 남아 있어 입력을 재확인할 수 있다. 이 결과는 Gate B의 합성 데이터 분류·저장 경로를 통과한 증거이며 자연 사용자 입력, 독립 사람 검토, 자동 prompt/code 수정은 증명하지 않는다. 따라서 B는 해당 AI-simulated 범위에서 실행 검증됐고 실제 사용자 workflow는 미관측이다.
