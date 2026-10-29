@@ -1103,3 +1103,7 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 ## D-138 — 남은 Gate와 후속 작업 계획 재구성
 
 2026-10-29. F/G의 범위 한정 AI acceptance와 Gate 40 통합 검증 후 현재 필수 제품 단계는 Gate 41 AI workflow simulation 하나로 정리한다. 시뮬레이션은 기존 BLS·WDI workbook artifact만 격리된 로컬 사본에서 사용하고 새 provider 요청, 운영 feedback DB 쓰기, C 사례·holdout 변경을 하지 않는다. 피드백은 실제 교정 필요가 있을 때만 별도 AI-simulated 기록으로 남기며, 시간 측정은 도구 처리 wall-clock으로 제한해 사람의 인지 시간이나 실제 사용성으로 해석하지 않는다. 실제 분석가 1–2명 관찰은 별도 선택 연구로 분리하고 Gate 완료 조건에서 제외한다. 추가 provider/series 검증, source-specific release-lag 근거, 자연 요청 latency는 사용자 수요가 있을 때 범위를 정하는 backlog이며 Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage와 scheduler 활성화는 현재 제외한다. `PROJECT_PLAN.md`만 활성 범위·순서의 단일 기준으로 유지하고 오래된 하위 계획은 redirect/역사 기록으로 정리한다.
+
+## D-139 — Gate 41 단일 명령 preflight
+
+2026-10-29. Gate 41 준비를 빠르게 반복하도록 `scripts/run_gate_41_preflight.py`를 추가했다. 이 도구는 AI 수용 기록과 로컬 F/G workbook·provenance hash, freshness, sheet/schema·행 수, formula cells, WDI alignment, 0/결측 개수를 읽기 전용으로 확인하고 value-free scenario card를 stdout에 출력한다. 네트워크·DB·파일 쓰기 없이 실행한다. 여러 로컬 실행에서 `READY`가 나왔고 preflight는 약 14–46 ms가 걸렸다. 이 소요시간은 이 로컬 확인의 기록이며 운영 성능 기준선은 아니다. BLS CPI workbook에는 dataset ID·unit·currency가 비어 있어 Gate 41 답변은 이를 unknown으로 밝혀야 한다. 이 preflight는 두 AI analyst task의 답변이나 Gate 41 completion evidence를 만들지 않는다. 신규 helper 테스트 3건 및 전체 976 tests, Ruff, compileall, diff 검사가 통과했다.

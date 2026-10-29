@@ -41,7 +41,7 @@
 | 원자료 XLSX F | **AI PASS — BLS CPI live 범위.** BLS source response와 workbook의 9개 period/value/status를 대조하고 raw/manifest/XLSX/provenance hash, 재개방, FRESH recheck를 확인했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). | 이 판정은 live BLS CPI export와 generic fixture contract로 한정한다. 다른 기관의 live export와 사람의 usability observation은 포함하지 않는다. |
 | 비교 XLSX G | **AI PASS — 같은 WDI 지표의 USA/Canada 2024 비교 범위.** official metadata source note에 근거한 exact USD mapping을 기록하고 원자료 sheet·typed period alignment·hash·provenance를 검증했다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json). | Cross-provider 동등성, 다른 WDI indicator, 실질 GDP, PPP, welfare 비교는 승인하지 않는다. AI reviewer identity는 인증되지 않는다. |
 | 통합 40 | **PASS — immutable candidate QA.** pytest 973건, Ruff, diff, CLI module/entrypoint/collect help, health가 통과했고 격리 worktree 정리도 통과했다. [QA evidence](evidence/gate_40_integration_qa_20261029.json). | QA는 provider 가용성·ACS 2025 공개 후 조회·분석가 사용성 검증을 대신하지 않는다. |
-| 최종 41 | 다음 필수 단계 — AI 작업흐름 시뮬레이션 | 이미 승인된 BLS 및 WDI XLSX artifact를 격리된 로컬 사본에서만 사용한다. 별도 OpenAI API/key, 새 provider 호출, 실제 사용자 DB 쓰기, C 사례/holdout 변경은 없다. 설명 정확성, 오류·도움 요청, 도구 단계와 wall-clock 처리시간을 기록한다. AI simulation은 사람의 인지시간이나 실제 usability를 증명하지 않는다. |
+| 최종 41 | **Preflight READY; AI simulation pending.** `python scripts/run_gate_41_preflight.py`가 F/G workbook hash, freshness, formula·행 수와 value-free task card를 한 번에 확인한다. 결과가 `READY`면 AI가 두 task에 답한다. API/key·네트워크·DB 쓰기 없이 실행하며 dataset/unit/currency가 없는 BLS 메타데이터는 unknown으로 답한다. 인간의 인지시간/usability는 주장하지 않는다. 상세 기준은 [PROJECT_PLAN.md §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)이다. |
 
 ## 별도 workstream
 
