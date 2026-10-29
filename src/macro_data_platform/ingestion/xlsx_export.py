@@ -3,12 +3,15 @@
 import hashlib
 import io
 import json
+import logging
 import os
 import re
 import tempfile
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
+from functools import wraps
 from pathlib import Path
+from time import perf_counter_ns
 from urllib.parse import urlsplit
 
 from openpyxl import Workbook, load_workbook
@@ -20,6 +23,13 @@ from macro_data_platform.ingestion.freshness import (
     FreshnessStatus,
     assess_freshness,
 )
+from macro_data_platform.performance.metrics import (
+    PerformanceMetrics,
+    current_metrics,
+    measure_current,
+    runtime_metadata,
+)
+from macro_data_platform.performance.storage import append_sample, build_sample
 from macro_data_platform.storage.history import HistoryStore
 from macro_data_platform.storage.typed_series import load_typed_series_artifact
 
@@ -35,6 +45,87 @@ _PERIOD_FORMAT = {
     "annual": "YYYY",
 }
 _XLSX_INVALID_SHEET_CHARS = re.compile(r"[\\/*?:\[\]]")
+_LOGGER = logging.getLogger(__name__)
+
+
+def _source_sample_class(engine_id: object) -> str:
+    if isinstance(engine_id, str) and engine_id.startswith("fixture/"):
+        return "fixture"
+    if isinstance(engine_id, str) and engine_id.startswith("synthetic/"):
+        return "synthetic"
+    return "stored"
+
+
+def _measured_xlsx_export(engine: str):
+    """Record only labels, counts, bytes, phases, and elapsed time for exports."""
+    def decorate(function):
+        @wraps(function)
+        def wrapped(settings: Settings, *args, **kwargs):
+            if current_metrics() is not None:
+                return function(settings, *args, **kwargs)
+            metrics = PerformanceMetrics()
+            metrics.observe_sample_class("stored")
+            started_ns = perf_counter_ns()
+            status = "FAILED"
+            try:
+                with metrics.activate():
+                    result = function(settings, *args, **kwargs)
+                status = result.get("status", "UNKNOWN") if isinstance(result, dict) else "UNKNOWN"
+                return result
+            finally:
+                try:
+                    append_sample(settings, build_sample(
+                        observed_at=datetime.now(UTC).isoformat(),
+                        execution_scope="xlsx_export",
+                        engine=engine,
+                        engine_version="1",
+                        stage="export",
+                        status=status,
+                        duration_ns=max(0, perf_counter_ns() - started_ns),
+                        metrics=metrics.snapshot(),
+                        environment=runtime_metadata(str(settings.project_root)),
+                    ))
+                except Exception:  # noqa: BLE001 - telemetry cannot change export outcome
+                    _LOGGER.warning("XLSX performance telemetry sample could not be recorded")
+        return wrapped
+    return decorate
+
+
+def _artifact_input_bytes(settings: Settings, reference: Mapping, document: Mapping) -> int:
+    total = 0
+    for key in ("typed_series_path", "typed_series_manifest_path"):
+        total += settings._inside(reference[key]).stat().st_size
+    total += sum(
+        row["bytes"] for row in document.get("source_refs", [])
+        if isinstance(row, Mapping) and type(row.get("bytes")) is int
+        and row["bytes"] >= 0
+    )
+    return total
+
+
+def _record_export_shape(
+    document: Mapping,
+    *,
+    input_bytes: int,
+    output_bytes: int | None = None,
+    observation_count: int = 0,
+    series_count: int | None = None,
+) -> None:
+    metrics = current_metrics()
+    if metrics is None:
+        return
+    metrics.observe_sample_class(_source_sample_class(document.get("engine_id")))
+    metrics.observe_input(
+        byte_count=input_bytes,
+        rows=observation_count,
+        columns=4 if observation_count else 0,
+    )
+    if output_bytes is not None:
+        metrics.observe_output(
+            byte_count=output_bytes,
+            rows=observation_count,
+            columns=max(20, 1 + 2 * (series_count or len(document.get("series", [])))),
+        )
 
 
 def _period_format(contract: Mapping) -> str | None:
@@ -314,6 +405,7 @@ def _publish_pair(target: Path, sidecar: Path, workbook: bytes, manifest: bytes)
                 pass
 
 
+@_measured_xlsx_export("typed_xlsx")
 def export_typed_series_artifact(
     settings: Settings,
     reference: Mapping,
@@ -325,32 +417,48 @@ def export_typed_series_artifact(
     """Revalidate and export one artifact without changing its source observations."""
     if as_of is None:
         as_of = datetime.now(UTC)
-    document = load_typed_series_artifact(settings, reference)
-    freshness = _reevaluate_freshness(document, freshness_policy, as_of)
+    with measure_current("parse"):
+        document = load_typed_series_artifact(settings, reference)
+    with measure_current("quality"):
+        freshness = _reevaluate_freshness(document, freshness_policy, as_of)
+    observation_count = sum(
+        len(entry["contract"]["observations"]) for entry in document["series"]
+    )
+    input_bytes = _artifact_input_bytes(settings, reference, document)
+    _record_export_shape(
+        document, input_bytes=input_bytes, observation_count=observation_count,
+    )
     document["_artifact_sha256"] = reference["typed_series_sha256"]
     document["_typed_series_manifest_path"] = reference["typed_series_manifest_path"]
     document["_typed_series_manifest_sha256"] = reference["typed_series_manifest_sha256"]
-    body, observation_count = _build_raw_workbook(document, freshness)
-    target, sidecar, export_root = _output_paths(settings, relative_output)
-    _mkdir_parent(settings, target, export_root)
-    if target.exists() or target.is_symlink() or sidecar.exists() or sidecar.is_symlink():
-        raise ValueError("output_already_exists")
-    manifest_document = {
-        "schema_version": "typed-series-xlsx-provenance-v1",
-        "created_at": datetime.now(UTC).isoformat(),
-        "output_path": target.relative_to(settings.project_root).as_posix(),
-        "output_sha256": hashlib.sha256(body).hexdigest(),
-        "typed_series_path": reference["typed_series_path"],
-        "typed_series_sha256": reference["typed_series_sha256"],
-        "typed_series_manifest_path": reference["typed_series_manifest_path"],
-        "typed_series_manifest_sha256": reference["typed_series_manifest_sha256"],
-        "freshness": freshness,
-        "series_count": len(document["series"]),
-        "observation_count": observation_count,
-    }
-    manifest = json.dumps(manifest_document, ensure_ascii=False, allow_nan=False,
-                          sort_keys=True, indent=2).encode("utf-8")
-    _publish_pair(target, sidecar, body, manifest)
+    with measure_current("export"):
+        body, observation_count = _build_raw_workbook(document, freshness)
+        target, sidecar, export_root = _output_paths(settings, relative_output)
+        _mkdir_parent(settings, target, export_root)
+        if target.exists() or target.is_symlink() or sidecar.exists() or sidecar.is_symlink():
+            raise ValueError("output_already_exists")
+        manifest_document = {
+            "schema_version": "typed-series-xlsx-provenance-v1",
+            "created_at": datetime.now(UTC).isoformat(),
+            "output_path": target.relative_to(settings.project_root).as_posix(),
+            "output_sha256": hashlib.sha256(body).hexdigest(),
+            "typed_series_path": reference["typed_series_path"],
+            "typed_series_sha256": reference["typed_series_sha256"],
+            "typed_series_manifest_path": reference["typed_series_manifest_path"],
+            "typed_series_manifest_sha256": reference["typed_series_manifest_sha256"],
+            "freshness": freshness,
+            "series_count": len(document["series"]),
+            "observation_count": observation_count,
+        }
+        manifest = json.dumps(manifest_document, ensure_ascii=False, allow_nan=False,
+                              sort_keys=True, indent=2).encode("utf-8")
+        _publish_pair(target, sidecar, body, manifest)
+    _record_export_shape(
+        document,
+        input_bytes=input_bytes,
+        output_bytes=len(body) + len(manifest),
+        observation_count=observation_count,
+    )
     return {
         "status": "exported",
         "output_path": manifest_document["output_path"],
@@ -363,6 +471,7 @@ def export_typed_series_artifact(
     }
 
 
+@_measured_xlsx_export("typed_xlsx")
 def export_series_task(
     settings: Settings,
     task_id: str,
@@ -372,7 +481,8 @@ def export_series_task(
     as_of: datetime | date | None = None,
 ) -> dict:
     """Export the single typed artifact referenced by one completed task history."""
-    task = HistoryStore(settings).get(task_id)
+    with measure_current("sqlite"):
+        task = HistoryStore(settings).get(task_id)
     if task.get("status") != "COMPLETED":
         raise ValueError("task_not_completed")
     references = []
@@ -607,6 +717,7 @@ def _add_alignment_sheet(body: bytes, contracts: list[dict], labels: list[str],
     return result
 
 
+@_measured_xlsx_export("series_compare_xlsx")
 def export_comparison_spec(
     settings: Settings,
     spec_path: str,
@@ -618,15 +729,21 @@ def export_comparison_spec(
     """Create a comparison workbook only from explicitly reviewed compatible series."""
     if as_of is None:
         as_of = datetime.now(UTC)
-    spec, spec_bytes = _read_comparison_spec(settings, spec_path)
-    metadata, selectors = _validate_comparison_spec(spec)
+    with measure_current("parse"):
+        spec, spec_bytes = _read_comparison_spec(settings, spec_path)
+        metadata, selectors = _validate_comparison_spec(spec)
     selected, source_documents, artifacts, freshness = [], [], [], []
+    input_bytes = len(spec_bytes)
     for selector in selectors:
-        reference = _task_artifact_reference(settings, selector["task_id"])
-        document = load_typed_series_artifact(settings, reference)
+        with measure_current("sqlite"):
+            reference = _task_artifact_reference(settings, selector["task_id"])
+        with measure_current("parse"):
+            document = load_typed_series_artifact(settings, reference)
+        input_bytes += _artifact_input_bytes(settings, reference, document)
         entry = _select_contract(document, selector["series_id"])
         single = {"series": [entry]}
-        freshness.extend(_reevaluate_freshness(single, freshness_policy, as_of))
+        with measure_current("quality"):
+            freshness.extend(_reevaluate_freshness(single, freshness_policy, as_of))
         selected.append({**entry, "label": selector["label"], "task_id": selector["task_id"]})
         source_documents.append(document)
         artifacts.append({
@@ -639,6 +756,22 @@ def export_comparison_spec(
             "label": selector["label"],
         })
     _check_compatibility(selected)
+    observation_count = sum(
+        len(entry["contract"]["observations"]) for entry in selected
+    )
+    if source_documents:
+        sample_classes = {_source_sample_class(row.get("engine_id"))
+                          for row in source_documents}
+        sample_class = next(iter(sample_classes)) if len(sample_classes) == 1 else "unspecified"
+        metrics = current_metrics()
+        if metrics is not None:
+            metrics.observe_sample_class(sample_class)
+    _record_export_shape(
+        source_documents[0] if source_documents else {},
+        input_bytes=input_bytes,
+        observation_count=observation_count,
+        series_count=len(selected),
+    )
     source_refs_by_key = {}
     for document in source_documents:
         for source_ref in document["source_refs"]:
@@ -661,32 +794,40 @@ def export_comparison_spec(
             for item in artifacts
         ],
     }
-    body, observation_count = _build_raw_workbook(
-        bundle, freshness, comparison_metadata=metadata,
+    with measure_current("export"):
+        body, observation_count = _build_raw_workbook(
+            bundle, freshness, comparison_metadata=metadata,
+        )
+        body = _add_alignment_sheet(body, selected, [item["label"] for item in selected], metadata)
+        spec_hash = hashlib.sha256(spec_bytes).hexdigest()
+        target, sidecar, export_root = _output_paths(settings, relative_output)
+        _mkdir_parent(settings, target, export_root)
+        if target.exists() or target.is_symlink() or sidecar.exists() or sidecar.is_symlink():
+            raise ValueError("output_already_exists")
+        manifest_document = {
+            "schema_version": "series-comparison-xlsx-provenance-v1",
+            "created_at": datetime.now(UTC).isoformat(),
+            "output_path": target.relative_to(settings.project_root).as_posix(),
+            "output_sha256": hashlib.sha256(body).hexdigest(),
+            "comparison_spec_path": spec_path,
+            "comparison_spec_sha256": spec_hash,
+            "comparison_review": metadata,
+            "inputs": artifacts,
+            "freshness": freshness,
+            "series_count": len(selected),
+            "observation_count": observation_count,
+            "note": "Evidence URL and reviewer identity are recorded but not authenticated by this tool.",
+        }
+        manifest = json.dumps(manifest_document, ensure_ascii=False, allow_nan=False,
+                              sort_keys=True, indent=2).encode("utf-8")
+        _publish_pair(target, sidecar, body, manifest)
+    _record_export_shape(
+        source_documents[0] if source_documents else {},
+        input_bytes=input_bytes,
+        output_bytes=len(body) + len(manifest),
+        observation_count=observation_count,
+        series_count=len(selected),
     )
-    body = _add_alignment_sheet(body, selected, [item["label"] for item in selected], metadata)
-    spec_hash = hashlib.sha256(spec_bytes).hexdigest()
-    target, sidecar, export_root = _output_paths(settings, relative_output)
-    _mkdir_parent(settings, target, export_root)
-    if target.exists() or target.is_symlink() or sidecar.exists() or sidecar.is_symlink():
-        raise ValueError("output_already_exists")
-    manifest_document = {
-        "schema_version": "series-comparison-xlsx-provenance-v1",
-        "created_at": datetime.now(UTC).isoformat(),
-        "output_path": target.relative_to(settings.project_root).as_posix(),
-        "output_sha256": hashlib.sha256(body).hexdigest(),
-        "comparison_spec_path": spec_path,
-        "comparison_spec_sha256": spec_hash,
-        "comparison_review": metadata,
-        "inputs": artifacts,
-        "freshness": freshness,
-        "series_count": len(selected),
-        "observation_count": observation_count,
-        "note": "Evidence URL and reviewer identity are recorded but not authenticated by this tool.",
-    }
-    manifest = json.dumps(manifest_document, ensure_ascii=False, allow_nan=False,
-                          sort_keys=True, indent=2).encode("utf-8")
-    _publish_pair(target, sidecar, body, manifest)
     return {
         "status": "exported",
         "output_path": manifest_document["output_path"],
