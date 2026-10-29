@@ -1,6 +1,6 @@
 # MacroAtlas 통합 제품 기획서
 
-> 문서 ID: MDP-PLAN-002 | 버전: 2.6 | 기준일: 2026-10-28
+> 문서 ID: MDP-PLAN-002 | 버전: 2.7 | 기준일: 2026-10-29
 > 이 문서는 원초 제품 요구사항과 이후 승인된 수정·설계·운영 범위를 하나의 현재 기획으로 통합한다. 회차별 과거 결과는 [`PROJECT_PLAN_ORIGINAL_2026_10_24.md`](PROJECT_PLAN_ORIGINAL_2026_10_24.md)와 보고서에 보존한다.
 
 ## 0. 문서 권위와 읽는 법
@@ -201,7 +201,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 아래는 저장소를 새로 설계하지 않고 **2026-10-29 PR #94 병합본 `9d61865`의 실제 코드**에서 빠진 부분을 이어서 완성하는 단일 실행 계획이다. 이미 동작하는 공통 Orchestrator, EngineRegistry, append-only feedback log, frequency freshness 함수, 검색 ranker, CSV exporter는 다시 만들지 않고 기준선으로 재사용한다. 사용자 안내는 end-user 기능만 다루고 feedback 분류·사례 검토·승격은 운영자/개발자 흐름에서 다룬다. 제한 API query CLI는 제품 gate 통과로 간주하지 않는다. local candidate search는 fixed v2 scope의 C/D만 통과했으며 provider 수집·freshness·export를 승인하지 않는다.
 
-현재 진행 상태는 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 원자료 XLSX(F) → 비교 XLSX(G) → 통합 검증(40)`까지 통과했고, 다음 checkpoint는 AI 분석가 작업흐름 시뮬레이션(41)이다. 사용자의 명시적 결정에 따라 E는 별도 제품 Gate가 아니다. E에서 구현된 typed-series freshness 검사는 계속 실행되어 stale/unverified 입력을 차단하며, ACS 공개 후 관측을 F/G의 선행 수용조건으로 요구하지 않는다. AI가 수용한 범위는 `reviewer_type=AI`로 기록하고 다른 provider·series로 확대하지 않는다.
+현재 필수 검증은 `feedback 결과 보존(B) → 검색 안전평가(C) → 명시 승격/rollback(D) → 원자료 XLSX(F) → 비교 XLSX(G) → 통합 검증(40) → AI 작업흐름 시뮬레이션(41)`까지 범위 한정으로 통과했다. AI 판정은 `reviewer_type=AI`로 기록하며 실제 분석가 사용성이나 미검증 provider·series로 확대하지 않는다. 사용자의 명시적 결정에 따라 E는 별도 제품 Gate가 아니지만 typed-series freshness 검사는 계속 실행되어 stale/unverified 입력을 차단한다. ACS 공개 후 관측은 F/G의 선행 수용조건이 아니다.
 
 ### 선행 엔진 정비 — Iteration 29, 제품 Gate와 독립 · 구현 완료
 
@@ -219,7 +219,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 | F / 38회차 | 원자료 XLSX exporter (`ingestion/xlsx_export.py`, `macroatlas export-xlsx`) | **AI PASS — BLS CPI live 범위.** 9개 행의 period/value/status를 보존된 BLS response와 대조했다. Workbook 재개방, export freshness, raw/manifest/XLSX/provenance hash, formula cell 0을 확인했다. generic fixture는 zero/missing, formula-like literal, 경로·덮어쓰기 방지를 검증한다. [AI 판정](docs/evidence/gate_f_bls_ai_review_20261029.json). 다른 provider의 live XLSX는 포함하지 않으며 AI 신원은 인증되지 않는다. |
 | G / 39회차 | 정렬·비교 XLSX (`ingestion/xlsx_export.py`, `macroatlas compare-xlsx`) | **AI PASS — 동일 WDI 지표 USA/Canada 2024 범위.** source 2 `NY.GDP.MKTP.CD` 공식 metadata에 따른 current U.S. dollars/USD mapping을 typed artifact·workbook·sidecar에 보존했다. 실제 raw/typed/spec/workbook hash, 동일 annual period, exact alignment, 결측 미보간을 확인했다. [AI 판정](docs/evidence/gate_g_wdi_gdp_ai_review_20261029.json). Cross-provider 동등성·실질 GDP·PPP·복지 비교는 포함하지 않는다. |
 | 통합 / 40회차 | B/C/D/F/G contract·보안·성능 회귀 (`tests/`, `scripts/run_maintenance_qa.py`, 관련 docs) | **PASS.** 기준 `9d61865`, immutable candidate `87b18d4`에서 pytest 973건, Ruff, diff, CLI 3개 경로, health가 모두 통과했다. [QA evidence](docs/evidence/gate_40_integration_qa_20261029.json). Census 공개 표본은 별도 Gate가 아니며 이 통합 판정의 전제조건도 아니다. |
-| 최종 / 41회차 | AI 분석가 작업흐름 시뮬레이션 | A–D, F, G와 40회차 통합 검증을 통과했다. 기존 BLS·WDI workbook을 대상으로 하며 provider를 다시 호출하지 않는다. | [`scripts/run_gate_41_preflight.py`](scripts/run_gate_41_preflight.py) 한 번으로 hash·시트·행 수·formula·freshness를 확인하고 value-free AI task card를 만든다. AI는 산출물 근거로 답하고, 파일에 없는 메타데이터는 unknown으로 남긴다. 응답·오류·도구 처리시간·필요할 때만 생긴 피드백을 `reviewer_type=AI`로 별도 기록한다. 사람의 인지시간/usability, 실제 사용자 피드백, C holdout 또는 정책 승격을 증명하지 않는다. |
+| 최종 / 41회차 | AI 분석가 작업흐름 시뮬레이션 | **PASS — AI simulation scope.** 기존 BLS·WDI workbook을 다시 호출 없이 검토했다. [AI 기록](docs/evidence/gate_41_ai_workflow_simulation_20261029.json). | 한 번의 preflight와 두 개의 value-free task 응답으로 제한한다. 근거에 없는 필드는 unknown으로 남기고, 추측·원자료 값 출력·DB 쓰기·정책 승격은 하지 않는다. 이 결과는 사람의 인지시간이나 usability, 실제 사용자 feedback을 증명하지 않는다. |
 
 #### 작업별 운영 규칙
 
@@ -230,18 +230,18 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다. AI가 반환한 새 분류는 case 승인이나 기존 사례 label 수정과 동일하지 않다.
 
-현재 필수 gate는 B/C/D/F/G/40까지 완료됐고 **41 하나만 남았다**. 별도 제품 Gate가 아닌 E의 freshness runtime은 계속 작동한다. 아래 순서는 필수 검증과 선택·보류 workstream을 분리한다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다.
+현재 필수 gate B/C/D/F/G/40/41은 완료됐다. 별도 제품 Gate가 아닌 E의 freshness runtime은 계속 작동한다. 아래 항목은 추가 요구가 생길 때만 여는 개선 backlog이며, 완료된 제품 gate를 되풀이하지 않는다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다.
 
 | 우선순위 | 남은 일 | 범위와 종료 기준 |
 |---|---|---|
-| 필수 다음 / 41 | 오프라인 AI workflow simulation | 저장소 root에서 `python scripts/run_gate_41_preflight.py`를 실행한다. 결과가 `READY`일 때 출력된 BLS·WDI task card를 AI가 답한다. 별도 OpenAI API/key, 새 provider 요청, 운영 DB 쓰기, 원자료 값 출력은 없다. BLS workbook에 dataset/unit/currency가 비어 있으면 추측하지 않고 미확정으로 답한다. 보고할 것은 입력 artifact hash, 사실 근거, 오류·실행 단계·도구 처리시간이다. 피드백은 실제 교정이 필요한 경우에만 AI-simulated 별도 기록으로 남기며 C 사례·holdout·승격에 포함하지 않는다. |
+| 완료 / 41 | 오프라인 AI workflow simulation | `READY` preflight 뒤 BLS·WDI 두 응답과 hash-linked AI 기록을 남겼다. [Evidence](docs/evidence/gate_41_ai_workflow_simulation_20261029.json). 입력·응답은 value-free이고 별도 API, provider 요청, 운영 DB 쓰기는 없었다. |
 | 선택 / 제품 Gate 아님 | 실제 분석가 1–2명 정성 조사 및 실제 사용자 피드백 | workbook 의미 이해·혼란·도움 요청을 관찰한다. 실제로 제출된 피드백만 append-only 로그에 보존하고 검토는 별도 운영자 절차로 둔다. Gate 41 AI simulation과 별도다. 소수 표본으로 성공률을 추정하지 않고 완료 조건이나 기존 gate pass로 세지 않는다. 절차는 [`ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)에 둔다. |
-| 요청 기반 backlog | 추가 provider/series live export, 출처별 공표 지연 근거, 자연 API latency 표본 | 실제 사용 요청이 생길 때 source scope와 안전한 측정 범위를 정하고 별도로 검증한다. 이 항목들은 현재 F/G acceptance를 넓히거나 freshness runtime의 fallback을 보증으로 바꾸지 않는다. 측정 전에 성능 최적화를 하지 않는다. |
+| 후속 개선 / 요청 기반 | BLS XLSX의 공식 series title·제공 metadata 표현; 추가 provider/series live export; source별 공표 지연 근거; 자연 API latency | Gate 41에서 BLS series title과 dataset/unit/currency가 파일에 없음을 확인했다. 필요하면 공식 metadata만 추가하고 없는 필드는 계속 unknown으로 둔다. provider·freshness·latency 개선은 실제 요청과 근거가 있을 때 따로 측정·검증한다. 기존 Gate F/G 범위를 넓히거나 fallback을 보증으로 바꾸지 않는다. |
 | 현재 제외·비활성 | Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage, scheduler 활성화 | 사용자가 범위를 다시 열기 전에는 실행하지 않는다. Windows updater/scheduler의 미검증 상태는 제품 gate의 선행조건으로 두지 않는다. |
 
 ### 별도 작업
 
-Gate 41 이후의 선택·요청 기반 작업은 위 표를 따른다. fixture/저장 자료의 성능 표본을 live API latency로 해석하지 않고, provider coverage를 확대하기 전에 근거와 비용·권한을 확인한다.
+Gate 41 이후에는 위 개선 backlog만 요청이 있을 때 연다. preflight의 41.7 ms는 로컬 readiness 점검 시간이며 model/API 또는 제품 성능 기준선이 아니다. fixture/저장 자료의 성능 표본을 live API latency로 해석하지 않고, provider coverage를 확대하기 전에 근거와 비용·권한을 확인한다.
 
 ## 12. 완료·검토 규칙
 

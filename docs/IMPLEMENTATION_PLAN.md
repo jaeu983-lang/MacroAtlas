@@ -41,7 +41,7 @@
 | 원자료 XLSX F | **AI PASS — BLS CPI live 범위.** BLS source response와 workbook의 9개 period/value/status를 대조하고 raw/manifest/XLSX/provenance hash, 재개방, FRESH recheck를 확인했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). | 이 판정은 live BLS CPI export와 generic fixture contract로 한정한다. 다른 기관의 live export와 사람의 usability observation은 포함하지 않는다. |
 | 비교 XLSX G | **AI PASS — 같은 WDI 지표의 USA/Canada 2024 비교 범위.** official metadata source note에 근거한 exact USD mapping을 기록하고 원자료 sheet·typed period alignment·hash·provenance를 검증했다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json). | Cross-provider 동등성, 다른 WDI indicator, 실질 GDP, PPP, welfare 비교는 승인하지 않는다. AI reviewer identity는 인증되지 않는다. |
 | 통합 40 | **PASS — immutable candidate QA.** pytest 973건, Ruff, diff, CLI module/entrypoint/collect help, health가 통과했고 격리 worktree 정리도 통과했다. [QA evidence](evidence/gate_40_integration_qa_20261029.json). | QA는 provider 가용성·ACS 2025 공개 후 조회·분석가 사용성 검증을 대신하지 않는다. |
-| 최종 41 | **Preflight READY; AI simulation pending.** `python scripts/run_gate_41_preflight.py`가 F/G workbook hash, freshness, formula·행 수와 value-free task card를 한 번에 확인한다. 결과가 `READY`면 AI가 두 task에 답한다. API/key·네트워크·DB 쓰기 없이 실행하며 dataset/unit/currency가 없는 BLS 메타데이터는 unknown으로 답한다. 인간의 인지시간/usability는 주장하지 않는다. 상세 기준은 [PROJECT_PLAN.md §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)이다. |
+| 최종 41 | **PASS — AI-simulated workflow scope.** `python scripts/run_gate_41_preflight.py` returned `READY`; GPT answered both BLS and WDI task cards against the existing hashed artifacts. [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json). | No provider request, OpenAI API, DB write, raw-value output, or feedback record. BLS title/dataset/unit/currency gaps remain explicit. No human usability claim. |
 
 ## 별도 workstream
 
@@ -49,8 +49,8 @@
 
 회차별 과거 수치와 실행 순서는 각 당시 보고서에 보존한다. 현재 상태와 다음 단계는 이 문서 및 위 두 기준 문서에서만 갱신한다.
 
-## 다음 Gate
+## Gate 41 결과
 
-Gate D는 fixed v2 local-search 범위에서 AI acceptance를 적용했다. 사용자는 Gate E를 별도 제품 수용 조건에서 제외하고 freshness runtime은 유지하도록 범위를 정했다. F의 BLS live XLSX와 G의 동일 WDI GDP USA/Canada 2024 comparison은 [AI 판정](evidence/gate_f_bls_ai_review_20261029.json) 및 [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json)에 reviewer type `AI`로 기록했고, 통합 검증 40도 [QA evidence](evidence/gate_40_integration_qa_20261029.json)와 같이 통과했다. 입력 raw values는 tracked evidence에 복사하지 않았다. 다음 단계는 AI 분석가 작업흐름 시뮬레이션 41이다. Census의 ACS 2025 데이터 요청과 post-release sample은 수행하지 않으며 F/G 판정의 조건으로도 두지 않는다.
+Gate D는 fixed v2 local-search 범위, F는 BLS CPI live XLSX, G는 같은 WDI GDP의 USA/Canada 2024 비교로 각각 AI acceptance를 기록했다. 사용자의 범위 결정에 따라 E는 별도 제품 gate가 아니며 freshness runtime은 유지한다. 통합 검증 40과 AI 작업흐름 시뮬레이션 41은 각각 [QA evidence](evidence/gate_40_integration_qa_20261029.json)와 [Gate 41 evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)로 통과했다. Gate 41은 두 기존 artifact의 value-free 해석에 한정하며 사람의 usability나 실제 사용자 feedback을 입증하지 않는다. Census ACS 2025 요청은 하지 않았다. 후속 개선은 [PROJECT_PLAN.md §11](../PROJECT_PLAN.md#11-남은-구현-순서와-완료-조건)의 요청 기반 backlog를 따른다.
 
 기본 브랜치의 대조 기준 commit은 [`9d61865`](https://github.com/jaeu983-lang/MacroAtlas/commit/9d61865179dbe5af7ee7eed0678d3cf08bac095f)이다. 이 문서는 코드가 실제로 구현·검증된 뒤 상태를 갱신한다.

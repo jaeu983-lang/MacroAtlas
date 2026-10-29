@@ -1107,3 +1107,9 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 ## D-139 — Gate 41 단일 명령 preflight
 
 2026-10-29. Gate 41 준비를 빠르게 반복하도록 `scripts/run_gate_41_preflight.py`를 추가했다. 이 도구는 AI 수용 기록과 로컬 F/G workbook·provenance hash, freshness, sheet/schema·행 수, formula cells, WDI alignment, 0/결측 개수를 읽기 전용으로 확인하고 value-free scenario card를 stdout에 출력한다. 네트워크·DB·파일 쓰기 없이 실행한다. 여러 로컬 실행에서 `READY`가 나왔고 preflight는 약 14–46 ms가 걸렸다. 이 소요시간은 이 로컬 확인의 기록이며 운영 성능 기준선은 아니다. BLS CPI workbook에는 dataset ID·unit·currency가 비어 있어 Gate 41 답변은 이를 unknown으로 밝혀야 한다. 이 preflight는 두 AI analyst task의 답변이나 Gate 41 completion evidence를 만들지 않는다. 신규 helper 테스트 3건 및 전체 976 tests, Ruff, compileall, diff 검사가 통과했다.
+
+## D-140 — Gate 41 AI 작업흐름 시뮬레이션 완료
+
+2026-10-29. 단일 preflight는 `READY`였다. GPT-6가 hash-linked BLS CPI-U XLSX와 WDI GDP 비교 XLSX를 읽기 전용으로 해석하고, 두 task 응답 및 범위 한정 `PASS`를 [AI evidence](evidence/gate_41_ai_workflow_simulation_20261029.json)에 기록했다. BLS 응답은 월별 9개 관측치, 2026-01~2026-09, 기록상 export-time `FRESH`, 결측 0·0값 0을 구분했고 dataset ID·unit·currency와 파일에 없는 정식 series title은 unknown으로 남겼다. WDI 응답은 source 2의 `NY.GDP.MKTP.CD`, USA/CAN, annual 2024 정렬, source-note 기반 current USD mapping, 변환·보간 없음과 명목 GDP 해석 한계를 확인했다. 별도 API, provider 요청, DB 쓰기, feedback 생성, 정책 승격은 없었다. measured preflight는 41.7 ms이며 AI 응답시간과 실제 사용자·분석가 인지시간은 측정하지 않았다. reviewer type은 `AI`; 사람의 usability를 입증하지 않는다.
+
+Gate 41에서 드러난 개선 후보는 BLS XLSX의 읽기 쉬운 공식 series title과 사용 가능한 source metadata 보존이다. 사용자가 필요를 요청하면 공식 근거를 확보해 추가하되 제공되지 않는 필드는 계속 unknown으로 남긴다. 이후 우선순위는 요청 기반 provider/series live coverage, source-specific 공표 지연 evidence, 자연 요청의 network/local stage timing이며, 사전 측정 없이 성능 최적화하지 않는다. Census 재조회·TIC/BIS 감시·Vantage·scheduler는 계속 비활성이다.

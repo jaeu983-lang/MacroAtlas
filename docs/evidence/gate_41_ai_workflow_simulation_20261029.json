@@ -1,0 +1,122 @@
+{
+  "schema_version": "gate-41-ai-workflow-simulation-v1",
+  "review_id": "gate-41-ai-simulation-20261029T033111Z",
+  "gate": "41",
+  "decision": "pass_scoped",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T03:31:11Z",
+  "authorization_ref": "user_instruction_2026-10-29_gate41_ai_simulation",
+  "independent_human_review": false,
+  "scope": "offline interpretation of the accepted BLS CPI-U raw XLSX and one World Bank WDI USA/Canada GDP comparison",
+  "preflight": {
+    "command": "python scripts/run_gate_41_preflight.py",
+    "repository_commit": "bf343aee355819f5170a818fd7715162b5ec878a",
+    "script_sha256": "6e23dfacfadd118bf11257fe82ebf1aeab9c0998a748d6018485b0daa227da9b",
+    "status": "READY",
+    "network_requested": false,
+    "database_accessed": false,
+    "files_written": false,
+    "raw_values_emitted": false,
+    "total_preflight_ms": 41.7,
+    "ai_response_duration_ms": null,
+    "artifacts": [
+      {
+        "gate": "F",
+        "workbook": "data/exports/gate-e-bls-cpi-20261029.xlsx",
+        "workbook_sha256": "34fa6328249521bced2a8fd2c31445d39be14f9f3d1cd5eb98d46707ede7072d",
+        "provenance": "data/exports/gate-e-bls-cpi-20261029.xlsx.json",
+        "provenance_sha256": "a46e674aa519fe5abe4c016fbb42f87439d1d3ec7189d5d612ad24c67f4377d1",
+        "acceptance_evidence": "docs/evidence/gate_f_bls_ai_review_20261029.json",
+        "acceptance_evidence_sha256": "4ab8111d2147b87c6526b994a9c005a4525078f0311a7fcc2291743b7ad6fc9f"
+      },
+      {
+        "gate": "G",
+        "workbook": "data/exports/gate-g-wdi-gdp-2024.xlsx",
+        "workbook_sha256": "7d93bc4db0ac73301abebbf2f86fb3de15352162164f2d5e62b35b7af4a1c33e",
+        "provenance": "data/exports/gate-g-wdi-gdp-2024.xlsx.json",
+        "provenance_sha256": "5f3a5b93c51e2069c82e9089d7c7ed6b65516be623c34b237dc6be24a936d17c",
+        "acceptance_evidence": "docs/evidence/gate_g_wdi_gdp_ai_review_20261029.json",
+        "acceptance_evidence_sha256": "4b799c8cf5444f99874bb3b7928ffcb96588e204404ec94da6a4ba13d7695074",
+        "unit_mapping_evidence": "docs/evidence/wdi_gdp_usd_metadata_ai_review_20261029.json",
+        "unit_mapping_evidence_sha256": "c9821742c641b838602eef1e7e4cf97eae8ff70a970b13335ae7f2cc7e1d45ad"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "task_id": "gate41-bls-raw-xlsx-interpretation",
+      "task_card": "Identify publisher, series, frequency, period range, freshness, missing-versus-zero semantics, and report absent metadata as unknown.",
+      "answer": {
+        "publisher": "U.S. Bureau of Labor Statistics",
+        "series_id": "CUUR0000SA0",
+        "series_context": "CPI-U, as scoped by the accepted F evidence; the workbook does not include a descriptive official series title.",
+        "frequency": "monthly",
+        "period_range": {
+          "start": "2026-01",
+          "end": "2026-09",
+          "observation_count": 9
+        },
+        "freshness": "FRESH in the recorded export evidence; this is a point-in-time status, not a continuing freshness guarantee.",
+        "missing_observation_count": 0,
+        "zero_observation_count": 0,
+        "missing_zero_semantics": "No missing or zero observations were found in this workbook. Missing values remain distinct from numeric zero and must not be replaced with zero.",
+        "dataset_id": "unknown",
+        "unit": "unknown",
+        "currency": "unknown"
+      },
+      "checks": {
+        "publisher_and_series_supported_by_artifact": true,
+        "frequency_period_and_count_match_preflight": true,
+        "freshness_qualified_as_point_in_time": true,
+        "missing_and_zero_kept_distinct": true,
+        "unknown_metadata_not_guessed": true,
+        "raw_observation_values_omitted": true
+      },
+      "result": "PASS"
+    },
+    {
+      "task_id": "gate41-wdi-comparison-xlsx-interpretation",
+      "task_card": "Identify countries, shared indicator, unit, period alignment, comparison policy, and interpretation limits.",
+      "answer": {
+        "publisher": "World Bank",
+        "dataset_id": "2",
+        "indicator_id": "NY.GDP.MKTP.CD",
+        "countries": ["USA", "CAN"],
+        "frequency": "annual",
+        "period": "2024",
+        "observation_count_per_country": 1,
+        "unit": "current U.S. dollars",
+        "currency": "USD",
+        "unit_basis": "Exact source/dataset/indicator mapping supported by the reviewed World Bank source metadata and its source note.",
+        "freshness": "Both inputs were FRESH in the recorded export evidence; the annual fallback is not a World Bank publication-lag guarantee.",
+        "missing_observation_count_per_country": 0,
+        "zero_observation_count_per_country": 0,
+        "alignment_and_transformations": "The workbook aligns only the shared typed period 2024. It applies no aggregation, conversion, interpolation, or forward-fill; missing values remain blank.",
+        "interpretation_limits": "This is nominal GDP in current U.S. dollars. It does not establish real GDP, PPP, per-capita GDP, welfare, or cross-provider equivalence."
+      },
+      "checks": {
+        "source_indicator_and_countries_match_artifact": true,
+        "unit_mapping_has_linked_ai_review_evidence": true,
+        "period_alignment_matches_workbook": true,
+        "freshness_scope_qualified": true,
+        "no_unsupported_transform_or_interpretation_claim": true,
+        "raw_observation_values_omitted": true
+      },
+      "result": "PASS"
+    }
+  ],
+  "overall_result": "PASS_FOR_AI_SIMULATED_WORKFLOW_SCOPE_ONLY",
+  "feedback_created": false,
+  "policy_or_code_promotion": false,
+  "actual_user_feedback": false,
+  "human_usability_claimed": false,
+  "model_identity_authenticated": false,
+  "tracked_raw_observation_values": false,
+  "limitations": [
+    "This simulation demonstrates AI interpretation of the two accepted artifacts only; it does not demonstrate human analyst usability or support for other providers and series.",
+    "The BLS workbook omits a descriptive series title and has blank dataset, unit, and currency fields; these were reported as unknown rather than inferred.",
+    "The measured 41.7 ms covers local preflight only. AI response time and end-to-end analyst time were not measured."
+  ]
+}
