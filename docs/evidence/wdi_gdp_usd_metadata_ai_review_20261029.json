@@ -1,0 +1,53 @@
+{
+  "schema_version": "wdi-source-metadata-ai-review-v1",
+  "review_id": "wdi-gdp-usd-metadata-review-20261029",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T02:47:19+00:00",
+  "authorization_ref": "user_instruction_2026-10-29_f_g_ai_acceptance",
+  "independent_human_review": false,
+  "scope": "exact World Bank WDI source 2 indicator NY.GDP.MKTP.CD only",
+  "input_evidence": [
+    {
+      "path": "docs/evidence/worldbank_gdp_indicator_metadata_20261027.json",
+      "sha256": "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28",
+      "source_url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json"
+    }
+  ],
+  "implementation_reviewed": [
+    {
+      "path": "src/macro_data_platform/metadata/series.py",
+      "sha256": "9665672e46ba174d19f4f2c7bf8193701b1000c4097c781c6958068c1bb9305e"
+    },
+    {
+      "path": "src/macro_data_platform/ingestion/worldbank_series.py",
+      "sha256": "02c4c005bd642e43d99fc36271295c9dc2e46c742db89ca3893e76d9027b2b6a"
+    },
+    {
+      "path": "tests/test_typed_timeseries.py",
+      "sha256": "40701dba6605ba45b080db12a352e46b0cf09839104d6e00613c3807b183fb5b"
+    },
+    {
+      "path": "tests/test_worldbank_series.py",
+      "sha256": "a4bca718a5f907ab7d277b68bba177e58978670e65f7b08f8e6d4bd4d591e447"
+    }
+  ],
+  "decision": "approve_exact_mapping",
+  "mapping": {
+    "mapping_id": "wdi-source-2-ny-gdp-mktp-cd-usd-v1",
+    "dataset_id": "2",
+    "indicator_id": "NY.GDP.MKTP.CD",
+    "unit": "current U.S. dollars",
+    "currency": "USD",
+    "apply_only_when_provider_unit_and_currency_are_empty": true
+  },
+  "basis": "The official indicator metadata identifies GDP (current US$); its source note states that observations are expressed in current prices and United States dollars. The adapter preserves source values and uses this mapping only when the exact source and indicator identifiers match and the provider unit fields are empty.",
+  "runtime_effect": "Exact metadata mapping is included in typed-series quality evidence and downstream XLSX provenance. No value conversion or freshness-policy change is made.",
+  "limitations": [
+    "The World Bank metadata response does not populate its structured unit field; this is an AI-reviewed normalization of its official source note.",
+    "This mapping does not apply to other WDI indicators or sources.",
+    "The runtime records but does not authenticate the reviewer identity or re-fetch and verify the metadata URL/hash."
+  ],
+  "identity_authenticated": false
+}

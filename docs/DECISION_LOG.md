@@ -1082,3 +1082,16 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 2026-10-29. 기존에 별도 보존된 AI-simulated 검색 사례 중 피드백이 실제로 필요한 correction 사례 3건만 사용했다. 정답이 충분한 나머지 사례에는 피드백을 만들지 않았다. 세 건을 사용자 feedback과 분리된 local-only `FeedbackStore`에 `AI-simulated`/`inference`로 기록하고 고정 snapshot을 만든 뒤, GPT-6가 `candidate_group` 2건과 `statistical_definition` 1건으로 분류한 batch를 수동 import했다. batch row 3건이 snapshot의 `(feedback_id, revision)` 집합과 정확히 일치하고 중복·누락이 0이며 key/source/result hash가 저장 batch와 동일함을 확인했다.
 
 검토자는 `AI` (`gpt-6-codex-primary`)로 표시한다. batch와 feedback text는 ignored local DB `data/synthetic_feedback_ledger/data/catalog.sqlite`에만 남겼고, tracked [evidence record](evidence/feedback_classification_ai_simulated_20261029.json)에는 fixture 경로/hash, 집계, hash와 AI provenance만 기록했다. 별도 fixture에 AI 질문·feedback과 observed result가 남아 있어 입력을 재확인할 수 있다. 이 결과는 Gate B의 합성 데이터 분류·저장 경로를 통과한 증거이며 자연 사용자 입력, 독립 사람 검토, 자동 prompt/code 수정은 증명하지 않는다. 따라서 B는 해당 AI-simulated 범위에서 실행 검증됐고 실제 사용자 workflow는 미관측이다.
+
+## D-135 — Gate E 제품 판정 제외와 F/G AI 수용 범위
+
+2026-10-29. 사용자는 최신성 evaluator와 정책이 코드에 반영돼 있으므로 Gate E를 별도 제품 수용 gate로 요구하지 말고 F/G를 진행하도록 지시했다. 이에 따라 F/G의 선행 gate 목록에서 E를 제외한다. 이는 freshness 구현, `frequency_fallback`, `STALE`/`FRESHNESS_UNVERIFIED` 차단 또는 export 직전 freshness 재평가를 끄지 않는다. ACS 2025 post-release observation은 미관측 상태로 명시하고, 공개·API 가용성에 관한 주장을 하지 않는다. Census sample을 기다리지 않고 F/G의 범위별 근거로 판정한다. AI 판정은 reviewer type `AI`로 기록하며 독립 human review나 AI identity 인증을 주장하지 않는다.
+
+## D-136 — Gate F/G 범위 한정 AI acceptance
+
+2026-10-29. 사용자 위임에 따라 GPT-6 AI가 Gate F와 G의 실자료 및 재현 해시를 검토했다.
+
+- **F — `accepted_scoped`:** BLS CPI-U `CUUR0000SA0` live task의 저장 raw response·manifest와 export workbook·sidecar 해시가 일치한다. workbook의 9개 observation을 원 response와 period/raw value/status 단위로 대조했고 workbook 재개방, formula cell 0, export freshness `FRESH`를 확인했다. 일반 exporter의 zero/missing, formula-like literal, 경로·덮어쓰기 fixture 검사도 통과했다. [AI 판정](evidence/gate_f_bls_ai_review_20261029.json). 수용 범위는 이 live BLS 경로와 generic fixture contract이며 다른 기관의 live export나 실제 사람 사용성은 포함하지 않는다.
+- **G — `accepted_scoped`:** World Bank WDI source 2의 `NY.GDP.MKTP.CD` USA·Canada 2024년 자료를 각각 한 번 수집했다. 공식 indicator metadata의 source note는 현재 가격과 미국 달러를 명시하며 structured unit은 비어 있다. AI가 정확한 source/dataset/indicator와 빈 unit/currency에 한해 `current U.S. dollars`/`USD`를 적용하는 mapping을 검토했고 근거 hash를 typed artifact·comparison workbook·sidecar에 보존했다. workbook은 동일한 annual period의 raw rows를 유지해 정확히 정렬했고 집계·단위변환·보간·forward-fill을 하지 않았다. [AI 판정](evidence/gate_g_wdi_gdp_ai_review_20261029.json) 및 [단위 mapping 판정](evidence/wdi_gdp_usd_metadata_ai_review_20261029.json). 수용 범위는 동일 source·동일 지표의 2024 cross-country nominal GDP 비교 하나다. 다른 provider 간 통계 동등성, real GDP, PPP, welfare interpretation은 승인하지 않는다.
+
+두 판정은 AI reviewer/model provenance를 기록하지만 identity를 인증하지 않고 독립 사람 검토로 표시하지 않는다. observation values는 tracked evidence에 복사하지 않았으며 raw input과 output workbook은 ignored local `data/`에 남는다. 다음 단계는 수정 후 Gate 40 통합 QA다.

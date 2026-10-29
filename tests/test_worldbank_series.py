@@ -140,6 +140,35 @@ def test_engine_persists_raw_before_returning_validated_series(tmp_path):
     assert (tmp_path / result.payload["typed_series_artifact"]["typed_series_path"]).is_file()
 
 
+def test_engine_persists_reviewed_wdi_gdp_unit_evidence(tmp_path):
+    query = WorldBankSeriesQuery("USA", "NY.GDP.MKTP.CD", "2", 2024, 2024)
+    response = [
+        {"page": 1, "pages": 1, "per_page": 100, "total": 1,
+         "sourceid": "2", "lastupdated": "2026-10-08"},
+        [{"indicator": {"id": "NY.GDP.MKTP.CD", "value": "GDP (current US$)"},
+          "country": {"id": "US", "value": "United States"}, "countryiso3code": "USA",
+          "date": "2024", "value": 29167000000000, "unit": "",
+          "obs_status": "", "decimal": 0}],
+    ]
+    transport = FixtureTransport(download(response, url=query.url))
+    result = WorldBankSeriesEngine(
+        Settings(tmp_path), transport, clock=lambda: NOW,
+        freshness_policy=HISTORICAL_FIXTURE_POLICY,
+    ).run(StageInput("gdp-task", "explicit WDI GDP series", "collect", {
+        "country_iso3": "USA", "indicator_id": "NY.GDP.MKTP.CD", "source_id": "2",
+        "start_year": 2024, "end_year": 2024,
+    }, None, ()))
+
+    assert result.status == StageStatus.SUCCEEDED
+    evidence, = result.payload["quality"]["metadata_evidence"]
+    artifact = json.loads((tmp_path / result.payload["typed_series_artifact"][
+        "typed_series_path"]).read_text(encoding="utf-8"))
+    contract = artifact["series"][0]["contract"]
+    assert evidence["mapping_id"] == "wdi-source-2-ny-gdp-mktp-cd-usd-v1"
+    assert contract["unit"] == "current U.S. dollars"
+    assert contract["currency"] == "USD"
+
+
 def test_engine_withholds_stale_observations_but_retains_source_bytes(tmp_path):
     result = WorldBankSeriesEngine(
         Settings(tmp_path), FixtureTransport(download()), clock=lambda: NOW,

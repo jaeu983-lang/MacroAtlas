@@ -1,0 +1,109 @@
+{
+  "schema_version": "gate-g-ai-review-v1",
+  "review_id": "gate-g-wdi-gdp-review-20261029T024719Z",
+  "gate": "G",
+  "decision": "accepted_scoped",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewer_model": "GPT-6",
+  "reviewed_at": "2026-10-29T02:47:19+00:00",
+  "authorization_ref": "user_instruction_2026-10-29_f_g_ai_acceptance",
+  "independent_human_review": false,
+  "scope": "one-period comparison of the same WDI nominal GDP indicator for USA and Canada",
+  "comparison_spec": {
+    "path": "data/inbox/gate-g-wdi-gdp-2024.json",
+    "sha256": "a44e9c536ce04abf81b4d69d0302fdd78c26e4aa09961583a6654cd646dbeef0",
+    "common_concept_id": "worldbank:wdi:NY.GDP.MKTP.CD",
+    "reviewer_type": "AI"
+  },
+  "source_metadata": {
+    "path": "docs/evidence/worldbank_gdp_indicator_metadata_20261027.json",
+    "sha256": "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28",
+    "mapping_id": "wdi-source-2-ny-gdp-mktp-cd-usd-v1",
+    "unit": "current U.S. dollars",
+    "currency": "USD"
+  },
+  "implementation_reviewed": [
+    {
+      "path": "src/macro_data_platform/metadata/series.py",
+      "sha256": "9665672e46ba174d19f4f2c7bf8193701b1000c4097c781c6958068c1bb9305e"
+    },
+    {
+      "path": "src/macro_data_platform/ingestion/worldbank_series.py",
+      "sha256": "02c4c005bd642e43d99fc36271295c9dc2e46c742db89ca3893e76d9027b2b6a"
+    },
+    {
+      "path": "src/macro_data_platform/ingestion/xlsx_export.py",
+      "sha256": "18a8fc08e81a29c12e4ec0e59a64b4ce63d48838d00fb3765a12cdd1ba2f1559"
+    },
+    {
+      "path": "tests/test_typed_timeseries.py",
+      "sha256": "40701dba6605ba45b080db12a352e46b0cf09839104d6e00613c3807b183fb5b"
+    },
+    {
+      "path": "tests/test_worldbank_series.py",
+      "sha256": "a4bca718a5f907ab7d277b68bba177e58978670e65f7b08f8e6d4bd4d591e447"
+    },
+    {
+      "path": "tests/test_xlsx_export.py",
+      "sha256": "6598c826770126186059d9c1721539a8aadb9a564ab4d23238aa62eafd9e65ed"
+    }
+  ],
+  "inputs": [
+    {
+      "task_id": "aa525939-5c83-43ec-8d92-1deff83b41f4",
+      "country": "USA",
+      "series_id": "NY.GDP.MKTP.CD",
+      "period": "2024",
+      "source_raw_sha256": "597f9967b31722f760e4b7e4f1e6bce48cda67e25d2bfa0947677d3c3f4bd958",
+      "typed_series_sha256": "1a7f70f25590447abd56ae6f4f44ffaba7eedd14ac50c882be2c123b3d4d4fbc",
+      "typed_manifest_sha256": "087b0bb9b4121b94145d84e0c3a495bfb40fad3e38dae815ad12d61c9f7fb17a"
+    },
+    {
+      "task_id": "252660fb-a0db-43ae-8e02-c2c77f727c58",
+      "country": "CAN",
+      "series_id": "NY.GDP.MKTP.CD",
+      "period": "2024",
+      "source_raw_sha256": "994b360c756b243e29ee95f3fcec0fc58b584eda8ff515525e8632f228811cb0",
+      "typed_series_sha256": "7ffa1133b6120c96df9cc82a583a4e1d4d4d73b2a01a129b6d8ac0a1fa14d3bb",
+      "typed_manifest_sha256": "b2f59f97f42703fec5c2e93262bc55e2057476103631fa11800d1a4cfed6dcdb"
+    }
+  ],
+  "output": {
+    "path": "data/exports/gate-g-wdi-gdp-2024.xlsx",
+    "sha256": "7d93bc4db0ac73301abebbf2f86fb3de15352162164f2d5e62b35b7af4a1c33e",
+    "provenance_path": "data/exports/gate-g-wdi-gdp-2024.xlsx.json",
+    "provenance_sha256": "5f3a5b93c51e2069c82e9089d7c7ed6b65516be623c34b237dc6be24a936d17c",
+    "comparison_spec_sha256": "a44e9c536ce04abf81b4d69d0302fdd78c26e4aa09961583a6654cd646dbeef0"
+  },
+  "checks": {
+    "input_tasks_completed_and_quality_passed": true,
+    "input_typed_artifacts_and_raw_sources_hash_verified": true,
+    "calendar_frequency_unit_currency_and_dimension_names_compatible": true,
+    "both_inputs_fresh_at_export": true,
+    "workbook_reopened": true,
+    "raw_sheets_match_typed_artifacts": true,
+    "alignment_period_union_exact": true,
+    "missing_values_blank_without_interpolation_or_forward_fill": true,
+    "formula_cells": 0,
+    "metadata_mapping_evidence_preserved_in_workbook_and_sidecar": true
+  },
+  "comparison_policy": {
+    "date_basis": "typed_period",
+    "aggregation": "none",
+    "transformation": "none",
+    "missing_values": "blank",
+    "interpolation": "none",
+    "forward_fill": "none",
+    "revision_policy": "as_retrieved"
+  },
+  "decision_basis": "Both inputs are the same WDI source 2 indicator, NY.GDP.MKTP.CD, with the exact 2024 annual period. The official source note supports the current-U.S.-dollar unit mapping. The workbook preserves each raw sheet and aligns only the shared typed period without conversion, aggregation, or filling.",
+  "limitations": [
+    "This is a same-provider, same-indicator cross-country example; it does not establish cross-provider statistical equivalence or validate every comparison mapping.",
+    "The comparison is nominal current-USD GDP, not real GDP, per-capita GDP, purchasing-power-parity GDP, or a welfare measure.",
+    "The annual freshness result uses the existing 730-day fallback; this review does not treat that fallback as a World Bank release-lag guarantee.",
+    "AI reviewer identity is not authenticated and no independent human usability observation is claimed."
+  ],
+  "identity_authenticated": false,
+  "raw_values_copied_to_tracked_evidence": false
+}

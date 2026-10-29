@@ -122,6 +122,10 @@ metadata does not state periodicity or a release calendar. Those paths continue
 to use the labeled frequency/period-format fallback without a series override.
 The BLS schedule capture is hash-bound in
 [`freshness_bls_october_schedule_20261029.json`](evidence/freshness_bls_october_schedule_20261029.json).
-The Census post-release observation is still outstanding, so Gate E remains
-PARTIAL. Evidence hashes bind the captured pages; the runtime still does not
-authenticate the reviewer or verify remote source URLs.
+The Census post-release observation remains unobserved. On 2026-10-29 the user
+excluded Gate E as a separate product acceptance prerequisite for F/G. The
+freshness runtime remains active in collection and export, including its
+stale/unverified blocking behavior; this scope decision does not establish a
+Census availability result or a source release-lag guarantee. Evidence hashes
+bind the captured pages; the runtime still does not authenticate the reviewer
+or verify remote source URLs.

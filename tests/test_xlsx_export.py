@@ -19,7 +19,8 @@ from macro_data_platform.storage.typed_series import save_typed_series_artifact
 
 
 def _artifact(tmp_path, *, observations=None, series_id="FIXTURE.VALUE", country="US",
-              unit="USD", dataset_id="fixture-dataset", frequency="annual"):
+              unit="USD", dataset_id="fixture-dataset", frequency="annual",
+              metadata_evidence=None):
     settings = Settings(tmp_path)
     source_dir = f"fixture-{series_id.replace('.', '-')}-{country.casefold()}"
     raw = settings._inside(f"data/raw/{source_dir}/source.json")
@@ -46,13 +47,16 @@ def _artifact(tmp_path, *, observations=None, series_id="FIXTURE.VALUE", country
         frequency=frequency,
         frequency_basis="request_contract" if frequency else "unknown",
     )
+    quality = {"status": "passed", "issues": [], "freshness": {
+        "status": "FRESH", "policy_id": "frequency_max_age_v2",
+    }}
+    if metadata_evidence is not None:
+        quality["metadata_evidence"] = metadata_evidence
     reference = save_typed_series_artifact(
         settings,
         series=(series,),
         engine_id="fixture/1",
-        quality={"status": "passed", "issues": [], "freshness": {
-            "status": "FRESH", "policy_id": "frequency_max_age_v2",
-        }},
+        quality=quality,
     )
     return settings, reference
 
@@ -92,6 +96,26 @@ def _comparison_spec(task_a, task_b, *, reviewer_type="AI"):
             {"task_id": task_b, "series_id": "GDP.CA", "label": "Canada GDP"},
         ],
     }
+
+
+def test_comparison_evidence_allows_only_public_json_format_query():
+    from macro_data_platform.ingestion.xlsx_export import _validate_comparison_spec
+
+    spec = _comparison_spec("task-us", "task-ca")
+    spec["evidence"]["reference"] = (
+        "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json"
+    )
+    metadata, _ = _validate_comparison_spec(spec)
+    assert metadata["evidence_reference"] == spec["evidence"]["reference"]
+
+    for reference in (
+        "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?key=secret",
+        "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json&key=secret",
+        "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=xml",
+    ):
+        spec["evidence"]["reference"] = reference
+        with pytest.raises(ValueError, match="comparison_evidence_reference_invalid"):
+            _validate_comparison_spec(spec)
 
 
 def _performance_samples(settings):
@@ -152,6 +176,24 @@ def test_raw_xlsx_preserves_values_status_and_hash_linked_provenance(tmp_path):
     serialized_sample = json.dumps(sample, sort_keys=True)
     assert "example.org/fixture" not in serialized_sample
     assert "=1+1" not in serialized_sample
+    workbook.close()
+
+
+def test_raw_xlsx_preserves_ai_reviewed_metadata_mapping_evidence(tmp_path):
+    evidence = [{"mapping_id": "fixture-unit-v1", "unit": "USD",
+                 "currency": "USD", "reviewer_type": "AI"}]
+    settings, reference = _artifact(tmp_path, metadata_evidence=evidence)
+    result = export_typed_series_artifact(
+        settings, reference, "data/exports/metadata.xlsx", as_of=date(2026, 10, 29),
+    )
+
+    workbook = load_workbook(tmp_path / result["output_path"], data_only=True, read_only=True)
+    provenance = workbook["Provenance"]
+    rows = {provenance.cell(row, 1).value: provenance.cell(row, 2).value
+            for row in range(1, provenance.max_row + 1)}
+    assert json.loads(rows["metadata_evidence_json"]) == evidence
+    sidecar = json.loads((tmp_path / result["provenance_path"]).read_text(encoding="utf-8"))
+    assert sidecar["metadata_evidence"] == evidence
     workbook.close()
 
 
@@ -247,7 +289,7 @@ def test_comparison_workbook_preserves_raw_sheets_and_aligns_with_blank_gaps(tmp
         tmp_path, series_id="GDP.US", country="US", observations=(
             Observation("2025", 0, ObservationStatus.OBSERVED),
             Observation("2023", 5, ObservationStatus.OBSERVED),
-        ),
+        ), metadata_evidence=[{"mapping_id": "fixture-unit-v1", "unit": "USD"}],
     )
     _, reference_ca = _artifact(
         tmp_path, series_id="GDP.CA", country="CA", observations=(
@@ -279,6 +321,15 @@ def test_comparison_workbook_preserves_raw_sheets_and_aligns_with_blank_gaps(tmp
     assert provenance_rows["input_2_typed_series_manifest_sha256"] == (
         reference_ca["typed_series_manifest_sha256"]
     )
+    assert json.loads(provenance_rows["input_1_metadata_evidence_json"]) == [
+        {"mapping_id": "fixture-unit-v1", "unit": "USD"},
+    ]
+    comparison_manifest = json.loads(
+        (tmp_path / result["provenance_path"]).read_text(encoding="utf-8")
+    )
+    assert comparison_manifest["inputs"][0]["metadata_evidence"] == [
+        {"mapping_id": "fixture-unit-v1", "unit": "USD"},
+    ]
     alignment = workbook["Alignment"]
     header_row = 14
     assert [cell.value for cell in alignment[header_row]] == [

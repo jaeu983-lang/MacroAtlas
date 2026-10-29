@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime
 from functools import wraps
 from pathlib import Path
 from time import perf_counter_ns
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from openpyxl import Workbook, load_workbook
 
@@ -258,6 +258,15 @@ def _build_raw_workbook(
     for row_index, row in enumerate(provenance_rows, start=1):
         for column_index, value in enumerate(row, start=1):
             _set_literal(provenance.cell(row_index, column_index), value)
+    quality = document.get("quality")
+    metadata_evidence = (quality.get("metadata_evidence", [])
+                         if isinstance(quality, Mapping) else [])
+    if metadata_evidence:
+        row = provenance.max_row + 1
+        _set_literal(provenance.cell(row, 1), "metadata_evidence_json")
+        _set_literal(provenance.cell(row, 2), json.dumps(
+            metadata_evidence, ensure_ascii=False, allow_nan=False, sort_keys=True,
+        ))
     for index, result in enumerate(freshness, start=1):
         metadata = (
             f"series_{index}_freshness_status", result["status"],
@@ -437,6 +446,9 @@ def export_typed_series_artifact(
         _mkdir_parent(settings, target, export_root)
         if target.exists() or target.is_symlink() or sidecar.exists() or sidecar.is_symlink():
             raise ValueError("output_already_exists")
+        quality = document.get("quality")
+        metadata_evidence = (quality.get("metadata_evidence", [])
+                             if isinstance(quality, Mapping) else [])
         manifest_document = {
             "schema_version": "typed-series-xlsx-provenance-v1",
             "created_at": datetime.now(UTC).isoformat(),
@@ -447,6 +459,7 @@ def export_typed_series_artifact(
             "typed_series_manifest_path": reference["typed_series_manifest_path"],
             "typed_series_manifest_sha256": reference["typed_series_manifest_sha256"],
             "freshness": freshness,
+            "metadata_evidence": metadata_evidence,
             "series_count": len(document["series"]),
             "observation_count": observation_count,
         }
@@ -561,8 +574,9 @@ def _validate_comparison_spec(spec: Mapping) -> tuple[dict, list[dict]]:
         parsed = urlsplit(reference)
     except (TypeError, ValueError):
         raise ValueError("comparison_evidence_reference_invalid") from None
+    safe_query = parse_qsl(parsed.query, keep_blank_values=True)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
-            or parsed.query or parsed.fragment):
+            or safe_query not in ([], [("format", "json")]) or parsed.fragment):
         raise ValueError("comparison_evidence_reference_invalid")
     if (not isinstance(evidence.get("sha256"), str)
             or re.fullmatch(r"[0-9a-fA-F]{64}", evidence["sha256"]) is None
@@ -754,6 +768,7 @@ def export_comparison_spec(
             "typed_series_manifest_sha256": reference["typed_series_manifest_sha256"],
             "series_id": selector["series_id"],
             "label": selector["label"],
+            "metadata_evidence": document.get("quality", {}).get("metadata_evidence", []),
         })
     _check_compatibility(selected)
     observation_count = sum(
@@ -790,7 +805,11 @@ def export_comparison_spec(
              "label": item["label"], "typed_series_path": item["typed_series_path"],
              "typed_series_sha256": item["typed_series_sha256"],
              "typed_series_manifest_path": item["typed_series_manifest_path"],
-             "typed_series_manifest_sha256": item["typed_series_manifest_sha256"]}
+             "typed_series_manifest_sha256": item["typed_series_manifest_sha256"],
+             "metadata_evidence_json": json.dumps(
+                 item["metadata_evidence"], ensure_ascii=False, allow_nan=False,
+                 sort_keys=True,
+             )}
             for item in artifacts
         ],
     }

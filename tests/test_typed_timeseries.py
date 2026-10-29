@@ -12,6 +12,7 @@ from macro_data_platform.metadata.series import (
     normalize_boj_series,
     normalize_census_series,
     normalize_worldbank_series,
+    worldbank_metadata_evidence,
 )
 
 NOW = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
@@ -98,6 +99,42 @@ def test_world_bank_adapter_marks_annual_period_resolution_without_inventing_uni
     assert [item.status for item in series.observations] == [
         ObservationStatus.OBSERVED, ObservationStatus.MISSING,
     ]
+
+
+def test_world_bank_gdp_uses_only_exact_ai_reviewed_official_unit_mapping():
+    payload = {
+        "source_agency": "World Bank", "dataset_id": "2",
+        "indicator_id": "NY.GDP.MKTP.CD", "series_key": {
+            "source": "2", "country": "CAN", "indicator": "NY.GDP.MKTP.CD",
+        }, "period_format": "YYYY", "frequency": None, "unit": None,
+        "source_version": None, "retrieved_at": NOW.isoformat(),
+        "source_url": "https://api.worldbank.org/v2/country/CAN/indicator/NY.GDP.MKTP.CD",
+        "raw_path": "data/raw/wdi.json", "manifest_path": "data/raw/wdi.manifest.json",
+        "observations": [{"date": "2024", "value": 1}],
+    }
+
+    series = normalize_worldbank_series(payload)
+    evidence, = worldbank_metadata_evidence(payload)
+
+    assert series.unit == "current U.S. dollars"
+    assert series.currency == "USD"
+    assert evidence["reviewer_type"] == "AI"
+    assert evidence["source_metadata"]["sha256"] == (
+        "51cec1e144a5bad8d92238630c0a305e20116e86d34ad95c7c315ed166255b28"
+    )
+
+    population = {
+        **payload, "indicator_id": "SP.POP.TOTL",
+        "series_key": {**payload["series_key"], "indicator": "SP.POP.TOTL"},
+    }
+    assert worldbank_metadata_evidence(population) == []
+    assert normalize_worldbank_series(population).unit is None
+    assert normalize_worldbank_series(population).currency is None
+
+    provider_typed = {**payload, "unit": "provider-defined unit"}
+    assert worldbank_metadata_evidence(provider_typed) == []
+    assert normalize_worldbank_series(provider_typed).unit == "provider-defined unit"
+    assert normalize_worldbank_series(provider_typed).currency is None
 
 
 def test_boj_adapter_keeps_source_unit_and_daily_frequency():
