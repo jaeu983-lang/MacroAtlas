@@ -343,6 +343,10 @@ def _summary(doc: dict, *, duration_estimate: dict | None = None) -> dict:
         summary["selection_requires_explicit_confirmation"] = payload.get(
             "selection_requires_explicit_confirmation", True,
         )
+        for key in ("ranking_policy", "ranking_policy_sha256",
+                    "ranking_is_equivalence_proof"):
+            if key in payload:
+                summary[key] = payload[key]
         summary["candidates"] = [
             {"rank": index + 1, **rank_by_id.get(candidate.get("candidate_id"), {}),
              "candidate": candidate}

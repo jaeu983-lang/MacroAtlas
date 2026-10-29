@@ -243,6 +243,8 @@ class StructuredCLITests(unittest.TestCase):
             self.assertEqual(status, 0)
             self.assertEqual(result["search_status"], "candidates_found")
             self.assertTrue(result["selection_requires_explicit_confirmation"])
+            self.assertEqual(result["ranking_policy"], "semantic-disambiguation-v1")
+            self.assertFalse(result["ranking_is_equivalence_proof"])
             self.assertEqual(result["candidates"][0]["candidate"]["candidate_id"],
                              "worldbank:2:USA:NY.GDP.MKTP.CD")
             self.assertEqual(result["candidates"][0]["match_status"], "review_required")

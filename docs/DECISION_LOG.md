@@ -1032,3 +1032,11 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 ## D-127 — Census ACS1 최신성 후보의 공개일 근거 정정
 
 2026-10-28. 보존된 공식 Census 캡처와 archive hash를 다시 확인했다. 목록의 2026-10-14는 `2025 ACS 1-year Estimates` press-kit 항목 날짜이며, 같은 캡처의 배너는 예정 데이터 공개일을 2026-10-29로 안내한다. 기존 후보는 목록 날짜를 공개일로 잘못 해석했다. 연간 2024 값의 period end `2024-12-31`은 예정 공개일에 667일이 되고, 제안 400일 한도는 2026-02-05부터 `STALE`로 만들어 예정 공개보다 266일 앞서 정상 보유 데이터를 차단한다. GPT-6의 AI 검토는 Census 400일 후보를 `reject_candidate`로 권고했다. BLS 60일 후보는 일정상 두 날짜만으로 실제 availability 한도를 보증하지 못하므로 `retain_pending`이다. `reviewer_type=AI`로 남기며 이는 독립 사람 검토나 runtime 승인이 아니다. 기존 annual fallback 730일 유지, 두 override 모두 비활성이다. 회귀 테스트는 잘못된 날짜 해석과 조기 stale 경계를 고정한다.
+
+## D-128 — Gate D AI 승격 결정: fixed local search policy
+
+2026-10-29. 사용자는 규칙 승격 검토를 GPT가 수행하고 검토자 유형을 `AI`로 남기도록 위임했다. GPT-6는 frozen candidate `semantic-disambiguation-v1`과 Gate C 산출물 hash, runtime 통합 회귀를 검토했다. Holdout 36 query에서 rankable Top-1은 3/8에서 5/8로, MRR은 0.6875에서 0.8125로 증가했다. unrelated abstention은 0/8에서 8/8로 증가했고 expected state 8/8, near-match MRR 0.444444, insufficient-evidence 구조 결과는 유지됐다. 모든 split에서 false-exact/forbidden-exact 0, 확인 없는 plan 생성 0, 금지 동작 위반 0이었다. Timing은 정책별 360 표본, p95 candidate 1.507834 ms / baseline 1.273491 ms, 비율 1.184x로 사전 한도 100 ms·1.5x 안이었다.
+
+정책은 `discovery/search_policy.py`로 옮겨 evaluation과 `CandidateSearchEngine` 기본 경로가 같은 버전을 실행하도록 연결했다. 개발·validation 질문에서 실제 engine 기본 경로와 frozen candidate 결과가 일치하는 것을 검증했고 holdout은 재실행하지 않았다. 결정은 fixed v2 local-catalog ranking scope에서만 `accept`다. provider API, raw writer/exporter, broader catalog, 통계적 동등성, 실제 분석가 작업은 측정하지 않았고 해당 기능을 승인하지 않는다. 판단자와 reviewer는 동일 AI이며 `independent_reviewer=false`; 사람의 독립 검토로 표시하지 않는다.
+
+`evaluation/results/promotion_ledger.jsonl` event `3c03f594-06ed-4892-b8b3-ba793901dbbc`, event hash `18abc706045eeb582928d877da6a5197e05d6185e4d6c7d69cb49f67a4a33adb`가 정책 hash `e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67`와 적용 commit `ef117ca0e48f2f36a340c0ebf028b7033fcb5bce`를 묶는다. `macro-promotion verify`는 event 1, active acceptance, historical evidence와 committed ledger에 `PASS`를 반환했다. D-121의 이전 hold는 넓은 제품/provider 범위에 대한 보류로 보존하며 이번 local-search 한정 결정을 대체하지 않는다. 이 승격은 AI 결정이고 AI identity는 저장소가 인증하지 않는다.

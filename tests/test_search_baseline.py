@@ -1,5 +1,10 @@
+import json
 from dataclasses import replace
+from datetime import UTC, datetime
+from pathlib import Path
 
+from macro_data_platform.discovery.search_policy import PROMOTED_SEARCH_POLICY
+from macro_data_platform.discovery.series_search import CandidateSearchEngine
 from macro_data_platform.evaluation.cases import load_corpus
 from macro_data_platform.evaluation.search_baseline import (
     DEFAULT_CANDIDATE_MINIMUM_SCORE,
@@ -10,6 +15,8 @@ from macro_data_platform.evaluation.search_baseline import (
     evaluate_development,
     evaluate_split,
 )
+from macro_data_platform.orchestration.models import StageInput
+from macro_data_platform.workflow_contracts import DataRequest
 
 
 def test_development_baseline_runs_all_variants_without_validation_or_holdout(monkeypatch):
@@ -124,6 +131,56 @@ def test_search_policy_rejects_out_of_range_thresholds():
 
     with pytest.raises(ValueError):
         SearchPolicy(minimum_score=100.1)
+
+
+def test_runtime_search_uses_the_frozen_candidate_policy_on_dev_and_validation():
+    corpus = load_corpus("tests/fixtures/evaluation/v2", repo_root=".")
+    manifest = json.loads(
+        Path("evaluation/results/gate_c_candidate_manifest.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert PROMOTED_SEARCH_POLICY.sha256 == manifest["candidate_policy"]["sha256"]
+    expected_engine = CandidateSearchEngine(
+        settings=None,
+        clock=lambda: datetime(2026, 1, 1, tzinfo=UTC),
+        candidate_loader=lambda _settings: corpus.candidates,
+        ranker=PROMOTED_SEARCH_POLICY.rank,
+    )
+    runtime_engine = CandidateSearchEngine(
+        settings=None,
+        clock=lambda: datetime(2026, 1, 1, tzinfo=UTC),
+        candidate_loader=lambda _settings: corpus.candidates,
+    )
+    observed_queries = 0
+    for case in corpus.cases:
+        if case.split not in {"development", "validation"}:
+            continue
+        for variant in case.query_variants:
+            request = dict(case.request)
+            request["text"] = variant
+            data_request = DataRequest.from_dict(request)
+            stage_input = StageInput(
+                "runtime-policy-regression",
+                variant,
+                "search",
+                {"request": data_request.to_dict(), "limit": 50},
+                None,
+                (),
+            )
+            actual = runtime_engine.run(stage_input)
+            expected = expected_engine.run(stage_input)
+            assert actual.status == expected.status
+            assert actual.payload["ranking"] == expected.payload["ranking"]
+            actual_ids = [row["candidate_id"] for row in actual.payload["proposal"]["candidates"]]
+            expected_ids = [row["candidate_id"] for row in expected.payload["proposal"]["candidates"]]
+            assert actual_ids == expected_ids
+            assert actual.payload["selection_requires_explicit_confirmation"] is True
+            assert actual.payload["ranking_policy"] == PROMOTED_SEARCH_POLICY.version
+            assert actual.payload["ranking_policy_sha256"] == PROMOTED_SEARCH_POLICY.sha256
+            assert actual.payload["ranking_is_equivalence_proof"] is False
+            observed_queries += 1
+    assert observed_queries > 0
 
 
 def test_abstention_and_unmatched_behavior_are_reported_separately(monkeypatch):
