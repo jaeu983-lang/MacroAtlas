@@ -26,7 +26,8 @@ negative-value check does not apply.
 The common annual freshness policy checks the latest non-null observation.
 `STALE` and `FRESHNESS_UNVERIFIED` observations are retained in raw files but
 withheld from the task result. The route currently has no candidate search or
-metadata refresh integration and no CSV/XLSX export.
+metadata refresh integration. It has no legacy CSV export; a completed,
+freshness-passed typed artifact can use the shared `macroatlas export-xlsx` command.
 
 ## Runtime evidence and limits
 

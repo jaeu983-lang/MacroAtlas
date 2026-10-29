@@ -1040,3 +1040,11 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 정책은 `discovery/search_policy.py`로 옮겨 evaluation과 `CandidateSearchEngine` 기본 경로가 같은 버전을 실행하도록 연결했다. 개발·validation 질문에서 실제 engine 기본 경로와 frozen candidate 결과가 일치하는 것을 검증했고 holdout은 재실행하지 않았다. 결정은 fixed v2 local-catalog ranking scope에서만 `accept`다. provider API, raw writer/exporter, broader catalog, 통계적 동등성, 실제 분석가 작업은 측정하지 않았고 해당 기능을 승인하지 않는다. 판단자와 reviewer는 동일 AI이며 `independent_reviewer=false`; 사람의 독립 검토로 표시하지 않는다.
 
 `evaluation/results/promotion_ledger.jsonl` event `3c03f594-06ed-4892-b8b3-ba793901dbbc`, event hash `18abc706045eeb582928d877da6a5197e05d6185e4d6c7d69cb49f67a4a33adb`가 정책 hash `e96d466d1e4f1d83a0da2bd92d264a1680225747e9622fec696e0e1f28b3fe67`와 적용 commit `ef117ca0e48f2f36a340c0ebf028b7033fcb5bce`를 묶는다. `macro-promotion verify`는 event 1, active acceptance, historical evidence와 committed ledger에 `PASS`를 반환했다. D-121의 이전 hold는 넓은 제품/provider 범위에 대한 보류로 보존하며 이번 local-search 한정 결정을 대체하지 않는다. 이 승격은 AI 결정이고 AI identity는 저장소가 인증하지 않는다.
+
+## D-129 — Gate E freshness 후보 AI 검토 및 typed XLSX 연결
+
+2026-10-29. 사용자의 위임에 따라 AI가 보존된 BLS/Census release-calendar capture와 후보 hash를 다시 검토했다. BLS `CUUR0000SA0` 60일 값은 계획된 두 공개일만으로 실제 이용 가능 시점이나 보장 지연을 입증하지 못해 `retain_pending`; Census ACS1 400일 값은 2024 연간 관측이 예정된 2026-10-29 공개일에 667일이 되어 공개 전 266일 동안 정상 데이터를 stale 처리하므로 `reject_candidate`다. 기존 월간 120일·연간 730일 fallback은 유지하고 어떤 exact override도 활성화하지 않았다. AI 판정과 근거 hash는 [freshness review record](evidence/freshness_policy_ai_review_20261029.json)에 기록했다. 이는 AI review이며 독립 사람 검토나 runtime 신원 인증은 아니다.
+
+이전 local note의 Census HTTP 404는 2026-10-29 00:00 UTC, 즉 release 날짜를 사용하는 미국 동부 일광절약시간으로 2026-10-28 20:00 EDT였다. 이 시각은 예정 현지 공개일 전이며 tracked raw response manifest도 확인되지 않아 공개 후의 availability failure로 취급하지 않는다. 정기 감시나 재요청은 실행하지 않았다. WDI/BOJ의 source release-lag와 BLS/Census의 예정 현지 공개 이후 관측 표본이 부족하므로 Gate E는 PARTIAL로 남는다.
+
+별도로 `export-xlsx`는 task-linked typed artifact·raw/manifest hash를 검증하고 export 시점 freshness를 재평가한 뒤 원자료 sheet와 `.xlsx.json` provenance를 write-once로 만든다. `compare-xlsx`는 explicit common-concept/evidence/review spec을 요구하고 compatible metadata일 때만 원자료 sheet를 보존한 `Alignment` sheet를 추가한다. fixture는 zero/missing, formula-like literal, stale block, path/no-overwrite와 blank/no-fill 정렬을 검증한다. 실기관 사이의 통계 동등성이나 reviewer identity는 인증하지 않으므로 Gate F/G 제품 상태는 E 해소 전 보류한다.

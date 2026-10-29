@@ -163,6 +163,21 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--output", required=True,
                         help="new CSV path under data/exports/ (never overwrites)")
 
+    export_xlsx = commands.add_parser(
+        "export-xlsx", help="export a verified typed-series task as a provenance-linked workbook",
+    )
+    export_xlsx.add_argument("task_id")
+    export_xlsx.add_argument("--output", required=True,
+                             help="new XLSX path under data/exports/ (never overwrites)")
+
+    compare_xlsx = commands.add_parser(
+        "compare-xlsx", help="align explicitly reviewed compatible typed series",
+    )
+    compare_xlsx.add_argument("--spec", required=True,
+                              help="repository-relative series-comparison-spec-v1 JSON")
+    compare_xlsx.add_argument("--output", required=True,
+                              help="new XLSX path under data/exports/ (never overwrites)")
+
     resume = commands.add_parser("resume", help="resume one saved task under its persisted plan")
     resume.add_argument("task_id")
     resume.add_argument("--live", action="store_true", required=True,
@@ -550,6 +565,16 @@ def dispatch(args, *, boj_transport=None, bls_transport=None, census_transport=N
         from macro_data_platform.ingestion.csv_export import export_task
         result = export_task(settings, args.task_id, args.output, format=args.format,
                              freshness_policy=freshness_policy, as_of=clock())
+        return 0, result
+    if args.command == "export-xlsx":
+        from macro_data_platform.ingestion.xlsx_export import export_series_task
+        result = export_series_task(settings, args.task_id, args.output,
+                                    freshness_policy=freshness_policy, as_of=clock())
+        return 0, result
+    if args.command == "compare-xlsx":
+        from macro_data_platform.ingestion.xlsx_export import export_comparison_spec
+        result = export_comparison_spec(settings, args.spec, args.output,
+                                        freshness_policy=freshness_policy, as_of=clock())
         return 0, result
     if args.command == "deferred":
         from macro_data_platform.ingestion.non_api_capacity import DeferredNonAPIStore

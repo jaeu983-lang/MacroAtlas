@@ -1,0 +1,64 @@
+{
+  "schema_version": "freshness-policy-ai-review-v1",
+  "review_id": "freshness-policy-review-20261029T002037Z",
+  "reviewer_type": "AI",
+  "reviewer_id": "gpt-6-codex-primary",
+  "reviewed_at": "2026-10-29T00:20:37+00:00",
+  "authorization_ref": "user_instruction_2026-10-29",
+  "independent_human_review": false,
+  "scope": "source-specific freshness candidates and current frequency fallback; no runtime policy activation",
+  "input_evidence": [
+    {
+      "path": "docs/evidence/freshness_policy_candidate_20261028.json",
+      "sha256": "dc690fe30f1e557d982b3298a44344b147d69dc45766f73f674a5bdf0b98fa4d"
+    },
+    {
+      "path": "docs/evidence/freshness_source_capture_20261028.tar.gz",
+      "sha256": "37992523c4c9a9c62ca550a8ab6f12ce18ea714966fc8c724b0f97ac04907dbb"
+    }
+  ],
+  "decisions": [
+    {
+      "series_scope": "BLS CPI-U CUUR0000SA0",
+      "candidate_days": 60,
+      "decision": "retain_pending",
+      "reason": "The official captured calendar gives two future scheduled CPI release dates, but not repeated observed availability or a guaranteed delay bound. Keep the exact override disabled; the general monthly fallback remains 120 days and is explicitly a fallback, not a BLS guarantee.",
+      "activation_effect": "none"
+    },
+    {
+      "series_scope": "Census ACS1 B01001_001E state:06",
+      "candidate_days": 400,
+      "decision": "reject_candidate",
+      "reason": "The archived Census page distinguishes the October 14 press-kit list date from the October 29 scheduled data release. A 2024 annual observation ending December 31, 2024 is 667 days old on October 29, 2026; 400 days would reject it before the next release. Keep the 400-day override disabled and retain the 730-day annual fallback.",
+      "reported_api_404": {
+        "reported_at": "2026-10-29T00:00:00+00:00",
+        "local_time_interpretation": "2026-10-28 20:00 EDT (UTC-04:00), before the scheduled October 29 U.S. release date",
+        "evidence_status": "not independently verified from a tracked response manifest",
+        "decision_use": "not evidence of delayed or unavailable scheduled data",
+        "retry": "not performed"
+      },
+      "activation_effect": "none"
+    },
+    {
+      "series_scope": "World Bank WDI USA source 2 NY.GDP.MKTP.CD",
+      "decision": "retain_frequency_fallback",
+      "reason": "The preserved official series metadata identifies the indicator but supplies no release-lag guarantee. The observed annual period format can use the existing 730-day fallback; do not create an exact override or describe that fallback as a World Bank calendar.",
+      "activation_effect": "none"
+    },
+    {
+      "series_scope": "BOJ FM08/FXERD01",
+      "decision": "retain_frequency_fallback",
+      "reason": "The preserved official metadata confirms DAILY frequency but does not establish a publication-lag tolerance. Keep the existing seven-day fallback labeled as such; do not create an exact override.",
+      "activation_effect": "none"
+    }
+  ],
+  "overall_decision": "Gate E remains partial",
+  "remaining_evidence": [
+    "Verified release-availability observations at the source's scheduled local release time for Census ACS and BLS CPI.",
+    "Official release-lag evidence or an explicit accepted fallback rationale for World Bank and BOJ series.",
+    "The reported Census HTTP 404 must not be used as a post-release availability result because its UTC timestamp is before the scheduled U.S. local release date and its raw response manifest is not in the tracked evidence set."
+  ],
+  "runtime_policy_changed": false,
+  "candidate_file_loaded_by_runtime": false,
+  "identity_authenticated": false
+}

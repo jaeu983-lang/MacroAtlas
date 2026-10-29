@@ -38,7 +38,9 @@ flowchart TD
     LARGEPROFILE --> LARGE[Linux 제한 stream / chunk + checkpoint]
     DEFER -. read-only preview .-> PREVIEW[large-estimate / task 생성 없음]
     LARGE --> ARTIFACT[JSONL chunks + output manifest]
-    RESULT --> EXPORT[검증된 완료 World Bank/BOJ task CSV export]
+    RESULT --> EXPORTCSV[검증된 World Bank/BOJ task CSV]
+    RESULT --> EXPORTXLSX[hash/freshness 재검증 typed-artifact XLSX]
+    EXPORTXLSX --> COMPAREXLSX[explicit compatibility spec 비교 XLSX]
 ```
 
 그림의 파일 경로는 논리 흐름이다. 현재 `GateCFileEngine` 내부 호출 순서는 transport의 HTTP 용량 검사 →
@@ -52,17 +54,19 @@ inbox 보존 → `TabularFileEngine`의 preflight → raw package/변경 검사 
 | 진입점 | 저장되는 stage / 실제 호출 | 출력·다음 연결 |
 |---|---|---|
 | `collect worldbank-gdp` | CLI → WorkflowService의 명시 확인 → WorldBankRequestDispatcher → 공통 EngineRegistry → `worldbank_collect_audit` → `worldbank_validate` | raw/manifest + 검증 payload/AuditStore. 실행 전 저장된 확인 조건 재검사 |
-| `collect worldbank-series` | exact country/source/indicator/year validation → saved `TaskPlan` → 공통 EngineRegistry → `worldbank_series/1` | 1 series·1–100 annual periods·1 page. HTTP entity raw + manifest, identity/schema/freshness 검증; unit/meaning unknown. CSV/XLSX export 미지원 |
+| `collect worldbank-series` | exact country/source/indicator/year validation → saved `TaskPlan` → 공통 EngineRegistry → `worldbank_series/1` | 1 series·1–100 annual periods·1 page. HTTP entity raw + manifest, identity/schema/freshness 검증; unit/meaning unknown. Freshness 통과 typed artifact는 raw XLSX 입력 가능 |
 | `collect boj-fxer` | `build_boj_plan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations` | 검증된 metadata payload를 observations의 upstream으로 전달. raw/manifest 및 제한된 observations |
 | `collect boj-fxer-range` | month-range validation → saved `TaskPlan` → 공통 EngineRegistry → `boj_metadata` → `boj_observations_range/1` | 같은 FM08/FXERD01 시리즈의 1–120개월. metadata 재사용·freshness 후 CSV 재검증/전달 지원 |
 | `collect bls` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `bls/1` | exact series IDs·연도 범위, credential-free raw/manifest, 제한 quality/freshness result; catalogue semantics는 unknown으로 유지 |
 | `collect census` | CLI query validation → saved `TaskPlan` → 공통 EngineRegistry → `census/1` | acs/acs1·acs/acs5, 지정 variable·geography, credential-free raw/manifest; 전체 variable catalog/search는 없음 |
 | `search QUERY` | CLI 구조화 필터 → saved `TaskPlan` → 공통 EngineRegistry → `series_search/1` | 네트워크 없이 고정 WDI seed와 로컬 BLS/Census metadata archive를 ranking. versioned lexical/semantic policy와 버전을 task에 저장; 선택·수집은 별도 |
 | `watch tic/bis` | `build_gate_c_watch_plan` → 공통 EngineRegistry → `gate_c_file_watch`; 내부에서 OfficialFileTransport → TabularFileEngine | 정상 파일은 raw/normalized/manifest. 용량 도달은 인계 record. 내부 부품 호출은 별도 stage가 아님 |
-| 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 명시 `series_mapping`이 있으면 cadence 기반 freshness를 평가하고 stale/unverified는 `NEEDS_REVIEW`로 중단한다. 통과 시 typed artifact를 저장한다. 자동 의미 추론·typed artifact 기반 XLSX 출력은 없다. 범용 파일 CLI는 없음 |
-| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; exact query CLI와 Python API가 같은 plan 경로 사용 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 전체 카탈로그 검색과 결과 export는 없음 |
+| 기존 로컬 파일 | Python API로 `tabular_file` engine 등록 → TabularFileEngine | inbox 경로 검사 → capacity → raw/변경 guard → parser → 저장. 명시 `series_mapping`이 있으면 freshness를 평가하고 stale/unverified는 `NEEDS_REVIEW`로 중단한다. 통과 artifact는 `export-xlsx` 입력 가능. 범용 파일 CLI는 없음 |
+| BLS/Census | 공통 EngineRegistry가 `bls/1`, `census/1`을 등록; exact query CLI와 Python API가 같은 plan 경로 사용 | 기관별 query/transport → raw/변경·품질 guard → StageResult. 전체 카탈로그 검색은 없음. freshness 통과 typed artifact는 raw XLSX input으로 쓸 수 있다. |
 | `status` / `resume` | task 조회 / 저장 plan의 `(engine, version)`을 공통 EngineRegistry가 해석 | 새 source 범위를 만들지 않고 같은 task 재개. Workflow confirmation은 WorldBank dispatcher가 재검증하고, 대용량 시험·production은 중단 worker 확인과 checkpoint 검증을 위해 전용 recovery runner를 유지 |
 | `export TASK_ID --format csv --output data/exports/name.csv` | CLI → read-only `export_task` → task/audit/raw/manifest 재검증 | 완료된 World Bank GDP/BOJ FXER task만 UTF-8 CSV와 provenance sidecar로 전달. 네트워크·task DB 쓰기 없이, 덮어쓰기 금지 |
+| `export-xlsx TASK_ID --output data/exports/name.xlsx` | CLI → task typed-artifact reference → artifact/raw/manifest hash 확인 → export-time freshness 재평가 | 1개의 완료 task가 가리키는 typed artifact만 새 workbook/provenance로 전달. 원자료 값/status와 0/missing 구분, formula-like 문자열 literal 저장. stale/unverified·손상·경로 위반은 중단 |
+| `compare-xlsx --spec data/inbox/compare.json --output data/exports/name.xlsx` | spec 승인 metadata 검증 → task/artifact hash·freshness 재평가 → compatibility 검사 → raw sheets+`Alignment` | 공통 개념 근거와 AI/사람 review 표기가 있는 2–10 series만 허용. calendar/frequency/unit/currency/dimension schema가 같아야 한다. 단위변환·집계·보간·forward-fill은 지원하지 않고 missing/absent는 빈 cell/status로 구분한다. Review 신원과 evidence URL hash는 인증하지 않는다. |
 | `large-check ID [--event-seq N]` | create_trial → 불변 event/scope·stat·코드/예산과 duration profile/forecast 결합 → worker 직전 예상 표시 → large_file_trial stage | Linux 격리 시험만 실행. TRIAL_PASSED 또는 NOT_EXECUTED, 본 실행 자동 승격 없음. 완료 요약에 actual stage seconds 포함 |
 | `large-estimate qualification/production ID [--event-seq N]` | SQLite와 로컬 표본의 read-only 조회 → 선택 엔진 이력으로 예측 | task/event/worker 실행 없이 시간 범위·신뢰도·표본 수만 반환 |
 | `deferred [ID]` | DeferredNonAPIStore의 read-only 조회 | 대상 목록 / 최근 이력 조회. 조회가 대용량 엔진 실행을 유발하지 않음 |
@@ -87,7 +91,7 @@ API chunk 계획만 반환하며 실행 queue가 아니다.
   실제 값이 있는 최신 observation period로 freshness를 계산하고, stale/unverified file mapping은 task result를
   `NEEDS_REVIEW`로 제한한다. freshness를 통과한 시계열은 `data/processed/typed_series/` 아래 JSON artifact와
   hash/manifest reference로 영속화한다. 기존 task payload 저장 형식은 호환성을 위해 유지하며 typed artifact를
-  읽어 사용자 파일로 내보내는 exporter/workbook은 아직 연결하지 않았다.
+  `export-xlsx`가 artifact freshness를 내보내기 직전 다시 평가하고 원자료 sheet와 hash-linked sidecar를 출력한다.
 - freshness policy v2: frequency defaults는 `frequency_fallback`으로 표시된다. exact-series override는
   `FreshnessEvidence`의 HTTPS URL/hash/capture/citation와 approved review metadata에 연결돼야 하며 누락·미승인
   근거는 `FRESHNESS_UNVERIFIED`로 차단한다. 이 모델은 문서·hash·reviewer를 독립 검증하지 않고, source별 승인 근거는 아직 없다.
