@@ -1,6 +1,7 @@
 """Tests for raw typed-series XLSX export and freshness revalidation."""
 import hashlib
 import json
+import sqlite3
 from datetime import UTC, date, datetime
 
 import pytest
@@ -93,6 +94,14 @@ def _comparison_spec(task_a, task_b, *, reviewer_type="AI"):
     }
 
 
+def _performance_samples(settings):
+    with sqlite3.connect(settings.performance_database_path) as connection:
+        connection.row_factory = sqlite3.Row
+        return [dict(row) for row in connection.execute(
+            "SELECT * FROM performance_samples ORDER BY sample_id"
+        )]
+
+
 def test_raw_xlsx_preserves_values_status_and_hash_linked_provenance(tmp_path):
     settings, reference = _artifact(tmp_path)
     result = export_typed_series_artifact(
@@ -124,6 +133,25 @@ def test_raw_xlsx_preserves_values_status_and_hash_linked_provenance(tmp_path):
     assert manifest["output_sha256"] == hashlib.sha256(output.read_bytes()).hexdigest()
     assert manifest["typed_series_sha256"] == reference["typed_series_sha256"]
     assert result["observation_count"] == 3
+    [sample] = _performance_samples(settings)
+    assert sample["execution_scope"] == "xlsx_export"
+    assert sample["engine"] == "typed_xlsx"
+    assert sample["stage"] == "export"
+    assert sample["status"] == "exported"
+    assert sample["sample_class"] == "fixture"
+    assert sample["input_rows"] == 3
+    assert sample["output_rows"] == 3
+    assert sample["input_bytes"] > 0
+    assert sample["output_bytes"] > 0
+    assert {"quality", "parse", "export"}.issubset(
+        json.loads(sample["phase_timings_json"])
+    )
+    assert not {"task_id", "request_text", "source_url", "raw_value", "credential"} & (
+        set(sample)
+    )
+    serialized_sample = json.dumps(sample, sort_keys=True)
+    assert "example.org/fixture" not in serialized_sample
+    assert "=1+1" not in serialized_sample
     workbook.close()
 
 
@@ -193,6 +221,9 @@ def test_export_xlsx_can_resolve_one_artifact_from_completed_task(tmp_path):
     )
     assert result["task_id"] == task["task_id"]
     assert (tmp_path / result["output_path"]).is_file()
+    [sample] = _performance_samples(settings)
+    assert sample["engine"] == "typed_xlsx"
+    assert "sqlite" in json.loads(sample["phase_timings_json"])
 
 
 def test_export_xlsx_cli_dispatches_from_task_id(tmp_path):
@@ -268,6 +299,17 @@ def test_comparison_workbook_preserves_raw_sheets_and_aligns_with_blank_gaps(tmp
     assert manifest["comparison_review"]["reviewer_type"] == "AI"
     assert manifest["comparison_spec_sha256"] == result["comparison_spec_sha256"]
     assert result["evidence_identity_authenticated"] is False
+    [sample] = _performance_samples(settings)
+    assert sample["engine"] == "series_compare_xlsx"
+    assert sample["sample_class"] == "fixture"
+    assert sample["input_rows"] == 4
+    assert sample["output_rows"] == 4
+    assert {"parse", "sqlite", "quality", "export"}.issubset(
+        json.loads(sample["phase_timings_json"])
+    )
+    serialized_sample = json.dumps(sample, sort_keys=True)
+    assert "comparison fixture" not in serialized_sample
+    assert "example.org/fixture" not in serialized_sample
     workbook.close()
 
 

@@ -1048,3 +1048,17 @@ AI 권고는 `hold`, reason `evidence_follow_up_needed`다. 제한된 Gate C 증
 이전 local note의 Census HTTP 404는 2026-10-29 00:00 UTC, 즉 release 날짜를 사용하는 미국 동부 일광절약시간으로 2026-10-28 20:00 EDT였다. 이 시각은 예정 현지 공개일 전이며 tracked raw response manifest도 확인되지 않아 공개 후의 availability failure로 취급하지 않는다. 정기 감시나 재요청은 실행하지 않았다. WDI/BOJ의 source release-lag와 BLS/Census의 예정 현지 공개 이후 관측 표본이 부족하므로 Gate E는 PARTIAL로 남는다.
 
 별도로 `export-xlsx`는 task-linked typed artifact·raw/manifest hash를 검증하고 export 시점 freshness를 재평가한 뒤 원자료 sheet와 `.xlsx.json` provenance를 write-once로 만든다. `compare-xlsx`는 explicit common-concept/evidence/review spec을 요구하고 compatible metadata일 때만 원자료 sheet를 보존한 `Alignment` sheet를 추가한다. fixture는 zero/missing, formula-like literal, stale block, path/no-overwrite와 blank/no-fill 정렬을 검증한다. 실기관 사이의 통계 동등성이나 reviewer identity는 인증하지 않으므로 Gate F/G 제품 상태는 E 해소 전 보류한다.
+
+## D-130 — Gate 40 XLSX telemetry와 fixture 성능 기준선
+
+2026-10-29. 통합 Gate 점검에서 raw XLSX 및 비교 XLSX가 공통 privacy-safe 성능 원장에 기록되지 않는 공백을 확인했다. 두 exporter에 monotonic total duration과 `parse`, `quality`, `sqlite`, `export` 중 실행된 하위시간, evidence class, 입력·출력 byte/row/column 수를 추가했다. prompt, 원자료 값, task ID, URL, 자격 증명은 telemetry schema에 없다. telemetry write 실패는 export 결과를 바꾸지 않는다. 회귀는 fixture class, 계측 phase, task 경로에서 1회만 기록됨, 민감 문자열 부재를 확인한다.
+
+임시 프로젝트의 fixture만으로 raw export와 비교 export를 각각 20회 실행했고 네트워크 요청은 0건이다. Linux x86_64 / Python 3.12.14에서 raw p50/p95는 4.294/6.147 ms, 비교 p50/p95는 15.421/16.619 ms였다. 표본 크기는 각각 관측 2행·1,984 input bytes 및 4행·4,789 input bytes다. 비교 경로의 측정 export phase가 p50 13.096 ms로 가장 컸다. [비민감 측정 기록](evidence/xlsx_fixture_performance_20261029.json)의 SHA-256은 `cfaae6d40611542631b95fc4eeb0648ea4613dac8cfddfb4bbcbb901b5778f9e`다. 사전 고정한 exporter latency budget이 없고 fixture가 작으므로 이는 기준선일 뿐 성능 pass나 운영 병목 판정이 아니다.
+
+전체 969 pytest, Ruff, compileall, diff check를 통과했다. 이 결과로 Gate 40의 offline XLSX telemetry·fixture 검증 항목을 완료했으나 Gate E의 예정 공표 후 BLS/Census 가용성 표본은 여전히 없다. 따라서 E는 PARTIAL, F/G 제품 Gate와 전체 통합 Gate는 미통과로 유지한다. 이 기록은 fixture evidence이며 자연 API, live XLSX 출력, provider 간 통계 동등성 또는 운영 성능을 증명하지 않는다.
+
+## D-131 — 주기별 freshness fallback에 대한 AI 수용 범위
+
+2026-10-29. 사용자가 freshness 정책 검토를 AI가 수행하고 유형을 기록하도록 위임했다. GPT-6는 보존된 source metadata, release-calendar candidate와 frequency policy를 검토해 annual 730일, monthly 120일, daily 7일 fallback을 해당 계열의 **제한된 operational default**로만 수용했다. WDI/BOJ의 공표 지연 보증으로 해석하지 않고 BLS 60일은 pending, Census 400일은 기각 상태를 유지하며 exact-series override는 하나도 켜지 않았다. 기존 fail-closed freshness evaluator와 사용자에게 표시되는 `frequency_fallback` 근거는 변경하지 않았다.
+
+AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshness_fallback_ai_review_20261029.json)은 reviewer type/model, 입력 hash, 범위, 결론과 한계를 기록한다. 그 결과 공식 release-lag 근거 대신 fallback rationale를 검토한다는 조건은 정리됐지만, Gate E에는 BLS/Census의 scheduled local release 이후 실제 availability 표본이 여전히 필요하다. 그러므로 Gate E는 PARTIAL, F/G 제품 Gate는 미통과이며 이 결정은 사람 검토나 source availability 측정으로 표시되지 않는다.

@@ -1,0 +1,118 @@
+{
+  "environment": {
+    "architecture": "x86_64",
+    "platform": "linux",
+    "python_version": "3.12.14"
+  },
+  "evidence_class": "fixture",
+  "groups": [
+    {
+      "engine": "series_compare_xlsx",
+      "engine_version": "1",
+      "median_input_bytes": 4789.0,
+      "median_input_columns": 4.0,
+      "median_input_rows": 4.0,
+      "median_output_bytes": 12853.0,
+      "median_output_columns": 20.0,
+      "median_output_rows": 4.0,
+      "p50_ns": 15421174.0,
+      "p95_ns": 16619297,
+      "phases": {
+        "export": {
+          "p50_ns": 13095686.5,
+          "p95_ns": 14455076,
+          "p95_status": "READY",
+          "sample_count": 20
+        },
+        "parse": {
+          "p50_ns": 1089447.5,
+          "p95_ns": 1145753,
+          "p95_status": "READY",
+          "sample_count": 20
+        },
+        "quality": {
+          "p50_ns": 104990.0,
+          "p95_ns": 186936,
+          "p95_status": "READY",
+          "sample_count": 20
+        },
+        "sqlite": {
+          "p50_ns": 1308245.5,
+          "p95_ns": 1737969,
+          "p95_status": "READY",
+          "sample_count": 20
+        }
+      },
+      "rows_per_second_p50": 259.3852950066024,
+      "rows_per_second_p95": 266.74823827793205,
+      "sample_class": "fixture",
+      "sample_count": 20,
+      "stage": "export",
+      "status_counts": {
+        "exported": 20
+      }
+    },
+    {
+      "engine": "typed_xlsx",
+      "engine_version": "1",
+      "median_input_bytes": 1984.0,
+      "median_input_columns": 4.0,
+      "median_input_rows": 2.0,
+      "median_output_bytes": 7855.0,
+      "median_output_columns": 20.0,
+      "median_output_rows": 2.0,
+      "p50_ns": 4293559.0,
+      "p95_ns": 6147225,
+      "phases": {
+        "export": {
+          "p50_ns": 3542760.5,
+          "p95_ns": 5304676,
+          "p95_status": "READY",
+          "sample_count": 20
+        },
+        "parse": {
+          "p50_ns": 505423.0,
+          "p95_ns": 572646,
+          "p95_status": "READY",
+          "sample_count": 20
+        },
+        "quality": {
+          "p50_ns": 51724.0,
+          "p95_ns": 59111,
+          "p95_status": "READY",
+          "sample_count": 20
+        }
+      },
+      "rows_per_second_p50": 465.8202013807917,
+      "rows_per_second_p95": 483.55455148139356,
+      "sample_class": "fixture",
+      "sample_count": 20,
+      "stage": "export",
+      "status_counts": {
+        "exported": 20
+      }
+    }
+  ],
+  "interpretation": [
+    "p95 is shown because each group has 20 samples.",
+    "These are small offline fixtures and are not live provider or production workload measurements.",
+    "No exporter latency budget was pre-registered, so the measurements establish a baseline and do not claim a performance pass."
+  ],
+  "measured_at_utc": "2026-10-29T00:44:39.612111+00:00",
+  "method": {
+    "network_requests": 0,
+    "repetitions_per_export": 20,
+    "stored_payload_or_task_ids": false,
+    "temporary_project_root": true
+  },
+  "privacy_check": {
+    "credentials": false,
+    "raw_values": false,
+    "request_text": false,
+    "source_urls": false,
+    "task_ids": false
+  },
+  "schema_version": "xlsx-fixture-performance-v1",
+  "source_commit": "c167139246aa31aa5db1088eeab440d098e9279d",
+  "source_sha256": "3fc4f7128b9c9b0f8c3b506d79deefa7e0e27d83dfa3d452f75c08c5b4eb4de2"
+}
