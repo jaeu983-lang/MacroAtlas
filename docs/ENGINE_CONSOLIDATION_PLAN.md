@@ -6,5 +6,5 @@
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)를 참조한다.
 
 공통 Orchestrator/EngineRegistry/composition root는 이미 연결됐다. source별 transport·parser는 유지하고,
-대용량 worker는 별도 recovery 경계를 쓴다. 다음 엔진 정비는 파일 용량 판정의 typed reason 통합(Iteration 29)이다.
-이 요약은 별도 요구사항이나 추가 backlog를 만들지 않는다. 이전 설계 내용은 2026-10-28에 통합 문서로 접었다.
+대용량 worker는 별도 recovery 경계를 쓴다. 파일 용량 판정의 typed reason 통합(Iteration 29)도 완료됐다.
+현재 엔진 책임과 한계는 위의 연결·구현 상태 문서가 기준이다. 이 파일은 별도 요구사항이나 추가 backlog를 만들지 않는다.

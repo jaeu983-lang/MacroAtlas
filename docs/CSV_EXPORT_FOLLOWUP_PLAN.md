@@ -6,5 +6,6 @@
 
 World Bank/BOJ 검증 task용 read-only CSV exporter는 iteration 20에서 구현·검증했다. raw/manifest/hash,
 task 상태, quality/freshness와 출력 경로를 재검증하고 overwrite·network·task DB write를 허용하지 않는다.
-실행 근거는 [`ITERATION_20_REPORT.md`](ITERATION_20_REPORT.md)에 둔다. XLSX와 다중 series 비교는 미구현이며
-이 축약 계획은 추가 export 범위를 만들지 않는다.
+원자료 XLSX와 explicit spec 기반 비교 XLSX도 구현됐다. 현재 Gate F/G acceptance는 각각 BLS CPI live export와
+동일 WDI nominal GDP USA/Canada 비교에 한정된다. 판정 근거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)와
+Gate F/G AI evidence를 따른다. 이 문서는 완료 기록이며 추가 export backlog를 만들지 않는다.

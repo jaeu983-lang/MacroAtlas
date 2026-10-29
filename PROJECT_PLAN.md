@@ -219,7 +219,7 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 | F / 38회차 | 원자료 XLSX exporter (`ingestion/xlsx_export.py`, `macroatlas export-xlsx`) | **AI PASS — BLS CPI live 범위.** 9개 행의 period/value/status를 보존된 BLS response와 대조했다. Workbook 재개방, export freshness, raw/manifest/XLSX/provenance hash, formula cell 0을 확인했다. generic fixture는 zero/missing, formula-like literal, 경로·덮어쓰기 방지를 검증한다. [AI 판정](docs/evidence/gate_f_bls_ai_review_20261029.json). 다른 provider의 live XLSX는 포함하지 않으며 AI 신원은 인증되지 않는다. |
 | G / 39회차 | 정렬·비교 XLSX (`ingestion/xlsx_export.py`, `macroatlas compare-xlsx`) | **AI PASS — 동일 WDI 지표 USA/Canada 2024 범위.** source 2 `NY.GDP.MKTP.CD` 공식 metadata에 따른 current U.S. dollars/USD mapping을 typed artifact·workbook·sidecar에 보존했다. 실제 raw/typed/spec/workbook hash, 동일 annual period, exact alignment, 결측 미보간을 확인했다. [AI 판정](docs/evidence/gate_g_wdi_gdp_ai_review_20261029.json). Cross-provider 동등성·실질 GDP·PPP·복지 비교는 포함하지 않는다. |
 | 통합 / 40회차 | B/C/D/F/G contract·보안·성능 회귀 (`tests/`, `scripts/run_maintenance_qa.py`, 관련 docs) | **PASS.** 기준 `9d61865`, immutable candidate `87b18d4`에서 pytest 973건, Ruff, diff, CLI 3개 경로, health가 모두 통과했다. [QA evidence](docs/evidence/gate_40_integration_qa_20261029.json). Census 공개 표본은 별도 Gate가 아니며 이 통합 판정의 전제조건도 아니다. |
-| 최종 / 41회차 | AI 분석가 작업흐름 시뮬레이션 | A–D, F, G와 40회차 통합 검증을 통과했다. | AI 작성·판정과 실제 사람 관찰을 구분하고 질문, 선택/수정, 결과 채택·거부, 오류, task 소요시간을 기록한다. 이 기록은 AI simulation이며 실제 분석가 1–2명 관찰을 대체했다고 표시하지 않는다. |
+| 최종 / 41회차 | AI 분석가 작업흐름 시뮬레이션 | A–D, F, G와 40회차 통합 검증을 통과했다. 이미 검증된 BLS 원자료 XLSX와 WDI 비교 XLSX를 복제 가능한 로컬 사본에서 사용하고 provider를 다시 호출하지 않는다. | 두 과제에서 AI가 출처·시리즈·단위·기간·최신성 상태·결측 및 비교 한계를 결과 근거로 설명하는지, 필요할 때만 피드백을 남기는지 확인한다. 실행 단계·도구 처리시간은 측정하되 사람의 인지 시간이나 실제 usability로 해석하지 않는다. 입력/출력 파일 hash, 시나리오 결과, 오류·도움 요청, 실제로 발생한 피드백만 AI-simulated로 기록한다. AI 작성·판정과 실제 사람 관찰을 구분하며 사용자 원장, C holdout, 정책 승격에는 합성 결과를 넣지 않는다. |
 
 #### 작업별 운영 규칙
 
@@ -230,17 +230,22 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 
 평가 corpus 목표는 split별 12건, 네 case type별 split당 3건이다. 초기 v1 9건은 그대로 보존하고 GPT 검토를 거친 신규 v2에서 27건을 연결해 총 36건을 채웠다. 원본 draft는 generation-time provenance로 남기고, v2의 unrelated 판정은 13개 candidate를 담은 고정 catalog 범위로 한정한다. v2 데이터 gate 통과는 engine ranking 평가나 production 지원을 뜻하지 않는다. AI가 반환한 새 분류는 case 승인이나 기존 사례 label 수정과 동일하지 않다.
 
-기존 구현 계획은 B/C(30–33회차), D(34회차), freshness capability(35–36회차), F/G(37–39회차)를 별도 PR 묶음으로 나눴다. 현재 B/C/D는 해당 범위에서 기록됐고 freshness capability는 런타임에 구현돼 있다. 사용자의 결정으로 freshness는 별도 Gate E 수용 조건이 아니며 ACS 공개 후 표본도 F/G의 전제조건이 아니다. F/G는 위에 명시한 범위에서 AI 검토를 마쳤고 변경 후 통합 검증 40도 통과했다. 남은 제품 checkpoint는 AI 분석가 작업흐름 시뮬레이션 41이며, 실제 사람 관찰과 구분해 기록한다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다.
+현재 필수 gate는 B/C/D/F/G/40까지 완료됐고 **41 하나만 남았다**. 별도 제품 Gate가 아닌 E의 freshness runtime은 계속 작동한다. 아래 순서는 필수 검증과 선택·보류 workstream을 분리한다. 회차 번호는 검증 checkpoint이지 PR 개수가 아니다.
+
+| 우선순위 | 남은 일 | 범위와 종료 기준 |
+|---|---|---|
+| 필수 다음 / 41 | AI analyst workflow simulation | 이미 통과한 BLS raw XLSX와 WDI comparison XLSX만 임시 사본에서 사용한다. 새 provider 요청이나 실제 사용자 DB 쓰기는 하지 않는다. 별도 OpenAI API/key는 사용하지 않는다. 출처·series·단위·기간·freshness·결측 및 비교 한계의 설명 정확성, 도구 단계와 처리시간, 오류·도움 요청을 기록한다. 피드백은 수정 필요가 실제로 생긴 경우에만 별도 AI-simulated 원장에 기록하고 C 사례·holdout·승격에는 넣지 않는다. 처리시간은 wall-clock으로 기록하되 사람의 인지 시간이나 사용성으로 해석하지 않는다. 실행·증거 검사가 끝나면 `reviewer_type=AI`와 한계를 기록해 완료한다. |
+| 선택 / 제품 Gate 아님 | 실제 분석가 1–2명 정성 조사 및 실제 사용자 피드백 | workbook 의미 이해·혼란·도움 요청을 관찰한다. 실제로 제출된 피드백만 append-only 로그에 보존하고 검토는 별도 운영자 절차로 둔다. Gate 41 AI simulation과 별도다. 소수 표본으로 성공률을 추정하지 않고 완료 조건이나 기존 gate pass로 세지 않는다. 절차는 [`ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md)에 둔다. |
+| 요청 기반 backlog | 추가 provider/series live export, 출처별 공표 지연 근거, 자연 API latency 표본 | 실제 사용 요청이 생길 때 source scope와 안전한 측정 범위를 정하고 별도로 검증한다. 이 항목들은 현재 F/G acceptance를 넓히거나 freshness runtime의 fallback을 보증으로 바꾸지 않는다. 측정 전에 성능 최적화를 하지 않는다. |
+| 현재 제외·비활성 | Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage, scheduler 활성화 | 사용자가 범위를 다시 열기 전에는 실행하지 않는다. Windows updater/scheduler의 미검증 상태는 제품 gate의 선행조건으로 두지 않는다. |
 
 ### 별도 작업
 
-- 실제 병목이 확인되기 전 성능 최적화를 하지 않는다. 현재 161개 표본은 fixture·저장 자료 기반이며 live API latency 증거가 아니다.
-- Windows changed-candidate/failure-recovery와 scheduler 검증은 유지보수 작업이다. 제품 A–G의 선행 조건이 아니며 scheduler는 비활성으로 둔다.
-- TIC/BIS 반복 변경 감시와 Vantage 연동은 현재 사용자 범위에서 제외한다.
+Gate 41 이후의 선택·요청 기반 작업은 위 표를 따른다. fixture/저장 자료의 성능 표본을 live API latency로 해석하지 않고, provider coverage를 확대하기 전에 근거와 비용·권한을 확인한다.
 
 ## 12. 완료·검토 규칙
 
-각 변경은 문제와 사용자 영향, 입출력 contract, 최소 정상·실패 사례, 데이터 완전성·보안 영향, 회귀 검증, 남은 한계를 포함한다. Tests, lint, diff 검사와 필요 CI를 실행한다. Fixture, synthetic, live evidence를 구분한다. 코드나 문서에 “완료”라고 적으려면 현재 branch/base에서 해당 범위에 맞는 증거가 있어야 한다. 28–39회차 계획과 구현 기록은 위 표와 상세 실행 일정에 연결하고, 23회차 분석가 관찰은 그 모든 제품 gate 뒤에만 수행한다.
+각 변경은 문제와 사용자 영향, 입출력 contract, 최소 정상·실패 사례, 데이터 완전성·보안 영향, 회귀 검증, 남은 한계를 포함한다. Tests, lint, diff 검사와 필요 CI를 실행한다. Fixture, synthetic, live evidence를 구분한다. 코드나 문서에 “완료”라고 적으려면 현재 branch/base에서 해당 범위에 맞는 증거가 있어야 한다. 실제 사람의 분석가 관찰은 AI simulation과 별개인 선택적 정성 연구로 기록하며, 어느 쪽도 상대 evidence로 대체하지 않는다.
 
 외부 데이터 변경, 의미 판단, 새 credential, 라이선스·접근권, 원본 덮어쓰기, 자동 promotion/merge/publish는 명시된 안전 경계와 검토 승인을 따라야 한다. 정상적인 reversible 코드·문서 변경은 전용 branch에서 진행하고 human review PR로 제공한다.
 
@@ -249,5 +254,6 @@ FeedbackStore와 명시적 knowledge reuse는 구현돼 있다. `macro-eval feed
 - 실행 가능 범위: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md), [`README.md`](README.md)
 - 현재 상태: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). 이전 backlog snapshot은 현행 우선순위가 아닙니다.
 - 엔진 구현과 한계: [`docs/ENGINE_CONNECTIONS.md`](docs/ENGINE_CONNECTIONS.md), [`docs/ENGINE_IMPLEMENTATION_STATUS.md`](docs/ENGINE_IMPLEMENTATION_STATUS.md)
-- 세부 계약·사례: [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md), [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
+- 세부 계약·사례: [`docs/OUTPUT_AND_VARIANT_POLICY.md`](docs/OUTPUT_AND_VARIANT_POLICY.md), [`docs/REFERENCE_SCENARIOS.md`](docs/REFERENCE_SCENARIOS.md), [`docs/EVALUATION_CASES.md`](docs/EVALUATION_CASES.md)
+- 선택적 실제 분석가 사용성 조사: [`docs/ITERATION_23_PLAN.md`](docs/ITERATION_23_PLAN.md). 이 연구는 Gate 41 AI 시뮬레이션과 분리하며 현재 제품 완료를 막지 않는다.
 - 과거 실행 결과·변경 이유: `docs/ITERATION_*_REPORT.md`, [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md)

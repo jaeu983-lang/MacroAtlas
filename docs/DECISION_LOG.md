@@ -1,6 +1,6 @@
 # Decision Log — 설계 변경·미해결 판단
 
-> 이 문서는 날짜가 붙은 결정 이력이다. 현재 범위와 우선순위는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), 구현·Gate 증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md), 짧은 순서 요약은 [`ROADMAP_2026_10_26.md`](ROADMAP_2026_10_26.md)를 따른다. 오래된 회차 기록은 당시 상태를 보존하며 최신 코드 상태로 자동 갱신된 것으로 보지 않는다.
+> 이 문서는 날짜순 결정 이력이다. 현재 제품 범위·순서는 [`PROJECT_PLAN.md`](../PROJECT_PLAN.md), Gate 상태·증거는 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)를 따른다. 오래된 결정의 미완료 상태는 당시 기록이며, 최신 범위 결정은 [D-138](#d-138-남은-gate와-후속-작업-계획-재구성)에서 확인한다.
 
 ## 05회차 제한 구현 (2026-10-26)
 
@@ -1099,3 +1099,7 @@ AI review record [`freshness_fallback_ai_review_20261029.json`](evidence/freshne
 ## D-137 — Gate 40 통합 QA 완료
 
 2026-10-29. F/G 변경을 기준선 `9d61865179dbe5af7ee7eed0678d3cf08bac095f`에서 immutable candidate `87b18d434c9566b8049161febebc64634d7916f0`로 검사했다. 격리 worktree에서 전체 pytest 973건, Ruff, diff 검사, CLI module/entrypoint/collect help, health check가 모두 통과했고 정리도 성공했다. 네트워크 요청은 없었다. [Value-free QA evidence](evidence/gate_40_integration_qa_20261029.json)는 결과와 local report SHA를 기록한다. 이는 provider의 실시간 가용성, Census ACS 2025 공개 후 조회 또는 사람의 사용성 검증을 뜻하지 않는다. 다음 제품 checkpoint는 AI 분석가 작업흐름 시뮬레이션 41이다.
+
+## D-138 — 남은 Gate와 후속 작업 계획 재구성
+
+2026-10-29. F/G의 범위 한정 AI acceptance와 Gate 40 통합 검증 후 현재 필수 제품 단계는 Gate 41 AI workflow simulation 하나로 정리한다. 시뮬레이션은 기존 BLS·WDI workbook artifact만 격리된 로컬 사본에서 사용하고 새 provider 요청, 운영 feedback DB 쓰기, C 사례·holdout 변경을 하지 않는다. 피드백은 실제 교정 필요가 있을 때만 별도 AI-simulated 기록으로 남기며, 시간 측정은 도구 처리 wall-clock으로 제한해 사람의 인지 시간이나 실제 사용성으로 해석하지 않는다. 실제 분석가 1–2명 관찰은 별도 선택 연구로 분리하고 Gate 완료 조건에서 제외한다. 추가 provider/series 검증, source-specific release-lag 근거, 자연 요청 latency는 사용자 수요가 있을 때 범위를 정하는 backlog이며 Census ACS 2025 재조회, TIC/BIS 반복 감시, Vantage와 scheduler 활성화는 현재 제외한다. `PROJECT_PLAN.md`만 활성 범위·순서의 단일 기준으로 유지하고 오래된 하위 계획은 redirect/역사 기록으로 정리한다.
